@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+
+    <!-- pie chart -->
+    <!-- M: coordinates of the starting point of the path -->
+    <!-- L: coordinate of the end point of a straight line -->
+    <!-- A: the radii length, flags and end point of an arc -->
+    <!-- Z: return to start point (M) -->
+
+    <!-- green (strong: 96ff2D, weak: ccff99, grey: 969696) -->
+    <!-- orange (strong: ffc61a, weak: ffdf80, grey: a0a0a0) -->
+    <!-- red (strong: ff2e2e, weak: ff9999), grey: 737373 -->
+
+    <path d="M100,100 L100,8 A92,92 0 0,1 179.7,146 L100,100, Z" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M100,100 L179.7,146 A92,92 0 0,1 20.3,146 L100,100, Z" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M100,100 L20.3,146 A92,92 0 0,1 100,8 L100,100, Z" fill="none" stroke="black" stroke-width="12"/>
+
+    <!-- wavy lines (in green segment) -->
+    <path d="M30,75 Q35,56 35,60 T40,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M40,60 Q45,56 45,60 T50,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M50,60 Q55,56 55,60 T60,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M60,60 Q65,56 65,60 T70,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M70,60 Q75,56 75,60 T80,65" fill="none" stroke="black" stroke-width="8"/>
+
+    <path d="M50,85 Q55,81 55,85 T60,85" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M60,85 Q65,81 65,85 T70,85" fill="none" stroke="black" stroke-width="12"/>
+
+    <!-- wavy lines (in red segment) -->
+    <path d="M120,65 Q125,56 125,60 T130,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M130,60 Q135,56 135,60 T140,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M140,60 Q145,56 145,60 T150,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M150,60 Q155,56 155,60 T160,60" fill="none" stroke="black" stroke-width="8"/>
+    <path d="M160,60 Q165,56 165,60 T170,75" fill="none" stroke="black" stroke-width="8"/>
+
+    <path d="M130,85 Q135,81 135,85 T140,85" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M140,85 Q145,81 145,85 T150,85" fill="none" stroke="black" stroke-width="12"/>
+
+    <!-- wavy lines (in orange segment) -->
+    <path d="M75,140 Q80,156 80,155 T85,150" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M85,150 Q90,156 90,160 T95,160" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M95,160 Q100,156 100,160 T105,160" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M105,160 Q110,156 110,160 T115,150" fill="none" stroke="black" stroke-width="12"/>
+    <path d="M115,150 Q120,156 120,155 T125,140" fill="none" stroke="black" stroke-width="12"/>
+</svg>

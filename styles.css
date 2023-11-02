@@ -1,0 +1,57 @@
+.path-mod-vocab form fieldset.collapsible {
+    max-width: 960px;
+}
+.path-mod-vocab form fieldset#id_pagelayouts {
+    max-width: 1140px;
+}
+
+.path-mod-vocab #pagelayouts_table thead {    
+    background-color: #008196; /* bg-info, bg-dark = #343a40 */
+    color: #f8f9fa; /* text-light */
+}
+
+.path-mod-vocab #pagelayouts_table th + th {
+    border-left: solid ivory 2px;
+}
+
+.path-mod-vocab #pagelayouts_table th + td,
+.path-mod-vocab #pagelayouts_table td + td {
+    border-left: solid darkgrey 2px;
+}
+
+.path-mod-vocab #fgroup_id_attemptdelayelements .felement label {
+    min-height: 32px;
+}
+
+.path-mod-vocab.pagelayout-maintenance #page {
+    margin-top: 0px; /* override 50px */
+}
+
+.path-mod-vocab .vocab-results .alert {
+    max-width: 360px;
+}
+
+.path-mod-vocab .vocab-wordlist-words {
+    max-height: 203px;
+    max-width: 360px;
+    overflow-y: auto;
+}
+.path-mod-vocab .vocab-wordlist-words::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 12px;
+} 
+.path-mod-vocab .vocab-wordlist-words::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+    border-radius: 10px;
+}
+.path-mod-vocab .vocab-wordlist-words::-webkit-scrollbar-thumb {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+    border-radius: 10px;
+}
+
+.path-mod-vocab .vocab-games {
+    max-width: 480px;
+}
+.path-mod-vocab .vocab-games .btn {
+    max-width: 110px;
+}

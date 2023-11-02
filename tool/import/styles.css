@@ -1,0 +1,16 @@
+#vocabtool_import_form {
+    max-width: 640px;
+}
+.vocabtool_import thead tr {
+    /* bg-primary and text-light */
+    background-color: #0f6cbf;
+    color: #f8f9fa;
+}
+.vocabtool_import td,
+.vocabtool_import th {
+    border-left: 1px dotted #999;
+}
+.vocabtool_import td.lastcol,
+.vocabtool_import th.lastcol {
+    border-right: 1px dotted #999;
+}

@@ -1,0 +1,7 @@
+../englishcentral/classes/utils.php:        $textoptions = array('size' => \mod_englishcentral_mod_form::TEXT_NUM_SIZE);
+../hotpot/mod_form.php:        $textoptions = array('size' => '40');
+../reader/mod_form.php:        $textoptions = array('size' => self::TEXT_NUM_SIZE);
+../vocab/mod_form.php:        $textoptions = array('size' => self::TEXT_NUM_SIZE);
+../vocab/tool/addphpdocs/classes/form.php:        $textoptions = array('size' => '32');
+../wiki/create_form.php:            $textoptions = array('readonly'=>'readonly');
+../wiki/create_form.php:        $textoptions = array();

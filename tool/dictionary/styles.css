@@ -1,0 +1,13 @@
+.vocabtool_dictionary thead tr {
+    /* bg-primary and text-light */
+    background-color: #0f6cbf;
+    color: #f8f9fa;
+}
+.vocabtool_dictionary td,
+.vocabtool_dictionary th {
+    border-left: 1px dotted #999;
+}
+.vocabtool_dictionary td.lastcol,
+.vocabtool_dictionary th.lastcol {
+    border-right: 1px dotted #999;
+}
