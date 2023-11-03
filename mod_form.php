@@ -99,16 +99,16 @@ class mod_vocab_mod_form extends moodleform_mod {
         $name = 'expandnavigation';
         $label = get_string($name, $plugin);
         $options = array(
-            \mod_vocab\activity::MYCOURSES_EVERYONE => get_string('expandforeveryone', $plugin),
-            \mod_vocab\activity::MYCOURSES_TEACHERS => get_string('expandforteachers', $plugin),
-            \mod_vocab\activity::MYCOURSES_STUDENTS => get_string('expandforstudents', $plugin),
-            \mod_vocab\activity::MYCOURSES_NO_ONE => get_string('expandfornoone', $plugin)
+            \mod_vocab\activity::EXPAND_EVERYONE => get_string('expandforeveryone', $plugin),
+            \mod_vocab\activity::EXPAND_TEACHERS => get_string('expandforteachers', $plugin),
+            \mod_vocab\activity::EXPAND_STUDENTS => get_string('expandforstudents', $plugin),
+            \mod_vocab\activity::EXPAND_NO_ONE => get_string('expandfornoone', $plugin)
         );
 
         $mform->addElement('select', $name, $label, $options);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
-        $mform->setDefault($name, \mod_vocab\activity::MYCOURSES_NO_ONE);
+        $mform->setDefault($name, \mod_vocab\activity::EXPAND_NO_ONE);
 
         $name = 'pagelayout';
         $label = get_string($name, $plugin);

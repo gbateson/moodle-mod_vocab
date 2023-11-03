@@ -55,10 +55,10 @@ class activity {
     const ATTEMPTDELAY_FIXED = -1;
     const ATTEMPTDELAY_EXPANDING = -2;
 
-    const MYCOURSES_EVERYONE = 0;
-    const MYCOURSES_STUDENTS = 1; // expand for students (collapse for teachers)
-    const MYCOURSES_TEACHERS = 2; // expand for teachers (collapse for students)
-    const MYCOURSES_NO_ONE = 3;
+    const EXPAND_EVERYONE = 0;
+    const EXPAND_STUDENTS = 1; // expand for students (collapse for teachers)
+    const EXPAND_TEACHERS = 2; // expand for teachers (collapse for students)
+    const EXPAND_NO_ONE = 3;
 
     /** @var stdclass course record */
     public $course = null;
@@ -695,15 +695,15 @@ die;
         // The default setting for "forceopen" is to expand for all.
         $forceopen = true;
         switch ($this->expandnavigation) {
-            case \mod_vocab\activity::MYCOURSES_TEACHERS:
+            case \mod_vocab\activity::EXPAND_TEACHERS:
                 // Expand for teachers (collapse for students)
                 $forceopen = $teacher;
                 break;
-            case \mod_vocab\activity::MYCOURSES_STUDENTS:
+            case \mod_vocab\activity::EXPAND_STUDENTS:
                 // Expand for students (collapse for teachers)
                 $forceopen = $student;
                 break;
-            case \mod_vocab\activity::MYCOURSES_NO_ONE:
+            case \mod_vocab\activity::EXPAND_NO_ONE:
                 // Expand for no one (i.e. collapse for all)
                 $forceopen = false;
                 break;
