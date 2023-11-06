@@ -179,6 +179,13 @@ class form extends \mod_vocab\toolform {
         }
     }
 
+    /**
+     * addwords
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param xxx $newwords
+     * @todo Finish documenting this function
+     */
     public function addwords($mform, $newwords) {
 
         // Get list seperator for the current language,
@@ -223,6 +230,15 @@ class form extends \mod_vocab\toolform {
         $this->unset_element('addwordselements');
     }
 
+    /**
+     * get_lemma
+     *
+     * @uses $DB
+     * @param xxx $word
+     * @param xxx $langcode
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_lemma($word, $langcode) {
         global $DB;
         $select = 'lmm.id, lmm.lemma';
@@ -239,6 +255,15 @@ class form extends \mod_vocab\toolform {
 
     }
 
+    /**
+     * selectwords
+     *
+     * @uses $DB
+     * @param moodleform $mform representing the Moodle form
+     * @param xxx $count
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function selectwords($mform, $count) {
         global $DB;
 
@@ -290,16 +315,36 @@ class form extends \mod_vocab\toolform {
         }
     }
 
+    /**
+     * importfile
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param xxx $fileid
+     * @todo Finish documenting this function
+     */
     public function importfile($mform, $fileid) {
         $msg = \html_writer::tag('h4', 'importfile: '.$fileid);
         $mform->addElement('html', $msg);
     }
 
+    /**
+     * exportfile
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $filename
+     * @todo Finish documenting this function
+     */
     public function exportfile($mform, $filename) {
         $msg = \html_writer::tag('h4', 'exportfile: '.$filename);
         $mform->addElement('html', $msg);
     }
 
+    /**
+     * unset_element
+     *
+     * @param string $name
+     * @todo Finish documenting this function
+     */
     public function unset_element($name) {
         if (isset($_GET[$name])) {
             unset($_GET[$name]);

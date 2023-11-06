@@ -71,6 +71,15 @@
 //     'mdl_vocab_word_attempts',
 // );
 
+/**
+ * backup_vocab_activity_structure_step
+ *
+ * @package    mod_vocab
+ * @copyright  2023 Gordon Bateson
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon Bateson gordonbateson@gmail.com
+ * @since      Moodle 4.1
+ */
 class backup_vocab_activity_structure_step extends backup_activity_structure_step {
 
     /** maximum number of words to retrieve in one DB query */

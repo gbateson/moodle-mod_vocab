@@ -50,6 +50,12 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $this->vocab = $vocab;
     }
 
+    /**
+     * header
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function header() {
         $header = parent::header();
         
@@ -88,6 +94,12 @@ class mod_vocab_renderer extends plugin_renderer_base {
         return $header;
     }
 
+    /**
+     * modedit_icon
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function modedit_icon() {
         $params = array('update' => $this->vocab->cm->id,
                         'return' => 1,
@@ -357,24 +369,23 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * pie_graph
+     * Build HTML to display the pie-chart as an SVG image.
      *
-     * @param xxx $radius
-     * @param xxx $offsetx
-     * @param xxx $offsety
-     * @param xxx $values
-     * @param xxx $colors
-     * @param array $params
-     * @return xxx
-     * @todo Finish documenting this function
+     * @param integer $radius radius of the pie-chart (in pixels)
+     * @param integer $offsetx the "x" offset (in pixels) to the left hand edge of the pie chart
+     * @param integer $offsety the "y" offset (in pixels) to the top edge of the pie chart
+     * @param array $values numbers to be displayed as a pie-chart
+     * @param array $colors strings colors expressed as RGB colors
+     * @param array $params settings to be used in the <path> tag e.g. "stroke", "stroke-width"
+     * @return string HTML code for the pie-chart as an SVG image
      */
     public function pie_graph($radius, $offsetx, $offsety, $values, $colors, $params) {
         $output = '';
 
         // Pie chart is drawn as a series of SVG arcs
         // each created using the following specifications:
-        // M: coordinates of the starting point of the path
-        // L: coordinate of the end point of a straight line
+        // M: coordinates of the starting point of the path (always the center of the pie)
+        // L: coordinate of the end point of a straight line (some point on the edge of the pie)
         // A: the radii length, flags and end point of an arc
         // Z: return to start point (M)
 
@@ -424,6 +435,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     $a = "$radius,$radius 0 $largearc 1 $x,$y";
                 }
 
+                // Build the path d(efinition) and add it to the tag parameters.
                 $d = "M$center L$l A$a L$center Z";
                 $p = array('d' => $d, 'fill' => $colors[$i]);
 
@@ -473,9 +485,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Output the page information
+     * view_wordlist
      *
-     * @param object $vocab the vocab activity settings.
+     * @param array $words.
      * @return string an HTML string.
      */
     public function view_wordlist($words) {
@@ -499,9 +511,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Output the page information
+     * view_games
      *
-     * @param object $vocab the vocab activity settings.
      * @return string an HTML string.
      */
     public function view_games() {
@@ -524,8 +535,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
     /**
      * get_games
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return string an HTML string.
      */
     public function get_games() {
         $games = array();
@@ -557,7 +567,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param xxx $game
      * @param xxx $gamecolor (optional, default='')
      * @param xxx $textcolor (optional, default='')
-     * @return xxx
+     * @return string of HTML to display a game button.
      * @todo Finish documenting this function
      */
     public function game_button($game, $gamecolor='', $textcolor='') {

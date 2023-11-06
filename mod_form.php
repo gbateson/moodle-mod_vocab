@@ -351,13 +351,20 @@ class mod_vocab_mod_form extends moodleform_mod {
      * completion_rule_enabled
      *
      * @param stdClass $data submitted from the form
-     * @return xxx
+     * @return mixed
      * @todo Finish documenting this function
      */
     public function completion_rule_enabled($data) {
         return false;
     }
 
+    /**
+     * get_pagelayouts
+     *
+     * @uses $PAGE
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_pagelayouts() {
         global $PAGE;
         $layouts = array();
@@ -379,6 +386,13 @@ class mod_vocab_mod_form extends moodleform_mod {
         return $layouts;
     }
 
+    /**
+     * get_pagelayout_options
+     *
+     * @param string $plugin name
+     * @return array of page layout names
+     * @todo Finish documenting this function
+     */
     public function get_pagelayout_options($plugin) {
         $strman = get_string_manager();
         $options = array_keys($this->get_pagelayouts());
@@ -396,6 +410,12 @@ class mod_vocab_mod_form extends moodleform_mod {
         return $options;
     }
 
+    /**
+     * Display table of information about page layouts.
+     *
+     * @param string $plugin
+     * @return string of HTML to display table of page layouts
+     */
     public function get_pagelayouts_table($plugin) {
         $rows = array();
         foreach ($this->get_pagelayouts() as $name => $layout) {
@@ -497,10 +517,15 @@ class mod_vocab_mod_form extends moodleform_mod {
         return \html_writer::table($table);
     }
 
+    /**
+     * collapse_navigation
+     *
+     * @todo Finish documenting this function
+     */
     public function collapse_navigation() {
         \mod_vocab\activity::create(
             $this->get_course(),
-            $this->get_coursemodule(), 
+            $this->get_coursemodule(),
             ($this->get_instance() ? $this->get_current() : null),
             $this->get_context()
         )->collapse_navigation();

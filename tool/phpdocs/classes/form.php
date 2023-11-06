@@ -80,6 +80,13 @@ class form extends \mod_vocab\toolform {
         $mform->setDefault($name, '/mod/vocab');
         $mform->setType($name, PARAM_PATH);
 
+        $name = 'filepath';
+        $label = get_string($name, $this->tool);
+        $mform->addElement('text', $name, $label, $textoptions);
+        $mform->addHelpButton($name, $name, $this->tool);
+        $mform->setDefault($name, '');
+        $mform->setType($name, PARAM_PATH);
+
         $name = 'filetypes';
         $label = get_string($name, $this->tool);
         $options = array('php' => get_string('phpfiles', $this->tool),
@@ -88,6 +95,7 @@ class form extends \mod_vocab\toolform {
                          'xml' => get_string('xmlfiles', $this->tool));
         $mform->addElement('select', $name, $label, $options, array('multiple'));
         $mform->addHelpButton($name, $name, $this->tool);
+        $mform->disabledIf($name, 'filepath', 'ne', '');
         $mform->setDefault($name, array('php'));
         $mform->setType($name, PARAM_PATH);
 

@@ -27,10 +27,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * vocab_supports
+ * Specifies which Moodle features this plugin supports.
+ * (for a full list of features, see "lib/moodlelib.php")
  *
- * @param xxx $feature
- * @return xxx
+ * @param string $feature a FEATURE_xxx constant e.g. mod_intro
+ * @return boolean TRUE if this plugin supports this $feature; otherwise FALSE.
  * @todo Finish documenting this function
  */
 function vocab_supports($feature) {
@@ -166,7 +167,7 @@ function vocab_delete_instance($id) {
  * "vocab_extend_settings_navigation" is called by
  * "load_module_settings" in "lib/navigationlib.php"
  *
- * @param settings_navigation $settings The settings navigation object.
+ * @param settings_navigation $settings The settings navigation node
  * @param navigation_node $vocabnode The node to add module settings to
  * @return void (but may add items to $vocabnode)
  */
@@ -239,6 +240,14 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
     }
 }
 
+/**
+ * vocab_extend_subplugin_navigation
+ *
+ * @param object $node the parent navigation node
+ * @param integer $type of the navigation node (see "lib/navigationlib.php")
+ * @param string $name of this subplugin e.g. phpdocs
+ * @param object $cm the course module object for the the current vocabulary activity 
+ */
 function vocab_extend_subplugin_navigation(navigation_node $node, $type, $name, $cm) {
     $label = get_string($name, "vocab{$type}_{$name}");
     $url = "/mod/vocab/$type/$name/index.php";
@@ -249,8 +258,10 @@ function vocab_extend_subplugin_navigation(navigation_node $node, $type, $name, 
 
 /**
  * Get icon mapping for font-awesome.
+ * (see "https://fontawesome.com/search")
  */
 function mod_vocab_get_fontawesome_icon_map() {
+    // Actually this array is not used because the individual subplugins define their own icon map.
     return array(
         'mod_vocab:dictionary' => 'fa-book',
         'mod_vocab:import' => 'fa-database',

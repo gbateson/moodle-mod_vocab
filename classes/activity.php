@@ -683,6 +683,12 @@ die;
         return $string;
     }
 
+    /**
+     * collapse_navigation
+     *
+     * @uses $PAGE
+     * @todo Finish documenting this function
+     */
     public function collapse_navigation() {
         global $PAGE;
 
@@ -720,6 +726,12 @@ die;
         }
     }
 
+    /**
+     * set_pagelayout
+     *
+     * @uses $PAGE
+     * @todo Finish documenting this function
+     */
     public function set_pagelayout() {
         global $PAGE;
         if ($this->pagelayout) {

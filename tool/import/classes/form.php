@@ -1214,21 +1214,17 @@ class form extends \mod_vocab\toolform {
      * @param integer $cmin the lowet column number
      * @param integer $cmax the highest column number
      * @param string $text to go in first column
-     * @param boolean (optional, default=FALSE) whether or not $text is a header
+     * @param boolean $isheader(optional, default=FALSE) whether or not $text is a header
      */
-    public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $header=false) {
+    public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $cellheader=false) {
         $cells = array();
         for ($c = $cmin; $c <= $cmax; $c++) {
             $cells[] = $this->get_cell_value($worksheet, $c, $r);
         }
 
         $cell = new \html_table_cell();
-        if ($text) {
-            $cell->text = $text;
-        }
-        if ($header) {
-            $cell->header = true;
-        }
+        $cell->text = ($text ? $text : '');
+        $cell->header = ($cellheader ? true : false);
         $cells = array_merge(array($cell), $cells);
 
         return $cells;

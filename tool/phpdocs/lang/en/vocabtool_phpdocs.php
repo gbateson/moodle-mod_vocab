@@ -32,6 +32,11 @@ $string['phpdocs'] = 'Add PHPDocs';
 $string['folderpath_help'] = 'The folder path under the base folder for this Moodle scripts on the server.';
 $string['folderpath'] = 'Folder path';
 
+$string['filepath_help'] = 'Here you can specify the path to a particular file within the folder path.
+
+If you specify a particular file here, then the "File types" setting will be disabled and ignored. Otherwise, if you leave file name blank, then all files of the specified "File type" will be examined.';
+$string['filepath'] = 'File path';
+
 $string['phpdocsaction_help'] = 'Select what action you would like to take on the PHPDocs in each file.';
 $string['phpdocsaction'] = 'PHPDocs action';
 

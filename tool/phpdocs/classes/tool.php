@@ -41,41 +41,124 @@ class tool extends \mod_vocab\toolbase {
     public function __construct() {
         parent::__construct();
         $this->paramnames = array(
+            '$a'         => (object)array('type' => 'array', 'text' => 'additional value or values required for the language string'),
             '$action'    => (object)array('type' => 'integer', 'text' => ''),
             '$args'      => (object)array('type' => 'array',   'text' => ''),
+            '$attempt'   => (object)array('type' => 'object', 'text' => 'a record form the "vocab_game_attempt" table in the Moodle database'),
+            '$attributes'=> (object)array('type' => 'array', 'text' => ''),
+            '$blockname' => (object)array('type' => 'string', 'text' => ''),
+            '$c'         => (object)array('type' => 'integer', 'text' => 'a column number'),
             '$cancel'    => (object)array('type' => 'boolean', 'text' => ''),
+            '$capability'=> (object)array('type' => 'string', 'text' => ''),
+            '$cellheader' => (object)array('type' => 'boolean', 'text' => 'if TRUE, the 1st cell should be made a TH cell'),
+            '$cm'        => (object)array('type' => 'string', 'text' => 'the course module object for the the current vocabulary activity'),
+            '$cmax'      => (object)array('type' => 'integer', 'text' => 'the maximum column number'),
+            '$cmin'      => (object)array('type' => 'integer', 'text' => 'the minimum column number'),
+            '$colors'    => (object)array('type' => 'array', 'text' => ''),
+            '$component' => (object)array('type' => 'string', 'text' => 'the frakenstyle name of a Moodle plugin'),
+            '$config'    => (object)array('type' => 'object', 'text' => ''),
             '$contents'  => (object)array('type' => 'string',  'text' => ''),
-            '$data'      => (object)array('type' => 'stdClass',
-                                          'text' => 'submitted from the form'),
+            '$context'   => (object)array('type' => 'object', 'text' => 'a record form the "context" table in the Moodle database'),
+            '$count'     => (object)array('type' => 'integer', 'text' => ''),
+            '$course'    => (object)array('type' => 'object', 'text' => 'a record form the "course" table in the Moodle database'),
+            '$customdata'=> (object)array('type' => 'array', 'text' => ''),
+            '$d'         => (object)array('type' => 'string', 'text' => 'a definition string for a <path> tag'),
+            '$data'      => (object)array('type' => 'stdClass', 'text' => 'submitted from the form'),
+            '$datafilename' => (object)array('type' => 'string', 'text' => ''),
+            '$dbman'     => (object)array('type' => 'object', 'text' => 'the Moodle database manager'),
+            '$default'   => (object)array('type' => 'mixed', 'text' => ''),
+            '$defaultmax'=> (object)array('type' => 'integer', 'text' => ''),
+            '$defaultmin'=> (object)array('type' => 'integer', 'text' => ''),
+            '$details'   => (object)array('type' => 'string', 'text' => ''),
+            '$dryrun'    => (object)array('type' => 'boolean', 'text' => ''),
+            '$editable'  => (object)array('type' => 'boolean', 'text' => ''),
+            '$endcolor'  => (object)array('type' => 'string', 'text' => "an RGB color, e.g. '#aabbcc'"),
             '$escaped'   => (object)array('type' => 'boolean', 'text' => ''),
-            '$fields'    => (object)array('type' => 'array',
-                                          'text' => 'of database field names'),
+            '$excluded_fieldnames' => (object)array('type' => 'array', 'text' => ''),
+            '$expanded'  => (object)array('type' => 'boolean', 'text' => 'if TRUE, the heading will be expanded; otherwise it will remain collapsed'),
+            '$feature'   => (object)array('type' => 'string', 'text' => 'a FEATURE_xxx constant e.g. mod_intro'),
+            '$fieldname' => (object)array('type' => 'string', 'text' => ''),
+            '$fields'    => (object)array('type' => 'array', 'text' => 'of database field names'),
+            '$fileid'    => (object)array('type' => 'integer', 'text' => ''),
             '$filename'  => (object)array('type' => 'string',  'text' => ''),
             '$filepath'  => (object)array('type' => 'string',  'text' => ''),
-            '$filetype'  => (object)array('type' => 'string',
-                                          'text' => 'file type/extension'),
+            '$files'     => (object)array('type' => 'array', 'text' => ''),
+            '$filetype'  => (object)array('type' => 'string', 'text' => 'file type/extension'),
+            '$fillcolor' => (object)array('type' => 'string', 'text' => 'a CSS color name or value'),
+            '$format'    => (object)array('type' => 'object', 'text' => ''),
+            '$formatfilecontent' => (object)array('type' => 'string', 'text' => ''),
+            '$fs'        => (object)array('type' => 'object', 'text' => 'reference to Moodle file storage singleton object'),
+            '$game'      => (object)array('type' => 'object', 'text' => 'a vocab_game object'),
+            '$gamecolor' => (object)array('type' => 'string', 'text' => 'the game button color as an RGB color'),
+            '$groupid'   => (object)array('type' => 'integer', 'text' => ''),
+            '$height'    => (object)array('type' => 'integer', 'text' => 'required height (in pixels)'),
+            '$id'        => (object)array('type' => 'integer', 'text' => 'settings to be used in the <path> tag e.g. "stroke", "stroke-width"'),
             '$incorrect' => (object)array('type' => 'boolean', 'text' => ''),
-            '$item'      => (object)array('type' => 'object',
-                                          'text' => 'representing an item in the XML file'),
+            '$indent'    => (object)array('type' => 'string', 'text' => ''),
+            '$instance'  => (object)array('type' => 'object', 'text' => 'a record form the "vocab" table in the Moodle database'),
+            '$item'      => (object)array('type' => 'object', 'text' => 'representing an item in the XML file'),
             '$itemvars'  => (object)array('type' => 'array',   'text' => ''),
-            '$mform'     => (object)array('type' => 'moodleform',
-                                          'text' => 'representing the Moodle form'),
+            '$langcode'  => (object)array('type' => 'string', 'text' => ''),
+            '$length'    => (object)array('type' => 'integer', 'text' => ''),
+            '$method'    => (object)array('type' => 'string', 'text' => ''),
+            '$mform'     => (object)array('type' => 'moodleform', 'text' => 'representing the Moodle form'),
             '$missing'   => (object)array('type' => 'boolean', 'text' => ''),
+            '$mode'      => (object)array('type' => 'string', 'text' => ''),
+            '$n'         => (object)array('type' => 'integer', 'text' => 'number of colors to return'),
             '$name'      => (object)array('type' => 'string',  'text' => ''),
+            '$names'     => (object)array('type' => 'array', 'text' => ''),
+            '$newwords'  => (object)array('type' => 'array', 'text' => ''),
+            '$node'      => (object)array('type' => 'string', 'text' => 'the current navigation node'),
+            '$offsetx'   => (object)array('type' => 'integer', 'text' => 'the "x" offset (in pixels) to the left hand edge of the pie chart'),
+            '$offsety'   => (object)array('type' => 'integer', 'text' => 'the "y" offset (in pixels) to the top edge of the pie chart'),
+            '$oldversion'=> (object)array('type' => 'string', 'text' => ''),
+            '$parameters'=> (object)array('type' => 'array', 'text' => ''),
+            '$paramname' => (object)array('type' => 'string', 'text' => ''),
             '$params'    => (object)array('type' => 'array',   'text' => ''),
-            '$recordids' => (object)array('type' => 'array',
-                                          'text' => 'of ids from the database'),
+            '$phpdocs'   => (object)array('type' => 'string', 'text' => ''),
+            '$phpdocsnew'=> (object)array('type' => 'string', 'text' => ''),
+            '$phpdocsold'=> (object)array('type' => 'string', 'text' => ''),
+            '$plugin'    => (object)array('type' => 'string', 'text' => 'the frankenstyle name of the plugin. e.g. mod_vocab'),
+            '$prefix'    => (object)array('type' => 'string', 'text' => ''),
+            '$r'         => (object)array('type' => 'integer', 'text' => 'a row number'),
+            '$radius'    => (object)array('type' => 'integer', 'text' => 'radius of the pie-chart (in pixels)'),
+            '$recordids' => (object)array('type' => 'array', 'text' => 'of ids from the database'),
+            '$row'       => (object)array('type' => 'object', 'text' => ''),
+            '$settings'  => (object)array('type' => 'object', 'text' => 'The "settings" navigation node for this Vocabulary activity'),
+            '$sheet'     => (object)array('type' => 'object', 'text' => ''),
+            '$start'     => (object)array('type' => 'integer', 'text' => ''),
+            '$startcolor'=> (object)array('type' => 'string', 'text' => "an RGB color, e.g. '#ff6633'"),
+            '$strname'   => (object)array('type' => 'string', 'text' => ''),
+            '$strokecolor' => (object)array('type' => 'string', 'text' => 'a css color name or value'),
+            '$strokewidth' => (object)array('type' => 'integer', 'text' => 'the width (in pixels)'),
             '$submit'    => (object)array('type' => 'boolean', 'text' => ''),
-            '$table'     => (object)array('type' => 'string',
-                                          'text' => 'name of a table in the database'),
-            '$tableinfo' => (object)array('type' => 'array',
-                                          'text' => 'two dimensional array of tables and columns which may be accessed'),
+            '$table'     => (object)array('type' => 'string', 'text' => 'name of a table in the database'),
+            '$tableinfo' => (object)array('type' => 'array', 'text' => 'two dimensional array of tables and columns which may be accessed'),
+            '$tablename' => (object)array('type' => 'string', 'text' => ''),
+            '$tablenames'=> (object)array('type' => 'array', 'text' => ''),
+            '$target'    => (object)array('type' => 'string', 'text' => ''),
+            '$text'      => (object)array('type' => 'string', 'text' => ''),
+            '$textcolor' => (object)array('type' => 'string', 'text' => 'the text color as an RGB color'),
+            '$txt'       => (object)array('type' => 'string', 'text' => ''),
+            '$type'      => (object)array('type' => 'mixed', 'text' => 'a PARAM_xxx constant value'),
             '$update'    => (object)array('type' => 'boolean', 'text' => ''),
+            '$user'      => (object)array('type' => 'object', 'text' => 'a user on this Moodle site'),
             '$value'     => (object)array('type' => 'string',  'text' => ''),
-            '$vars'      => (object)array('type' => 'array',
-                                          'text' => 'of values for the current row'),
-            '$worksheet' => (object)array('type' => 'object',
-                                          'text' => 'representing a sheet from the data file'),
+            '$values'    => (object)array('type' => 'array', 'text' => 'numbers to be displayed as a pie-chart'),
+            '$vars'      => (object)array('type' => 'array', 'text' => 'of values for the current row'),
+            '$vocab'     => (object)array('type' => 'object', 'text' => 'the current Vocabulary activity'),
+            '$vocabnode' => (object)array('type' => 'string', 'text' => 'The navigation node for this Vocabulary activity'),
+            '$width'     => (object)array('type' => 'integer', 'text' => 'required width (in pixels)'),
+            '$word'      => (object)array('type' => 'object', 'text' => ''),
+            '$words'     => (object)array('type' => 'array', 'text' => 'default value (optional)'),
+            '$words'     => (object)array('type' => 'array', 'text' => 'of words'),
+            '$words'     => (object)array('type' => 'array', 'text' => 'sitewide config settings for this plugin'),
+            '$words'     => (object)array('type' => 'array', 'text' => 'strings colors expressed as RGB colors'),
+            '$words'     => (object)array('type' => 'array', 'text' => "an RGB color, e.g. '#aabbcc'"),
+            '$workbook'  => (object)array('type' => 'object', 'text' => ''),
+            '$worksheet' => (object)array('type' => 'object', 'text' => 'representing a sheet from the data file'),
+            '$xml'       => (object)array('type' => 'string', 'text' => ''),
+            '$xmlroot'   => (object)array('type' => 'string', 'text' => '')
         );
     }
 
@@ -95,7 +178,12 @@ class tool extends \mod_vocab\toolbase {
         // folderpath is something like "/mod/vocab".
         // filetypes is something like ["php", "js"].
         $folderpath = $data->folderpath;
-        $filetypes = $data->filetypes;
+        if ($filepath = $data->filepath) {
+            $filepath = trim($filepath, ' ./');
+            $filetypes = array();
+        } else {
+            $filetypes = $data->filetypes;
+        }
 
         $caction = $data->copyrightaction;
         $paction = $data->phpdocsaction;
@@ -118,10 +206,16 @@ class tool extends \mod_vocab\toolbase {
 
                 // Skip files that are not one of the target $filetypes.
                 if ($skip = $item->isFile()) {
-                    foreach ($filetypes as $filetype) {
-                        $strlen = strlen($filetype) + 1;
-                        if (substr($item, -$strlen) == ".$filetype") {
+                    if ($filepath) {
+                        if ("/$path/$item" == "$folderpath/$filepath") {
                             $skip = false;
+                        }
+                    } else {
+                        foreach ($filetypes as $filetype) {
+                            $strlen = strlen($filetype) + 1;
+                            if (substr($item, -$strlen) == ".$filetype") {
+                                $skip = false;
+                            }
                         }
                     }
                     if ($skip) {
@@ -382,7 +476,7 @@ class tool extends \mod_vocab\toolbase {
         $comments   = '((?:[ \t]*\/\/[^\n\r]*[\n\r]+)*)';
         $phpdocs    = '([ \t]*\/\*+[\r\n]+(?:[ \t]*\*[^\r\n]*[\r\n]+)*[ \t]*\*+\/[\r\n]+)?';
         $indent     = '([ \t]*)';
-        $parameters = '([^\n\r{]*)';
+        $parameters = '([^\n\r{]*)'; // includes function return type ( *:  *\w+)?
 
         switch ($type) {
             case 1:
@@ -437,7 +531,7 @@ class tool extends \mod_vocab\toolbase {
 
         // [0][$i][0] : the whole match (i.e. all of the following)
         // [1][$i][0] : last line of previous code block, if any
-        // [2][$i][0] : single line comments, if any
+        // [2][$i][0] : single line comments, if any, preceeding PHPDocs
         // [3][$i][0] : pre-existing PHPDocs, if any
         // [4][$i][0] : indent (excluding newlines)
         // [5][$i][0] : PHP/javascript keywords
@@ -459,6 +553,9 @@ class tool extends \mod_vocab\toolbase {
             $length = strlen($matches[0][$i][0]);
             $start = $matches[0][$i][1];
 
+            // Tidy up last line of code block before this function,
+            // as well as any comments between the previous code block
+            // and (the PHPDocs of) the current code block.
             $spacer = '';
             if ($lastline = rtrim($matches[1][$i][0])) {
                 $lastline .= "\n";
@@ -492,7 +589,7 @@ class tool extends \mod_vocab\toolbase {
             if ($phpdocsold == '') {
                 $missing = true;
             } else {
-                $incorrect = $this->compare_phpdocs($phpdocsold, $phpdocsnew);
+                $incorrect = $this->different_params($blockname, $phpdocsold, $phpdocsnew);
             }
             list($report, $remove, $fix) = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
 
@@ -546,11 +643,12 @@ class tool extends \mod_vocab\toolbase {
     /**
      * parse_phpdocs
      *
-     * @param xxx $phpdocs
-     * @return xxx
+     * @param string $blockname
+     * @param string $phpdocs
+     * @return object to represent these $phpdocs
      * @todo Finish documenting this function
      */
-    public function parse_phpdocs($phpdocs) {
+    public function parse_phpdocs($blockname, $phpdocs) {
 
         $parse = (object)array(
             'comments' => array(),
@@ -594,14 +692,28 @@ class tool extends \mod_vocab\toolbase {
                                 break;
                             default:
                         }
+
+                        // Fix for missing $type, such as:
+                        // * @param $mform
+                        if (substr($type, 0, 1) === '$') {
+                            $text = $name;
+                            $name = $type;
+                            $type = '';
+                        }
+
+                        // Create object to represent this param.
                         $t = (object)array(
                             'type' => $type,
                             'name' => $name,
                             'text' => $text
                         );
+
+                        // Initialize array for this type of $token.
                         if (empty($parse->tags[$token])) {
                             $parse->tags[$token] = array();
                         }
+
+                        // Add this $token (params require a $name)
                         if ($token == 'param') {
                             if ($name == '') {
                                 $name = 'param_'.count($parse->tags[$token]);
@@ -620,33 +732,34 @@ class tool extends \mod_vocab\toolbase {
     }
 
     /**
-     * compare_phpdocs
+     * Detect if params in the the "old" (=current) phpdocs
+     * are different from those in the "new" (=proposed) phpdocs
      *
-     * @param xxx $phpdocsold
-     * @param xxx $phpdocsnew
-     * @return xxx
-     * @todo Finish documenting this function
+     * @param string $blockname name of this function or code block
+     * @param string $phpdocsold the old PHPDocs
+     * @param string $phpdocsnew the expected PHPDocs
+     * @return boolean TRUE if params are different, FALSE if they are the same.
      */
-    public function compare_phpdocs($phpdocsold, $phpdocsnew) {
+    public function different_params($blockname, $phpdocsold, $phpdocsnew) {
 
-        $parseold = $this->parse_phpdocs($phpdocsold);
-        $parsenew = $this->parse_phpdocs($phpdocsnew);
+        $parseold = $this->parse_phpdocs($blockname, $phpdocsold);
+        $parsenew = $this->parse_phpdocs($blockname, $phpdocsnew);
 
         if (array_key_exists('param', $parseold->tags)) {
-            $namesold = array_keys($parseold->tags['param']);
-            sort($namesold);
+            $paramsold = array_keys($parseold->tags['param']);
+            sort($paramsold);
         } else {
-            $namesold = array();
+            $paramsold = array();
         }
 
         if (array_key_exists('param', $parsenew->tags)) {
-            $namesnew = array_keys($parsenew->tags['param']);
-            sort($namesnew);
+            $paramsnew = array_keys($parsenew->tags['param']);
+            sort($paramsnew);
         } else {
-            $namesnew = array();
+            $paramsnew = array();
         }
 
-        return ($namesold === $namesnew);
+        return ($paramsold !== $paramsnew);
     }
 
     /**
@@ -745,33 +858,34 @@ END;
     public function get_phpdocs_parameters($contents, $start, $indent, $blockname, $parameters) {
 
         $details = '';
-        $search = '/'.'(\&?)(\$?\w+)(\s*=\s*([^,]*))?'.'/';
-        // [0][$i] : reference + name + default value
-        // [1][$i] : reference (i.e. "&")
-        // [2][$i] : parameter name (optional leading "$")
-        // [3][$i] : default value expression (i.e. "=" + default $value)
-        // [4][$i] : default value
+        $search = '/'.'(\w*)(\&?)(\$\w+)(\s*=\s*([^,]*))?'.'/';
+        // [0][$i] : type + reference + name + default value
+        // [1][$i] : parameter type (optional)
+        // [2][$i] : reference (optional leading "&")
+        // [3][$i] : parameter name (with leading "$")
+        // [4][$i] : default value expression (i.e. "=" + default $value)
+        // [5][$i] : default value
         if (preg_match_all($search, trim($parameters, ' ()'), $matches)) {
             $i_max = count($matches[0]);
             for ($i=0; $i<$i_max; $i++) {
-                $name = $matches[2][$i];
+                $name = $matches[3][$i];
 
                 if (array_key_exists($name, $this->paramnames)) {
                     $type = $this->paramnames[$name]->type;
                     $text = $this->paramnames[$name]->text;
                 } else {
-                    $type = 'xxx';
+                    $type = ($matches[1] ? $matches[1] : 'xxx');
                     $text = '';
                     $this->paramnames[$name] = (object)array('type' => $type, 'text' => '');
-                    echo "Unknown PARAM name: $name<br>";
+                    echo "Unknown PARAM name: $name (type=$type)<br>";
                 }
 
                 $details .= rtrim("$indent * @param $type $name $text");
-                if ($matches[1][$i]) {
+                if ($matches[2][$i]) {
                     $details .= " (passed by reference)";
                 }
-                if ($matches[3][$i]) {
-                    $default = $matches[4][$i];
+                if ($matches[4][$i]) {
+                    $default = $matches[5][$i];
                     $details .= " (optional, default=$default)";
                 }
                 $details .= "\n";
