@@ -85,9 +85,10 @@ class form extends \mod_vocab\toolform {
             }
         }
 
+        $this->add_heading($mform, 'currentlist', $this->tool, true);
+
         $name = 'currentlist';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('static', $name, $label, $this->get_wordlist());
+        $mform->addElement('html', $this->get_wordlist());
 
         $name = 'addwords';
         $groupname = $name.'elements';

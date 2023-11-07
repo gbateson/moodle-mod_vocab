@@ -1,7 +1,37 @@
-.path-mod-vocab form fieldset.collapsible {
+.path-mod-vocab fieldset.collapsible {
     max-width: 960px;
 }
-.path-mod-vocab form fieldset#id_pagelayouts {
+
+/** add bg colors to form headings */
+.path-mod-vocab fieldset.collapsible > div:first-of-type {
+    background-color: #ffcc99;
+    border-radius: 0.25rem;
+    border: 1px solid #666;
+}
+.path-mod-vocab fieldset.collapsible > div:first-of-type a.icons-collapse-expand {
+    background-color: #fff;
+    border: 1px solid #666;
+    justify-content: center;
+}
+
+/** restore padding-right on select elements */
+.path-mod-vocab select.form-control[size],
+.path-mod-vocab select.form-control[multiple] {
+    padding-right: inherit;
+}
+
+/** prevent small elements appearing on their own line on small screens */
+.path-mod-vocab .fitem:not([id^='fitem_id_'][id$='file']) .col-md-3,
+.path-mod-vocab .fitem:not([id^='fitem_id_'][id$='file']) .col-md-9 {
+    width: auto; /* override 100% */
+}
+
+/** don't force elements onto their own line */
+.path-mod-vocab .form-inline .form-check {
+    width: auto; /* override 100% */
+}
+
+.path-mod-vocab fieldset#id_pagelayouts:not(.collapsed) {
     max-width: 1140px;
 }
 

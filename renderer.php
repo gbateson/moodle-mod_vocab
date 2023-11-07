@@ -60,7 +60,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $header = parent::header();
         
         $heading = $this->vocab->name;
-        if ($this->vocab->can_manage()) {
+        if ($this->vocab->can_manage() && $this->vocab->id) {
             $heading .= $this->modedit_icon();
         }
 
