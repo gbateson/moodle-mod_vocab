@@ -56,6 +56,62 @@ abstract class toolform extends \mod_vocab\form {
         return null;
     }
 
+    public function add_field_text($mform, $name, $type, $default, $attributes=null) {
+        if ($attributes) {
+            if (is_scalar($attributes)) {
+                if (is_numeric($attributes)) {
+                    $attributes = array('size' => $attributes);
+                } else {
+                    // e.g. 'disabled'
+                    $attributes = array($attributes => $attributes);
+                }
+            }
+            if (array_key_exists('multiple', $attributes)) {
+                $attributes['size'] = min(6, count($options));
+            }
+        }
+        $label = get_string($name, $this->tool);
+        $mform->addElement('text', $name, $label, $attributes);
+        $mform->addHelpButton($name, $name, $this->tool);
+        $mform->setDefault($name, $default);
+        $mform->setType($name, $type);
+    }
+
+    public function add_field_select($mform, $name, $options, $type, $default, $attributes=null) {
+        if ($attributes) {
+            if (is_scalar($attributes)) {
+                // e.g. 'disabled' or 'multiple'
+                $attributes = array($attributes => $attributes);
+            }
+            if (array_key_exists('multiple', $attributes)) {
+                $attributes['size'] = min(6, count($options));
+            }
+        }
+        $label = get_string($name, $this->tool);
+        $mform->addElement('select', $name, $label, $options, $attributes);
+        $mform->addHelpButton($name, $name, $this->tool);
+        $mform->setType($name, $type);
+        $mform->setDefault($name, $default);
+    }
+
+    public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
+        $label = get_string($name, $this->tool);
+        $mform->addElement('filepicker', $name, $label, $attributes, $options);
+        $mform->addHelpButton($name, $name, $this->tool);
+        if ($options) {
+            if (is_array($options) && array_key_exists('required', $options)) {
+                $required = ($options['required'] ? true : false);
+            } else if (is_scalar($options)) {
+                $required = ($options == 'required');
+            } else {
+                $required = false;
+            }
+            if ($required) {
+                $mform->addRule($name, null, 'required');
+            }
+        }
+
+    }
     /**
      * get_record_id
      *

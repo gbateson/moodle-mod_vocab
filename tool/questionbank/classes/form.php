@@ -45,6 +45,10 @@ class form extends \mod_vocab\toolform {
     // cache the plugin name
     public $tool = 'vocabtool_questionbank';
 
+    const SUBCAT_NONE = 'none';
+    const SUBCAT_SINGLE = 'single';
+    const SUBCAT_AUTOMATIC = 'automatic';
+
     /**
      * definition
      *
@@ -58,28 +62,16 @@ class form extends \mod_vocab\toolform {
         $this->add_heading($mform, 'questionsettings', $this->tool, true);
 
         $name = 'questiontypes';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('select', $name, $label, $this->get_question_types(), array('multiple'));
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, PARAM_INT);
-        $mform->setDefault($name, 'multichoice');
+        $this->add_field_select($mform, $name, $this->get_question_types(), PARAM_ALPHANUM, 'multichoice', 'multiple');
 
         $name = 'questionlevels';
-        $label = get_string($name, $this->tool);
-        $options = range(1, 5);
-        $mform->addElement('select', $name, $label, $this->get_question_levels(), array('multiple'));
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, PARAM_INT);
-        $mform->setDefault($name, 10);
+        $this->add_field_select($mform, $name, $this->get_question_levels(), PARAM_ALPHANUM, 'B1', 'multiple');
 
         $name = 'questioncount';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, array('size' => 2));
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, PARAM_INT);
-        $mform->setDefault($name, 10);
+        $this->add_field_text($mform, $name, PARAM_INT, 10, 2);
 
-        $this->add_heading($mform, 'categorysettings', $this->tool, true);
+        $name = 'categorysettings';
+        $this->add_heading($mform, $name, $this->tool, true);
 
         $this->add_parentcategory($mform);
         $this->add_subcategories($mform);
@@ -89,59 +81,9 @@ class form extends \mod_vocab\toolform {
         $mform->addElement('hidden', $name, optional_param($name, 0, PARAM_INT));
         $mform->setType($name, PARAM_INT);
 
-        // Use "proceed" as the label for the submit button.
-        // Note that "go" is also available.
-        $this->add_action_buttons(true, get_string('generatequestions', $this->tool));
-    }
-
-    public function add_parentcategory($mform) {
-        $name = 'parentcategory';
-        $label = get_string($name, $this->tool);
-        $groupname = $name.'elements';
-
-        $params = array('courseid' => $this->get_vocab()->course->id);
-        $link = \html_writer::tag('small', \html_writer::link(
-            new \moodle_url('/question/bank/managecategories/category.php', $params),
-            get_string('managequestioncategories', $this->tool),
-            array('onclick' => "this.target='VOCAB'")
-        ), array('class' => 'w-100 pl-1'));
-
-        $elements = array(
-            $mform->createElement('select', $name, '', $this->get_question_categories()),
-            $mform->createElement('html', $link)
-        );
-        $mform->addGroup($elements, $groupname, $label);
-
-        $mform->addHelpButton($groupname, $name, $this->tool);
-        $mform->setType($name, PARAM_TEXT);
-        $mform->setDefault($name, \mod_vocab\activity::MODE_LIVE);
-    }
-
-    public function add_subcategories($mform) {
-        $name = 'subcategories';
-        $label = get_string($name, $this->tool);
-
-        $groupname = $name.'elements';
-        $cattype = $groupname.'[cattype]';
-        $catname = $groupname.'[catname]';
-
-        $options = array(
-            'none' => get_string('none'),
-            'single' => get_string('singlesubcategory', $this->tool),
-            'automatic' => get_string('automaticsubcategories', $this->tool)
-        );
-        $elements = array(
-            $mform->createElement('select', 'cattype', '', $options),
-            $mform->createElement('text', 'catname', '', array('size' => 20))
-        );
-        $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
-
-        $mform->setDefault($cattype, 'automatic');
-        $mform->setType($cattype, PARAM_ALPHA);
-
-        $mform->setType($catname, PARAM_TEXT);
-        $mform->disabledIf($catname, $cattype, 'neq', 'single');
+        // Use "generatequestions" as the label for the submit button.
+        $label = get_string('generatequestions', $this->tool);
+        $this->add_action_buttons(true, $label);
     }
 
     public function get_question_types() {
@@ -162,6 +104,56 @@ class form extends \mod_vocab\toolform {
     public function get_question_levels() {
         $levels = array('A1', 'A2', 'B1', 'B2', 'C1', 'C2');
         return array_combine($levels, $levels);
+    }
+
+    public function add_parentcategory($mform) {
+
+        $defaultid = 0;
+
+        // Get the course context.
+        $courseid = $this->get_vocab()->course->id;
+        $context = \context_course::instance($courseid);
+
+        // Get the name of the default question category for this course.
+        $defaultname = $context->get_context_name(false, true);
+        $defaultname = get_string('defaultfor', 'question', $defaultname);
+        $defaultname = shorten_text($defaultname, 255);
+
+        // Fetch the list of question categories in this course.
+        $categories = $this->get_question_categories();
+
+        // Extract the id of the default question category in this course.
+        $defaultid = array_search($defaultname, $categories);
+        if ($defaultid === false) {
+            $defaultid = 0; //shouldn't happen !!
+        }
+        
+        $name = 'parentcategory';
+        $label = get_string($name, $this->tool);
+        $groupname = $name.'elements';
+
+        $elements = array(
+            $mform->createElement('select', $name, '', $categories),
+            $mform->createElement('html', $this->link_to_managequestioncategories())
+        );
+        $mform->addGroup($elements, $groupname, $label);
+        $mform->addHelpButton($groupname, $name, $this->tool);
+
+        $mform->setType($groupname.'['.$name.']', PARAM_TEXT);
+        $mform->setDefault($groupname.'['.$name.']', $defaultid);
+    }
+
+    public function link_to_managequestioncategories() {
+        $link = '/question/bank/managecategories/category.php';
+        $params = array('courseid' => $this->get_vocab()->course->id);
+        $link = new \moodle_url($link, $params);
+
+        $text = get_string('managequestioncategories', $this->tool);
+        $params = array('onclick' => "this.target='VOCAB'");
+        $link = \html_writer::link($link, $text, $params);
+
+        $params = array('class' => 'w-100 pl-1');
+        return \html_writer::tag('small', $link, $params);
     }
 
     public function get_question_categories() {
@@ -189,9 +181,34 @@ class form extends \mod_vocab\toolform {
         }
     }
 
-    /**
-     * validation
-     */
+    public function add_subcategories($mform) {
+        $name = 'subcategories';
+        $label = get_string($name, $this->tool);
+
+        $groupname = $name.'elements';
+        $cattype = $groupname.'[cattype]';
+        $catname = $groupname.'[catname]';
+
+        $options = array(
+            self::SUBCAT_NONE => get_string('none'),
+            self::SUBCAT_SINGLE => get_string('singlesubcategory', $this->tool),
+            self::SUBCAT_AUTOMATIC => get_string('automaticsubcategories', $this->tool)
+        );
+        $elements = array(
+            $mform->createElement('select', 'cattype', '', $options),
+            $mform->createElement('text', 'catname', '', array('size' => 20))
+        );
+        $mform->addGroup($elements, $groupname, $label);
+        $mform->addHelpButton($groupname, $name, $this->tool);
+
+        $mform->setType($cattype, PARAM_ALPHA);
+        $mform->setDefault($cattype, self::SUBCAT_AUTOMATIC);
+
+        $mform->setType($catname, PARAM_TEXT);
+        //$mform->setDefault($catname, '');
+        $mform->disabledIf($catname, $cattype, 'neq', 'single');
+    }
+
     function validation($data, $files) {
         global $USER;
 

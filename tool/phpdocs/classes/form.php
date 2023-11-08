@@ -68,102 +68,33 @@ class form extends \mod_vocab\toolform {
         $this->set_form_id($mform);
 
         $textoptions = array('size' => '32');
+        $filetypes = $this->get_filetypes();
+        $actions = $this->get_actions();
 
         // Heading for file settings.
         $this->add_heading($mform, 'filesettings', $this->tool, true);
 
-        $name = 'folderpath';
-        $label = get_string($name, $this->tool);
-        $options = array_merge($textoptions, array('disabled'));
-        $mform->addElement('text', $name, $label, $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, '/mod/vocab');
-        $mform->setType($name, PARAM_PATH);
+        $params = array_merge($textoptions, array('disabled' => 'disabled'));
+        $this->add_field_text($mform, 'folderpath', PARAM_PATH, '/mod/vocab', $params);
+        $this->add_field_text($mform, 'filepath', PARAM_PATH, '', $textoptions);
 
-        $name = 'filepath';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $textoptions);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, '');
-        $mform->setType($name, PARAM_PATH);
-
-        $name = 'filetypes';
-        $label = get_string($name, $this->tool);
-        $options = array('php' => get_string('phpfiles', $this->tool),
-                         'js' => get_string('jsfiles', $this->tool),
-                         'css' => get_string('cssfiles', $this->tool),
-                         'xml' => get_string('xmlfiles', $this->tool));
-        $mform->addElement('select', $name, $label, $options, array('multiple'));
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->disabledIf($name, 'filepath', 'ne', '');
-        $mform->setDefault($name, array('php'));
-        $mform->setType($name, PARAM_PATH);
+        $this->add_field_select($mform, 'filetypes', $filetypes, PARAM_ALPHA, array('php'), 'multiple');
+        $mform->disabledIf('filetypes', 'filepath', 'ne', '');
 
         // Heading for search and replace settings.
         $this->add_heading($mform, 'searchreplaceactions', $this->tool, true);
 
-        $options = array(
-            self::ACTION_NONE => get_string('none'),
-            self::ACTION_REPORT_ALL => get_string('reportall', $this->tool),
-            self::ACTION_REPORT_MISSING => get_string('reportmissing', $this->tool),
-            self::ACTION_REPORT_INCORRECT => get_string('reportincorrect', $this->tool),
-            self::ACTION_FIX_ALL => get_string('fixall', $this->tool),
-            self::ACTION_FIX_MISSING => get_string('fixmissing', $this->tool),
-            self::ACTION_FIX_INCORRECT => get_string('fixincorrect', $this->tool),
-            self::ACTION_REMOVE_ALL => get_string('removeall', $this->tool)
-        );
-
-        $name = 'copyrightaction';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('select', $name, $label, $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, self::ACTION_REPORT_ALL);
-        $mform->setType($name, PARAM_PATH);
-
-        $name = 'phpdocsaction';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('select', $name, $label, $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, self::ACTION_REPORT_ALL);
-        $mform->setType($name, PARAM_PATH);
+        $this->add_field_select($mform, 'copyrightaction', $actions, PARAM_INT, self::ACTION_REPORT_ALL);
+        $this->add_field_select($mform, 'phpdocsaction', $actions, PARAM_INT, self::ACTION_REPORT_ALL);
 
         // Heading for copyright settings.
         $this->add_heading($mform, 'copyrightsettings', $this->tool, true);
 
-        $name = 'package';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $textoptions);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, 'mod_vocab');
-        $mform->setType($name, PARAM_TEXT);
-
-        $name = 'startyear';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $textoptions);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, date('Y'));
-        $mform->setType($name, PARAM_TEXT);
-
-        $name = 'authorname';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $textoptions);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, fullname($USER));
-        $mform->setType($name, PARAM_TEXT);
-
-        $name = 'authorcontact';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $textoptions);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, $USER->email);
-        $mform->setType($name, PARAM_TEXT);
-
-        $name = 'sinceversion';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $textoptions);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, floatval($CFG->release));
-        $mform->setType($name, PARAM_TEXT);
+        $this->add_field_text($mform, 'package', PARAM_TEXT, 'mod_vocab', $textoptions);
+        $this->add_field_text($mform, 'startyear', PARAM_TEXT, date('Y'), $textoptions);
+        $this->add_field_text($mform, 'authorname', PARAM_TEXT, fullname($USER), $textoptions);
+        $this->add_field_text($mform, 'authorcontact', PARAM_TEXT, $USER->email, $textoptions);
+        $this->add_field_text($mform, 'sinceversion', PARAM_TEXT, floatval($CFG->release), $textoptions);
 
         // Store the course module id.
         $name = 'id';
@@ -173,5 +104,27 @@ class form extends \mod_vocab\toolform {
         // Use "proceed" as the label for the submit button.
         // Note that "go" is also available.
         $this->add_action_buttons(true, get_string('proceed'));
+    }
+
+    public function get_filetypes() {
+        return array(
+            'php' => get_string('phpfiles', $this->tool),
+            'js' => get_string('jsfiles', $this->tool),
+            'css' => get_string('cssfiles', $this->tool),
+            'xml' => get_string('xmlfiles', $this->tool)
+        );
+    }
+
+    public function get_actions() {
+        return array(
+            self::ACTION_NONE => get_string('none'),
+            self::ACTION_REPORT_ALL => get_string('reportall', $this->tool),
+            self::ACTION_REPORT_MISSING => get_string('reportmissing', $this->tool),
+            self::ACTION_REPORT_INCORRECT => get_string('reportincorrect', $this->tool),
+            self::ACTION_FIX_ALL => get_string('fixall', $this->tool),
+            self::ACTION_FIX_MISSING => get_string('fixmissing', $this->tool),
+            self::ACTION_FIX_INCORRECT => get_string('fixincorrect', $this->tool),
+            self::ACTION_REMOVE_ALL => get_string('removeall', $this->tool)
+        );
     }
 }

@@ -138,41 +138,22 @@ class form extends \mod_vocab\toolform {
      */
     public function definition_upload($mform) {
 
-        //$name = 'wordlist';
-        //$label = get_string($name, $this->tool);
-        //$options = array('rows' => 4, 'cols' => 40);
-        //$mform->addElement('textarea', $name, $label, $options);
-        //$mform->addHelpButton($name, $name, $this->tool);
-        //$mform->addRule($name, null, 'required');
-
         $name = 'datafile';
-        $label = get_string($name, $this->tool);
-        $options = array('accepted_types' => array('.xlsx', '.xls', '.ods')); // , '.csv', '.txt'
-        $mform->addElement('filepicker', $name, $label, 'size="10"', $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->addRule($name, null, 'required');
+        $params = array('.xlsx', '.xls', '.ods'); // , '.csv', '.txt'
+        $params = array('required' => 1, 'accepted_types' => $params);
+        $this->add_field_filepicker($mform, $name, null, $params);
 
         $name = 'formatfile';
-        $label = get_string($name, $this->tool);
-        $options = array('accepted_types' => array('.xml'));
-        $mform->addElement('filepicker', $name, $label, 'size="10"', $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        //$mform->addRule($name, null, 'required');
+        $params = array('accepted_types' => array('.xml'));
+        $this->add_field_filepicker($mform, $name, null, $params);
 
         $name = 'previewrows';
-        $label = get_string($name, $this->tool);
         $options = array(1, 2, 5, 10, 20, 100, 1000, 100000);
         $options = array_combine($options, $options);
-        $mform->addElement('select', $name, $label, $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, PARAM_INT);
-        $mform->setDefault($name, 5);
+        $this->add_field_select($mform, $name, $options, PARAM_INT, 5);
 
         $name = 'ignorevalues';
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, array('size' => '64'));
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, PARAM_TEXT);
+        $this->add_field_text($mform, $name, PARAM_TEXT, '', 64);
 
         // Store the course module id.
         $name = 'id';
@@ -202,12 +183,9 @@ class form extends \mod_vocab\toolform {
         $this->add_heading($mform, 'settings', 'moodle', true);
 
         $name = 'uploadaction';
-        $label = get_string($name, $this->tool);
         $options = $this->get_options_uploadaction();
-        $mform->addElement('select', $name, $label, $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, PARAM_INT);
-        $mform->setDefault($name, self::ACTION_ADD_AND_UPDATE);
+        $default = self::ACTION_ADD_AND_UPDATE;
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default);
 
         return array('review', 'back');
     }

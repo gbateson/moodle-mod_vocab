@@ -385,7 +385,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         // Pie chart is drawn as a series of SVG arcs
         // each created using the following specifications:
         // M: coordinates of the starting point of the path (always the center of the pie)
-        // L: coordinate of the end point of a straight line (some point on the edge of the pie)
+        // L: coordinate of the end point of a straight line (a point on the edge of the pie)
         // A: the radii length, flags and end point of an arc
         // Z: return to start point (M)
 
@@ -430,7 +430,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     $a = "$radius,$radius 0 1 1 ".($x - 1).",$y";
                 } else {
                     // "rotation" is always 0, and "sweep" is always 1.
-                    // "largearc" is set to 1 if arc covers more than half the chart.
+                    // "largearc" is set to 1 if arc covers more than half the pie.
                     $largearc = ($value < ($total / 2) ? 0 : 1);
                     $a = "$radius,$radius 0 $largearc 1 $x,$y";
                 }
@@ -552,11 +552,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
             // Each game can be hidden or shown in any Vocab activity,
             // and furthermore may have it's own settings to add into
             // the module settings page.
-            // Each game can define its own icon (as an svg)
+            // Each game can define its own icon (as an svg) of fontawesome icon.
             // vocab_games table looks like this:
-            // id name siteenabled
+            //     id name siteenabled
             // vocab_game_instances table looks like this:
-            // vocabid gameid enabled configdata
+            //     vocabid gameid enabled configdata
         }
         return $games;
     }

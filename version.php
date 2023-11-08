@@ -30,5 +30,5 @@ $plugin->cron      = 0;
 $plugin->component = 'mod_vocab';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2023110617;
-$plugin->release   = '2023-11-06 (17)';
+$plugin->version   = 2023110818;
+$plugin->release   = '2023-11-08 (18)';

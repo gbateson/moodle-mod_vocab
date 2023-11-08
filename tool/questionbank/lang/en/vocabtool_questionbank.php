@@ -41,13 +41,13 @@ $string['parentcategory_help'] = 'Select the question category in which you wish
 $string['parentcategory'] = 'Parent category';
 $string['subcategories_help'] = 'If you wish to put the questions into a subcategories, choose either "single" or "automatic".
 
-**None** no subcategory will be created. All new questions will be put into the "Parent category".
+**None:** no subcategory will be created. All new questions will be put into the "Parent category".
 
-**Single subcategory** enter the name of the subcategory in the box provided. All new questions will be put into this category.
+**Single subcategory:** enter the name of the subcategory in the box provided. All new questions will be put into this category.
 
-**Automatic subcategories** the questions will be put automatically into a hierarchy of subcategories: Course -> Vocabulary Activity -> Word -> Question type.
+**Automatic subcategories:** the questions will be put automatically into a hierarchy of subcategories: Course -> "Vocabulary" -> Activity -> Word -> Question type.
 
-The subcategories will be created wthin the "Parent category" selected above.';
+The subcategories will be created within the "Parent category" selected above.';
 $string['subcategories'] = 'Subcategories';
 
 $string['generatequestions'] = 'Generate questions';
