@@ -38,66 +38,11 @@ define([], function(){
      * initialize this AMD module
      */
     JS.init = function() {
-
-        // Expand the textarea to accommodate any newly entered text.
-        const textarea = document.getElementById('id_addwordselements_addwords');
-        if (textarea) {
-            JS.add_event_listener(textarea, 'input', function(){
-                this.style.height = 'auto'; // '1px' also works
-                this.style.height = (this.scrollHeight + 6) + 'px';
-            });
-            if (textarea.scrollHeight) {
-                textarea.dispatchEvent(new Event('input'));
-            } else {
-                // Element is hidden, so trigger this event
-                // handler when the element becomes visible.
-                JS.trigger_on_toggle(textarea, 500, 'input');
-            }
-        }
-
-        // Position the button at the bottom of the textarea
-        const btn = document.getElementById('id_addwordselements_addwordsbutton');
-        if (btn) {
-            btn.closest(".fitem").style.setProperty('align-self', 'end');
-        }
-
-        // Expand the text box to accommodate any newly entered text.
-        const input = document.getElementById('id_exportfileelements_exportfile');
-        if (input) {
-            JS.add_event_listener(input, 'input', function(){
-                this.style.width = 'auto'; // '1px' also works
-                this.style.width = (this.scrollWidth + 6) + 'px';
-            });
-            if (input.scrollWidth) {
-                input.dispatchEvent(new Event('input'));
-            } else {
-                // Element is hidden, so trigger this event
-                // handler when the element becomes visible.
-                JS.trigger_on_toggle(input, 500, 'input');
-            }
-        }
-    };
-
-    /**
-     * trigger_on_toggle
-     *
-     * @param {object} elm
-     * @param {integer} delay
-     * @param {string} eventType
-     */
-    JS.trigger_on_toggle = function(elm, delay, eventType) {
-        const fieldset = elm.closest("fieldset.collapsible.collapsed");
-        if (fieldset) {
-            const toggler = fieldset.querySelector('.ftoggler');
-            if (toggler) {
-                JS.add_event_listener(toggler, 'click', function(){
-                    setTimeout(function(){
-                        elm.dispatchEvent(new Event(eventType));
-                    }, delay);
-                });
-            }
-        }
-
+        // Add "Select all/none" checkbox for the word list.
+        let s = "input[type=checkbox][name^='selectedwords']"
+        document.querySelectorAll(s)forEach(function(cb){
+            cb.checked = checked;
+        });
     };
 
     return JS;

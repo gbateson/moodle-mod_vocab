@@ -24,7 +24,8 @@
 
 define([], function(){
 
-    var JS = {};
+    let JS = {};
+    window.JS = JS;
 
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {
@@ -38,66 +39,63 @@ define([], function(){
      * initialize this AMD module
      */
     JS.init = function() {
+        const s = 'input[type="checkbox"][name="selectedwords[selectall]"]';
+        const selectall = document.querySelector(s);
+        if (selectall) {
 
-        // Expand the textarea to accommodate any newly entered text.
-        const textarea = document.getElementById('id_addwordselements_addwords');
-        if (textarea) {
-            JS.add_event_listener(textarea, 'input', function(){
-                this.style.height = 'auto'; // '1px' also works
-                this.style.height = (this.scrollHeight + 6) + 'px';
-            });
-            if (textarea.scrollHeight) {
-                textarea.dispatchEvent(new Event('input'));
-            } else {
-                // Element is hidden, so trigger this event
-                // handler when the element becomes visible.
-                JS.trigger_on_toggle(textarea, 500, 'input');
-            }
-        }
+            JS.add_event_listener(selectall, 'click', JS.onclick_selectall);
+            selectall.dispatchEvent(new Event('click'));
 
-        // Position the button at the bottom of the textarea
-        const btn = document.getElementById('id_addwordselements_addwordsbutton');
-        if (btn) {
-            btn.closest(".fitem").style.setProperty('align-self', 'end');
-        }
+            const label = selectall.closest('label');
+            if (label) {
+                if (label.classList.contains('d-none')) {
+                    label.classList.remove('d-none');
+                }
+                label.classList.add('btn', 'btn-light', 'border-dark');
+                label.classList.add('align-self-start', 'px-2', 'py-0');
 
-        // Expand the text box to accommodate any newly entered text.
-        const input = document.getElementById('id_exportfileelements_exportfile');
-        if (input) {
-            JS.add_event_listener(input, 'input', function(){
-                this.style.width = 'auto'; // '1px' also works
-                this.style.width = (this.scrollWidth + 6) + 'px';
-            });
-            if (input.scrollWidth) {
-                input.dispatchEvent(new Event('input'));
-            } else {
-                // Element is hidden, so trigger this event
-                // handler when the element becomes visible.
-                JS.trigger_on_toggle(input, 500, 'input');
+                const p = label.closest('.fcontainer').querySelector('.col-form-label p');
+                if (p) {
+                    p.replaceWith(label);
+                }
             }
         }
     };
 
-    /**
-     * trigger_on_toggle
-     *
-     * @param {object} elm
-     * @param {integer} delay
-     * @param {string} eventType
-     */
-    JS.trigger_on_toggle = function(elm, delay, eventType) {
-        const fieldset = elm.closest("fieldset.collapsible.collapsed");
-        if (fieldset) {
-            const toggler = fieldset.querySelector('.ftoggler');
-            if (toggler) {
-                JS.add_event_listener(toggler, 'click', function(){
-                    setTimeout(function(){
-                        elm.dispatchEvent(new Event(eventType));
-                    }, delay);
-                });
+    JS.onclick_selectall = function(){
+        const checked = this.checked;
+
+        // Check/uncheck all other checkboxes in this fieldset
+        // that have the same name prefix, e.g. "selectedwords".
+        const nameprefix = this.name.substr(0, this.name.indexOf('['));
+        const s = 'input[type="checkbox"][name^="' + nameprefix + '"]';
+        this.closest('fieldset').querySelectorAll(s).forEach(function(cb){
+            cb.checked = checked;
+        });
+
+        // Set new text for this checkbox.
+        let txt = '';
+        if (checked) {
+            txt = this.dataset.deselectall || '';
+        } else {
+            txt = this.dataset.selectall || '';
+        }
+        if (txt) {
+            // Locate the label for this checkbox.
+            const label = this.closest('label');
+            if (label) {
+                // Remove existing text nodes in this label.
+                for (let i = (label.childNodes.length - 1); i >= 0 ; i--) {
+                    const n = label.childNodes[i];
+                    if (n.nodeType == 3) {
+                        label.removeChild(n);
+                    }
+                }
+                // Add new text in a node at the end of the label.
+                label.appendChild(document.createTextNode(txt));
             }
         }
-
+        return true;
     };
 
     return JS;

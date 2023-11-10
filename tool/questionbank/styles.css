@@ -1,38 +1,10 @@
-/**
- * restrict the width of this form, otherwise
- * the file upload elements are too wide
- */ 
+/** restrict the width of the main form */ 
 #vocabtool_questionbank_form {
     max-width: 640px;
 }
 
-/** the <p> just before the .form-filetypes-descriptions */
-#vocabtool_questionbank_form #fgroup_id_importfileelements .felement p {
-    margin-bottom: 0px;
-    font-weight: bold;
-}
-
-/** put the file descriptions on a single line */
-#vocabtool_questionbank_form .form-filetypes-descriptions {
-    width: initial !important; /** override w-100 */
-}
-#vocabtool_questionbank_form .form-filetypes-descriptions li {
-    float: left;
-    margin-left: 0.5rem; /* ml-2 */
-}
-
-/** add parentheses before and after the file type, e.g. (txt) */
-#vocabtool_questionbank_form .form-filetypes-descriptions li small:before {
-    content: "(";
-}
-#vocabtool_questionbank_form .form-filetypes-descriptions li small:after {
-    content: ")";
-}
-
-/**
- * Stretch the container of the "Import" button horizontally
- * to 100% of the width to ensure that it is on its own line.
- */
-#vocabtool_questionbank_form .form-filetypes-descriptions + div {
-    width: 100%;
+@media (max-width: 575px) {
+    #vocabtool_questionbank_form #id_wordlistcontainer label {
+        margin-bottom: 0.2rem;
+    }
 }

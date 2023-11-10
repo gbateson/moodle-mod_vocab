@@ -55,9 +55,36 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     function definition() {
+        global $PAGE;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
+
+        $name = 'wordlist';
+        $this->add_heading($mform, $name, 'mod_vocab', true);
+
+        $name = 'selectedwords';
+        $label = get_string($name, $this->tool);
+
+        $elements = array();
+
+        $params = array(
+            'data-selectall' => get_string('selectall'),
+            'data-deselectall' => get_string('deselectall'),
+            'class' => 'd-none'
+            // If javascript is available, this checkbox will be made visible.
+        );
+        $elements[] = $mform->createElement('checkbox', 'selectall', get_string('selectall'), '', $params);
+
+        $i = 0;
+        $words = $this->get_vocab()->get_wordlist_words();
+        foreach ($words as $id => $word) {
+            $i++;
+            $elements[] = $mform->createElement('checkbox', $id, $word);
+        }
+        $br = \html_writer::tag('span', '', array('class' => 'w-100'));
+        $mform->addGroup($elements, $name, $label, $br);
+        $mform->addHelpButton($name, $name, $this->tool);
 
         $this->add_heading($mform, 'questionsettings', $this->tool, true);
 
@@ -84,6 +111,8 @@ class form extends \mod_vocab\toolform {
         // Use "generatequestions" as the label for the submit button.
         $label = get_string('generatequestions', $this->tool);
         $this->add_action_buttons(true, $label);
+
+        $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
     }
 
     public function get_question_types() {
