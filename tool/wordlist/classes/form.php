@@ -306,6 +306,12 @@ class form extends \mod_vocab\toolform {
 
         $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
         if ($words = $DB->get_records_sql_menu($sql, $params, 0, $count)) {
+            foreach (array_keys($words) as $wordid) {
+                // Fetch/create a word instance id for this word.
+                $params = array('vocabid' => $this->get_vocab()->id,
+                                'wordid' => $wordid);
+                $wordinstanceid = $this->get_record_id('vocab_word_instances', $params);
+            }
             $params = array('class' => 'rounded border bg-light py-2 pr-3');
             $msg = \html_writer::alist(array_values($words), $params, 'ol');
             return $mform->addElement('html', $msg);

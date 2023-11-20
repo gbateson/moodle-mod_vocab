@@ -68,6 +68,21 @@ class form extends \mod_vocab\toolform {
     // Array of cell values to ignore. e.g. "N/A".
     public $ignorevalues = null; 
 
+    // Array to map aliases (e.g. 'ALIAS_99') to non-scalar values
+    // (i.e. arrays and objects) that are passed as parameters to functions.
+    protected $aliases = array();
+
+    // Array of vocab tables that have been updated by this import tool.
+    protected $totals = null;
+
+    // Index on current sheet and row in data file.
+    protected $currentsheet = 0;
+    protected $currentrow = 0;
+
+    // Names of current sheet and row in data file.
+    protected $currentsheetname = 0;
+    protected $currentrowname = 0;
+
     /**
      * constructor
      */
@@ -148,12 +163,9 @@ class form extends \mod_vocab\toolform {
         $this->add_field_filepicker($mform, $name, null, $params);
 
         $name = 'previewrows';
-        $options = array(1, 2, 5, 10, 20, 100, 1000, 100000);
+        $options = array(1, 2, 5, 10, 15, 20, 50, 100, 1000, 100000);
         $options = array_combine($options, $options);
         $this->add_field_select($mform, $name, $options, PARAM_INT, 5);
-
-        $name = 'ignorevalues';
-        $this->add_field_text($mform, $name, PARAM_TEXT, '', 64);
 
         // Store the course module id.
         $name = 'id';
@@ -176,11 +188,14 @@ class form extends \mod_vocab\toolform {
         $values = array('id' => PARAM_INT,
                         'datafile' => PARAM_INT,
                         'formatfile' => PARAM_INT,
-                        'previewrows' => PARAM_INT,
-                        'ignorevalues' => PARAM_TEXT);
+                        'previewrows' => PARAM_INT);
         $this->transfer_incoming_values($mform, $values);
 
         $this->add_heading($mform, 'settings', 'moodle', true);
+
+        // Give user (another) chance to specify ignore values.
+        $name = 'ignorevalues';
+        $this->add_field_text($mform, $name, PARAM_TEXT, '', 64);
 
         $name = 'uploadaction';
         $options = $this->get_options_uploadaction();
@@ -361,6 +376,10 @@ class form extends \mod_vocab\toolform {
             $table->data = array();
 
             if ($datafilepath) {
+
+                // Add datafilename to settings so that it is accessible later.
+                $format->settings['datafilename'] = $datafilename;
+
                 $reader = $phpexcel_iofactory::createReaderForFile($datafilepath);
                 $workbook = $reader->load($datafilepath);
 
@@ -375,7 +394,9 @@ class form extends \mod_vocab\toolform {
                     $table->id = $this->tool.'_'.$this->formstate;
                     $table->attributes['class'] = 'generaltable '.$this->tool;
                     $table->summary = get_string($this->formstate, $this->tool);
-                    $table->caption = $this->render_caption($datafilename, $workbook);
+
+                    list($sheetcount, $rowcount) = $this->get_sheetcount_rowcount($workbook);
+                    $table->caption = $this->render_caption($datafilename, $sheetcount, $rowcount);
 
                     $populate_table = 'populate_'.$this->formstate.'_table';
                     $this->$populate_table($workbook, $format, $table);
@@ -475,6 +496,9 @@ class form extends \mod_vocab\toolform {
         if (empty($xml[$name]) || empty($xml[$name]['#'])) {
             return get_string('xmltagmissing', $this->tool, htmlspecialchars("<$xmlroot>"));
         }
+        if (empty($xml[$name]['#']['sheet'])) {
+            return get_string('xmltagmissing', $this->tool, htmlspecialchars("<sheet>"));
+        }
 
         // Initialize the main $format object.
         $format = new \stdClass();
@@ -483,8 +507,8 @@ class form extends \mod_vocab\toolform {
         $this->parse_format_xml_initnode($xml[$xmlroot], $format, 'sheets');
 
         $s = 0;
-        $sheet = &$xml[$xmlroot]['#']['sheet'];
-        while (array_key_exists($s, $sheet)) {
+        $sheet = $xml[$xmlroot]['#']['sheet'];
+        while (is_array($sheet) && array_key_exists($s, $sheet)) {
 
             // Setup rows, settings and records for this sheet.
             $sindex = count($format->sheets);
@@ -812,29 +836,46 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * render_caption
+     * get_total_rows
      */
-    public function render_caption($datafilename, $workbook) {
-        $previewrows = $this->get_previewrows();
+    public function get_sheetcount_rowcount($workbook) {
         $sheetcount = $workbook->getSheetCount();
         $rowcount = 0;
         for ($s = 0; $s < $sheetcount; $s++) {
             $rowcount += $workbook->getSheet($s)->getHighestDataRow();
         }
-        $rowcount = number_format($rowcount,
+        return array($sheetcount, $rowcount);
+    }
+
+    /**
+     * number_format
+     */
+    public function number_format($num) {
+        return number_format($num,
             0, // The number of decimal places.
             get_string('decsep', 'langconfig'),
             get_string('thousandssep', 'langconfig')
         );
+    }
+
+    /**
+     * render_caption
+     */
+    public function render_caption($datafilename, $sheetcount, $rowcount) {
         $a = (object)array(
             'filename' => $datafilename,
             'sheetcount' => $sheetcount,
-            'rowcount' => $rowcount
+            'rowcount' => $this->number_format($rowcount)
         );
-        return \html_writer::tag('p', \html_writer::tag('small',
-            get_string('sheetrowcount', $this->tool, $a).' '.
-            get_string('headingsandpreviewrows', $this->tool, $previewrows)
-        ), array('class' => 'font-weight-normal'));
+        $caption = get_string('sheetrowcount', $this->tool, $a);
+
+        if ($this->formstate == 'review') {
+            $a = $this->get_previewrows();
+            $caption .= get_string('headingsandpreviewrows', $this->tool, $a);
+        }
+
+        $params = array('class' => 'font-weight-normal');
+        return \html_writer::tag('p', \html_writer::tag('small', $caption), $params);
     }
 
     /**
@@ -865,7 +906,7 @@ class form extends \mod_vocab\toolform {
             }
         }
 
-        $rowcount = 0;
+        $rowindex = 0;
         $previewrows = $this->get_previewrows();
 
         foreach ($format->sheets as $ss => $sheet) {
@@ -890,8 +931,8 @@ class form extends \mod_vocab\toolform {
                         } else {
                             $text = $this->get_row_cells($worksheet, $r, $cmin, $cmax, $r, true);
                             $table->data[] = $text;
-                            $rowcount++;
-                            if ($rowcount >= $previewrows) {
+                            $rowindex++;
+                            if ($rowindex >= $previewrows) {
                                 break 4;
                             }
                         }
@@ -913,16 +954,33 @@ class form extends \mod_vocab\toolform {
      */
     public function populate_import_table($workbook, $format, $table, $mode=self::MODE_IMPORT) {
 
-        $rowcount = 0;
+        // Cache frequently used strings:
+        $str = (object)array(
+            'sheet' => get_string('sheet', $this->tool),
+            'row' => get_string('row', $this->tool),
+        );
+
+        // Initialize the row index (number of rows processed so far in all sheets).
+        $rowindex = 0;
+        
+        // Get total number of sheets and total number of rows.
+        // The is only aprroximate and does not take account the
+        // start/end settings in the XML file.
+        list($sheetcount, $rowcount) = $this->get_sheetcount_rowcount($workbook);
+
+        // Initialize counter for the number of rows previewed (=displayed).
+        $previewrowsindex = 0;
+
+        // Set limit for number of preview rows (0 means "no limit").
         if ($mode == self::MODE_IMPORT) {
             $previewrows = 0;
-        } else {
+        } else { // self::MODE_DRYRUN
             $previewrows = $this->get_previewrows();
         }
 
         // Get info on the "vocab" tables in the database.
-        // We will only allow access to these tables and
-        // the fields that they contain.
+        // We will only allow access to these tables
+        // and the fields that they contain.
         $tableinfo = $this->get_tableinfo('vocab', array('instances', 'attempts'));
 
         $vars = array();
@@ -939,34 +997,53 @@ class form extends \mod_vocab\toolform {
             }
         }
 
-        $this->get_item_settings($format, $vars, $tableinfo, $filevars);
-        $this->get_item_records($format, $vars, $tableinfo, $recordids);
+        // Initialize the array of totals (for reporting purposes).
+        $this->setup_totals($tableinfo, $format);
 
-        $separator = get_string('labelsep', 'langconfig');
+        $this->get_item_settings($format, $vars, $tableinfo, $filevars, $mode);
+        $this->get_item_records($format, $vars, $tableinfo, $recordids, $mode);
+
+        if ($mode == self::MODE_IMPORT) {
+            $bar = new \progress_bar('vocabtool_import_pbar', 500, true);
+            // see "lib/outputcomponents.php" for details
+        } else {
+            $bar = false;
+        }
+
         foreach ($format->sheets as $ss => $sheet) {
 
             list($smin, $smax, $stype) = $this->get_sheet_range($workbook, $sheet);
-
             for ($s = $smin; $s <= $smax; $s++) {
-                $worksheet = $workbook->setActiveSheetIndex($s - 1);
 
+                $worksheet = $workbook->setActiveSheetIndex($s - 1);
                 $sheetname = $worksheet->getTitle();
                 $sheetvars = array('sheet_name' => $sheetname); 
 
                 $vars = $filevars;
-                $this->get_item_settings($sheet, $vars, $tableinfo, $sheetvars);
-                $this->get_item_records($sheet, $vars, $tableinfo, $recordids);
+                $this->get_item_settings($sheet, $vars, $tableinfo, $sheetvars, $mode);
+                $this->get_item_records($sheet, $vars, $tableinfo, $recordids, $mode);
+
+                // Set the current sheet (for reporting purposes).
+                $this->currentsheet = $s;
+                $this->currentsheetname = $sheetname;
 
                 $headers = array();
                 foreach ($sheet->rows as $rr => $row) {
 
                     // Get the minimum and maximum row and columnn numbers in this $row set.
                     list($rmin, $rmax, $rtype) = $this->get_row_range($worksheet, $row);
-                    list($cmin, $cmax) = $this->get_cell_range($row);
 
                     // Loop through the rows in this row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
 
+                        // increment row index and update progress bar.
+                        if ($bar) {
+                            $rowindex++;
+                            $msg = "{$str->sheet}: $s, ".
+                                   "{$str->row}: $r ".
+                                   "($rowindex/$rowcount)";
+                            $bar->update($rowindex, $rowcount, $msg);
+                        }
 
                         if ($rtype == self::TYPE_META) {
                             foreach ($row->cells as $c => $name) {
@@ -976,27 +1053,26 @@ class form extends \mod_vocab\toolform {
                             $rowvars = array();
                             $vars = array_merge($filevars, $sheetvars);
                             foreach ($row->cells as $c => $name) {
-                                $vars[$name] = $rowvars[$name] = $this->get_cell_value($worksheet, $c, $r);
+                                $value = $this->get_cell_value($worksheet, $c, $r);
+                                $vars[$name] = $rowvars[$name] = $value;
                             }
 
                             // Generate output depending on table/field definitions in XML.
-                            if (empty(array_filter($rowvars))) {
-                                // empty row - shouldn't happen !!
+                            if ($this->skip_row($row, $vars, $tableinfo, $rowvars)) {
+                                // empty row - it happens sometimes.
                             } else {
+                                // Set the current row (for reporting purposes).
+                                $this->currentrow = $r;
+                                $this->currentrowname = $this->get_rowname($row, $vars, $tableinfo);
+
                                 $this->get_item_settings($row, $vars, $tableinfo, $rowvars, $mode);
                                 $this->get_item_records($row, $vars, $tableinfo, $recordids, $mode);
 
-                                $data = array();
-                                foreach ($recordids as $tablename => $ids) {
-                                    $data[] = count($ids).' records were checked/added in the '.$tablename.' table.';
-                                }
-                                $cell = new \html_table_cell($s.$separator.$r);
-                                $cell->header = true;
-                                $table->data[] = array_merge(array('row' => $cell), $data);
-                                $rowcount++;
+                                $table->data[] = $this->report_totals_data();
+                                $previewrowsindex++;
                             }
                         }
-                        if ($mode==self::MODE_DRYRUN && $rowcount >= $previewrows) {
+                        if ($mode == self::MODE_DRYRUN && $previewrowsindex >= $previewrows) {
                             break 4;
                         }
                     }
@@ -1004,8 +1080,82 @@ class form extends \mod_vocab\toolform {
             }
         }
 
+        // Indicate completion on the progress bar. 
+        if ($bar) {
+            $msg = array();
+            if ($added = $this->totals->added) {
+                $added = $this->number_format($added);
+                $msg[] = get_string('recordsadded', $this->tool, $added);
+            }
+            if ($found = $this->totals->found) {
+                $found = $this->number_format($found);
+                $msg[] = get_string('recordsfound', $this->tool, $found);
+            }
+            if ($error = $this->totals->error) {
+                $error = $this->number_format($error);
+                $msg[] = get_string('errorsfound', $this->tool, $error);
+            }
+            $listsep = get_string('listsep', 'langconfig').' ';
+            if ($msg = implode($listsep, $msg)) {
+                $msg = " ($msg)";
+            }
+            $msg = get_string('importcompleted', $this->tool).$msg;
+            $bar->update_full(100, $msg);
+        }
+
         // add field name and descriptions to header row
         if (empty($table->head) && count($table->data)) {
+            $table->head = $this->report_totals_head($headers);
+        }
+
+        // Remove empty columns from the report.
+        $this->report_totals_prune($table);
+    }
+
+    /**
+     * Determine whether or not the given row should be skipped.
+     * This assumes the <row> tag in the XML file contains a "skiprow"
+     * function that defines the conditions under which a row should
+     * be skipped. e.g. <row ... rowskip="EMPTY(word)" ...>
+     * If the function is missing, or evaluates to FALSE, the row will
+     * be processed.
+     *
+     * @param object $row settings, cell names, record definitions.
+     * @param  array $vars values from the cells in this row.
+     * @param array $tableinfo accessible database tables and fields.
+     * @return boolean TRUE if this row should be skipped; otherwise FALSE.
+     */
+    public function skip_row($row, &$vars, &$tableinfo, &$rowvars) {
+
+        if (empty(array_filter($rowvars))) {
+            return true; // shouldn't happen !!
+        }
+
+        $name = 'rowskip';
+        if (array_key_exists($name, $row->settings)) {
+            return $this->format_field($tableinfo, $name, $row->settings[$name], $vars);
+        } else {
+            return false; // assume that we do NOT skip this row.
+        }
+    }
+
+    /**
+     * Use the "rowname".
+     *
+     * @param object $row settings, cell names, record definitions.
+     * @param  array $vars values from the cells in this row.
+     * @param array $tableinfo accessible database tables and fields.
+     * @return boolean TRUE if this row should be skipped; otherwise FALSE.
+     */
+    public function get_rowname($row, &$vars, &$tableinfo) {
+        $name = 'rowname';
+        if (empty($row->settings[$name])) {
+            $labelsep = get_string('labelsep', 'langconfig');
+            return $this->currentsheet.$labelsep.$this->currentrow;
+        } else {
+            $rowname = $row->settings[$name]; // e.g. VALUE(word)
+            $rowname = $this->format_field($tableinfo, $name, $rowname, $vars);
+            return trim($rowname, ' "'); // trim leading and trailing quotes.
         }
     }
 
@@ -1061,7 +1211,198 @@ class form extends \mod_vocab\toolform {
                 }
             }
         }
+
         return $info;
+    }
+
+    public function setup_totals(&$tableinfo, $format) {
+        $this->totals = (object)array(
+            'name' => $format->settings['datafilename'],
+            'total' => 0,
+            'added' => 0,
+            'found' => 0,
+            'error' => 0,
+            'tables' => array()
+        );
+        foreach ($format->sheets as $sheet) {
+            foreach ($sheet->rows as $row) {
+                foreach ($row->records as $record) {
+                    if (array_key_exists($record->table, $this->totals->tables)) {
+                        continue; // already added
+                    }
+                    $this->totals->tables[$record->table] = (object)array(
+                        'name' => get_string($record->table, $this->tool),
+                        'total' => 0,
+                        'added' => 0,
+                        'found' => 0,
+                        'error' => 0,
+                        'sheets' => array()
+                    );
+                }
+            }
+        }
+    }
+
+    public function update_totals($table, $type, $msg='') {
+
+        // Check the table name is valid (it should be).
+        if (array_key_exists($table, $this->totals->tables)) {
+
+            // Shortcuts to current sheet/row number.
+            $s = $this->currentsheet;
+            $r = $this->currentrow;
+
+            // Ensure we have an object for the current sheet.
+            if (! array_key_exists($s, $this->totals->tables[$table]->sheets)) {
+                $this->totals->tables[$table]->sheets[$s] = (object)array(
+                    'name' => $this->currentsheetname,
+                    'total' => 0,
+                    'added' => 0,
+                    'found' => 0,
+                    'error' => 0,
+                    'rows' => array()
+                );
+            }
+
+            // Ensure we have an object for the current row.
+            if (! array_key_exists($r, $this->totals->tables[$table]->sheets[$s]->rows)) {
+                $this->totals->tables[$table]->sheets[$s]->rows[$r] = (object)array(
+                    'name' => $this->currentrowname,
+                    'total' => 0,
+                    'added' => 0,
+                    'found' => 0,
+                    'error' => 0,
+                    'msg' => array()
+                );
+            }
+
+            switch (substr($type, 0, 3)) {
+                case 'err': $type = 'error'; break;
+                case 'add': $type = 'added'; break;
+                default:    $type = 'found';
+            }
+
+            // Update subtotals for this $type.
+            $this->totals->$type += 1;
+            $this->totals->tables[$table]->$type += 1;
+            $this->totals->tables[$table]->sheets[$s]->$type += 1;
+            $this->totals->tables[$table]->sheets[$s]->rows[$r]->$type += 1;
+
+            // Update totals.
+            if ($type == 'added' || $type == 'found') {
+                $this->totals->total += 1;
+                $this->totals->tables[$table]->total += 1;
+                $this->totals->tables[$table]->sheets[$s]->total += 1;
+                $this->totals->tables[$table]->sheets[$s]->rows[$r]->total += 1;
+            }
+
+            if ($msg) {
+                $this->totals->tables[$table]->sheets[$s]->rows[$r]->msg[] = $msg;
+            }
+        }
+    }
+
+    public function report_totals_data() {
+
+        // Shortcuts to current sheet/row number.
+        $s = $this->currentsheet;
+        $r = $this->currentrow;
+        $labelsep = get_string('labelsep', 'langconfig');
+        
+        $cells = array();
+
+        $cell = new \html_table_cell($s.$labelsep.$r);
+        $cell->header = true;
+        $cells[] = $cell;
+
+        $cell = new \html_table_cell($this->currentrowname);
+        $cell->header = true;
+        $cells[] = $cell;
+ 
+        // Count the total number of errors in this row.
+        // Usually this stays at zero, but just in case ...
+        $errors = 0;
+
+        foreach ($this->totals->tables as $tablename => $totals) {
+
+            $msg = array();
+            if (array_key_exists($s, $totals->sheets)) {
+                if (array_key_exists($r, $totals->sheets[$s]->rows)) {
+                    if ($totals->sheets[$s]->rows[$r]->total) {
+                        if ($added = $totals->sheets[$s]->rows[$r]->added) {
+                            $msg[] = get_string('recordsadded', $this->tool, $added);
+                        }
+                        if ($found = $totals->sheets[$s]->rows[$r]->found) {
+                            $msg[] = get_string('recordsfound', $this->tool, $found);
+                        }
+                    }
+                    $errors += $totals->sheets[$s]->rows[$r]->error;
+                    if (count($totals->sheets[$s]->rows[$r]->msg)) {
+                        $params = array('class' => 'bg-warning text-light rounded px-1 error');
+                        foreach ($totals->sheets[$s]->rows[$r]->msg as $i => $text) {
+                            $text = \html_writer::tag('div', $text, $params);
+                            $totals->sheets[$s]->rows[$r]->msg[$i] = $text;
+                        }
+                        $msg = array_merge($msg, $totals->sheets[$s]->rows[$r]->msg);
+                    }
+                }
+            }
+            if (count($msg)) {
+                $msg = array_unique($msg);
+                $params = array('class' => 'list-unstyled');
+                $msg = \html_writer::alist($msg, $params);
+            } else {
+                $msg = '';
+            }
+            $cells[] = new \html_table_cell($msg);
+        }
+
+        if ($errors) {
+            $text = get_string('errorsfound', $this->tool, $errors);
+            $params = array('class' => 'bg-warning text-light rounded px-1 errors');
+            $cells[1]->text .= ' '.\html_writer::tag('div', $text, $params);
+        }
+
+        return $cells;
+    }
+
+    public function report_totals_head(&$headers) {
+        $cells = array();
+
+        $label = get_string('sheet', $this->tool);
+        $label .= get_string('labelsep', 'langconfig');
+        $label .= get_string('row', $this->tool);
+
+        $cells[] = new \html_table_cell($label);
+        $cells[] = new \html_table_cell(reset($headers));
+
+        foreach ($this->totals->tables as $tablename => $totals) {
+            $cells[] = new \html_table_cell(get_string($tablename, $this->tool));
+        }
+
+        return $cells;
+    }
+
+    public function report_totals_prune($table) {
+        $col = 0;
+        $offset = 2; // cols 1 and 2 are always shown.
+
+        foreach ($this->totals->tables as $tablename => $totals) {
+            if ($totals->total == 0 && $totals->error == 0) {
+
+                // Remove this column from the head row.
+                unset($table->head[$offset + $col]);
+
+                // Remove this column from all data rows.
+                foreach (array_keys($table->data) as $r) {
+                    unset($table->data[$r][$offset + $col]);
+                }
+
+                // decrement column index, as this column no longer exists.
+                $col--;
+            }
+            $col++;
+        }
     }
 
     /**
@@ -1093,6 +1434,7 @@ class form extends \mod_vocab\toolform {
             $settings = array();
         }
 
+        // Look for sheettype, rowtype or celltype.
         $name = $prefix.'type';
         if (array_key_exists($name, $settings)) {
             $type = $settings[$name];
@@ -1101,12 +1443,15 @@ class form extends \mod_vocab\toolform {
         } else {
             $type = '';
         }
+
+        // Ensure sensible values for $type ("meta" or "data").
         if ($type == 'meta') {
             $type = self::TYPE_META;
         } else {
             $type = self::TYPE_DATA;
         }
 
+        // Look for sheetstart, rowstart or cellstart.
         $name = $prefix.'start';
         if (array_key_exists($name, $settings) && is_numeric($settings[$name])) {
             $min = $settings[$prefix.'start'];
@@ -1115,12 +1460,15 @@ class form extends \mod_vocab\toolform {
         } else {
             $min = '';
         }
+
+        // Ensure sensible values for $min.
         if (is_numeric($min) && $min >= $defaultmin) {
             $min = intval($min);
         } else {
             $min = $defaultmin;
         }
 
+        // Look for sheetend, rowend or cellend.
         $name = $prefix.'end';
         if (array_key_exists($name, $settings) && is_numeric($settings[$name])) {
             $max = $settings[$prefix.'end'];
@@ -1129,6 +1477,8 @@ class form extends \mod_vocab\toolform {
         } else {
             $max = '';
         }
+
+        // Ensure sensible values for $max.
         if (is_numeric($max) && $max <= $defaultmax) {
             $max = intval($max);
         } else {
@@ -1140,6 +1490,8 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_cell_range
+     * this method is NOT USED anywhere.
+     * @todo remove this method from this class.
      */
     public function get_cell_range($row) {
 
@@ -1178,10 +1530,11 @@ class form extends \mod_vocab\toolform {
                 $this->$name = array(); // shouldn't happen !!
             }
         }
-        if (strpos($value, 'storeKey')) {
-            return true;
+        if (strpos($value, 'storeKey') === false) {
+            return in_array($value, $this->ignorevalues);
+        } else {
+            return true; // always remove "storeKey" values.
         }
-        return in_array($value, $this->ignorevalues);
     }
 
     /**
@@ -1228,7 +1581,7 @@ class form extends \mod_vocab\toolform {
     /**
      * format_fields
      */
-    public function format_fields(&$tableinfo, $fields, &$vars) {
+    public function format_fields(&$tableinfo, &$fields, &$vars) {
         $values = array();
         if (is_array($fields)) {
             foreach ($fields as $fieldname => $value) {
@@ -1243,12 +1596,15 @@ class form extends \mod_vocab\toolform {
      */
     public function format_field(&$tableinfo, $fieldname, $value, &$vars) {
 
-        $search = '/IDS|ID|VALUE|JOIN|SPLIT|NEWLINE|REPLACE|SUBSTRING|LOWERCASE|PROPERCASE|UPPERCASE/u';
+        // These are the functions that we know about:
+        $search = '/EMPTY|IDS|ID|VALUE|JOIN|SPLIT|NEWLINE|REPLACE|SUBSTRING|LOWERCASE|PROPERCASE|UPPERCASE/u';
 
-        // search and replace function names (starting from the last one)
+        // search and replace function names (starting from the rightmost one)
         if (preg_match_all($search, $value, $matches, PREG_OFFSET_CAPTURE)) {
 
             for ($m = count($matches[0]); $m > 0; $m--) {
+
+                // Cache the function name and start position.
                 list($match, $start) = $matches[0][$m - 1];
 
                 $mode = 0;
@@ -1263,15 +1619,8 @@ class form extends \mod_vocab\toolform {
                 $args = array();
                 $a = -1; // index on $args
 
+                $i_max = strlen($value);
                 $i = ($start + strlen($match));
-                if (is_string($value)) {
-                    $i_max = strlen($value);
-                } else {
-                    debugging('STOP - array $value detected');
-                    print_object($value);
-                    die;
-                    $i_max = 0; // this is not enough to prevent errors later !!
-                }
                 while ($i < $i_max && $mode < 5) {
                     switch ($mode) {
 
@@ -1347,7 +1696,15 @@ class form extends \mod_vocab\toolform {
                         case 3:
                             // expecting end of quoted argument
                             switch ($value[$i]) {
+                                case '\\':
+                                    // The backslash signifies an escaped character.
+                                    // Skip the slash and store the following char.
+                                    $i++;
+                                    $args[$a] .= $value[$i];
+                                    break;
+
                                 case '"':
+                                    // end of quoted string
                                     $mode = 4;
                                     break;
 
@@ -1378,43 +1735,102 @@ class form extends \mod_vocab\toolform {
                             break;
                     }
                     $i++;
-                }
+                } // end while
 
                 if ($mode == 6) {
                     $replace = $args; // error message
                 } else {
-                    // We no longer substitute var names with values.
-                    // If you want to do that, use the VALUE(varname) function.
-                    //foreach ($args as $a => $arg) {
-                    //    if (array_key_exists($arg, $vars)) {
-                    //        $args[$a] = $vars[$arg];
-                    //    }
-                    //}
                     $replace = $this->format_function($tableinfo, $match, $args, $vars);
                     if (is_array($replace)) {
-                        if (empty($replace) || in_array('N/A', $replace)) {
+                        if (empty($replace)) {
                             $replace = '';
                         } else if (count($replace) == 1) {
                             $replace = reset($replace);
+                        } else {
+                            // e.g. the result of SPLIT(";", "happy; joyful; merry")
+                            $replace = $this->get_value_alias($replace);
                         }
                     }
                 }
-                if (is_array($replace)) {
-                    $value = $replace;
-                } else {
-                    $value = substr_replace($value, $replace, $start, ($i - $start));
-                }
-            }
-        }
+                $value = substr_replace($value, $replace, $start, ($i - $start));
+
+            } // end for ($m ...; $m--)
+        } // end if (preg_match_all(...))
 
         return $value;
     }
 
     /**
+     * Store an array/object value in the internal cache of non-scalar values
+     * and return a string that is an alias to the cached value.
+     *
+     * @param mixed $value an array or object that is to be cached
+     * @return string the alias of the given value
+     */
+    protected function get_value_alias($value) {
+        $alias = 'ALIAS_'.count($this->aliases);
+        $this->aliases[$alias] = $value;
+        return $alias;
+    }
+
+    /**
+     * Determines whether or not the given string is
+     * a valid alias to the non-scalar cache.
+     *
+     * @param string $alias
+     * @return boolean TRUE if the given string is valid alias; otherwise FALSE.
+     */
+    protected function is_value_alias($alias) {
+        if (substr($alias, 0, 6) == 'ALIAS_') {
+            if (is_numeric(substr($alias, 6))) {
+                if (array_key_exists($alias, $this->aliases)) {
+                    return true;
+                } else {
+                    echo 'Oops, $alias has been deleted: '.$alias;
+                    die;
+                }
+            }
+        }
+        return false; // Not an alias.
+    }
+
+    /**
+     * Retrieve an non-scalar value that has been cached with an alias.
+     * To reduce memory requirements, value will be removed from the cache.
+     *
+     * @param string $alias
+     * @return array the value that was cached with the given alias.
+     */
+    protected function get_alias_value($alias) {
+        if ($this->is_value_alias($alias)) {
+            $value = $this->aliases[$alias];
+            unset($this->aliases[$alias]);
+            return $value;
+        } else {
+            // This is NOT an alias, so assume it is
+            // just a scalar value and return it.
+            return $alias;
+        }
+    }
+
+    /**
+     * Connvert all aliases to non-scalar values, usually arrays, that have been cached.
+     *
+     * @param array $values (passed by reference) array of alias or value strings
+     * @return void, but may update $values.
+     */
+    protected function get_alias_values(&$values) {
+        foreach ($values as $key => $value) {
+            $values[$key] = $this->get_alias_value($value);
+        }
+    }
+
+
+    /**
      * format_function
      *
      * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
-     * @param string $name
+     * @param string $name of the function
      * @param array $args (passed by reference)
      * @param array $vars of values for the current row (passed by reference)
      * @return xxx
@@ -1422,7 +1838,22 @@ class form extends \mod_vocab\toolform {
      */
     public function format_function(&$tableinfo, $name, &$args, &$vars) {
 
+        // Convert aliases to non-scalar values (e.g. arrays).
+        $this->get_alias_values($args);
+
         switch ($name) {
+
+            case 'EMPTY':
+                // Argument is empty (or missing).
+                if (empty($args[0])) {
+                    return true;
+                }
+                // Argument could be a column/setting name.
+                if (array_key_exists($args[0], $vars)) {
+                    return empty($vars[$args[0]]);
+                }
+                // Argument is not empty.
+                return false;
 
             case 'IDS': // (table, field, values)
 
@@ -1462,25 +1893,24 @@ class form extends \mod_vocab\toolform {
                 }
                 return $id;
 
-
             case 'VALUE': // (name, default='')
                 if (array_key_exists(0, $args) && is_string($args[0])) {
-                    if (is_numeric($args[0])) {
-                        // Probably an id.
-                        return $args[0];
+                    $value = $args[0];
+                    if (array_key_exists($value, $vars)) {
+                        // Probably a var name.
+                        $value = $vars[$value];
                     }
-                    if (array_key_exists($args[0], $vars)) {
-                        // A var name.
-                        return $vars[$args[0]];
-                    }
-                    
-                    // A text value.
-                    return $args[0];
+                } else if (array_key_exists(1, $args) && is_string($args[1])) {
+                    $value = $args[1]; // Use default value.
+                } else {
+                    $value = ''; // No default specified.
                 }
-                if (array_key_exists(1, $args) && is_string($args[1])) {
-                    return $args[1]; // default
+                if ($value && is_numeric($value)) {
+                    // Probably an id.
+                    return $value;
+                } else {
+                    return '"'.addslashes($value).'"';
                 }
-                return ''; // No default specified.
 
             case 'JOIN': // (joiner, string)
                 if (array_key_exists(0, $args) && is_string($args[0])) {
@@ -1545,6 +1975,7 @@ class form extends \mod_vocab\toolform {
      * @param array $vars of values for the current row (passed by reference)
      * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
      * @param array $itemvars (passed by reference)
+     * @return void, but may update $vars and $itemvars
      * @todo Finish documenting this function
      */
     public function get_item_settings($item, &$vars, &$tableinfo, &$itemvars) {
@@ -1565,7 +1996,11 @@ class form extends \mod_vocab\toolform {
     public function get_item_records($item, &$vars, &$tableinfo, &$recordids) {
         foreach ($item->records as $record) {
             $fields = $this->format_fields($tableinfo, $record->fields, $vars);
-            if (in_array("", $fields, true)) {
+
+            // Convert aliases to non-scalar values (e.g. arrays).
+            $this->get_alias_values($fields);
+
+            if (in_array('', $fields, true)) {
                 // some fields are empty, so don't try to add/fetch the id.
             } else if ($ids = $this->get_record_ids($tableinfo, $record->table, $fields)) {
                 if (empty($recordids[$record->table])) {
@@ -1606,7 +2041,11 @@ class form extends \mod_vocab\toolform {
                 throw new \moodle_exception('fieldaccessnotallowed', $this->tool, '', $a);
             }
             if (empty($value) || $value === '0') {
-                throw new \moodle_exception('idparametersmissing', $this->tool, '', $table);
+                $a = (object)array(
+                    'tablename' => $table,
+                    'fieldname' => $name,
+                );
+                throw new \moodle_exception('idparametermissing', $this->tool, '', $a);
             }
         }
 
@@ -1641,6 +2080,116 @@ class form extends \mod_vocab\toolform {
             return reset($ids);
         } else {
             return $ids;
+        }
+    }
+
+    /**
+     * Get the id of the record that is uniquely identified by an array of
+     * field names of values. If no such record exists it will be created.
+     * Any field values that are too long for the corresponding database
+     * field will be truncated to a suitable length.
+     *
+     * @uses $DB
+     * @param string $table name of a table in the database
+     * @param array $fields array of database field names and values
+     * @return integer
+     */
+    public function get_record_id($table, $fields) {
+        global $DB;
+        $this->fix_field_values($table, $fields);
+
+        // We want to do just the following:
+        //     $id = $DB->get_field($table, 'id', $fields);
+        // But this fails with an error if several records are found,
+        // so instead, we get all the matching records and return only
+        // the first (=lowest id).
+
+        if ($records = $DB->get_records($table, $fields, 'id')) {
+            if (count($records) == 1) {
+                $this->update_totals($table, 'found');
+            } else {
+                $error = get_string('multiplerecordsfound', 'error');
+                $this->update_totals($table, 'error', $error);
+            }
+            $id = reset($records)->id;
+        } else {
+            $id = false;
+        }
+
+        if ($id === false || $id === 0 || $id === null) {
+            $id = $DB->insert_record($table, $fields);
+            $this->update_totals($table, 'added');
+        }
+        return $id;
+    }
+
+    public function fix_field_values($table, &$fields) {
+        global $DB;
+
+        $columns = $DB->get_columns($table);
+        foreach ($columns as $name => $column) {
+            if ($name == 'id') {
+                continue;
+            }
+            if (empty($column->not_null)) {
+                continue;
+            }
+            if (substr($name, -2) == 'id' && empty($fields[$name])) {
+                $msg = get_string('missingfield', 'error', $name);
+                $this->update_totals($table, 'error', $msg);
+            }
+        }
+
+        foreach ($fields as $name => $value) {
+            $fields[$name] = $value = trim($value, ' "');
+
+            if (array_key_exists($name, $columns)) {
+
+                $column = $columns[$name];
+                switch ($column->meta_type) {
+                    /**
+                     * lib/dml/database_column_info.php
+                     * R - counter (integer primary key)
+                     * I - integers
+                     * N - numbers (floats)
+                     * C - characters and strings
+                     * X - texts
+                     * B - binary blobs
+                     * L - boolean (1 bit)
+                     * T - timestamp - unsupported
+                     * D - date - unsupported
+                     */
+
+                    case 'C':
+                    case 'X':
+                        $maxlength = $column->max_length;
+                        $length = \core_text::strlen($value);
+                        if ($length > $maxlength) {
+                            // Shorten the string, at a word boundary if possible,
+                            // but with no trailing string. ("lib/moodlelib.php")
+                            $fields[$name] = shorten_text($value, $maxlength, false, '');
+                            $msg = get_string('valueshortened', $this->tool, (object)array(
+                                'fieldname' => $name,
+                                'maxlength' => $maxlength
+                            ));
+                            $this->update_totals($table, 'error', $msg);
+                        }
+                        break;
+
+                    case 'I':
+                    case 'N':
+                        if (is_numeric($value)) {
+                            // do nothing
+                        } else if (empty($column->has_default)) {
+                            $fields[$name] = 0; // No default.
+                        } else if (isset($column->default_value)) {
+                            $fields[$name] = $column->default_value;
+                        } else {
+                            $fields[$name] = 0; // No default value.
+                        }
+                        break;
+                } // end switch
+            }
         }
     }
 

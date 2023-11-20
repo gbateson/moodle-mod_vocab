@@ -110,14 +110,17 @@ abstract class toolform extends \mod_vocab\form {
                 $mform->addRule($name, null, 'required');
             }
         }
-
     }
+
     /**
-     * get_record_id
+     * Get the id of the record that is uniquely identified by an array of
+     * field names of values. If no such record exists it will be created.
+     * Any field values that are too long for the corresponding database
+     * field will be truncated to a suitable length.
      *
      * @uses $DB
      * @param string $table name of a table in the database
-     * @param array $fields of database field names and values
+     * @param array $fields array of database field names and values
      * @return integer
      */
     public function get_record_id($table, $fields) {

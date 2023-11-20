@@ -266,13 +266,10 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         $columns = $DB->get_columns($tablename, false);
         $indexes = $DB->get_indexes($tablename, false);
 
-        // We don't want to change any fields that are indexed,
-        // because the $dbman will abort with an error.
-        // As a workaround, we skip all fields that are indexed.
-        //
-        // To do this properly we probably need to remove the index,
-        // change the field and then add the index again.
-        // It is possible because phpMyAdmin can do it with ease.
+        // If we try to change any fields that are indexed, the $dbman will abort with an error.
+        // As a workaround, we make a note of which fields are used in the keys/indexes,
+        // and then if any of them is to be changed, we first remove the keys/indexes,
+        // then change the field and then add the keys/index back to the table.
 
         $special = (object)array(
             'keyfields' => array(),
@@ -341,13 +338,17 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
 
                     if (array_key_exists($name, $special->keyfields)) {
                         foreach ($special->keyfields[$name] as $key) {
-                            // There is no "key_exists" method, but "index_exists" seems to work if we give it an "xmldb_index" object.
-                            if ($dbman->index_exists($table, new xmldb_index($key->getName(), $key->getType(), $key->getFields()))) {
+                            // There is no "key_exists" method, but "index_exists"
+                            // seems to work if we give it an "xmldb_index" object.
+                            $index = new xmldb_index($key->getName(), $key->getType(), $key->getFields());
+                            if ($dbman->index_exists($table, $index)) {
                                 $dbman->drop_key($table, $key);
                                 $dropped->keys[] = $key;
                             }
                         }
-                        unset($special->keyfields[$name]); // We don't need this information any more.
+                        // Remove this field from the list of keyfields,
+                        // as it will not be needed again.
+                        unset($special->keyfields[$name]);
                     }
 
                     if (array_key_exists($name, $special->indexfields)) {
@@ -357,7 +358,9 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                                 $dropped->indexes[] = $index;
                             }
                         }
-                        unset($special->indexfields[$name]); // We don't need this information any more.
+                        // Remove this field from the list of indexfields,
+                        // as it will not be needed again.
+                        unset($special->indexfields[$name]);
                     }
 
                     if (substr($text, 0, 15) == 'is not expected') {
@@ -403,7 +406,8 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         }
 
         foreach ($dropped->keys as $key) {
-            if (! $dbman->index_exists($table, new xmldb_index($key->getName(), $key->getType(), $key->getFields()))) {
+            $index = new xmldb_index($key->getName(), $key->getType(), $key->getFields());
+            if (! $dbman->index_exists($table, $index)) {
                 $dbman->add_key($table, $key);
             }
         }

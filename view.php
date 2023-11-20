@@ -31,8 +31,8 @@ if (empty($vocab)) {
     throw new moodle_exception('missingparam', 'error', '', 'id');
 }
 
-require_login($vocab->course, false, $vocab->cm);
-require_capability('mod/vocab:view', $vocab->context);
+$vocab->require_login();
+$vocab->require('view');
 
 $PAGE->set_url($vocab->view_url());
 $PAGE->set_title($vocab->name);

@@ -60,6 +60,9 @@ class activity {
     const EXPAND_TEACHERS = 2; // expand for teachers (collapse for students)
     const EXPAND_NO_ONE = 3;
 
+    /** @var stdclass vocab config settings */
+    public $config = null;
+
     /** @var stdclass course record */
     public $course = null;
 
@@ -206,17 +209,22 @@ class activity {
     static public function create($course=null, $cm=null, $instance=null, $context=null, $attempt=null) {
         global $DB;
 
+        if (is_scalar($course)) {
+            $course = $DB->get_record('course', array('id' => $course), '*', MUST_EXIST);
+        }
+        if (is_scalar($cm)) {
+            $cm = $DB->get_record('course_modules', array('id' => $cm), '*', MUST_EXIST);
+        }
+        if (is_scalar($instance)) {
+            $instance = $DB->get_record('vocab', array('id' => $instance), '*', MUST_EXIST);
+        }
+
         if ($instance || $cm) {
             if ($course === null) {
                 $course = ($cm ? $cm->course : ($instance ? $instance->course : 0));
                 $course = $DB->get_record('course', array('id' => $course), '*', MUST_EXIST);
             }
             if ($cm === null) {
-echo '$cm';
-print_object($cm);
-echo '$instance';
-print_object($instance);
-die;
                 $cm = get_coursemodule_from_instance(self::PLUGINNAME, $instance->id, 0, false, MUST_EXIST);
             }
             if ($instance === null) {
@@ -415,6 +423,15 @@ die;
      */
     public function grades_url() {
         return new \moodle_url('/grade/index.php', array('id' => $this->course->id));
+    }
+
+    /**
+     * require_login
+     *
+     * @return boolean TRUE if user has required capability; otherwise FALSE.
+     */
+    public function require_login(){
+        return require_login($this->course, false, $this->cm);
     }
 
     /**

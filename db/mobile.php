@@ -27,3 +27,33 @@
 defined('MOODLE_INTERNAL') || die();
 
 $messageproviders = array();
+
+$addons = [
+    'mod_vocab' => [
+        'handlers' => [
+            'view' => [ // Note: any name is OK here.
+                'displaydata' => [
+                    'title' => 'pluginname',
+                    'icon' => $CFG->wwwroot.'/mod/vocab/pix/icon.gif',
+                    'class' => '',
+                ],
+                'delegate' => 'CoreCourseModuleDelegate',
+                // "method" must exist in "mod/vocab/classes/output/mobile.php"
+                'method' => 'mobile_view_activity',
+                //'offlinefunctions' => [
+                //    'mobile_view_activity' => [],
+                //],
+                'styles' => [
+                    'url' => $CFG->wwwroot . '/mod/vocab/mobile/styles.css',
+                    'version' => 1 // bumping this will regenerate CSS.
+                ]
+            ]
+        ],
+        // Language strings that are used in all the handlers.
+        // They can be inserted into the template as follows:
+        // {{ 'plugin.mod_vocab.STRINGNAME' | translate }}
+        'lang' => [
+            ['pluginname', 'vocab']
+        ],
+    ]
+];

@@ -64,6 +64,7 @@ $string['review'] = 'Review formatted data';
 $string['tryagain'] = 'Please go back and try again.';
 $string['sheetrowcount'] = 'File "{$a->filename}" has {$a->sheetcount} sheets and contains {$a->rowcount} rows of data.';
 $string['row'] = 'Row';
+$string['sheet'] = 'Sheet';
 
 $string['xmltagmissing'] = 'An expected tag, {$a}, is missing from the XML file.';
 
@@ -94,10 +95,15 @@ $string['vocab_lemmas'] = 'Lemmas (i.e. headwords in a dictionary)';
 $string['vocab_levelnames'] = 'Level names';
 $string['vocab_levels'] = 'Level codes';
 $string['vocab_multimedia'] = 'Multimedia files';
-$string['vocab_pronunciation'] = 'Word pronunciations';
+$string['vocab_pronunciations'] = 'Word pronunciations';
 $string['vocab_synonyms'] = 'Synonyms (i.e. words with similar meaning)';
 $string['vocab_words'] = 'Words';
 
 $string['tableaccessnotallowed'] = 'This tool is not allowed to access table "{$a}".';
 $string['fieldaccessnotallowed'] = 'This tool is not allowed to access field "{$a->fieldname}" in table "{$a->tablename}".';
-$string['idparametersmissing'] = 'Parameters to get/create ID in table "{$a}" are missing.';
+$string['idparametermissing'] = 'Cannot get/create ID in {$a->tablename} table: {$a->fieldname} value is missing.';
+$string['valueshortened'] = 'A "{$a->fieldname}" value was shortened to fit in {$a->maxlength} characters.';
+$string['recordsadded'] = '{$a} records added';
+$string['recordsfound'] = '{$a} records found';
+$string['errorsfound'] = '{$a} errors found';
+$string['importcompleted'] = 'Import is complete';

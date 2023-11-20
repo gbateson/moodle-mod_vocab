@@ -24,6 +24,9 @@
  * @since      Moodle 3.11
  */
 
+// Disable output buffering, because we want to use the progress bar.
+define('NO_OUTPUT_BUFFERING', true);
+
 require('../../../../config.php');
 
 $tool = \vocabtool_import\tool::create();
