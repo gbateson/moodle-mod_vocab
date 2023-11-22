@@ -54,6 +54,12 @@ if ($mform->is_cancelled()) {
 
 echo $OUTPUT->header();
 
+if ($mform->is_submitted() && $mform->is_validated()) {
+    echo $OUTPUT->box_start();
+    echo $mform->generate_questions();
+    echo $OUTPUT->box_end();
+}
+
 $mform->display();
 
 echo $OUTPUT->footer();

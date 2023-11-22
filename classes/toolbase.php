@@ -113,9 +113,10 @@ class toolbase {
      * @todo Finish documenting this function
      */
     public function get_mform() {
+        global $PAGE;
         $mform = "\\$this->plugin\\form";
         $params = array('tool' => $this);
-        return new $mform(null, $params);
+        return new $mform($PAGE->url->out(), $params);
     }
 
     /*

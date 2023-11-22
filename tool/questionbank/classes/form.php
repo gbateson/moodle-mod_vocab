@@ -89,10 +89,12 @@ class form extends \mod_vocab\toolform {
         $this->add_heading($mform, 'questionsettings', $this->tool, true);
 
         $name = 'questiontypes';
-        $this->add_field_select($mform, $name, $this->get_question_types(), PARAM_ALPHANUM, 'multichoice', 'multiple');
+        $options = $this->get_question_types();
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'multichoice', 'multiple');
 
         $name = 'questionlevels';
-        $this->add_field_select($mform, $name, $this->get_question_levels(), PARAM_ALPHANUM, 'B1', 'multiple');
+        $options = $this->get_question_levels();
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'B1', 'multiple');
 
         $name = 'questioncount';
         $this->add_field_text($mform, $name, PARAM_INT, 10, 2);
@@ -102,11 +104,6 @@ class form extends \mod_vocab\toolform {
 
         $this->add_parentcategory($mform);
         $this->add_subcategories($mform);
-
-        // Store the course module id.
-        $name = 'id';
-        $mform->addElement('hidden', $name, optional_param($name, 0, PARAM_INT));
-        $mform->setType($name, PARAM_INT);
 
         // Use "generatequestions" as the label for the submit button.
         $label = get_string('generatequestions', $this->tool);
@@ -246,5 +243,8 @@ class form extends \mod_vocab\toolform {
         }
 
         return $errors;
+    }
+
+    public function generate_questions() {
     }
 }

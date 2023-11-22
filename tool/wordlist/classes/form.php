@@ -143,11 +143,6 @@ class form extends \mod_vocab\toolform {
         $mform->setDefault($groupname.'['.$name.']', $filename);
         $mform->setType($groupname.'['.$name.']', PARAM_FILE);
 
-        // Store the course module id.
-        $name = 'id';
-        $mform->addElement('hidden', $name, optional_param($name, 0, PARAM_INT));
-        $mform->setType($name, PARAM_INT);
-
         $PAGE->requires->js_call_amd('vocabtool_wordlist/form', 'init');
     }
 

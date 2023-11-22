@@ -167,11 +167,6 @@ class form extends \mod_vocab\toolform {
         $options = array_combine($options, $options);
         $this->add_field_select($mform, $name, $options, PARAM_INT, 5);
 
-        // Store the course module id.
-        $name = 'id';
-        $mform->addElement('hidden', $name, optional_param($name, 0, PARAM_INT));
-        $mform->setType($name, PARAM_INT);
-
         return array('preview', 'cancel');
     }
 
@@ -185,8 +180,7 @@ class form extends \mod_vocab\toolform {
     public function definition_preview($mform) {
 
         // transfer values from "upload" form
-        $values = array('id' => PARAM_INT,
-                        'datafile' => PARAM_INT,
+        $values = array('datafile' => PARAM_INT,
                         'formatfile' => PARAM_INT,
                         'previewrows' => PARAM_INT);
         $this->transfer_incoming_values($mform, $values);
@@ -236,8 +230,7 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function definition_review($mform) {
-        $values = array('id' => PARAM_INT,
-                        'datafile' => PARAM_INT,
+        $values = array('datafile' => PARAM_INT,
                         'formatfile' => PARAM_INT,
                         'previewrows' => PARAM_INT,
                         'ignorevalues' => PARAM_TEXT);
@@ -603,7 +596,7 @@ class form extends \mod_vocab\toolform {
      */
     public function parse_format_xml_records(&$xml, $format) {
 
-        // initizlize the index on records in the $format object.
+        // initialize the index on records in the $format object.
         $rindex = count($format->records);
 
         // Add records.
@@ -620,6 +613,7 @@ class form extends \mod_vocab\toolform {
 
             // Add any params for this this record.
             // We expect at least the table name here.
+            // We may also get a "skip" condition.
             foreach ($record[$r]['@'] as $name => $value) {
                 $format->records[$rindex]->$name = $value;
             }
@@ -987,7 +981,6 @@ class form extends \mod_vocab\toolform {
         $filevars = array();
         $sheetvars = array();
         $rowvars = array();
-        $recordids = array();
 
         if ($table->caption) {
             if (preg_match('/<small[^>]*>(.*)<\/small>/s', $table->caption, $match)) {
@@ -1001,7 +994,7 @@ class form extends \mod_vocab\toolform {
         $this->setup_totals($tableinfo, $format);
 
         $this->get_item_settings($format, $vars, $tableinfo, $filevars, $mode);
-        $this->get_item_records($format, $vars, $tableinfo, $recordids, $mode);
+        $this->get_item_records($format, $vars, $tableinfo, $mode);
 
         if ($mode == self::MODE_IMPORT) {
             $bar = new \progress_bar('vocabtool_import_pbar', 500, true);
@@ -1021,7 +1014,7 @@ class form extends \mod_vocab\toolform {
 
                 $vars = $filevars;
                 $this->get_item_settings($sheet, $vars, $tableinfo, $sheetvars, $mode);
-                $this->get_item_records($sheet, $vars, $tableinfo, $recordids, $mode);
+                $this->get_item_records($sheet, $vars, $tableinfo, $mode);
 
                 // Set the current sheet (for reporting purposes).
                 $this->currentsheet = $s;
@@ -1033,7 +1026,7 @@ class form extends \mod_vocab\toolform {
                     // Get the minimum and maximum row and columnn numbers in this $row set.
                     list($rmin, $rmax, $rtype) = $this->get_row_range($worksheet, $row);
 
-                    // Loop through the rows in this row set.
+                    // Loop through the rows in this $row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
 
                         // increment row index and update progress bar.
@@ -1066,7 +1059,7 @@ class form extends \mod_vocab\toolform {
                                 $this->currentrowname = $this->get_rowname($row, $vars, $tableinfo);
 
                                 $this->get_item_settings($row, $vars, $tableinfo, $rowvars, $mode);
-                                $this->get_item_records($row, $vars, $tableinfo, $recordids, $mode);
+                                $this->get_item_records($row, $vars, $tableinfo, $mode);
 
                                 $table->data[] = $this->report_totals_data();
                                 $previewrowsindex++;
@@ -1113,38 +1106,63 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
+     * Determine whether or not the given record should be skipped.
+     * This assumes the <record> tag in the XML file contains a "skip"
+     * attribute that defines the conditions under which a record should
+     * be skipped. e.g. <record ... skip="EMPTY(synwords)" ...>
+     * If the function is missing, or evaluates to FALSE, a record
+     * for the current row will be added/found.
+     *
+     * @param object $record
+     * @param  array $vars values from the cells in this row.
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @return boolean TRUE if this record should be skipped; otherwise FALSE.
+     */
+    public function skip_record($record, &$vars, &$tableinfo) {
+        $names = array('skip', 'skiprecord', 'recordskip');
+        foreach ($names as $name) {
+            if (property_exists($record, $name)) {
+                return $this->format_field($tableinfo, $name, $record->$name, $vars);
+            }
+        }
+        return false; // Assume that we do NOT skip this record.
+    }
+
+    /**
      * Determine whether or not the given row should be skipped.
      * This assumes the <row> tag in the XML file contains a "skiprow"
-     * function that defines the conditions under which a row should
+     * attribute that defines the conditions under which a row should
      * be skipped. e.g. <row ... rowskip="EMPTY(word)" ...>
      * If the function is missing, or evaluates to FALSE, the row will
      * be processed.
      *
      * @param object $row settings, cell names, record definitions.
-     * @param  array $vars values from the cells in this row.
-     * @param array $tableinfo accessible database tables and fields.
+     * @param  array $vars values and settings for in this row in the data file.
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param  array $rowvars (passed by reference) values for this row in the data file.
      * @return boolean TRUE if this row should be skipped; otherwise FALSE.
      */
     public function skip_row($row, &$vars, &$tableinfo, &$rowvars) {
 
         if (empty(array_filter($rowvars))) {
-            return true; // shouldn't happen !!
+            return true; // empty row - shouldn't happen !!
         }
 
-        $name = 'rowskip';
-        if (array_key_exists($name, $row->settings)) {
-            return $this->format_field($tableinfo, $name, $row->settings[$name], $vars);
-        } else {
-            return false; // assume that we do NOT skip this row.
+        $names = array('skip', 'skiprow', 'rowskip');
+        foreach ($names as $name) {
+            if (array_key_exists($name, $row->settings)) {
+                return $this->format_field($tableinfo, $name, $row->settings[$name], $vars);
+            }
         }
+        return false; // Assume that we do NOT skip this row.
     }
 
     /**
-     * Use the "rowname".
+     * Get the "rowname" value for this row (e.g. the value in the "word" column).
      *
      * @param object $row settings, cell names, record definitions.
      * @param  array $vars values from the cells in this row.
-     * @param array $tableinfo accessible database tables and fields.
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @return boolean TRUE if this row should be skipped; otherwise FALSE.
      */
     public function get_rowname($row, &$vars, &$tableinfo) {
@@ -1184,17 +1202,8 @@ class form extends \mod_vocab\toolform {
             'vocab_synonyms',
             'vocab_words'
         );
-        $usertables = array(
-            'vocab',
-            'vocab_game_attempts',
-            'vocab_game_instances',
-            'vocab_games', // not needed?
-            'vocab_word_attempts',
-            'vocab_word_instances',
-            'vocab_word_usages'
-        );
 
-        // Access to ALL other tables is disallowed,
+        // Access to ALL other Moodle tables is disallowed,
         // including the following "vocab" tables,
         // which contain information about users'
         // interaction with the dictionary data.
@@ -1202,6 +1211,15 @@ class form extends \mod_vocab\toolform {
         //   vocab_games
         //   vocab_game_(attempts|instances)
         //   vocab_word_(attempts|instances|usages)
+        $usertables = array(
+            'vocab',
+            'vocab_games', // not needed?
+            'vocab_game_attempts',
+            'vocab_game_instances',
+            'vocab_word_attempts',
+            'vocab_word_instances',
+            'vocab_word_usages'
+        );
 
         foreach ($DB->get_tables() as $table) {
             if (in_array($table, $dictionarytables)) {
@@ -1384,24 +1402,24 @@ class form extends \mod_vocab\toolform {
     }
 
     public function report_totals_prune($table) {
-        $col = 0;
-        $offset = 2; // cols 1 and 2 are always shown.
-
+        // Initialize the column index to 2 because we always
+        // show column-1 (sheet: row) and column-2 (rowname).
+        $c = 2;
         foreach ($this->totals->tables as $tablename => $totals) {
             if ($totals->total == 0 && $totals->error == 0) {
 
                 // Remove this column from the head row.
-                unset($table->head[$offset + $col]);
+                unset($table->head[$c]);
 
                 // Remove this column from all data rows.
                 foreach (array_keys($table->data) as $r) {
-                    unset($table->data[$r][$offset + $col]);
+                    unset($table->data[$r][$c]);
                 }
 
                 // decrement column index, as this column no longer exists.
-                $col--;
+                $c--;
             }
-            $col++;
+            $c++;
         }
     }
 
@@ -1521,8 +1539,9 @@ class form extends \mod_vocab\toolform {
         $name = 'ignorevalues';
         if ($this->$name === null) {
             $mform = $this->_form;
-            if ($mform->elementExists($name)) {
-                $this->$name = $mform->getElement($name)->getValue();
+            // We cannot use $mform->elementExists()
+            // because $mform has not been setup yet.
+            if ($this->$name = optional_param($name, '', PARAM_TEXT)) {
                 $this->$name = explode(',', $this->$name);
                 $this->$name = array_map('trim', $this->$name);
                 $this->$name = array_filter($this->$name);
@@ -1603,7 +1622,6 @@ class form extends \mod_vocab\toolform {
         if (preg_match_all($search, $value, $matches, PREG_OFFSET_CAPTURE)) {
 
             for ($m = count($matches[0]); $m > 0; $m--) {
-
                 // Cache the function name and start position.
                 list($match, $start) = $matches[0][$m - 1];
 
@@ -1804,7 +1822,6 @@ class form extends \mod_vocab\toolform {
     protected function get_alias_value($alias) {
         if ($this->is_value_alias($alias)) {
             $value = $this->aliases[$alias];
-            unset($this->aliases[$alias]);
             return $value;
         } else {
             // This is NOT an alias, so assume it is
@@ -1829,19 +1846,19 @@ class form extends \mod_vocab\toolform {
     /**
      * format_function
      *
-     * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
-     * @param string $name of the function
-     * @param array $args (passed by reference)
-     * @param array $vars of values for the current row (passed by reference)
-     * @return xxx
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param string $functionname name of the function
+     * @param array $args (passed by reference) arguments for the specified $functionname
+     * @param array $vars (passed by reference) values for the current row in the data file
+     * @return mixed $result of the specified function using the given arguments
      * @todo Finish documenting this function
      */
-    public function format_function(&$tableinfo, $name, &$args, &$vars) {
+    public function format_function(&$tableinfo, $functionname, &$args, &$vars) {
 
         // Convert aliases to non-scalar values (e.g. arrays).
         $this->get_alias_values($args);
 
-        switch ($name) {
+        switch ($functionname) {
 
             case 'EMPTY':
                 // Argument is empty (or missing).
@@ -1855,43 +1872,71 @@ class form extends \mod_vocab\toolform {
                 // Argument is not empty.
                 return false;
 
-            case 'IDS': // (table, field, values)
+            case 'IDS': // (table, field1, values1, field2, values2, ...)
 
-                $ids = array();
                 $table = (isset($args[0]) ? $args[0] : '');
-                $field = (isset($args[1]) ? $args[1] : '');
-                $values = (isset($args[2]) ? $args[2] : array());
+                if (empty($table) || ! is_string($table)) {
+                    return array();
+                }
 
-                if (is_string($table) && $table) {
-                    if (is_string($field) && $field) {
-                        if (is_array($values) && count($values)) {
+                $params = array();
+                $scalarvalues = array();
 
-                            foreach ($values as $value) {
-                                $params = array($field => $value);
-                                $ids[] = $this->get_record_ids($tableinfo, $table, $params);
+                $i = 1;
+                while (array_key_exists($i, $args) && array_key_exists($i + 1, $args)) {
+                    $name = $args[$i++];
+                    $values = $args[$i++];
+                    if (is_scalar($name) && $name && $values) {
+                        if (is_array($values)) {
+                            foreach ($values as $p => $value) {
+                                if (empty($params[$p])) {
+                                    $params[$p] = array();
+                                }
+                                $params[$p][$name] = $value;
                             }
+                        } else if (is_scalar($values)) {
+                            $scalarvalues[$name] = $values;
                         }
                     }
                 }
 
+                // Append each scalar value to each $params element.
+                if (count($scalarvalues)) {
+                    foreach (array_keys($params) as $p) {
+                        $params[$p] = array_merge($params[$p], $scalarvalues);
+                    }
+                }
+
+                // Now add/find the records and store the ids.
+                $ids = array();
+                foreach (array_keys($params) as $p) {
+                    $ids[] = $this->get_record_ids($tableinfo, $table, $params[$p]);
+                }
                 return $ids;
 
             case 'ID': // (table, field1, value1, ...)
 
-                $id = 0;
+                $table = (isset($args[0]) ? $args[0] : '');
+                if (empty($table) || ! is_string($table)) {
+                    return '';
+                }
 
                 $params = array();
-                $tablename = (isset($args[0]) ? $args[0] : '');
+                $emptyvalue = false;
 
                 $i = 1;
                 while (array_key_exists($i, $args) && array_key_exists($i + 1, $args)) {
-                    $params[$args[$i++]] = $args[$i++];
+                    $name = $value = $args[$i++];
+                    $value = $value = $args[$i++];
+                    $params[$name] = $value;
+                    if (empty($value)) {
+                        $emptyvalue = true;
+                    }
                 }
-
-                if (is_string($tablename) && $tablename && count($params)) {
-                    $id = $this->get_record_ids($tableinfo, $tablename, $params);
+                if (empty($params) || $emptyvalue) {
+                    return '';
                 }
-                return $id;
+                return $this->get_record_ids($tableinfo, $table, $params);
 
             case 'VALUE': // (name, default='')
                 if (array_key_exists(0, $args) && is_string($args[0])) {
@@ -1908,9 +1953,8 @@ class form extends \mod_vocab\toolform {
                 if ($value && is_numeric($value)) {
                     // Probably an id.
                     return $value;
-                } else {
-                    return '"'.addslashes($value).'"';
                 }
+                return '"'.addslashes($value).'"';
 
             case 'JOIN': // (joiner, string)
                 if (array_key_exists(0, $args) && is_string($args[0])) {
@@ -1923,11 +1967,12 @@ class form extends \mod_vocab\toolform {
             case 'SPLIT': // (separator, string)
                 if (array_key_exists(0, $args) && is_string($args[0])) {
                     if (array_key_exists(1, $args) && is_string($args[1])) {
-                        $value = implode(',', array_slice($args, 1));
-                        $value = explode($args[0], $value);
-                        $value = array_map('trim', $value);
-                        $value = array_filter($value);
-                        return $value;
+                        // In case we have more than one array, we could append them to the values.
+                        // $values = implode($args[0], array_slice($args, 1));
+                        $values = explode($args[0], $args[1]);
+                        $values = array_map('trim', $values);
+                        $values = array_filter($values);
+                        return $values;
                     }
                 }
                 return array();
@@ -1972,8 +2017,8 @@ class form extends \mod_vocab\toolform {
      * get_item_settings
      *
      * @param object $item representing an item in the XML file
-     * @param array $vars of values for the current row (passed by reference)
-     * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
+     * @param array $vars (passed by reference) values for the current row in the data file
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @param array $itemvars (passed by reference)
      * @return void, but may update $vars and $itemvars
      * @todo Finish documenting this function
@@ -1988,13 +2033,17 @@ class form extends \mod_vocab\toolform {
      * get_item_records
      *
      * @param object $item representing an item in the XML file
-     * @param array $vars of values for the current row (passed by reference)
-     * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
-     * @param array $recordids of ids from the database (passed by reference)
+     * @param array $vars (passed by reference) values for the current row in the data file
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @todo Finish documenting this function
      */
-    public function get_item_records($item, &$vars, &$tableinfo, &$recordids) {
+    public function get_item_records($item, &$vars, &$tableinfo) {
         foreach ($item->records as $record) {
+
+            if ($this->skip_record($record, $tableinfo, $vars)) {
+                continue;
+            }
+
             $fields = $this->format_fields($tableinfo, $record->fields, $vars);
 
             // Convert aliases to non-scalar values (e.g. arrays).
@@ -2002,17 +2051,8 @@ class form extends \mod_vocab\toolform {
 
             if (in_array('', $fields, true)) {
                 // some fields are empty, so don't try to add/fetch the id.
-            } else if ($ids = $this->get_record_ids($tableinfo, $record->table, $fields)) {
-                if (empty($recordids[$record->table])) {
-                    $recordids[$record->table] = array();
-                }
-                if (is_scalar($ids)) {
-                    $recordids[$record->table][$ids] = true;
-                } else {
-                    foreach ($ids as $id) {
-                        $recordids[$record->table][$id] = true;
-                    }
-                }
+            } else {
+                $this->get_record_ids($tableinfo, $record->table, $fields);
             }
         }
     }
@@ -2020,7 +2060,7 @@ class form extends \mod_vocab\toolform {
     /**
      * get_record_ids
      *
-     * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @param string $table name of a table in the database
      * @param array $fields of database field names (passed by reference)
      * @return xxx
@@ -2045,7 +2085,8 @@ class form extends \mod_vocab\toolform {
                     'tablename' => $table,
                     'fieldname' => $name,
                 );
-                throw new \moodle_exception('idparametermissing', $this->tool, '', $a);
+                unset($fields[$name]);
+                //throw new \moodle_exception('idparametermissing', $this->tool, '', $a);
             }
         }
 
@@ -2073,13 +2114,15 @@ class form extends \mod_vocab\toolform {
 
         $ids = array();
         foreach ($fieldsets as $fieldset) {
-            $ids[] = $this->get_record_id($table, $fieldset);
+            if ($id = $this->get_record_id($table, $fieldset)) {
+                $ids[] = $id;
+            }
         }
 
-        if (count($ids) == 1) {
-            return reset($ids);
-        } else {
-            return $ids;
+        switch (count($ids)) {
+            case 0: return 0;
+            case 1: return reset($ids);
+            default: return $ids;
         }
     }
 
@@ -2132,8 +2175,11 @@ class form extends \mod_vocab\toolform {
                 continue;
             }
             if (empty($column->not_null)) {
+                // e.g. vocab_pronunciations.fieldid
                 continue;
             }
+            // We don't need to report all of these.
+            // e.g. vocab_synonyms.synonymwordid
             if (substr($name, -2) == 'id' && empty($fields[$name])) {
                 $msg = get_string('missingfield', 'error', $name);
                 $this->update_totals($table, 'error', $msg);

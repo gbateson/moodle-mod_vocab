@@ -96,11 +96,6 @@ class form extends \mod_vocab\toolform {
         $this->add_field_text($mform, 'authorcontact', PARAM_TEXT, $USER->email, $textoptions);
         $this->add_field_text($mform, 'sinceversion', PARAM_TEXT, floatval($CFG->release), $textoptions);
 
-        // Store the course module id.
-        $name = 'id';
-        $mform->addElement('hidden', $name, optional_param($name, 0, PARAM_INT));
-        $mform->setType($name, PARAM_INT);
-
         // Use "proceed" as the label for the submit button.
         // Note that "go" is also available.
         $this->add_action_buttons(true, get_string('proceed'));
