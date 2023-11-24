@@ -68,7 +68,7 @@ class form extends \mod_vocab\toolform {
     // Array of cell values to ignore. e.g. "N/A".
     public $ignorevalues = null; 
 
-    // Array to map aliases (e.g. 'ALIAS_99') to non-scalar values
+    // Array to map aliases (e.g. 'ALIAS_ROW_99') to non-scalar values
     // (i.e. arrays and objects) that are passed as parameters to functions.
     protected $aliases = array();
 
@@ -993,8 +993,8 @@ class form extends \mod_vocab\toolform {
         // Initialize the array of totals (for reporting purposes).
         $this->setup_totals($tableinfo, $format);
 
-        $this->get_item_settings($format, $vars, $tableinfo, $filevars, $mode);
-        $this->get_item_records($format, $vars, $tableinfo, $mode);
+        $this->get_item_settings($format, $vars, $tableinfo, $filevars, 'FILE');
+        $this->get_item_records($format, $vars, $tableinfo, 'FILE');
 
         if ($mode == self::MODE_IMPORT) {
             $bar = new \progress_bar('vocabtool_import_pbar', 500, true);
@@ -1013,8 +1013,8 @@ class form extends \mod_vocab\toolform {
                 $sheetvars = array('sheet_name' => $sheetname); 
 
                 $vars = $filevars;
-                $this->get_item_settings($sheet, $vars, $tableinfo, $sheetvars, $mode);
-                $this->get_item_records($sheet, $vars, $tableinfo, $mode);
+                $this->get_item_settings($sheet, $vars, $tableinfo, $sheetvars, 'SHEET');
+                $this->get_item_records($sheet, $vars, $tableinfo, 'SHEET');
 
                 // Set the current sheet (for reporting purposes).
                 $this->currentsheet = $s;
@@ -1058,24 +1058,38 @@ class form extends \mod_vocab\toolform {
                                 $this->currentrow = $r;
                                 $this->currentrowname = $this->get_rowname($row, $vars, $tableinfo);
 
-                                $this->get_item_settings($row, $vars, $tableinfo, $rowvars, $mode);
-                                $this->get_item_records($row, $vars, $tableinfo, $mode);
+                                $this->get_item_settings($row, $vars, $tableinfo, $rowvars, 'ROW');
+                                $this->get_item_records($row, $vars, $tableinfo, 'ROW');
 
                                 $table->data[] = $this->report_totals_data();
                                 $previewrowsindex++;
                             }
                         }
+
+                        // Remove aliases for the current row.
+                        $this->clear_aliases('ROW');
+
                         if ($mode == self::MODE_DRYRUN && $previewrowsindex >= $previewrows) {
                             break 4;
                         }
                     }
                 }
+
+                // Remove aliases for the current sheet.
+                $this->clear_aliases('SHEET');
             }
         }
+
+        // Remove aliases for this data file.
+        $this->clear_aliases('FILE');
 
         // Indicate completion on the progress bar. 
         if ($bar) {
             $msg = array();
+            if ($rowindex) {
+                $rowindex = $this->number_format($rowindex);
+                $msg[] = get_string('rowsfound', $this->tool, $rowindex);
+            }
             if ($added = $this->totals->added) {
                 $added = $this->number_format($added);
                 $msg[] = get_string('recordsadded', $this->tool, $added);
@@ -1113,16 +1127,17 @@ class form extends \mod_vocab\toolform {
      * If the function is missing, or evaluates to FALSE, a record
      * for the current row will be added/found.
      *
-     * @param object $record
-     * @param  array $vars values from the cells in this row.
+     * @param object $record format definition of row in data file.
+     * @param array $vars values from the cells in this row.
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
      * @return boolean TRUE if this record should be skipped; otherwise FALSE.
      */
-    public function skip_record($record, &$vars, &$tableinfo) {
+    public function skip_record($record, &$vars, &$tableinfo, $aliastype) {
         $names = array('skip', 'skiprecord', 'recordskip');
         foreach ($names as $name) {
             if (property_exists($record, $name)) {
-                return $this->format_field($tableinfo, $name, $record->$name, $vars);
+                return $this->format_field($tableinfo, $name, $record->$name, $vars, $aliastype);
             }
         }
         return false; // Assume that we do NOT skip this record.
@@ -1137,9 +1152,9 @@ class form extends \mod_vocab\toolform {
      * be processed.
      *
      * @param object $row settings, cell names, record definitions.
-     * @param  array $vars values and settings for in this row in the data file.
+     * @param array $vars values and settings for in this row in the data file.
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
-     * @param  array $rowvars (passed by reference) values for this row in the data file.
+     * @param array $rowvars (passed by reference) values for this row in the data file.
      * @return boolean TRUE if this row should be skipped; otherwise FALSE.
      */
     public function skip_row($row, &$vars, &$tableinfo, &$rowvars) {
@@ -1151,7 +1166,7 @@ class form extends \mod_vocab\toolform {
         $names = array('skip', 'skiprow', 'rowskip');
         foreach ($names as $name) {
             if (array_key_exists($name, $row->settings)) {
-                return $this->format_field($tableinfo, $name, $row->settings[$name], $vars);
+                return $this->format_field($tableinfo, $name, $row->settings[$name], $vars, 'ROW');
             }
         }
         return false; // Assume that we do NOT skip this row.
@@ -1161,7 +1176,7 @@ class form extends \mod_vocab\toolform {
      * Get the "rowname" value for this row (e.g. the value in the "word" column).
      *
      * @param object $row settings, cell names, record definitions.
-     * @param  array $vars values from the cells in this row.
+     * @param array $vars values from the cells in this row.
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @return boolean TRUE if this row should be skipped; otherwise FALSE.
      */
@@ -1172,7 +1187,7 @@ class form extends \mod_vocab\toolform {
             return $this->currentsheet.$labelsep.$this->currentrow;
         } else {
             $rowname = $row->settings[$name]; // e.g. VALUE(word)
-            $rowname = $this->format_field($tableinfo, $name, $rowname, $vars);
+            $rowname = $this->format_field($tableinfo, $name, $rowname, $vars, 'ROW');
             return trim($rowname, ' "'); // trim leading and trailing quotes.
         }
     }
@@ -1599,12 +1614,17 @@ class form extends \mod_vocab\toolform {
 
     /**
      * format_fields
+     *
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param array $fields (passed by reference) definition of field names and values.
+     * @param array $vars (passed by reference) values from the cells in this row.
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
      */
-    public function format_fields(&$tableinfo, &$fields, &$vars) {
+    public function format_fields(&$tableinfo, &$fields, &$vars, $aliastype) {
         $values = array();
         if (is_array($fields)) {
             foreach ($fields as $fieldname => $value) {
-                $values[$fieldname] = $this->format_field($tableinfo, $fieldname, $value, $vars);
+                $values[$fieldname] = $this->format_field($tableinfo, $fieldname, $value, $vars, $aliastype);
             }
         }
         return $values;
@@ -1612,8 +1632,14 @@ class form extends \mod_vocab\toolform {
 
     /**
      * format_field
+     *
+     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param string $fieldname name of database field
+     * @param string $value for database field.
+     * @param array $vars (passed by reference) values from the cells in this row.
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
      */
-    public function format_field(&$tableinfo, $fieldname, $value, &$vars) {
+    public function format_field(&$tableinfo, $fieldname, $value, &$vars, $aliastype) {
 
         // These are the functions that we know about:
         $search = '/EMPTY|IDS|ID|VALUE|JOIN|SPLIT|NEWLINE|REPLACE|SUBSTRING|LOWERCASE|PROPERCASE|UPPERCASE/u';
@@ -1766,7 +1792,7 @@ class form extends \mod_vocab\toolform {
                             $replace = reset($replace);
                         } else {
                             // e.g. the result of SPLIT(";", "happy; joyful; merry")
-                            $replace = $this->get_value_alias($replace);
+                            $replace = $this->get_value_alias($replace, $aliastype);
                         }
                     }
                 }
@@ -1783,12 +1809,14 @@ class form extends \mod_vocab\toolform {
      * and return a string that is an alias to the cached value.
      *
      * @param mixed $value an array or object that is to be cached
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
      * @return string the alias of the given value
      */
-    protected function get_value_alias($value) {
-        $alias = 'ALIAS_'.count($this->aliases);
-        $this->aliases[$alias] = $value;
-        return $alias;
+    protected function get_value_alias($value, $aliastype) {
+        $aliasname = 'ALIAS_'.$aliastype.'_';
+        $aliasname .= count($this->aliases); // unique id.
+        $this->aliases[$aliasname] = $value;
+        return $aliasname;
     }
 
     /**
@@ -1799,14 +1827,9 @@ class form extends \mod_vocab\toolform {
      * @return boolean TRUE if the given string is valid alias; otherwise FALSE.
      */
     protected function is_value_alias($alias) {
-        if (substr($alias, 0, 6) == 'ALIAS_') {
-            if (is_numeric(substr($alias, 6))) {
-                if (array_key_exists($alias, $this->aliases)) {
-                    return true;
-                } else {
-                    echo 'Oops, $alias has been deleted: '.$alias;
-                    die;
-                }
+        if (preg_match('/^ALIAS_(\w+_)?(\d+)$/', $alias)) {
+            if (array_key_exists($alias, $this->aliases)) {
+                return true;
             }
         }
         return false; // Not an alias.
@@ -1842,6 +1865,20 @@ class form extends \mod_vocab\toolform {
         }
     }
 
+    /**
+     * Clear all aliases of the given type.
+     *
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
+     * @return void, but may update $values.
+     */
+    protected function clear_aliases($aliastype) {
+        $search = '/^ALIAS_'.$aliastype.'_/';
+        $aliasnames = array_keys($this->aliases);
+        $aliasnames = preg_grep($search, $aliasnames);
+        foreach ($aliasnames as $aliasname) {
+            unset($this->aliases[$aliasname]);
+        }
+    }
 
     /**
      * format_function
@@ -2019,13 +2056,14 @@ class form extends \mod_vocab\toolform {
      * @param object $item representing an item in the XML file
      * @param array $vars (passed by reference) values for the current row in the data file
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
-     * @param array $itemvars (passed by reference)
+     * @param array $itemvars (passed by reference) settings and values for the current item (file, sheet or row).
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
      * @return void, but may update $vars and $itemvars
      * @todo Finish documenting this function
      */
-    public function get_item_settings($item, &$vars, &$tableinfo, &$itemvars) {
+    public function get_item_settings($item, &$vars, &$tableinfo, &$itemvars, $aliastype) {
         foreach ($item->settings as $name => $value) {
-            $vars[$name] = $itemvars[$name] = $this->format_field($tableinfo, $name, $value, $vars);
+            $vars[$name] = $itemvars[$name] = $this->format_field($tableinfo, $name, $value, $vars, $aliastype);
         }
     }
 
@@ -2035,16 +2073,17 @@ class form extends \mod_vocab\toolform {
      * @param object $item representing an item in the XML file
      * @param array $vars (passed by reference) values for the current row in the data file
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param string $aliastype "FILE", "SHEET" or "ROW"
      * @todo Finish documenting this function
      */
-    public function get_item_records($item, &$vars, &$tableinfo) {
+    public function get_item_records($item, &$vars, &$tableinfo, $aliastype) {
         foreach ($item->records as $record) {
 
-            if ($this->skip_record($record, $tableinfo, $vars)) {
+            if ($this->skip_record($record, $tableinfo, $vars, $aliastype)) {
                 continue;
             }
 
-            $fields = $this->format_fields($tableinfo, $record->fields, $vars);
+            $fields = $this->format_fields($tableinfo, $record->fields, $vars, $aliastype);
 
             // Convert aliases to non-scalar values (e.g. arrays).
             $this->get_alias_values($fields);

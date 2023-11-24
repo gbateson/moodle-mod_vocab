@@ -1,6 +1,7 @@
 #vocabtool_import_form {
     max-width: 640px;
 }
+
 .vocabtool_import thead tr {
     /* bg-primary and text-light */
     background-color: #0f6cbf;
@@ -13,4 +14,19 @@
 .vocabtool_import td.lastcol,
 .vocabtool_import th.lastcol {
     border-right: 1px dotted #999;
+}
+
+#vocabtool_import_pbar {
+    margin-left: 0px;
+    margin-right: 0px;
+    max-width: unset; /** override 500px */
+}
+#vocabtool_import_pbar p {
+    margin-bottom: 0px;
+}
+#vocabtool_import_pbar_bar {
+    height: 2rem; /** override 1rem */
+    width: 100%;
+}
+#vocabtool_import_pbar_estimate {
 }

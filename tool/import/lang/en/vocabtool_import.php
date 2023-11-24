@@ -107,3 +107,4 @@ $string['recordsadded'] = '{$a} records added';
 $string['recordsfound'] = '{$a} records found';
 $string['errorsfound'] = '{$a} errors found';
 $string['importcompleted'] = 'Import is complete';
+$string['rowsfound'] = '{$a} rows found';

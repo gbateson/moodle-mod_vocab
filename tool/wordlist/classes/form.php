@@ -261,7 +261,7 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function selectwords($mform, $count) {
-        global $DB;
+        global $DB, $OUTPUT;
 
         // Limit $count to sensible values.
         $count = min(20, max(1, $count));
@@ -274,16 +274,17 @@ class form extends \mod_vocab\toolform {
         $words = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params);
 
         // Build SQL to select a random word that is not already used in a Vocab activity in this course.
-        $select = 'id, word';
-        $from = '{vocab_words}';
+        $select = 'vw.id, vw.word';
+        $from = '{vocab_words} vw, {vocab_lemmas} vl';
         if (count($words)) {
             // Get SQL for "<>" or "NOT IN (...)"
             list($where, $params) = $DB->get_in_or_equal($words, SQL_PARAMS_QM, 'param', false);
-            $where = "id $where";
+            $where = "vw.id $where";
         } else {
-            $where = 'id > 0';
+            $where = 'vw.id > 0';
             $params = array();
         }
+        $where .= ' AND vw.lemmaid = vl.id AND vw.word = vl.lemma';
 
         // DB-specific SQL for MSSQL and Oracle.
         switch ($DB->get_dbfamily()) {
@@ -298,9 +299,9 @@ class form extends \mod_vocab\toolform {
                 // MySQL, PostgreSQL ... and anything else.
                 $order = 'RAND()';
         }
-
         $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
         if ($words = $DB->get_records_sql_menu($sql, $params, 0, $count)) {
+            asort($words);
             foreach (array_keys($words) as $wordid) {
                 // Fetch/create a word instance id for this word.
                 $params = array('vocabid' => $this->get_vocab()->id,

@@ -39,6 +39,11 @@ define([], function(){
      * initialize this AMD module
      */
     JS.init = function() {
+        this.init_selectall();
+        this.init_checkboxes();
+    };
+
+    JS.init_selectall = function(){
         const s = 'input[type="checkbox"][name="selectedwords[selectall]"]';
         const selectall = document.querySelector(s);
         if (selectall) {
@@ -96,6 +101,63 @@ define([], function(){
             }
         }
         return true;
+    };
+
+    JS.init_checkboxes = function(){
+        const s = 'input[type="checkbox"][name^="selectedwords"]';
+        document.querySelectorAll(s).forEach(function(cb){
+            JS.add_event_listener(cb, 'click', JS.onclick_checkbox);
+        });
+    };
+
+    JS.onclick_checkbox = function(evt){
+
+        const felement = this.closest('.felement');
+        if (felement === null) {
+            return true;
+        }
+
+        const checkboxes = 'input[type="checkbox"]';
+        const dataclicked = checkboxes + '[data-clicked="1"]';
+
+        const cb_start = felement.querySelector(dataclicked);
+        const cb_stop = evt.currentTarget;
+
+        let unclickall = false;
+        let clickme = true;
+
+        if (evt.shiftKey) {
+            if (cb_start) {
+                let found = false;
+                let startstop = false;
+                felement.querySelectorAll(checkboxes).forEach(function(cb){
+                    startstop = (cb == cb_start || cb == cb_stop);
+                    if (found || startstop) {
+                        cb.checked = evt.currentTarget.checked;
+                        if (startstop) {
+                            found = (found ? false : true);
+                        }
+                    }
+
+                });
+                unclickall = true;
+            } else {
+                clickme = true;
+            }
+        } else {
+            unclickall = true;
+            clickme = true;
+        }
+
+        if (unclickall) {
+            felement.querySelectorAll(dataclicked).forEach(function(cb){
+                cb.removeAttribute('data-clicked');
+            });
+        }
+
+        if (clickme) {
+            evt.currentTarget.setAttribute('data-clicked', '1');
+        }
     };
 
     return JS;
