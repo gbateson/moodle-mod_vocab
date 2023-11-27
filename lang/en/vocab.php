@@ -83,6 +83,10 @@ $string['games'] = 'Games';
 $string['subplugintype_vocabgame'] = 'Vocabulary game';
 $string['subplugintype_vocabgame_plural'] = 'Vocabulary games';
 
+$string['ais'] = 'AI assistants';
+$string['subplugintype_vocabai'] = 'AI assistant';
+$string['subplugintype_vocabai_plural'] = 'AI assistants';
+
 $string['vocab:addinstance'] = 'Add a new Vocabulary activity';
 $string['vocab:attempt'] = 'Attempt a Vocabulary activity';
 $string['vocab:deleteattempts'] = 'Delete attempts at a Vocabulary activity';

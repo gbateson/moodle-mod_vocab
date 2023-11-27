@@ -49,7 +49,6 @@ define([], function(){
         if (selectall) {
 
             JS.add_event_listener(selectall, 'click', JS.onclick_selectall);
-            selectall.dispatchEvent(new Event('click'));
 
             const label = selectall.closest('label');
             if (label) {

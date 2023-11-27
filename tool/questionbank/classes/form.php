@@ -71,8 +71,7 @@ class form extends \mod_vocab\toolform {
         $params = array(
             'data-selectall' => get_string('selectall'),
             'data-deselectall' => get_string('deselectall'),
-            'class' => 'd-none'
-            // If javascript is available, this checkbox will be made visible.
+            'class' => 'd-none',
         );
         $elements[] = $mform->createElement('checkbox', 'selectall', get_string('selectall'), '', $params);
 
@@ -97,7 +96,7 @@ class form extends \mod_vocab\toolform {
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'B1', 'multiple');
 
         $name = 'questioncount';
-        $this->add_field_text($mform, $name, PARAM_INT, 10, 2);
+        $this->add_field_text($mform, $name, PARAM_INT, 5, 2);
 
         $name = 'categorysettings';
         $this->add_heading($mform, $name, $this->tool, true);
@@ -246,5 +245,93 @@ class form extends \mod_vocab\toolform {
     }
 
     public function generate_questions() {
+        global $DB;
+        if (($data = data_submitted()) && confirm_sesskey()) {
+
+            $words = false;
+            $qtypes = false;
+            $qlevels = false;
+            $qcount = $data->questioncount;
+
+            $parentcatid = 0;
+            $parentcatname = '';
+
+            $subcattype = '';
+            $subcatname = '';
+
+            if (property_exists($data, 'selectedwords')) {
+                unset($data->selectedwords['selectall']);
+
+                $select = 'vwi.wordid, vw.word';
+                $from = '{vocab_word_instances} vwi, {vocab_words} vw';
+                list($where, $params) = $DB->get_in_or_equal(array_keys($data->selectedwords));
+                $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where; 
+                array_unshift($params, $this->get_vocab()->id);
+                $order = 'vwi.sortorder, vw.word';
+
+                $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
+                $words = $DB->get_records_sql_menu($sql, $params);
+
+                unset($data->selectedwords);
+            }
+
+            if (property_exists($data, 'questiontypes')) {
+                $qtypes = $this->get_question_types();
+                foreach ($qtypes as $name => $text) {
+                    if (! in_array($name, $data->questiontypes)) {
+                        unset($qtypes[$name]);
+                    }
+                }
+                unset($data->questiontypes);
+            }
+
+            if (property_exists($data, 'questionlevels')) {
+                $qlevels = $this->get_question_levels();
+                foreach ($qlevels as $name => $text) {
+                    if (! in_array($name, $data->questionlevels)) {
+                        unset($qlevels[$name]);
+                    }
+                }
+                unset($data->questionlevels);
+            }
+
+            $name = 'parentcategory';
+            $groupname = $name.'elements';
+            if (property_exists($data, $groupname)) {
+                if (array_key_exists($name, $data->$groupname)) {
+                    $parentcatid = $data->$groupname[$name];
+                    $courseid = $this->get_vocab()->course->id;
+                    $contextid = \context_course::instance($courseid)->id;
+                    $params = array('id' => $parentcatid, 'contextid' => $contextid);
+                    if ($DB->record_exists('question_categories', $params)) {
+                        $parentcatname = $DB->get_field('question_categories', 'name', array('id' => $parentcatid));
+                    } else {
+                        $parentcatid = 0; // shouldn't happen !!
+                    }
+                }
+                unset($data->$groupname);
+            }
+
+            $name = 'cattype';
+            $groupname = 'subcategorieselements';
+            if (property_exists($data, $groupname)) {
+                if (array_key_exists($name, $data->$groupname)) {
+                    $subcattype = $data->$groupname[$name];
+                }
+                unset($data->$groupname);
+            }
+
+            $dl = array('class' => 'row', 'style' => 'max-width: 720px;');
+            $dt = array('class' => 'col-3 text-right');
+            $dd = array('class' => 'col-9');
+            echo \html_writer::start_tag('dl', $dl);
+            echo \html_writer::tag('dt', 'Words: ', $dt).\html_writer::tag('dd', implode(', ', $words), $dd);
+            echo \html_writer::tag('dt', 'Question types:', $dt).\html_writer::tag('dd', implode(', ', $qtypes), $dd);
+            echo \html_writer::tag('dt', 'Question levels:', $dt).\html_writer::tag('dd', implode(', ', $qlevels), $dd);
+            echo \html_writer::tag('dt', 'Question count:', $dt).\html_writer::tag('dd', $qcount, $dd);
+            echo \html_writer::tag('dt', 'Parent category:', $dt).\html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
+            echo \html_writer::tag('dt', 'Subcategory type:', $dt).\html_writer::tag('dd', $subcattype, $dd);
+            echo \html_writer::end_tag('dl');
+        }
     }
 }

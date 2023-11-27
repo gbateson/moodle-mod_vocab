@@ -1,5 +1,6 @@
 {
     "plugintypes": {
+        "vocabai": "mod\/vocab\/ai",
         "vocabtool": "mod\/vocab\/tool"
     }
 }
