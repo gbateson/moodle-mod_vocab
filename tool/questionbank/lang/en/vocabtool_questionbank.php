@@ -60,3 +60,4 @@ $string['automaticsubcategories'] = 'Automatic subcategories';
 
 $string['selectedwords_help'] = 'Select the words for which you wish to generate questions.';
 $string['selectedwords'] = 'Selected words';
+

@@ -30,5 +30,5 @@ defined('MOODLE_INTERNAL') || die;
  * Define the icon for this plugin
  */
 function vocabtool_import_get_fontawesome_icon_map() {
-    return array('vocabtool_import:import' => 'fa-download'); // fa-database
+    return ['vocabtool_import:import' => 'fa-download']; // fa-database
 }

@@ -47,3 +47,4 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
 
     return $result;
 }
+

@@ -29,16 +29,16 @@ require_once($CFG->dirroot.'/mod/vocab/lib.php');
 
 $id = required_param('id', PARAM_INT); // course id
 
-$PAGE->set_url('/mod/vocab/index.php', array('id' => $id));
+$PAGE->set_url('/mod/vocab/index.php', ['id' => $id]);
 
-if (! $course = $DB->get_record('course', array('id' => $id))) {
+if (! $course = $DB->get_record('course', ['id' => $id])) {
     throw new \moodle_exception('invalidcourseid');
 }
 
 require_course_login($course);
 $PAGE->set_pagelayout('incourse');
 
-$params = array('context' => context_course::instance($id));
+$params = ['context' => context_course::instance($id)];
 $event = \mod_vocab\event\course_module_instance_list_viewed::create($params);
 $event->add_record_snapshot('course', $course);
 $event->trigger();
@@ -51,7 +51,7 @@ $PAGE->navbar->add($strplural);
 echo $OUTPUT->header();
 
 if (! $instances = get_all_instances_in_course('vocab', $course)) {
-    $url = new moodle_url('/course/view.php', array('id' => $course->id));
+    $url = new moodle_url('/course/view.php', ['id' => $course->id]);
     notice(get_string('thereareno', 'moodle', $strplural), $url);
 }
 
@@ -64,19 +64,19 @@ $table->attributes['class'] = 'generaltable mod_index';
 
 if ($usesections) {
     $strsectionname = get_string('sectionname', 'format_'.$course->format);
-    $table->head  = array($strsectionname, $strname);
-    $table->align = array('center', 'left');
+    $table->head  = [$strsectionname, $strname];
+    $table->align = ['center', 'left'];
 } else {
-    $table->head  = array($strname);
+    $table->head  = [$strname];
 }
 
 foreach ($instances as $instance) {
-    $url = new moodle_url('/mod/vocab/view.php', array('id' => $instance->coursemodule));
-    $link = html_writer::link($url, $instance->name, ($instance->visible ? null : array('class' => 'dimmed')));
+    $url = new moodle_url('/mod/vocab/view.php', ['id' => $instance->coursemodule]);
+    $link = html_writer::link($url, $instance->name, ($instance->visible ? null : ['class' => 'dimmed']));
     if ($usesections) {
-        $table->data[] = array(get_section_name($course, $instance->section), $link);
+        $table->data[] = [get_section_name($course, $instance->section), $link];
     } else {
-        $table->data[] = array($link);
+        $table->data[] = [$link];
     }
 }
 
@@ -84,3 +84,4 @@ echo html_writer::table($table);
 
 // Finish the page.
 echo $OUTPUT->footer();
+

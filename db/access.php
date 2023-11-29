@@ -26,99 +26,100 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = array(
+$capabilities = [
 
     // Ability to add a new vocab activity to the course.
-    'mod/vocab:addinstance' => array(
+    'mod/vocab:addinstance' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'riskbitmask' => RISK_XSS,
-        'archetypes' => array(
+        'archetypes' => [
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        ),
-        'clonepermissionsfrom' => 'moodle/course:manageactivities'
-    ),
+            'manager' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'moodle/course:manageactivities',
+    ],
 
     // Edit the vocab activity settings.
-    'mod/vocab:manage' => array(
+    'mod/vocab:manage' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'riskbitmask' => RISK_SPAM,
-        'archetypes' => array(
+        'archetypes' => [
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
-    ),
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 
     // View the vocab activity reports.
-    'mod/vocab:viewreports' => array(
+    'mod/vocab:viewreports' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
         'riskbitmask' => RISK_PERSONAL,
-        'archetypes' => array(
+        'archetypes' => [
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
-    ),
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 
     // Delete attempts using the overview report.
-    'mod/vocab:deleteattempts' => array(
+    'mod/vocab:deleteattempts' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'riskbitmask' => RISK_DATALOSS,
-        'archetypes' => array(
+        'archetypes' => [
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
-    ),
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 
     // Preview the activity and games to
     // check the layout and behavior.
-    'mod/vocab:preview' => array(
+    'mod/vocab:preview' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => array(
+        'archetypes' => [
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
-    ),
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 
     // Ability to see that the vocab activity exists,
     // and the basic information about it,
     // for example the start date and time limit.
-    'mod/vocab:view' => array(
+    'mod/vocab:view' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => array(
+        'archetypes' => [
             'guest' => CAP_ALLOW,
             'student' => CAP_ALLOW,
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
-    ),
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 
     // Ability to do the vocab activity as a 'Student'.
-    'mod/vocab:attempt' => array(
+    'mod/vocab:attempt' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'riskbitmask' => RISK_SPAM,
-        'archetypes' => array(
-            'student' => CAP_ALLOW
-        )
-    ),
+        'archetypes' => [
+            'student' => CAP_ALLOW,
+        ],
+    ],
 
     // Ability for a 'Student' to review their previous attempts.
     // Review by 'Teachers' is controlled by "mod/vocab:viewreports".
-    'mod/vocab:reviewmyattempts' => array(
+    'mod/vocab:reviewmyattempts' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => array(
-            'student' => CAP_ALLOW
-        ),
-        'clonepermissionsfrom' => 'moodle/quiz:attempt'
-    )
-);
+        'archetypes' => [
+            'student' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'moodle/quiz:attempt',
+    ],
+];
+

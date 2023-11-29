@@ -47,3 +47,4 @@ function xmldb_vocabtool_dictionary_upgrade($oldversion) {
 
     return $result;
 }
+

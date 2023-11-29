@@ -59,10 +59,13 @@ $string['explainstartend'] = 'Define "start" (default=1) and "end" (default=last
 $string['explainsettings'] = 'Default values for form settings can be overridden by specifying the name and value.';
 
 $string['headingsandpreviewrows'] = 'The headings and first {$a} rows of data appear below.';
+$string['headingsandpreviewresults'] = 'The headings and expected results for the first {$a} rows appear below.';
+$string['headingsandresults'] = 'The headings and results for the {$a} target rows appear below.';
 $string['review'] = 'Review formatted data';
 
 $string['tryagain'] = 'Please go back and try again.';
-$string['sheetrowcount'] = 'File "{$a->filename}" has {$a->sheetcount} sheets and contains {$a->rowcount} rows of data.';
+$string['totalsheetrowcount'] = 'Data file "{$a->filename}" has {$a->sheetcount} sheet(s) and contains {$a->rowcount} rows of data.';
+$string['targetsheetrowcount'] = 'Format file "{$a->filename}" targets {$a->rowcount} rows of data in {$a->sheetcount} sheet(s).';
 $string['row'] = 'Row';
 $string['sheet'] = 'Sheet';
 
@@ -103,8 +106,10 @@ $string['tableaccessnotallowed'] = 'This tool is not allowed to access table "{$
 $string['fieldaccessnotallowed'] = 'This tool is not allowed to access field "{$a->fieldname}" in table "{$a->tablename}".';
 $string['idparametermissing'] = 'Cannot get/create ID in {$a->tablename} table: {$a->fieldname} value is missing.';
 $string['valueshortened'] = 'A "{$a->fieldname}" value was shortened to fit in {$a->maxlength} characters.';
+$string['recordswillbeadded'] = '{$a} records will be added';
 $string['recordsadded'] = '{$a} records added';
 $string['recordsfound'] = '{$a} records found';
 $string['errorsfound'] = '{$a} errors found';
 $string['importcompleted'] = 'Import is complete';
 $string['rowsfound'] = '{$a} rows found';
+

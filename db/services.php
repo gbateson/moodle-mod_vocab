@@ -26,4 +26,5 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$functions = array();
+$functions = [];
+

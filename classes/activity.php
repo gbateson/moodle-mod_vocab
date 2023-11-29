@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -206,29 +205,29 @@ class activity {
      * @param stdclass $course a row from the course table
      * @return vocab the new vocab object
      */
-    static public function create($course=null, $cm=null, $instance=null, $context=null, $attempt=null) {
+    public static function create($course=null, $cm=null, $instance=null, $context=null, $attempt=null) {
         global $DB;
 
         if (is_scalar($course)) {
-            $course = $DB->get_record('course', array('id' => $course), '*', MUST_EXIST);
+            $course = $DB->get_record('course', ['id' => $course], '*', MUST_EXIST);
         }
         if (is_scalar($cm)) {
-            $cm = $DB->get_record('course_modules', array('id' => $cm), '*', MUST_EXIST);
+            $cm = $DB->get_record('course_modules', ['id' => $cm], '*', MUST_EXIST);
         }
         if (is_scalar($instance)) {
-            $instance = $DB->get_record('vocab', array('id' => $instance), '*', MUST_EXIST);
+            $instance = $DB->get_record('vocab', ['id' => $instance], '*', MUST_EXIST);
         }
 
         if ($instance || $cm) {
             if ($course === null) {
                 $course = ($cm ? $cm->course : ($instance ? $instance->course : 0));
-                $course = $DB->get_record('course', array('id' => $course), '*', MUST_EXIST);
+                $course = $DB->get_record('course', ['id' => $course], '*', MUST_EXIST);
             }
             if ($cm === null) {
                 $cm = get_coursemodule_from_instance(self::PLUGINNAME, $instance->id, 0, false, MUST_EXIST);
             }
             if ($instance === null) {
-                $instance = $DB->get_record(self::PLUGINNAME, array('id' => $cm->instance), '*', MUST_EXIST);
+                $instance = $DB->get_record(self::PLUGINNAME, ['id' => $cm->instance], '*', MUST_EXIST);
             }
             return new activity($course, $cm, $instance);
         }
@@ -236,16 +235,16 @@ class activity {
         // Course module id.
         if ($cmid = self::optional_param(['id', 'cmid'], 0, PARAM_INT)) {
             $cm = get_coursemodule_from_id(self::PLUGINNAME, $cmid, 0, false, MUST_EXIST);
-            $course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
-            $instance = $DB->get_record(self::PLUGINNAME, array('id'=>$cm->instance), '*', MUST_EXIST);
+            $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
+            $instance = $DB->get_record(self::PLUGINNAME, ['id' => $cm->instance], '*', MUST_EXIST);
             return new activity($course, $cm, $instance);
         }
 
         // Vocab instance id.
         if ($vocabid = self::optional_param(['v', 'vid', 'vocabid'], 0, PARAM_INT)) {
-            $instance = $DB->get_record('vocab', array('id' => $vocabid), '*', MUST_EXIST);
+            $instance = $DB->get_record('vocab', ['id' => $vocabid], '*', MUST_EXIST);
             $cm = get_coursemodule_from_instance('vocab', $instanceid, 0, false, MUST_EXIST);
-            $course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
+            $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
             return new activity($course, $cm, $instance);
         }
 
@@ -258,7 +257,7 @@ class activity {
      * @param array of possible $names for the parameter.
      * @return mixed the param $value
      */
-    static protected function optional_param($names, $default, $type) {
+    protected static function optional_param($names, $default, $type) {
         foreach ($names as $name) {
             if ($value = optional_param($name, $default, $type)) {
                 return $value;
@@ -266,9 +265,9 @@ class activity {
         }
         return $default;
     }
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
     // availability API
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
 
     /**
      * not_viewable
@@ -289,9 +288,9 @@ class activity {
     public function not_playable() {
         return ($this->playable ? false : true);
     }
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
     // event and completion API
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
 
     /**
      * trigger_viewed_event_and_completion
@@ -304,10 +303,10 @@ class activity {
         require_once($CFG->dirroot.'/lib/completionlib.php');
 
         if ($this->instance) {
-            $event = \mod_vocab\event\course_module_viewed::create(array(
+            $event = \mod_vocab\event\course_module_viewed::create([
                'objectid' => $this->cm->id,
-               'context' => $this->context
-            ));
+               'context' => $this->context,
+            ]);
             $event->add_record_snapshot('course', $this->course);
             $event->add_record_snapshot('course_modules', $this->cm);
             $event->add_record_snapshot('vocab', $this->instance);
@@ -318,9 +317,9 @@ class activity {
             $completion->set_module_viewed($this->cm);
         }
     }
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
     // url API
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
 
     /**
      * url
@@ -331,9 +330,9 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function url($filepath, $escaped=null, $params=array()) {
+    public function url($filepath, $escaped=null, $params=[]) {
         if ($this->cm) {
-            $params = array_merge(array('id' => $this->cm->id), $params);
+            $params = array_merge(['id' => $this->cm->id], $params);
         }
         $url = '/'.$this->pluginpath.'/'.$filepath;
         $url = new \moodle_url($url, $params);
@@ -346,43 +345,43 @@ class activity {
     /**
      * @return moodle_url of this vocab's view page
      */
-    public function view_url($escaped=null, $params=array()) {
+    public function view_url($escaped=null, $params=[]) {
         return $this->url('view.php', $escaped, $params);
     }
 
     /**
      * @return moodle_url of this vocab's report page
      */
-    public function report_url($escaped=null, $params=array()) {
+    public function report_url($escaped=null, $params=[]) {
         return $this->url('report.php', $escaped, $params);
     }
 
     /**
      * @return moodle_url of this vocab's attempt page
      */
-    public function attempt_url($escaped=null, $params=array()) {
+    public function attempt_url($escaped=null, $params=[]) {
         return $this->url('attempt.php', $escaped, $params);
     }
 
     /**
      * @return moodle_url of this vocab's attempt page
      */
-    public function submit_url($escaped=null, $params=array()) {
+    public function submit_url($escaped=null, $params=[]) {
         return $this->url('submit.php', $escaped, $params);
     }
 
     /**
      * @return moodle_url of the review page for an attempt at this vocab
      */
-    public function review_url($escaped=null, $params=array()) {
+    public function review_url($escaped=null, $params=[]) {
         return $this->url('review.php', $escaped, $params);
     }
 
     /**
      * @return moodle_url of this course's vocab index page
      */
-    public function index_url($escaped=null, $params=array()) {
-        return new \moodle_url('/mod/vocab/index.php', array('id' => $this->course->id));
+    public function index_url($escaped=null, $params=[]) {
+        return new \moodle_url('/mod/vocab/index.php', ['id' => $this->course->id]);
     }
 
     /**
@@ -408,7 +407,7 @@ class activity {
                 unset($modinfo, $sections, $section);
             }
         }
-        $params = array('id' => $this->course->id);
+        $params = ['id' => $this->course->id];
         if ($sectionnum) {
             $params['section'] = $sectionnum;
         }
@@ -422,7 +421,7 @@ class activity {
      * @todo Finish documenting this function
      */
     public function grades_url() {
-        return new \moodle_url('/grade/index.php', array('id' => $this->course->id));
+        return new \moodle_url('/grade/index.php', ['id' => $this->course->id]);
     }
 
     /**
@@ -430,7 +429,7 @@ class activity {
      *
      * @return boolean TRUE if user has required capability; otherwise FALSE.
      */
-    public function require_login(){
+    public function require_login() {
         return require_login($this->course, false, $this->cm);
     }
 
@@ -439,7 +438,7 @@ class activity {
      *
      * @return boolean TRUE if user has required capability; otherwise FALSE.
      */
-    public function require($capability){
+    public function require($capability) {
         return require_capability("{$this->pluginpath}:$capability", $this->context);
     }
 
@@ -448,7 +447,7 @@ class activity {
      *
      * @return boolean TRUE if user has required capability; otherwise FALSE.
      */
-    public function can($capability){
+    public function can($capability) {
         return has_capability("{$this->pluginpath}:$capability", $this->context);
     }
 
@@ -458,7 +457,7 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_addinstance(){
+    public function can_addinstance() {
         return $this->can('addinstance');
     }
 
@@ -468,7 +467,7 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_manage(){
+    public function can_manage() {
         return $this->can('manage');
     }
 
@@ -478,7 +477,7 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_viewreports(){
+    public function can_viewreports() {
         return $this->can('viewreports');
     }
 
@@ -488,7 +487,7 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_deleteattempts(){
+    public function can_deleteattempts() {
         return $this->can('deleteattempts');
     }
 
@@ -498,7 +497,7 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_view(){
+    public function can_view() {
         return $this->can('view');
     }
 
@@ -508,7 +507,7 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_attempt(){
+    public function can_attempt() {
         return $this->can('attempt');
     }
 
@@ -518,13 +517,13 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function can_reviewmyattempts(){
+    public function can_reviewmyattempts() {
         return $this->can('reviewmyattempts');
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
     // strings API
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
 
     /*
      * get a string fro this plugin
@@ -537,9 +536,9 @@ class activity {
         return get_string($name, $this->plugin, $a);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
     // users API
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
 
     /**
      * get_groupmode
@@ -565,7 +564,7 @@ class activity {
     public function get_userids($groupid=0) {
         global $DB;
         $mode = $this->get_groupmode();
-        if ($mode==NOGROUPS || $mode==VISIBLEGROUPS || has_capability('moodle/site:accessallgroups', $this->context)) {
+        if ($mode == NOGROUPS || $mode == VISIBLEGROUPS || has_capability('moodle/site:accessallgroups', $this->context)) {
             $users = get_enrolled_users($this->context, 'mod/vocab:view', $groupid, 'u.id', 'id');
             if (empty($users)) {
                 return false;
@@ -574,7 +573,7 @@ class activity {
         } else {
             if ($groupid) {
                 $select = 'groupid = ?';
-                $params = array($groupid);
+                $params = [$groupid];
             } else {
                 $groups = groups_get_user_groups($this->course->id);
                 if (empty($groups)) {
@@ -597,13 +596,12 @@ class activity {
      * @todo Finish documenting this function
      */
     public function is_demo() {
-        $demomode = \mod_vocab\activity::MODE_DEMO;
-        return ($this->operationmode == $demomode);
+        return ($this->operationmode == self::MODE_DEMO);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
     // words API
-    ////////////////////////////////////////////////////////////////////////////////
+    // ============================================================
 
     /*
      * get_wordlist_info
@@ -612,7 +610,7 @@ class activity {
      */
     public function get_wordlist_info() {
         global $DB;
-        $wordlist = array();
+        $wordlist = [];
         if ($this->is_demo()) {
             $count = rand(10, 50);
             for ($i = 0; $i < $count; $i++) {
@@ -624,19 +622,19 @@ class activity {
             $from = '{vocab_word_instances} vwi, {vocab_words} vw';
             $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id';
             $order = 'vw.word';
-            $params = array('vocabid' => $this->id);
+            $params = ['vocabid' => $this->id];
             if ($words = $DB->get_records_sql("SELECT $select FROM $from WHERE $where ORDER BY $order", $params)) {
                 foreach ($words as $word) {
                     $wordlist[$word->wordid] = $word->word;
                 }
             }
-            $wordinfo = (object)array(
+            $wordinfo = (object)[
                 'wordid' => 0,
                 'word' => '',
                 'completed' => 99,
                 'inprogress' => 99,
                 'notstarted' => 99,
-            );
+            ];
         }
         return $wordlist;
     }
@@ -648,7 +646,7 @@ class activity {
      */
     public function get_wordlist_words() {
         global $DB;
-        $wordlist = array();
+        $wordlist = [];
         if ($this->is_demo()) {
             $count = rand(10, 30);
             for ($i = 0; $i < $count; $i++) {
@@ -660,7 +658,7 @@ class activity {
             $from = '{vocab_word_instances} vwi, {vocab_words} vw';
             $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id';
             $order = 'vw.word';
-            $params = array('vocabid' => $this->id);
+            $params = ['vocabid' => $this->id];
             if ($words = $DB->get_records_sql("SELECT $select FROM $from WHERE $where ORDER BY $order", $params)) {
                 foreach ($words as $word) {
                     $wordlist[$word->wordid] = $word->word;
@@ -677,14 +675,16 @@ class activity {
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function get_random_word($length) {  
-        $vowels = array('a', 'e', 'i', 'o', 'u', 'y',
-                        'ai', 'ei', 'oi', 'oo', 'ou');  
-        $consonants = array(
-            'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 
+    public function get_random_word($length) {
+        $vowels = [
+            'a', 'e', 'i', 'o', 'u', 'y',
+            'ai', 'ei', 'oi', 'oo', 'ou',
+        ];
+        $consonants = [
+            'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm',
             'n', 'p', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
-            'ch', 'gh', 'ph', 'sh', 'th', 'wh', 
-        );  
+            'ch', 'gh', 'ph', 'sh', 'th', 'wh',
+        ];
         $max1 = count($vowels) - 1;
         $max2 = count($consonants) - 1;
 
@@ -718,23 +718,25 @@ class activity {
         // The default setting for "forceopen" is to expand for all.
         $forceopen = true;
         switch ($this->expandnavigation) {
-            case \mod_vocab\activity::EXPAND_TEACHERS:
+            case self::EXPAND_TEACHERS:
                 // Expand for teachers (collapse for students)
                 $forceopen = $teacher;
                 break;
-            case \mod_vocab\activity::EXPAND_STUDENTS:
+            case self::EXPAND_STUDENTS:
                 // Expand for students (collapse for teachers)
                 $forceopen = $student;
                 break;
-            case \mod_vocab\activity::EXPAND_NO_ONE:
+            case self::EXPAND_NO_ONE:
                 // Expand for no one (i.e. collapse for all)
                 $forceopen = false;
                 break;
         }
 
         if ($forceopen === false) {
-            $rootnodekeys = array('site', 'myprofile','currentcourse',
-                                  'mycourses', 'courses', 'users');
+            $rootnodekeys = [
+                'site', 'myprofile', 'currentcourse',
+                'mycourses', 'courses', 'users',
+            ];
             foreach ($rootnodekeys as $nodekey) {
                 if ($node = $PAGE->navigation->get($nodekey)) {
                     $node->forceopen = $forceopen;
@@ -756,3 +758,4 @@ class activity {
         }
     }
 }
+

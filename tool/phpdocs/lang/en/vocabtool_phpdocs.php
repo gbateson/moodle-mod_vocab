@@ -87,3 +87,4 @@ $string['authorcontact'] = 'Author contact';
 
 $string['sinceversion_help'] = 'The earliest version of Moodle on which these files will function.';
 $string['sinceversion'] = 'Since Moodle version';
+

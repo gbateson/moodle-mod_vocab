@@ -50,3 +50,4 @@ class vocabtool extends base {
         return true;
     }
 }
+

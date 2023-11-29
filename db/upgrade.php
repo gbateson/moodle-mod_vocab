@@ -53,14 +53,14 @@ function xmldb_vocab_upgrade($oldversion) {
 
     $newversion = 2023101907;
     if ($oldversion < $newversion) {
-        xmldb_vocab_check_structure($dbman, array('vocab_wordlists'));
+        xmldb_vocab_check_structure($dbman, ['vocab_wordlists']);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
     $newversion = 2023102509;
     if ($oldversion < $newversion) {
         // Add attempt score|count|type|delay fields.
-        xmldb_vocab_check_structure($dbman, array('vocab'));
+        xmldb_vocab_check_structure($dbman, ['vocab']);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
@@ -68,7 +68,7 @@ function xmldb_vocab_upgrade($oldversion) {
     if ($oldversion < $newversion) {
 
         // Rename "vocab_wordlists" table to "vocab_word_instances".
-        $tablenames = array('vocab_wordlists' => 'vocab_word_instances');
+        $tablenames = ['vocab_wordlists' => 'vocab_word_instances'];
         xmldb_vocab_rename_tables($dbman, $tablenames);
 
         // Add tables for games and word attempts.
@@ -80,17 +80,17 @@ function xmldb_vocab_upgrade($oldversion) {
     if ($oldversion < $newversion) {
 
         // Define old/new names for vocabtool plugins.
-        $names = array(
+        $names = [
             'vocabtool_addphpdocs' => 'vocabtool_phpdocs',
             'vocabtool_editdata' => 'vocabtool_dictionary',
             'vocabtool_editlist' => 'vocabtool_wordlist',
-            'vocabtool_importdata' => 'vocabtool_import'
-        );
+            'vocabtool_importdata' => 'vocabtool_import',
+        ];
 
         // Rename vocabtool plugins.
         $table = 'config_plugins';
         $select = $DB->sql_like('plugin', '?');
-        $params = array('vocabtool_%');
+        $params = ['vocabtool_%'];
         if ($records = $DB->get_records_select($table, $select, $params)) {
             foreach ($records as $record) {
                 $record->plugin = strtr($record->plugin, $names);
@@ -101,7 +101,7 @@ function xmldb_vocab_upgrade($oldversion) {
         // Remove vocabtool capabilities from all roles.
         $table = 'role_capabilities';
         $select = $DB->sql_like('capability', '?');
-        $params = array('vocabtool%');
+        $params = ['vocabtool%'];
         if ($roles = $DB->get_records_select($table, $select, $params)) {
             foreach ($roles as $role) {
                 unassign_capability($role->capability, $role->id);
@@ -112,7 +112,7 @@ function xmldb_vocab_upgrade($oldversion) {
         // Remove all vocabtool capabilities.
         $table = 'capabilities';
         $select = $DB->sql_like('name', '?');
-        $params = array('vocabtool%');
+        $params = ['vocabtool%'];
         if ($caps = $DB->get_records_select($table, $select, $params)) {
             $DB->delete_records_list($table, 'id', array_keys($caps));
         }
@@ -121,21 +121,28 @@ function xmldb_vocab_upgrade($oldversion) {
     $newversion = 2023103113;
     if ($oldversion < $newversion) {
         // Add "expandmycourses" and "pagelayout" fields to "vocab" table.
-        xmldb_vocab_check_structure($dbman, array('vocab'));
+        xmldb_vocab_check_structure($dbman, ['vocab']);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
     $newversion = 2023110114;
     if ($oldversion < $newversion) {
-        // Rename field "expandmycourses" to "expandnavigation". 
+        // Rename field "expandmycourses" to "expandnavigation".
         $field = new xmldb_field('expandmycourses', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
-        xmldb_vocab_rename_fields($dbman, 'vocab', array('expandnavigation' => $field));
+        xmldb_vocab_rename_fields($dbman, 'vocab', ['expandnavigation' => $field]);
     }
 
     $newversion = 2023110215;
     if ($oldversion < $newversion) {
         // Add new table, "vocab_word_states".
-        xmldb_vocab_check_structure($dbman, array('vocab_word_states'));
+        xmldb_vocab_check_structure($dbman, ['vocab_word_states']);
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
+    $newversion = 2023112831;
+    if ($oldversion < $newversion) {
+        // Add new tables, "vocab_ai_access" and "vocab_ai_prompt".
+        xmldb_vocab_check_structure($dbman, ['vocab_ai_access', 'vocab_ai_prompt']);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
@@ -198,7 +205,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
     global $CFG, $DB;
 
     static $checkedall = false;
-    static $checked = array();
+    static $checked = [];
 
     if ($checkedall) {
         return true;
@@ -209,17 +216,17 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
     }
 
     $filepath = '/mod/vocab/db/install.xml';
-    $xmldb_file = new xmldb_file($CFG->dirroot.$filepath);
+    $file = new xmldb_file($CFG->dirroot.$filepath);
 
-    $loaded = $xmldb_file->loadXMLStructure();
-    $structure = $xmldb_file->getStructure();
+    $loaded = $file->loadXMLStructure();
+    $structure = $file->getStructure();
 
-    if (! $xmldb_file->fileExists()) {
+    if (! $file->fileExists()) {
         $error = "XML file not found: $filepath";
         throw new ddl_exception('ddlxmlfileerror', null, $error);
     }
 
-    if (! $xmldb_file->isLoaded()) {
+    if (! $file->isLoaded()) {
         if ($structure && ($error = $structure->getAllErrors())) {
             $error = implode (', ', $error);
             $error = "Errors found in XMLDB file ($filepath): ". $error;
@@ -229,7 +236,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         throw new ddl_exception('ddlxmlfileerror', null, $error);
     }
 
-    if (! $xmldb_tables = $structure->getTables()) {
+    if (! $tables = $structure->getTables()) {
         $error = "No tables found in XML file ($filepath)";
         throw new ddl_exception('ddlxmlfileerror', null, $error);
     }
@@ -250,11 +257,11 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         }
         $checked[$tablename] = true;
 
-        $i = $xmldb_file->findObjectInArray($tablename, $xmldb_tables);
+        $i = $file->findObjectInArray($tablename, $tables);
         if (is_numeric($i)) {
             // A table in the XML file.
             // It may or may  not exist in the DB.
-            $table = $xmldb_tables[$i];
+            $table = $tables[$i];
         } else {
             // A table that is in the DB but not in the XML file.
             // In other words, a table that is to be removed.
@@ -271,15 +278,15 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         // and then if any of them is to be changed, we first remove the keys/indexes,
         // then change the field and then add the keys/index back to the table.
 
-        $special = (object)array(
-            'keyfields' => array(),
-            'indexfields' => array()
-        );
+        $special = (object)[
+            'keyfields' => [],
+            'indexfields' => [],
+        ];
 
-        $dropped = (object)array(
-            'keys' => array(),
-            'indexes' => array()
-        );
+        $dropped = (object)[
+            'keys' => [],
+            'indexes' => [],
+        ];
 
         foreach ($table->getKeys() as $key) {
             foreach ($key->getFields() as $field) {
@@ -287,7 +294,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                     continue;
                 }
                 if (empty($special->keyfields[$field])) {
-                    $special->keyfields[$field] = array();
+                    $special->keyfields[$field] = [];
                 }
                 $special->keyfields[$field][] = $key;
             }
@@ -296,7 +303,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         foreach ($table->getIndexes() as $index) {
             foreach ($index->getFields() as $field) {
                 if (empty($special->indexfields[$field])) {
-                    $special->indexfields[$field] = array();
+                    $special->indexfields[$field] = [];
                 }
                 $special->indexfields[$field][] = $index;
             }
@@ -310,15 +317,14 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                 // Moodle >= 2.8 uses "table"
                 case preg_match('/[Tt]able is missing/', $message):
                     $dbman->create_table($table);
-                    //echo "Table $tablename was created<br>";
+                    // echo "Table $tablename was created<br>";
                     break;
-
 
                 // Moodle <= 2.7 uses "Table"
                 // Moodle >= 2.8 uses "table"
                 case preg_match('/[Tt]able is not expected/', $message):
                     $dbman->drop_table($table);
-                    //echo "Table $tablename was dropped<br>";
+                    // echo "Table $tablename was dropped<br>";
                     break;
 
                 // Moodle <= 2.7 uses "Field"
@@ -367,16 +373,16 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                         // e.g. column 'xyz' is not expected
                         if ($dbman->field_exists($table, $field)) {
                             $dbman->drop_field($table, $field);
-                            //echo "Field $name was dropped from table $tablename<br>";
+                            // echo "Field $name was dropped from table $tablename<br>";
                         }
                     } else {
                         // e.g. column 'xyz' is missing
                         if ($dbman->field_exists($table, $field)) {
                             $dbman->change_field_type($table, $field);
-                            //echo "Field $name was updated<br>";
+                            // echo "Field $name was updated<br>";
                         } else {
                             $dbman->add_field($table, $field);
-                            //echo "Field $name was added<br>";
+                            // echo "Field $name was added<br>";
                         }
                     }
                     break;
@@ -384,7 +390,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                 // Note: early versions of Moodle may not have this.
                 case preg_match('/CREATE(.*?)INDEX(.*?)ON(.*?);/', $message, $match):
                     $DB->execute(rtrim($match[0], '; '));
-                    //echo 'Index '.$match[1].' was added<br>';
+                    // echo 'Index '.$match[1].' was added<br>';
                     break;
 
                 // Note: early versions of Moodle may not have this.
@@ -395,13 +401,13 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                         $index->setFromADOIndex($indexes[$name]);
                         $dbman->drop_index($table, $index);
                         unset($indexes[$name]);
-                        //echo 'Index '.$match[1].' was dropped<br>';
+                        // echo 'Index '.$match[1].' was dropped<br>';
                     }
                     break;
 
                 default:
                     echo '<p>Unknown XMLDB error in mod_vocab:<br>'.$message.'</p>';
-                    //die;
+                    // die;
             }
         }
 

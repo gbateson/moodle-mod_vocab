@@ -35,41 +35,49 @@
  * @subpackage vocab
  */
 
-// Word dictionary tables
-// $tables = array(
-//     'mdl_vocab_antonyms',
-//     'mdl_vocab_corpuses',
-//     'mdl_vocab_definitions',
-//     'mdl_vocab_frequencies',
-//     'mdl_vocab_langnames',
-//     'mdl_vocab_langs',
-//     'mdl_vocab_lemmas',
-//     'mdl_vocab_levelnames',
-//     'mdl_vocab_levels',
-//     'mdl_vocab_multimedia',
-//     'mdl_vocab_pronunciations',
-//     'mdl_vocab_synonyms',
-//     'mdl_vocab_words',
-// );
+/**
+Word dictionary tables
+$tables = [
+    'mdl_vocab_antonyms',
+    'mdl_vocab_corpuses',
+    'mdl_vocab_definitions',
+    'mdl_vocab_frequencies',
+    'mdl_vocab_langnames',
+    'mdl_vocab_langs',
+    'mdl_vocab_lemmas',
+    'mdl_vocab_levelnames',
+    'mdl_vocab_levels',
+    'mdl_vocab_multimedia',
+    'mdl_vocab_pronunciations',
+    'mdl_vocab_synonyms',
+    'mdl_vocab_words',
+];
 
-// Game tables
-// $table = array(
-//     'mdl_vocab_games',
-// );
+Game tables
+$table = [
+    'mdl_vocab_games',
+];
 
-// Activity tables
-// $tables = array(
-//     'mdl_vocab',
-//     'mdl_vocab_game_instances',
-//     'mdl_vocab_word_instances',
-//     'mdl_vocab_word_usages'
-// );
+AI access tables
+$tables = [
+    'mdl_vocab_ai_access',
+    'mdl_vocab_ai_prompt',
+]
 
-// User data tables
-// $tables = array(
-//     'mdl_vocab_game_attempts',
-//     'mdl_vocab_word_attempts',
-// );
+Activity tables
+$tables = [
+    'mdl_vocab',
+    'mdl_vocab_game_instances',
+    'mdl_vocab_word_instances',
+    'mdl_vocab_word_usages',
+];
+
+User data tables
+$tables = [
+    'mdl_vocab_game_attempts',
+    'mdl_vocab_word_attempts',
+];
+\* ======================== */
 
 /**
  * backup_vocab_activity_structure_step
@@ -91,142 +99,124 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
      * @return xxx
      * @todo Finish documenting this function
      */
-    protected function define_structure()  {
+    protected function define_structure() {
 
         // are we including userinfo?
         $userinfo = $this->get_setting_value('userinfo');
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // XML nodes declaration - dictionary data and games
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         // games
         $games = new backup_nested_element('games');
-        $exclude = array('id');
-        $include = $this->get_fieldnames('vocab_games', $exclude);
-        $game = new backup_nested_element('game', array('id'), $include);
+        $include = $this->get_fieldnames('vocab_games', ['id']);
+        $game = new backup_nested_element('game', ['id', $include]);
 
         // corpuses (used by "vocab_frequencies")
         $corpuses = new backup_nested_element('corpuses');
-        $exclude = array('id');
-        $include = $this->get_fieldnames('vocab_corpuses', $exclude);
-        $corpus = new backup_nested_element('corpus', array('id'), $include);
+        $include = $this->get_fieldnames('vocab_corpuses', ['id']);
+        $corpus = new backup_nested_element('corpus', ['id', $include]);
 
         // langs
         $langs = new backup_nested_element('langs');
-        $exclude = array('id');
-        $include = $this->get_fieldnames('vocab_langs', $exclude);
-        $lang = new backup_nested_element('lang', array('id'), $include);
-
+        $include = $this->get_fieldnames('vocab_langs', ['id']);
+        $lang = new backup_nested_element('lang', ['id', $include]);
         // levels
         $levels = new backup_nested_element('levels');
-        $exclude = array('id');
-        $include = $this->get_fieldnames('vocab_levels', $exclude);
-        $level = new backup_nested_element('level', array('id'), $include);
-
+        $include = $this->get_fieldnames('vocab_levels', ['id']);
+        $level = new backup_nested_element('level', ['id', $include]);
         // levelnames
         $levelnames = new backup_nested_element('levelnames');
-        $exclude = array('id', 'levelid', 'langid');
+        $exclude = ['id', 'levelid', 'langid'];
         $include = $this->get_fieldnames('vocab_levelnames', $exclude);
-        $levelname = new backup_nested_element('levelname', array('id'), $include);
-
+        $levelname = new backup_nested_element('levelname', ['id', $include]);
         // lemmas
         $lemmas = new backup_nested_element('lemmas');
-        $exclude = array('id', 'langid');
+        $exclude = ['id', 'langid'];
         $include = $this->get_fieldnames('vocab_lemmas', $exclude);
-        $lemma = new backup_nested_element('lemma', array('id'), $include);
-
+        $lemma = new backup_nested_element('lemma', ['id', $include]);
         // words
         $words = new backup_nested_element('words');
-        $exclude = array('id', 'lemmaid');
+        $exclude = ['id', 'lemmaid'];
         $include = $this->get_fieldnames('vocab_words', $exclude);
-        $word = new backup_nested_element('word', array('id'), $include);
-
+        $word = new backup_nested_element('word', ['id', $include]);
         // antonyms
         $antonyms = new backup_nested_element('antonyms');
-        $exclude = array('id', 'wordid'); // antonymwordid
+        $exclude = ['id', 'wordid']; // antonymwordid
         $include = $this->get_fieldnames('vocab_antonyms', $exclude);
-        $antonym = new backup_nested_element('antonym', array('id'), $include);
-
+        $antonym = new backup_nested_element('antonym', ['id', $include]);
         // definitions
         $definitions = new backup_nested_element('definitions');
-        $exclude = array('id', 'wordid'); // 'langid', 'levelid'
+        $exclude = ['id', 'wordid']; // 'langid', 'levelid'
         $include = $this->get_fieldnames('vocab_definitions', $exclude);
-        $definition = new backup_nested_element('definition', array('id'), $include);
-
+        $definition = new backup_nested_element('definition', ['id', $include]);
         // multimedias
         $multimedias = new backup_nested_element('multimedias');
-        $exclude = array('id', 'wordid'); // 'langid', 'levelid'
+        $exclude = ['id', 'wordid']; // 'langid', 'levelid'
         $include = $this->get_fieldnames('vocab_multimedias', $exclude);
-        $multimedia = new backup_nested_element('multimedia', array('id'), $include);
-
+        $multimedia = new backup_nested_element('multimedia', ['id', $include]);
         // frequencies
         $frequencies = new backup_nested_element('frequencies');
-        $exclude = array('id', 'wordid'); // 'corpusid'
+        $exclude = ['id', 'wordid']; // 'corpusid'
         $include = $this->get_fieldnames('vocab_frequencies', $exclude);
-        $frequency = new backup_nested_element('frequency', array('id'), $include);
-
+        $frequency = new backup_nested_element('frequency', ['id', $include]);
         // pronunciations
         $pronunciations = new backup_nested_element('pronunciations');
-        $exclude = array('id', 'wordid'); // 'langid'
+        $exclude = ['id', 'wordid']; // 'langid'
         $include = $this->get_fieldnames('vocab_pronunciations', $exclude);
-        $pronunciation = new backup_nested_element('pronunciation', array('id'), $include);
-
+        $pronunciation = new backup_nested_element('pronunciation', ['id', $include]);
         // synonyms
         $synonyms = new backup_nested_element('synonyms');
-        $exclude = array('id', 'wordid'); // synonymwordid
+        $exclude = ['id', 'wordid']; // synonymwordid
         $include = $this->get_fieldnames('vocab_synonyms', $exclude);
-        $synonym = new backup_nested_element('synonym', array('id'), $include);
+        $synonym = new backup_nested_element('synonym', ['id', $include]);
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // XML nodes declaration - non-user data
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         // vocab
-        $exclude = array('id', 'course');
+        $exclude = ['id', 'course'];
         $include = $this->get_fieldnames('vocab', $exclude);
-        $vocab = new backup_nested_element('vocab', array('id'), $include);
-
+        $vocab = new backup_nested_element('vocab', ['id', $include]);
         // game_instances
         $gameinstances = new backup_nested_element('gameinstances');
-        $exclude = array('id', 'vocabid', 'gameid');
+        $exclude = ['id', 'vocabid', 'gameid'];
         $include = $this->get_fieldnames('vocab_games', $exclude);
-        $gameinstance = new backup_nested_element('gameinstance', array('id'), $include);
-
+        $gameinstance = new backup_nested_element('gameinstance', ['id', $include]);
         // word_instances
         $wordinstances = new backup_nested_element('wordinstances');
-        $exclude = array('id', 'wordid');
+        $exclude = ['id', 'wordid'];
         $include = $this->get_fieldnames('vocab_words', $exclude);
-        $wordinstance = new backup_nested_element('wordinstance', array('id'), $include);
+        $wordinstance = new backup_nested_element('wordinstance', ['id', $include]);
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // XML nodes declaration - user data
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         if ($userinfo) {
 
             // game attempts
             $gameattempts = new backup_nested_element('gameattempts');
-            $exclude = array('id', 'gameinstanceid');
+            $exclude = ['id', 'gameinstanceid'];
             $include = $this->get_fieldnames('vocab_game_attempts', $exclude);
-            $gameattempt = new backup_nested_element('gameattempt', array('id'), $include);
-
+            $gameattempt = new backup_nested_element('gameattempt', ['id', $include]);
             // word_usage
             $wordusages = new backup_nested_element('wordusages');
-            $exclude = array('id'); // 'gameattemptid', 'wordinstanceid'
+            $exclude = ['id']; // 'gameattemptid', 'wordinstanceid'
             $include = $this->get_fieldnames('vocab_word_usages', $exclude);
-            $wordusage = new backup_nested_element('wordusage', array('id'), $include);
-
+            $wordusage = new backup_nested_element('wordusage', ['id', $include]);
             // word attempts
             $wordattempts = new backup_nested_element('wordattempts');
-            $exclude = array('id', 'wordusageid');
+            $exclude = ['id', 'wordusageid'];
             $include = $this->get_fieldnames('vocab_word_attempts', $exclude);
-            $wordattempt = new backup_nested_element('wordattempt', array('id'), $include);
+            $wordattempt = new backup_nested_element('wordattempt', ['id', $include]);
         }
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // build the tree in the order needed for restore
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         $dictionary = new backup_nested_element('dictionary');
 
@@ -284,44 +274,43 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $wordusages->add_child($wordusage);
         }
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // data sources - non-user data
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
-        $vocab->set_source_table('vocab', array('id' => backup::VAR_ACTIVITYID));
-        $game->set_source_table('vocab_games', array('vocabid' => backup::VAR_PARENTID));
-        $condition->set_source_table('vocab_conditions', array('taskid' => backup::VAR_PARENTID));
+        $vocab->set_source_table('vocab', ['id' => backup::VAR_ACTIVITYID]);
+        $game->set_source_table('vocab_games', ['vocabid' => backup::VAR_PARENTID]);
+        $condition->set_source_table('vocab_conditions', ['taskid' => backup::VAR_PARENTID]);
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // data sources - user related data
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         if ($userinfo) {
 
             // vocab grades
             $vocabid = $this->get_setting_value(backup::VAR_ACTIVITYID);
-            $params = array('parenttype' => array('sqlparam' => 0), 'parentid' => array('sqlparam' => $vocabid));
+            $params = ['parenttype' => ['sqlparam' => 0], 'parentid' => ['sqlparam' => $vocabid]];
             $vocabgrade->set_source_sql('SELECT * FROM {vocab_vocab_grades} WHERE parenttype = ? AND parentid = ?', $params);
-            //$vocabgrade->set_source_sql("SELECT * FROM {vocab_vocab_grades} WHERE parenttype=0 AND parentid=$vocabid", array());
 
             // vocab attempts
-            $params = array('vocabid' => backup::VAR_PARENTID);
+            $params = ['vocabid' => backup::VAR_PARENTID];
             $vocabattempt->set_source_table('vocab_vocab_attempts', $params);
 
             // task scores
-            $params = array('taskid' => backup::VAR_PARENTID);
+            $params = ['taskid' => backup::VAR_PARENTID];
             $gamescore->set_source_table('vocab_game_scores', $params);
 
             // task attempts
-            $params = array('taskid' => backup::VAR_PARENTID);
+            $params = ['taskid' => backup::VAR_PARENTID];
             $gameattempt->set_source_table('vocab_game_attempts', $params);
 
             // questions
-            $params = array('taskid' => backup::VAR_PARENTID);
+            $params = ['taskid' => backup::VAR_PARENTID];
             $question->set_source_table('vocab_questions', $params);
 
             // responses
-            $params = array('questionid' => backup::VAR_PARENTID);
+            $params = ['questionid' => backup::VAR_PARENTID];
             $response->set_source_table('vocab_responses', $params);
 
             // strings
@@ -329,9 +318,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $string->set_source_sql("SELECT * FROM {vocab_strings} WHERE id $filter", $params);
         }
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // id annotations (foreign keys on non-parent tables)
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         $vocab->annotate_ids('course_modules', 'entrycm');
         $vocab->annotate_ids('course_modules', 'exitcm');
@@ -348,9 +337,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $response->annotate_ids('vocab_game_attempts', 'attemptid');
         }
 
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
         // file annotations
-        ////////////////////////////////////////////////////////////////////////
+        // ============================================================
 
         $vocab->annotate_files('mod_vocab', 'sourcefile', null);
         $vocab->annotate_files('mod_vocab', 'entrytext',  null);
@@ -365,12 +354,12 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
      *
      * @uses $DB
      * @param string $tablename the name of the Moodle table (without prefix)
-     * @param array $excluded_fieldnames these field names will be excluded
+     * @param array $excludedfieldnames these field names will be excluded
      * @return array of field names
      */
-    protected function get_fieldnames($tablename, array $excluded_fieldnames)   {
+    protected function get_fieldnames($tablename, array $excludedfieldnames) {
         global $DB;
         $include = array_keys($DB->get_columns($tablename));
-        return array_diff($include, $excluded_fieldnames);
+        return array_diff($include, $excludedfieldnames);
     }
 }

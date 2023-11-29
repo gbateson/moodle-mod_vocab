@@ -54,7 +54,7 @@ class form extends \mod_vocab\toolform {
      *
      * @todo Finish documenting this function
      */
-    function definition() {
+    public function definition() {
         global $PAGE;
 
         $mform = $this->_form;
@@ -66,13 +66,13 @@ class form extends \mod_vocab\toolform {
         $name = 'selectedwords';
         $label = get_string($name, $this->tool);
 
-        $elements = array();
+        $elements = [];
 
-        $params = array(
+        $params = [
             'data-selectall' => get_string('selectall'),
             'data-deselectall' => get_string('deselectall'),
             'class' => 'd-none',
-        );
+        ];
         $elements[] = $mform->createElement('checkbox', 'selectall', get_string('selectall'), '', $params);
 
         $i = 0;
@@ -81,7 +81,7 @@ class form extends \mod_vocab\toolform {
             $i++;
             $elements[] = $mform->createElement('checkbox', $id, $word);
         }
-        $br = \html_writer::tag('span', '', array('class' => 'w-100'));
+        $br = \html_writer::tag('span', '', ['class' => 'w-100']);
         $mform->addGroup($elements, $name, $label, $br);
         $mform->addHelpButton($name, $name, $this->tool);
 
@@ -113,7 +113,7 @@ class form extends \mod_vocab\toolform {
 
     public function get_question_types() {
         // ToDo: Maybe include: 'ordering', 'essayautograde', 'speakautograde', 'sassessment'
-        $include = array('match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse');
+        $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
         $types = \core_component::get_plugin_list('qtype');
         foreach ($types as $name => $dir) {
             if (in_array($name, $include)) {
@@ -127,7 +127,7 @@ class form extends \mod_vocab\toolform {
     }
 
     public function get_question_levels() {
-        $levels = array('A1', 'A2', 'B1', 'B2', 'C1', 'C2');
+        $levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
         return array_combine($levels, $levels);
     }
 
@@ -150,17 +150,17 @@ class form extends \mod_vocab\toolform {
         // Extract the id of the default question category in this course.
         $defaultid = array_search($defaultname, $categories);
         if ($defaultid === false) {
-            $defaultid = 0; //shouldn't happen !!
+            $defaultid = 0; // shouldn't happen !!
         }
-        
+
         $name = 'parentcategory';
         $label = get_string($name, $this->tool);
         $groupname = $name.'elements';
 
-        $elements = array(
+        $elements = [
             $mform->createElement('select', $name, '', $categories),
-            $mform->createElement('html', $this->link_to_managequestioncategories())
-        );
+            $mform->createElement('html', $this->link_to_managequestioncategories()),
+        ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->tool);
 
@@ -170,14 +170,14 @@ class form extends \mod_vocab\toolform {
 
     public function link_to_managequestioncategories() {
         $link = '/question/bank/managecategories/category.php';
-        $params = array('courseid' => $this->get_vocab()->course->id);
+        $params = ['courseid' => $this->get_vocab()->course->id];
         $link = new \moodle_url($link, $params);
 
         $text = get_string('managequestioncategories', $this->tool);
-        $params = array('onclick' => "this.target='VOCAB'");
+        $params = ['onclick' => "this.target='VOCAB'"];
         $link = \html_writer::link($link, $text, $params);
 
-        $params = array('class' => 'w-100 pl-1');
+        $params = ['class' => 'w-100 pl-1'];
         return \html_writer::tag('small', $link, $params);
     }
 
@@ -202,7 +202,7 @@ class form extends \mod_vocab\toolform {
             }
             return $categories;
         } else {
-            return array();
+            return [];
         }
     }
 
@@ -214,15 +214,15 @@ class form extends \mod_vocab\toolform {
         $cattype = $groupname.'[cattype]';
         $catname = $groupname.'[catname]';
 
-        $options = array(
+        $options = [
             self::SUBCAT_NONE => get_string('none'),
             self::SUBCAT_SINGLE => get_string('singlesubcategory', $this->tool),
-            self::SUBCAT_AUTOMATIC => get_string('automaticsubcategories', $this->tool)
-        );
-        $elements = array(
+            self::SUBCAT_AUTOMATIC => get_string('automaticsubcategories', $this->tool),
+        ];
+        $elements = [
             $mform->createElement('select', 'cattype', '', $options),
-            $mform->createElement('text', 'catname', '', array('size' => 20))
-        );
+            $mform->createElement('text', 'catname', '', ['size' => 20]),
+        ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->tool);
 
@@ -230,11 +230,11 @@ class form extends \mod_vocab\toolform {
         $mform->setDefault($cattype, self::SUBCAT_AUTOMATIC);
 
         $mform->setType($catname, PARAM_TEXT);
-        //$mform->setDefault($catname, '');
+        // $mform->setDefault($catname, '');
         $mform->disabledIf($catname, $cattype, 'neq', 'single');
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         global $USER;
 
         if ($errors = parent::validation($data, $files)) {
@@ -265,7 +265,7 @@ class form extends \mod_vocab\toolform {
                 $select = 'vwi.wordid, vw.word';
                 $from = '{vocab_word_instances} vwi, {vocab_words} vw';
                 list($where, $params) = $DB->get_in_or_equal(array_keys($data->selectedwords));
-                $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where; 
+                $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where;
                 array_unshift($params, $this->get_vocab()->id);
                 $order = 'vwi.sortorder, vw.word';
 
@@ -299,12 +299,12 @@ class form extends \mod_vocab\toolform {
             $groupname = $name.'elements';
             if (property_exists($data, $groupname)) {
                 if (array_key_exists($name, $data->$groupname)) {
-                    $parentcatid = $data->$groupname[$name];
+                    $parentcatid = $data->{$groupname}[$name];
                     $courseid = $this->get_vocab()->course->id;
                     $contextid = \context_course::instance($courseid)->id;
-                    $params = array('id' => $parentcatid, 'contextid' => $contextid);
+                    $params = ['id' => $parentcatid, 'contextid' => $contextid];
                     if ($DB->record_exists('question_categories', $params)) {
-                        $parentcatname = $DB->get_field('question_categories', 'name', array('id' => $parentcatid));
+                        $parentcatname = $DB->get_field('question_categories', 'name', ['id' => $parentcatid]);
                     } else {
                         $parentcatid = 0; // shouldn't happen !!
                     }
@@ -316,22 +316,31 @@ class form extends \mod_vocab\toolform {
             $groupname = 'subcategorieselements';
             if (property_exists($data, $groupname)) {
                 if (array_key_exists($name, $data->$groupname)) {
-                    $subcattype = $data->$groupname[$name];
+                    $subcattype = $data->{$groupname}[$name];
                 }
                 unset($data->$groupname);
             }
 
-            $dl = array('class' => 'row', 'style' => 'max-width: 720px;');
-            $dt = array('class' => 'col-3 text-right');
-            $dd = array('class' => 'col-9');
-            echo \html_writer::start_tag('dl', $dl);
-            echo \html_writer::tag('dt', 'Words: ', $dt).\html_writer::tag('dd', implode(', ', $words), $dd);
-            echo \html_writer::tag('dt', 'Question types:', $dt).\html_writer::tag('dd', implode(', ', $qtypes), $dd);
-            echo \html_writer::tag('dt', 'Question levels:', $dt).\html_writer::tag('dd', implode(', ', $qlevels), $dd);
-            echo \html_writer::tag('dt', 'Question count:', $dt).\html_writer::tag('dd', $qcount, $dd);
-            echo \html_writer::tag('dt', 'Parent category:', $dt).\html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
-            echo \html_writer::tag('dt', 'Subcategory type:', $dt).\html_writer::tag('dd', $subcattype, $dd);
-            echo \html_writer::end_tag('dl');
+            if ($words || $qtypes || $qlevels) {
+                $dl = ['class' => 'row', 'style' => 'max-width: 720px;'];
+                $dt = ['class' => 'col-3 text-right'];
+                $dd = ['class' => 'col-9'];
+                echo \html_writer::start_tag('dl', $dl);
+                if ($words) {
+                    echo \html_writer::tag('dt', 'Words: ', $dt).\html_writer::tag('dd', implode(', ', $words), $dd);
+                }
+                if ($qtypes) {
+                    echo \html_writer::tag('dt', 'Question types:', $dt).\html_writer::tag('dd', implode(', ', $qtypes), $dd);
+                }
+                if ($qlevels) {
+                    echo \html_writer::tag('dt', 'Question levels:', $dt).\html_writer::tag('dd', implode(', ', $qlevels), $dd);
+                }
+                echo \html_writer::tag('dt', 'Question count:', $dt).\html_writer::tag('dd', $qcount, $dd);
+                echo \html_writer::tag('dt', 'Parent category:', $dt).\html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
+                echo \html_writer::tag('dt', 'Subcategory type:', $dt).\html_writer::tag('dd', $subcattype, $dd);
+                echo \html_writer::end_tag('dl');
+            }
         }
     }
 }
+

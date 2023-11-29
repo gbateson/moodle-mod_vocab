@@ -37,8 +37,10 @@ defined('MOODLE_INTERNAL') || die();
  */
 class mod_vocab_renderer extends plugin_renderer_base {
 
-    /** @var \mod_vocab\activity object to represent current vocab activity */
-    var $vocab = null;
+    /**
+     * @var \mod_vocab\activity object to represent current vocab activity
+     */
+    public $vocab = null;
 
     /**
      * Attach a vocab activity to this renderer
@@ -58,7 +60,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      */
     public function header() {
         $header = parent::header();
-        
+
         $heading = $this->vocab->name;
         if ($this->vocab->can_manage() && $this->vocab->id) {
             $heading .= $this->modedit_icon();
@@ -66,7 +68,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
 
         // Locate the position of the end of the <body...> tag.
         $pos = 0;
-        $tags = array('<body', '>'); // '<html', '>', '<head', '>', '</head>', 
+        $tags = ['<body', '>']; // '<html', '>', '<head', '>', '</head>',
         while (count($tags) && is_numeric($pos)) {
             $pos = strpos($header, array_shift($tags), $pos);
         }
@@ -101,9 +103,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @todo Finish documenting this function
      */
     public function modedit_icon() {
-        $params = array('update' => $this->vocab->cm->id,
-                        'return' => 1,
-                        'sesskey' => sesskey());
+        $params = [
+            'update' => $this->vocab->cm->id,
+            'return' => 1,
+            'sesskey' => sesskey(),
+        ];
         $url = new moodle_url('/course/modedit.php', $params);
         $img = $this->pix_icon('t/edit', get_string('edit'));
         return ' '.html_writer::link($url, $img);
@@ -191,7 +195,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $words = $this->vocab->get_wordlist_words();
         $output .= $this->view_results($words);
         $output .= $this->view_wordlist($words);
-        $params = array('class' => 'clearfix vocab-results-and-wordlist');
+        $params = ['class' => 'clearfix vocab-results-and-wordlist'];
         return html_writer::tag('div', $output, $params);
     }
 
@@ -234,61 +238,63 @@ class mod_vocab_renderer extends plugin_renderer_base {
             // view-box: https://www.digitalocean.com/community/tutorials/svg-svg-viewbox
             $width = '360';
             $height = '200';
-            $params = array('xmlns' => 'http://www.w3.org/2000/svg',
-                            'role' => 'img', // for accessibility
-                            'viewBox' => "0 0 $width $height",
-                            'class' => 'results-pie-chart');
+            $params = [
+                'xmlns' => 'http://www.w3.org/2000/svg',
+                'role' => 'img', // for accessibility
+                'viewBox' => "0 0 $width $height",
+                'class' => 'results-pie-chart',
+            ];
             $output .= html_writer::start_tag('svg', $params);
 
             $output .= html_writer::tag('title', $title);
 
             $delimiter = get_string('labelsep', 'langconfig');
-            $a = (object)array(
-                'completed' => $this->vocab->get_string('resultdesc', (object)array(
+            $a = (object)[
+                'completed' => $this->vocab->get_string('resultdesc', (object)[
                     'label' => $this->vocab->get_string('completed'),
                     'delimiter' => $delimiter,
                     'number' => $completed,
                     'total' => $total,
                     'percent' => $completedpercent,
-                )),
-                'inprogress' => $this->vocab->get_string('resultdesc', (object)array(
+                ]),
+                'inprogress' => $this->vocab->get_string('resultdesc', (object)[
                     'label' => $this->vocab->get_string('inprogress'),
                     'delimiter' => $delimiter,
                     'number' => $inprogress,
                     'total' => $total,
                     'percent' => $inprogresspercent,
-                )),
-                'notstarted' => $this->vocab->get_string('resultdesc', (object)array(
+                ]),
+                'notstarted' => $this->vocab->get_string('resultdesc', (object)[
                     'label' => $this->vocab->get_string('notstarted'),
                     'delimiter' => $delimiter,
                     'number' => $notstarted,
                     'total' => $total,
                     'percent' => $notstartedpercent,
-                )),
-            );
+                ]),
+            ];
             $desc = $this->vocab->get_string('resultsdesc', $a);
             $output .= html_writer::tag('description', $desc);
 
-            $values = array($completed, $inprogress, $notstarted);
-            $colors = array('url(#fillcompleted)', 'url(#fillinprogress)', 'url(#fillnotstarted)');
+            $values = [$completed, $inprogress, $notstarted];
+            $colors = ['url(#fillcompleted)', 'url(#fillinprogress)', 'url(#fillnotstarted)'];
 
             // Define the fill patterns.
             $output .= $this->svg_fill_patterns();
 
             // Define the pie graph.
-            $params = array('stroke' => '#333', 'stroke-width' => '2');
+            $params = ['stroke' => '#333', 'stroke-width' => '2'];
             $output .= $this->pie_graph(98, 1, 1, $values, $colors, $params);
 
             // Define the pie graph key.
             $output .= $this->pie_graph_key(220, 10, 30, 20, 30, $colors,
                 $delimiter, array_values((array)$a), // delimiter & texts
-                array('font-size' => 14, 'fill' => '#333'), // textparams
-                array('stroke' => '#333', 'stroke-width' => '1') // rectparams
+                ['font-size' => 14, 'fill' => '#333'], // textparams
+                ['stroke' => '#333', 'stroke-width' => '1'] // rectparams
             );
             $output .= html_writer::end_tag('svg');
         }
 
-        $params = array('class' => 'bg-light border rounded mt-1 mr-2 p-2 float-md-left vocab-results');
+        $params = ['class' => 'bg-light border rounded mt-1 mr-2 p-2 float-md-left vocab-results'];
         return html_writer::tag('div', $output, $params);
     }
 
@@ -309,7 +315,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $inprogress = 0;
         }
         $notstarted = ($total - $completed - $inprogress);
-        return array($total, $completed, $inprogress, $notstarted);
+        return [$total, $completed, $inprogress, $notstarted];
     }
 
     /**
@@ -344,26 +350,26 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function svg_fill_pattern($id, $width, $height, $fillcolor, $d, $strokecolor, $strokewidth) {
         $output = '';
         if ($fillcolor) {
-            $output .= html_writer::tag('rect', '', array(
+            $output .= html_writer::tag('rect', '', [
                 'width' => $width,
                 'height' => $height,
-                'fill' => $fillcolor
-            ));
+                'fill' => $fillcolor,
+            ]);
         }
         if ($strokecolor) {
-            $output .= html_writer::tag('path', '', array(
+            $output .= html_writer::tag('path', '', [
                 'd' => $d,
                 'stroke' => $strokecolor,
-                'stroke-width' => $strokewidth
-            ));
+                'stroke-width' => $strokewidth,
+            ]);
         }
         if ($output) {
-            $output = html_writer::tag('pattern', $output, array(
+            $output = html_writer::tag('pattern', $output, [
                 'id' => $id,
                 'width' => $width,
                 'height' => $height,
-                'patternUnits' => 'userSpaceOnUse'
-            ));
+                'patternUnits' => 'userSpaceOnUse',
+            ]);
         }
         return $output;
     }
@@ -437,7 +443,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
 
                 // Build the path d(efinition) and add it to the tag parameters.
                 $d = "M$center L$l A$a L$center Z";
-                $p = array('d' => $d, 'fill' => $colors[$i]);
+                $p = ['d' => $d, 'fill' => $colors[$i]];
 
                 $output .= html_writer::tag('path', '', array_merge($p, $params));
             }
@@ -449,11 +455,18 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function pie_graph_key($xoffset, $xspace, $yoffset, $yspace,
         $size, $colors, $delimiter, $texts, $textparams, $rectparams) {
 
-        $p = array('x' => $xoffset, 'y' => 0,
-                   'width' => $size, 'height' => $size);
+        $p = [
+            'x' => $xoffset,
+            'y' => 0,
+            'width' => $size,
+            'height' => $size,
+        ];
         $rectparams = array_merge($p, $rectparams);
 
-        $p = array('x' => $xoffset + $size + $xspace, 'y' => 0);
+        $p = [
+            'x' => $xoffset + $size + $xspace,
+            'y' => 0,
+        ];
         $textparams = array_merge($p, $textparams);
 
         $output = '';
@@ -463,8 +476,10 @@ class mod_vocab_renderer extends plugin_renderer_base {
             foreach ($texts as $t => $text) {
                 $lines = array_map('trim', explode($delimiter, $text, 2));
                 foreach ($lines as $l => $line) {
-                    $p = array('x' => $textparams['x'],
-                               'dy' => ($l * 1.2).'em');
+                    $p = [
+                        'x' => $textparams['x'],
+                        'dy' => ($l * 1.2).'em',
+                    ];
                     $lines[$l] = html_writer::tag('tspan', $line, $p);
                 }
                 $texts[$t] = implode('', $lines);
@@ -493,20 +508,20 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function view_wordlist($words) {
         $output = '';
 
-        $wordlist = array();
+        $wordlist = [];
         foreach ($words as $word) {
-            $wordlist[] = html_writer::tag('li', $word, array('class' => 'my-0 py-0 vocab-wordlist-word'));
+            $wordlist[] = html_writer::tag('li', $word, ['class' => 'my-0 py-0 vocab-wordlist-word']);
         }
 
         $title = $this->vocab->get_string('wordlistcontainingnwords', count($wordlist));
         $output .= html_writer::tag('h4', $title);
 
         if ($wordlist = implode('', $wordlist)) {
-            $params = array('class' => 'bg-white border rounded py-1 px-2 my-0 list-unstyled vocab-wordlist-words');
+            $params = ['class' => 'bg-white border rounded py-1 px-2 my-0 list-unstyled vocab-wordlist-words'];
             $output .= html_writer::tag('ul', $wordlist, $params);
         }
 
-        $params = array('class' => 'bg-light border rounded mt-1 mr-2 p-2 float-md-left vocab-wordlist');
+        $params = ['class' => 'bg-light border rounded mt-1 mr-2 p-2 float-md-left vocab-wordlist'];
         return html_writer::tag('div', $output, $params);
     }
 
@@ -528,7 +543,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $output .= $this->game_button($game, $gamecolors[$i], $textcolor);
         }
 
-        $params = array('class' => 'clearfix vocab-games');
+        $params = ['class' => 'clearfix vocab-games'];
         return html_writer::tag('div', $output, $params);
     }
 
@@ -538,25 +553,28 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @return string an HTML string.
      */
     public function get_games() {
-        $games = array();
+        $games = [];
         if ($this->vocab->is_demo()) {
             for ($i = 0; $i < rand(1, 20); $i++) {
-                $games[] = (object)array(
+                $games[] = (object)[
                     'name' => "vocabgame_$i",
                     'label' => 'Vocabulary game '.($i + 1),
-                    'url' => '#'
-                );
+                    'url' => '#',
+                ];
             }
         } else {
-            // Get the list of games available for this Vocab activity.
-            // Each game can be hidden or shown in any Vocab activity,
-            // and furthermore may have it's own settings to add into
-            // the module settings page.
-            // Each game can define its own icon (as an svg) of fontawesome icon.
-            // vocab_games table looks like this:
-            //     id name siteenabled
-            // vocab_game_instances table looks like this:
-            //     vocabid gameid enabled configdata
+            $games = [];
+            /* ====================== *\
+            Get the list of games available for this Vocab activity.
+            Each game can be hidden or shown in any Vocab activity,
+            and furthermore may have it's own settings to add into
+            the module settings page.
+            Each game can define its own icon (as an svg) of fontawesome icon.
+            vocab_games table looks like this:
+                id name siteenabled
+            vocab_game_instances table looks like this:
+                vocabid gameid enabled configdata
+            \* ====================== */
         }
         return $games;
     }
@@ -573,14 +591,14 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function game_button($game, $gamecolor='', $textcolor='') {
         // see "single_button" method in "lib/outputrenderers.php".
         // single_button($url, $label, $method='post', array $options=null)
-        $style = array();
+        $style = [];
         if ($gamecolor) {
             $style[] = "background-color: $gamecolor;";
         }
         if ($textcolor) {
             $style[] = "color: $textcolor;";
         }
-        $params = array();
+        $params = [];
         if ($style = implode('', $style)) {
             $params['style'] = $style;
         }
@@ -601,13 +619,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function get_colors($startcolor, $endcolor, $n) {
 
         if ($n == 0) {
-            return array();
+            return [];
         }
         if ($n == 1) {
-            return array($startcolor);
+            return [$startcolor];
         }
         if ($n == 2) {
-            return array($startcolor, $endcolor);
+            return [$startcolor, $endcolor];
         }
 
         $r1 = hexdec(substr($startcolor, 1, 2));
@@ -618,19 +636,18 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $g2 = hexdec(substr($endcolor, 3, 2));
         $b2 = hexdec(substr($endcolor, 5, 2));
 
-        $step_r = ($r2 - $r1) / ($n - 1);
-        $step_g = ($g2 - $g1) / ($n - 1);
-        $step_b = ($b2 - $b1) / ($n - 1);
+        $rstep = ($r2 - $r1) / ($n - 1);
+        $gstep = ($g2 - $g1) / ($n - 1);
+        $bstep = ($b2 - $b1) / ($n - 1);
 
-        $colors = array();
+        $colors = [];
         for ($i = 0; $i < $n; $i++) {
             // Calculate new RGB values and convert to hex.
-            $r = round($r1 + $i * $step_r);
-            $g = round($g1 + $i * $step_g);
-            $b = round($b1 + $i * $step_b);
+            $r = round($r1 + $i * $rstep);
+            $g = round($g1 + $i * $gstep);
+            $b = round($b1 + $i * $bstep);
             $colors[] = sprintf("#%02x%02x%02x", $r, $g, $b);
         }
         return $colors;
     }
-
 }

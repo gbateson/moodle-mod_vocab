@@ -36,27 +36,27 @@ defined('MOODLE_INTERNAL') || die();
  */
 function vocab_supports($feature) {
     // these constants are defined in "lib/moodlelib.php"
-    $constants = array(
+    $constants = [
         'FEATURE_ADVANCED_GRADING' => false,
-        'FEATURE_BACKUP_MOODLE2'   => true, // default=false
-        'FEATURE_COMMENT'          => true,
+        'FEATURE_BACKUP_MOODLE2' => true, // default=false
+        'FEATURE_COMMENT' => true,
         'FEATURE_COMPLETION_HAS_RULES' => true,
         'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
         'FEATURE_CONTROLS_GRADE_VISIBILITY' => false,
-        'FEATURE_GRADE_HAS_GRADE'  => true, // default=false
-        'FEATURE_GRADE_OUTCOMES'   => true,
-        'FEATURE_GROUPINGS'        => true, // default=false
+        'FEATURE_GRADE_HAS_GRADE' => true, // default=false
+        'FEATURE_GRADE_OUTCOMES' => true,
+        'FEATURE_GROUPINGS' => true, // default=false
         'FEATURE_GROUPMEMBERSONLY' => true, // default=false
-        'FEATURE_GROUPS'           => true,
-        'FEATURE_IDNUMBER'         => true, // Moodle >= 2.0
-        'FEATURE_MOD_INTRO'        => true,
+        'FEATURE_GROUPS' => true,
+        'FEATURE_IDNUMBER' => true, // Moodle >= 2.0
+        'FEATURE_MOD_INTRO' => true,
         'FEATURE_MODEDIT_DEFAULT_COMPLETION' => true,
-        'FEATURE_NO_VIEW_LINK'     => false,
-        'FEATURE_PLAGIARISM'       => false,
-        'FEATURE_RATE'             => false,
+        'FEATURE_NO_VIEW_LINK' => false,
+        'FEATURE_PLAGIARISM' => false,
+        'FEATURE_RATE' => false,
         'FEATURE_DESCRIPTION' => true, // default=false
-        'FEATURE_USES_QUESTIONS'   => false
-    );
+        'FEATURE_USES_QUESTIONS' => false,
+    ];
     if (defined('MOD_ARCHETYPE_OTHER')) {
         $constants['FEATURE_MOD_ARCHETYPE'] = MOD_ARCHETYPE_OTHER; // Moodle >= 2.x
     }
@@ -135,11 +135,9 @@ function vocab_delete_instance($id) {
     $cm = get_coursemodule_from_instance('vocab', $id);
     \core_completion\api::update_completion_date_event($cm->id, 'vocab', $id, null);
 
-    $params = array('vocabid', $vocab->id);
     // delete related records first (using $params), then ...
-    $DB->delete_records('vocab', array('id' => $vocab->id));
+    $DB->delete_records('vocab', ['id' => $vocab->id]);
 
-    return true;
 }
 
 /**
@@ -155,8 +153,8 @@ function vocab_delete_instance($id) {
  * @param stdClass $instance
  * @param cm_info $cm
  */
-//function vocab_extend_navigation(navigation_node $node, stdclass $course, stdclass $vocab, cm_info $cm) {
-//}
+// function vocab_extend_navigation(navigation_node $node, stdclass $course, stdclass $vocab, cm_info $cm) {
+// }
 
 /**
  * Adds module specific settings to the settings block
@@ -190,12 +188,12 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
         }
 
         // define the order of subplugins
-        $types = array(
-            'report' => array(),
-            'game' => array(),
-            'tool' => array('wordlist', 'dictionary', 'questionbank', 'import', 'phpdocs'),
-            'ai' => array('chatgpt'),
-        );
+        $types = [
+            'report' => [],
+            'game' => [],
+            'tool' => ['wordlist', 'dictionary', 'questionbank', 'import', 'phpdocs'],
+            'ai' => ['chatgpt'],
+        ];
 
         foreach ($types as $type => $order) {
 
@@ -237,7 +235,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
             if ($node->has_children()) {
                 $vocabnode->add_node($node, $beforekey);
             }
-       }
+        }
     }
 }
 
@@ -247,12 +245,12 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
  * @param object $node the parent navigation node
  * @param integer $type of the navigation node (see "lib/navigationlib.php")
  * @param string $name of this subplugin e.g. phpdocs
- * @param object $cm the course module object for the the current vocabulary activity 
+ * @param object $cm the course module object for the the current vocabulary activity
  */
 function vocab_extend_subplugin_navigation(navigation_node $node, $type, $name, $cm) {
     $label = get_string($name, "vocab{$type}_{$name}");
     $url = "/mod/vocab/$type/$name/index.php";
-    $url = new moodle_url($url, array('id' => $cm->id));
+    $url = new moodle_url($url, ['id' => $cm->id]);
     $icon = new pix_icon($name, '', "vocab{$type}_{$name}");
     $node->add($label, $url, navigation_node::TYPE_SETTING, null, $name, $icon);
 }
@@ -263,10 +261,11 @@ function vocab_extend_subplugin_navigation(navigation_node $node, $type, $name, 
  */
 function mod_vocab_get_fontawesome_icon_map() {
     // Actually this array is not used because the individual subplugins define their own icon map.
-    return array(
+    return [
         'mod_vocab:dictionary' => 'fa-book',
         'mod_vocab:import' => 'fa-database',
         'mod_vocab:phpdocs' => 'fa-code',
-        'mod_vocab:wordlist' => 'fa-list'
-    );
+        'mod_vocab:wordlist' => 'fa-list',
+    ];
 }
+

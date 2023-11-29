@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Get the standard Moodle form for mod plugins.
-require_once ($CFG->dirroot.'/course/moodleform_mod.php');
+require_once($CFG->dirroot.'/course/moodleform_mod.php');
 
 /**
  * mod_vocab_mod_form
@@ -49,7 +49,7 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @uses $CFG
      * @todo Finish documenting this function
      */
-    function definition() {
+    public function definition() {
         global $CFG;
 
         $this->collapse_navigation();
@@ -59,18 +59,18 @@ class mod_vocab_mod_form extends moodleform_mod {
         $plugin = 'mod_vocab';
         $config = get_config($plugin); // sitewide settings
 
-        $dateoptions = array('optional' => true);
-        $textoptions = array('size' => self::TEXT_NUM_SIZE);
+        $dateoptions = ['optional' => true];
+        $textoptions = ['size' => self::TEXT_NUM_SIZE];
 
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
         $name = 'general';
         $label = get_string($name, 'form');
         $mform->addElement('header', $name, $label);
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
 
         $name = 'name';
         $label = get_string('activityname', $plugin);
-        $mform->addElement('text', $name, $label, array('size' => '64'));
+        $mform->addElement('text', $name, $label, ['size' => '64']);
         $type = (empty($CFG->formatstringstriptags) ? PARAM_CLEANHTML : PARAM_TEXT);
         $mform->setType($name, $type);
         $mform->addRule($name, null, 'required', null, 'client');
@@ -80,30 +80,30 @@ class mod_vocab_mod_form extends moodleform_mod {
 
         $name = 'operationmode';
         $label = get_string($name, $plugin);
-        $options = array(
+        $options = [
             \mod_vocab\activity::MODE_LIVE => get_string('livemode', $plugin),
-            \mod_vocab\activity::MODE_DEMO => get_string('demonstrationmode', $plugin)
-        );
+            \mod_vocab\activity::MODE_DEMO => get_string('demonstrationmode', $plugin),
+        ];
         $mform->addElement('select', $name, $label, $options);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, \mod_vocab\activity::MODE_LIVE);
 
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
         $name = 'display';
         $label = get_string($name, 'form');
         $mform->addElement('header', $name, $label);
         $mform->setExpanded($name, true);
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
 
         $name = 'expandnavigation';
         $label = get_string($name, $plugin);
-        $options = array(
+        $options = [
             \mod_vocab\activity::EXPAND_EVERYONE => get_string('expandforeveryone', $plugin),
             \mod_vocab\activity::EXPAND_TEACHERS => get_string('expandforteachers', $plugin),
             \mod_vocab\activity::EXPAND_STUDENTS => get_string('expandforstudents', $plugin),
-            \mod_vocab\activity::EXPAND_NO_ONE => get_string('expandfornoone', $plugin)
-        );
+            \mod_vocab\activity::EXPAND_NO_ONE => get_string('expandfornoone', $plugin),
+        ];
 
         $mform->addElement('select', $name, $label, $options);
         $mform->addHelpButton($name, $name, $plugin);
@@ -118,21 +118,21 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform->setType($name, PARAM_ALPHA);
         $mform->setDefault($name, 'standard');
 
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
         $name = 'pagelayouts';
         $label = get_string($name, $plugin);
         $mform->addElement('header', $name, $label);
-        //$mform->setExpanded($name, true);
-        //-----------------------------------------------------------------------------
+        // $mform->setExpanded($name, true);
+        // -----------------------------------------------------------------------------
 
         $mform->addElement('html', $this->get_pagelayouts_table($plugin));
 
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
         $name = 'timing';
         $label = get_string($name, 'form');
         $mform->addElement('header', $name, $label);
-        //$mform->setExpanded($name, true);
-        //-----------------------------------------------------------------------------
+        // $mform->setExpanded($name, true);
+        // -----------------------------------------------------------------------------
 
         $name = 'activityopen'; // viewablefrom
         $label = get_string($name, $plugin);
@@ -158,12 +158,12 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform->addHelpButton($name, $name, $plugin);
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
         $name = 'wordmasteryconditions';
         $label = get_string($name, $plugin);
         $mform->addElement('header', $name, $label);
         $mform->setExpanded($name, true);
-        //-----------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------
 
         $this->add_attemptscore($mform, $plugin);
         $this->add_attemptcount($mform, $plugin);
@@ -207,7 +207,7 @@ class mod_vocab_mod_form extends moodleform_mod {
     public function add_attemptscore($mform, $plugin) {
         $name = 'attemptscore';
         $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, array('size' => '2'));
+        $mform->addElement('text', $name, $label, ['size' => '2']);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, 80);
@@ -223,7 +223,7 @@ class mod_vocab_mod_form extends moodleform_mod {
     public function add_attemptcount($mform, $plugin) {
         global $OUTPUT;
 
-        $elements = array();
+        $elements = [];
 
         $namecount = 'attemptcount';
         $labelcount = get_string($namecount, $plugin);
@@ -232,16 +232,16 @@ class mod_vocab_mod_form extends moodleform_mod {
 
         $nametype = 'attempttype';
         $labeltype = get_string($nametype, $plugin);
-        $options = array(
+        $options = [
             \mod_vocab\activity::ATTEMPTTYPE_ANY => get_string('anyattempts', $plugin),
             \mod_vocab\activity::ATTEMPTTYPE_RECENT => get_string('recentattempts', $plugin),
             \mod_vocab\activity::ATTEMPTTYPE_CONSECUTIVE => get_string('consecutiveattempts', $plugin),
-        );
+        ];
         $elements[] = $mform->createElement('select', $nametype, $labeltype, $options);
         $elements[] = $mform->createElement('html', $OUTPUT->help_icon($nametype, $plugin));
 
         $groupname = $namecount.'elements';
-        $mform->addGroup($elements, $groupname, $labelcount, array(' '), false);
+        $mform->addGroup($elements, $groupname, $labelcount, [' '], false);
         $mform->addHelpButton($groupname, $namecount, $plugin);
 
         $mform->setType($namecount, PARAM_INT);
@@ -263,13 +263,13 @@ class mod_vocab_mod_form extends moodleform_mod {
         $label = get_string($name, $plugin);
 
         // Cache line break element.
-        $linebreak = \html_writer::tag('span', '', array('class' => 'w-100'));
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
 
         // We don't use <br> because of the following rule in Moodle CSS:
         // .mform .form-inline br+label { width: 100%; }
         // This rule forces <label> folowing <br> onto its own line which we don't want.
 
-        $elements = array();
+        $elements = [];
 
         $text = get_string('none');
         $value = \mod_vocab\activity::ATTEMPTDELAY_NONE;
@@ -280,7 +280,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $value = \mod_vocab\activity::ATTEMPTDELAY_FIXED;
         $elements[] = $mform->createElement('radio', $name, $text, '', $value);
 
-        $options = array('defaultunit' => 60); // minutes
+        $options = ['defaultunit' => 60]; // minutes
         $elements[] = $mform->createElement('duration', $name.'fixed', '', $options);
         $elements[] = $mform->createElement('html', $linebreak);
 
@@ -289,7 +289,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $elements[] = $mform->createElement('radio', $name, $text, '', $value);
 
         $groupname = $name.'elements';
-        $mform->addGroup($elements, $groupname, $label, array(' '), false);
+        $mform->addGroup($elements, $groupname, $label, [' '], false);
         $mform->addHelpButton($groupname, $name, $plugin);
 
         $mform->setType($name, PARAM_INT);
@@ -344,7 +344,7 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @todo Finish documenting this function
      */
     public function add_completion_rules() {
-        return array();
+        return [];
     }
 
     /**
@@ -367,16 +367,16 @@ class mod_vocab_mod_form extends moodleform_mod {
      */
     public function get_pagelayouts() {
         global $PAGE;
-        $layouts = array();
-        $duplicates = array(
+        $layouts = [];
+        $duplicates = [
             // duplicates of the "base" layout
             'course', 'coursecategory', 'incourse', 'frontpage',
             'admin', 'mycourses', 'mydashboard', 'mypublic', 'report',
             // duplicates of the "popup" layouts
             'print', 'redirect',
             // duplicate of the "embedded" layout
-            'frametop'
-        );
+            'frametop',
+        ];
         foreach ($PAGE->theme->layouts as $name => $layout) {
             if (in_array($name, $duplicates)) {
                 continue;
@@ -417,9 +417,9 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @return string of HTML to display table of page layouts
      */
     public function get_pagelayouts_table($plugin) {
-        $rows = array();
+        $rows = [];
         foreach ($this->get_pagelayouts() as $name => $layout) {
-            $row = array(
+            $row = [
                 'name' => $name,
                 'file' => '',
                 'regions' => '',
@@ -434,7 +434,7 @@ class mod_vocab_mod_form extends moodleform_mod {
                 'option_activityheader_notitle' => '',
                 'option_activityheader_nocompletion' => '',
                 'option_activityheader_nodescription' => '',
-            );
+            ];
             if (isset($layout['file'])) {
                 $row['file'] = $layout['file'];
             }
@@ -460,12 +460,12 @@ class mod_vocab_mod_form extends moodleform_mod {
         }
         $table = new \html_table();
         $table->id = 'pagelayouts_table';
-        $table->head = array();
-        $table->data = array();
-        $table->align = array();
+        $table->head = [];
+        $table->data = [];
+        $table->align = [];
 
-        $table->rowclasses = array();
-        $table->colclasses = array();
+        $table->rowclasses = [];
+        $table->colclasses = [];
 
         $strman = get_string_manager();
         foreach ($rows as $r => $row) {
@@ -491,7 +491,7 @@ class mod_vocab_mod_form extends moodleform_mod {
                     $table->head[$c] = $cell;
 
                     $table->align[$c] = 'center';
-                    //$table->colclasses[$c] = ($c % 2 ? '' : 'bg-light');
+                    // $table->colclasses[$c] = ($c % 2 ? '' : 'bg-light');
                 }
             }
 
@@ -502,7 +502,7 @@ class mod_vocab_mod_form extends moodleform_mod {
                 }
                 if ($value == '1') {
                     $value = get_string('yes');
-                    $params = array('title' => $value, 'class' => 'fa fa-check-circle text-info');
+                    $params = ['title' => $value, 'class' => 'fa fa-check-circle text-info'];
                     $cell->text = \html_writer::tag('big', '', $params);
                 } else {
                     $cell->text = $value;
@@ -511,7 +511,7 @@ class mod_vocab_mod_form extends moodleform_mod {
             }
 
             $table->data[] = new \html_table_row(array_values($row));
-            //$table->rowclasses[$r] = ($r % 2 ? '' : 'bg-light');
+            // $table->rowclasses[$r] = ($r % 2 ? '' : 'bg-light');
         }
 
         return \html_writer::table($table);
@@ -531,3 +531,4 @@ class mod_vocab_mod_form extends moodleform_mod {
         )->collapse_navigation();
     }
 }
+

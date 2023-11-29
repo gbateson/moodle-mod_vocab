@@ -49,3 +49,4 @@ $string['export'] = 'Export';
 
 $string['wordaddedtolist'] = 'Word "{$a}" was added to this word list.';
 $string['wordexistsinlist'] = 'Word "{$a}" is already in this word list.';
+

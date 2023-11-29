@@ -27,3 +27,4 @@
 $string['pluginname'] = 'Edit dictionary data used by Vocabulary activities';
 $string['privacy:metadata'] = 'The vocabtool_dictionary plugin does not store any personal data.';
 $string['dictionary'] = 'Edit dictionary';
+

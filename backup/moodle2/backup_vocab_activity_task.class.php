@@ -24,39 +24,46 @@
  * @since      Moodle 3.11
  */
 
-// Word dictionary tables
-// $tables = array(
-//     'mdl_vocab_antonyms',
-//     'mdl_vocab_corpuses',
-//     'mdl_vocab_definitions',
-//     'mdl_vocab_frequencies',
-//     'mdl_vocab_langnames',
-//     'mdl_vocab_langs',
-//     'mdl_vocab_lemmas',
-//     'mdl_vocab_levelnames',
-//     'mdl_vocab_levels',
-//     'mdl_vocab_multimedia',
-//     'mdl_vocab_pronunciations',
-//     'mdl_vocab_synonyms',
-//     'mdl_vocab_words',
-// );
+/**
+Word dictionary tables
+$tables = [
+    'mdl_vocab_antonyms',
+    'mdl_vocab_corpuses',
+    'mdl_vocab_definitions',
+    'mdl_vocab_frequencies',
+    'mdl_vocab_langnames',
+    'mdl_vocab_langs',
+    'mdl_vocab_lemmas',
+    'mdl_vocab_levelnames',
+    'mdl_vocab_levels',
+    'mdl_vocab_multimedia',
+    'mdl_vocab_pronunciations',
+    'mdl_vocab_synonyms',
+    'mdl_vocab_words',
+];
 
-// Game tables
-// $table = array(
-//     'mdl_vocab_games',
-// );
+Game tables
+$table = [
+    'mdl_vocab_games',
+];
 
-// Activity tables
-// $tables = array(
-//     'mdl_vocab',
-//     'mdl_vocab_game_instances',
-//     'mdl_vocab_word_instances',
-//     'mdl_vocab_word_usages'
-// );
+AI access tables
+$tables = [
+    'mdl_vocab_ai_access',
+    'mdl_vocab_ai_prompt',
+]
 
-// User data tables
-// $tables = array(
-//     'mdl_vocab_game_attempts',
-//     'mdl_vocab_word_attempts',
-// );
+Activity tables
+$tables = [
+    'mdl_vocab',
+    'mdl_vocab_game_instances',
+    'mdl_vocab_word_instances',
+    'mdl_vocab_word_usages',
+];
 
+User data tables
+$tables = [
+    'mdl_vocab_game_attempts',
+    'mdl_vocab_word_attempts',
+];
+\* ======================== */

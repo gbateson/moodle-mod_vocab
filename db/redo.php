@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -58,7 +57,7 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
         $mm = $match[2];
         $dd = $match[3];
         $vv = intval($match[4]);
-        $text = date($dateformat, mktime(0,0,0,$mm,$dd,$yy)).($vv==0 ? '' : " ($vv)");
+        $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).($vv == 0 ? '' : " ($vv)");
     } else {
         $text = ''; // shouldn't happen !!
     }
@@ -67,7 +66,7 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
     $dbman = $DB->get_manager();
     if ($dbman->table_exists('config_plugins')) {
         // Moodle >= 2.6
-        $params = array('plugin' => 'mod_vocab', 'name' => 'version');
+        $params = ['plugin' => 'mod_vocab', 'name' => 'version'];
         $DB->set_field('config_plugins', 'value', $version - 1, $params);
         // force Moodle to refetch versions
         if (isset($CFG->allversionshash)) {
@@ -79,16 +78,16 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
     echo html_writer::tag('p', "Vocab activity module version set to just before $version - $text");
 
     // link to upgrade page
-    $href = new moodle_url('/admin/index.php', array('confirmplugincheck' => 1, 'cache'=>0));
-    echo html_writer::tag('p', html_writer::tag('a', 'Click here to continue', array('href' => $href)));
+    $href = new moodle_url('/admin/index.php', ['confirmplugincheck' => 1, 'cache' => 0]);
+    echo html_writer::tag('p', html_writer::tag('a', 'Click here to continue', ['href' => $href]));
 
 } else { // no $version given, so offer a form to select $version
 
     // start form
-    echo html_writer::start_tag('form', array('action' => $FULLME, 'method' => 'post'));
+    echo html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
     echo html_writer::start_tag('div');
 
-    $versions = array();
+    $versions = [];
 
     // extract and format the current version
     $contents = file_get_contents($CFG->dirroot.'/mod/vocab/version.php');
@@ -98,26 +97,26 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
         $dd = $matches[3];
         $vv = $matches[4];
         $version = "$yy$mm$dd$vv";
-        $versions[$version] = date($dateformat, mktime(0,0,0,$mm,$dd,$yy)).(intval($vv)==0 ? '' : " ($vv)");
+        $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
     }
 
     // extract and format versions from upgrade script
     $contents = file_get_contents($CFG->dirroot.'/mod/vocab/db/upgrade.php');
-    preg_match_all('/(?<=\$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
-    $i_max = count($matches[0]);
-    for ($i=0; $i<$i_max; $i++) {
+    preg_match_all('/(? <= \$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
+    $imax = count($matches[0]);
+    for ($i = 0; $i < $imax; $i++) {
         $version = $matches[0][$i];
         $yy = $matches[1][$i];
         $mm = $matches[2][$i];
         $dd = $matches[3][$i];
         $vv = $matches[4][$i];
-        $versions[$version] = date($dateformat, mktime(0,0,0,$mm,$dd,$yy)).(intval($vv)==0 ? '' : " ($vv)");
+        $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
     }
     krsort($versions);
 
     // add form elements
     echo get_string('version').' '.html_writer::select($versions, 'version').' ';
-    echo html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('go')));
+    echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
 
     // finish form
     echo html_writer::end_tag('div');
@@ -126,3 +125,4 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
 
 echo $renderer->box_end();
 echo $renderer->footer();
+

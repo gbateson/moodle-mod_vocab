@@ -30,6 +30,6 @@ $plugin->cron      = 0;
 $plugin->component = 'vocabai_chatgpt';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2023110100; // follows version of mod_vocab
+$plugin->version   = 2023110100;
 $plugin->release   = '2023-11-01 (00)';
 

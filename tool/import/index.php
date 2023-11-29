@@ -40,10 +40,10 @@ require_capability('mod/vocab:manage', $tool->vocab->context);
 $PAGE->set_url($tool->index_url());
 $PAGE->set_title($tool->get_string('pluginname'));
 $PAGE->set_heading($tool->get_string('pluginname'));
-$PAGE->activityheader->set_attrs(array(
+$PAGE->activityheader->set_attrs([
     'hidecompletion' => true,
-    'description' => $tool->get_string('pluginname')
-));
+    'description' => $tool->get_string('pluginname'),
+]);
 
 $tool->vocab->collapse_navigation();
 $tool->vocab->set_pagelayout();
@@ -60,7 +60,7 @@ if ($formstate == 'cancelled') {
 echo $OUTPUT->header();
 
 if ($mform->is_submitted() && $mform->is_validated()) {
-    if ($formstate=='preview' || $formstate=='review' || $formstate=='import') {
+    if ($formstate == 'preview' || $formstate == 'review' || $formstate == 'import') {
         echo $OUTPUT->box_start();
         echo $mform->render_data_table();
         echo $OUTPUT->box_end();
@@ -70,3 +70,4 @@ if ($mform->is_submitted() && $mform->is_validated()) {
 $mform->display();
 
 echo $OUTPUT->footer();
+

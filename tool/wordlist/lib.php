@@ -30,5 +30,5 @@ defined('MOODLE_INTERNAL') || die;
  * Define the icon for this vocab tool
  */
 function vocabtool_wordlist_get_fontawesome_icon_map() {
-    return array('vocabtool_wordlist:wordlist' => 'fa-list');
+    return ['vocabtool_wordlist:wordlist' => 'fa-list'];
 }

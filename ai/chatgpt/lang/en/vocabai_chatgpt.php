@@ -27,3 +27,4 @@
 $string['pluginname'] = 'ChatGPT AI assistant for a Vocabulary activity.';
 $string['privacy:metadata'] = 'The vocabai_chatgpt plugin does not store any personal data.';
 $string['chatgpt'] = 'ChatGPT';
+

@@ -158,3 +158,4 @@ $string['noactivityheader'] = 'No activity header ';
 $string['notitle'] = 'No title';
 $string['nocompletion'] = 'No completion information';
 $string['nodescription'] = 'No description';
+

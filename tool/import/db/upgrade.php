@@ -47,3 +47,4 @@ function xmldb_vocabtool_import_upgrade($oldversion) {
 
     return $result;
 }
+

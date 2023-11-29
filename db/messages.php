@@ -26,4 +26,4 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$addons = array();
+$addons = [];

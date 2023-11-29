@@ -50,7 +50,7 @@ class form extends \mod_vocab\toolform {
      *
      * @todo Finish documenting this function
      */
-    function definition() {
+    public function definition() {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
@@ -58,3 +58,4 @@ class form extends \mod_vocab\toolform {
         $mform->addElement('html', $msg);
     }
 }
+

@@ -50,7 +50,7 @@ class form extends \mod_vocab\toolform {
      *
      * @todo Finish documenting this function
      */
-    function definition() {
+    public function definition() {
         global $PAGE, $_POST;
 
         $mform = $this->_form;
@@ -59,10 +59,12 @@ class form extends \mod_vocab\toolform {
         if (($data = data_submitted()) && confirm_sesskey()) {
 
             // element name => type of associated value
-            $names = array('addwords' => PARAM_TEXT,
-                           'selectwords' => PARAM_INT,
-                           'importfile' => PARAM_INT,
-                           'exportfile' => PARAM_FILE);
+            $names = [
+                'addwords' => PARAM_TEXT,
+                'selectwords' => PARAM_INT,
+                'importfile' => PARAM_INT,
+                'exportfile' => PARAM_FILE,
+            ];
 
             foreach ($names as $name => $type) {
 
@@ -72,13 +74,13 @@ class form extends \mod_vocab\toolform {
                 if (empty($data->$groupname)) {
                     continue; // No form element - shouldn't happen !!
                 }
-                if (empty($data->$groupname[$buttonname])) {
+                if (empty($data->{$groupname}[$buttonname])) {
                     continue; // Button was not pressed, so ignore.
                 }
-                if (empty($data->$groupname[$name])) {
+                if (empty($data->{$groupname}[$name])) {
                     continue; // No data - shouldn't happen !!
                 }
-                $value = $data->$groupname[$name];
+                $value = $data->{$groupname}[$name];
                 if ($value = clean_param($value, $type)) {
                     $this->$name($mform, $value);
                 }
@@ -93,21 +95,21 @@ class form extends \mod_vocab\toolform {
         $name = 'addwords';
         $groupname = $name.'elements';
         $label = get_string($name, $this->tool);
-        $options = array('rows' => 2, 'cols' => 20);
-        $elements = array(
+        $options = ['rows' => 2, 'cols' => 20];
+        $elements = [
             $mform->createElement('textarea', $name, '', $options),
-            $mform->createElement('submit', $name.'button', get_string('add', $this->tool))
-        );
+            $mform->createElement('submit', $name.'button', get_string('add', $this->tool)),
+        ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->tool);
 
         $name = 'selectwords';
         $groupname = $name.'elements';
         $label = get_string($name, $this->tool);
-        $elements = array(
-            $mform->createElement('text', $name, $label, array('size' => 2)),
-            $mform->createElement('submit', $name.'button', get_string('select', $this->tool))
-        );
+        $elements = [
+            $mform->createElement('text', $name, $label, ['size' => 2]),
+            $mform->createElement('submit', $name.'button', get_string('select', $this->tool)),
+        ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->tool);
         $mform->setDefault($groupname.'['.$name.']', 10);
@@ -118,11 +120,11 @@ class form extends \mod_vocab\toolform {
         $name = 'importfile';
         $groupname = $name.'elements';
         $label = get_string($name, $this->tool);
-        $options = array('accepted_types' => array('.txt', '.xml')); // '.csv', '.xlsx', '.xls', '.ods'
-        $elements = array(
+        $options = ['accepted_types' => ['.txt', '.xml']]; // '.csv', '.xlsx', '.xls', '.ods'
+        $elements = [
             $mform->createElement('filepicker', $name, $label, '', $options),
-            $mform->createElement('submit', $name.'button', get_string('import', $this->tool))
-        );
+            $mform->createElement('submit', $name.'button', get_string('import', $this->tool)),
+        ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->tool);
 
@@ -134,10 +136,10 @@ class form extends \mod_vocab\toolform {
         $name = 'exportfile';
         $groupname = $name.'elements';
         $label = get_string($name, $this->tool);
-        $elements = array(
-            $mform->createElement('text', $name, $label, '', array('size' => 20)),
-            $mform->createElement('submit', $name.'button', get_string('export', $this->tool))
-        );
+        $elements = [
+            $mform->createElement('text', $name, $label, '', ['size' => 20]),
+            $mform->createElement('submit', $name.'button', get_string('export', $this->tool)),
+        ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->tool);
         $mform->setDefault($groupname.'['.$name.']', $filename);
@@ -149,7 +151,7 @@ class form extends \mod_vocab\toolform {
     /**
      * validation
      */
-    function validation($data, $files) {
+    public function validation($data, $files) {
         global $USER;
 
         if ($errors = parent::validation($data, $files)) {
@@ -164,10 +166,10 @@ class form extends \mod_vocab\toolform {
      */
     public function get_wordlist() {
         global $OUTPUT;
-        $list = array();
+        $list = [];
         $words = $this->get_vocab()->get_wordlist_words();
         if (count($words)) {
-            $params = array('class' => 'rounded border bg-light py-2 pr-3');
+            $params = ['class' => 'rounded border bg-light py-2 pr-3'];
             return \html_writer::alist(array_values($words), $params, 'ol');
         } else {
             $msg = $this->get_vocab()->get_string('nowordsfound');
@@ -204,17 +206,17 @@ class form extends \mod_vocab\toolform {
         // all words, or even different lang for each word.
         $langcode = 'en';
 
-        $msg = array();
+        $msg = [];
         foreach ($newwords as $newword) {
 
             if (in_array($newword, $words)) {
                 $msg[] = get_string('wordexistsinlist', $this->tool, $newword);
             } else {
                 $lemma = $this->get_lemma($newword, $langcode);
-                $langid = $this->get_record_id('vocab_langs', array('langcode' => $langcode));
-                $lemmaid = $this->get_record_id('vocab_lemmas', array('langid' => $langid, 'lemma' => $lemma));
-                $wordid = $this->get_record_id('vocab_words', array('lemmaid' => $lemmaid, 'word' => $newword));
-                $id = $this->get_record_id('vocab_word_instances', array('vocabid' => $vocabid, 'wordid' => $wordid));
+                $langid = $this->get_record_id('vocab_langs', ['langcode' => $langcode]);
+                $lemmaid = $this->get_record_id('vocab_lemmas', ['langid' => $langid, 'lemma' => $lemma]);
+                $wordid = $this->get_record_id('vocab_words', ['lemmaid' => $lemmaid, 'word' => $newword]);
+                $id = $this->get_record_id('vocab_word_instances', ['vocabid' => $vocabid, 'wordid' => $wordid]);
                 $msg[] = get_string('wordaddedtolist', $this->tool, $newword);
                 $words[$wordid] = $newword;
             }
@@ -240,7 +242,7 @@ class form extends \mod_vocab\toolform {
         $select = 'lmm.id, lmm.lemma';
         $from = '{vocab_words} wrd, {vocab_lemmas} lmm, {vocab_langs} lng';
         $where = 'wrd.word = ? AND wrd.lemmaid = lmm.id AND lmm.langid = lng.id AND lng.langcode = ?';
-        $params = array($word, $langcode);
+        $params = [$word, $langcode];
         if ($lemmas = $DB->get_records_sql("SELECT $select FROM $from WHERE $where", $params)) {
             // Lemma found in $DB.
             return reset($lemmas)->lemma;
@@ -270,7 +272,7 @@ class form extends \mod_vocab\toolform {
         $select = 'vwi.id, vwi.wordid';
         $from = '{vocab_word_instances} vwi, {vocab} v';
         $where = 'vwi.vocabid = v.id AND v.course = ?';
-        $params = array($this->get_vocab()->course->id);
+        $params = [$this->get_vocab()->course->id];
         $words = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params);
 
         // Build SQL to select a random word that is not already used in a Vocab activity in this course.
@@ -282,7 +284,7 @@ class form extends \mod_vocab\toolform {
             $where = "vw.id $where";
         } else {
             $where = 'vw.id > 0';
-            $params = array();
+            $params = [];
         }
         $where .= ' AND vw.lemmaid = vl.id AND vw.word = vl.lemma';
 
@@ -304,11 +306,13 @@ class form extends \mod_vocab\toolform {
             asort($words);
             foreach (array_keys($words) as $wordid) {
                 // Fetch/create a word instance id for this word.
-                $params = array('vocabid' => $this->get_vocab()->id,
-                                'wordid' => $wordid);
+                $params = [
+                    'vocabid' => $this->get_vocab()->id,
+                    'wordid' => $wordid,
+                ];
                 $wordinstanceid = $this->get_record_id('vocab_word_instances', $params);
             }
-            $params = array('class' => 'rounded border bg-light py-2 pr-3');
+            $params = ['class' => 'rounded border bg-light py-2 pr-3'];
             $msg = \html_writer::alist(array_values($words), $params, 'ol');
             return $mform->addElement('html', $msg);
         } else {
@@ -357,3 +361,4 @@ class form extends \mod_vocab\toolform {
         }
     }
 }
+

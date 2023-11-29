@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -60,10 +59,10 @@ abstract class toolform extends \mod_vocab\form {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 if (is_numeric($attributes)) {
-                    $attributes = array('size' => $attributes);
+                    $attributes = ['size' => $attributes];
                 } else {
                     // e.g. 'disabled'
-                    $attributes = array($attributes => $attributes);
+                    $attributes = [$attributes => $attributes];
                 }
             }
             if (array_key_exists('multiple', $attributes)) {
@@ -81,7 +80,7 @@ abstract class toolform extends \mod_vocab\form {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 // e.g. 'disabled' or 'multiple'
-                $attributes = array($attributes => $attributes);
+                $attributes = [$attributes => $attributes];
             }
             if (array_key_exists('multiple', $attributes)) {
                 $attributes['size'] = min(6, count($options));

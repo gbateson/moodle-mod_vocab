@@ -61,24 +61,24 @@ class form extends \mod_vocab\toolform {
      * @uses $USER
      * @todo Finish documenting this function
      */
-    function definition() {
+    public function definition() {
         global $CFG, $USER;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        $textoptions = array('size' => '32');
+        $textoptions = ['size' => '32'];
         $filetypes = $this->get_filetypes();
         $actions = $this->get_actions();
 
         // Heading for file settings.
         $this->add_heading($mform, 'filesettings', $this->tool, true);
 
-        $params = array_merge($textoptions, array('disabled' => 'disabled'));
+        $params = array_merge($textoptions, ['disabled' => 'disabled']);
         $this->add_field_text($mform, 'folderpath', PARAM_PATH, '/mod/vocab', $params);
         $this->add_field_text($mform, 'filepath', PARAM_PATH, '', $textoptions);
 
-        $this->add_field_select($mform, 'filetypes', $filetypes, PARAM_ALPHA, array('php'), 'multiple');
+        $this->add_field_select($mform, 'filetypes', $filetypes, PARAM_ALPHA, ['php'], 'multiple');
         $mform->disabledIf('filetypes', 'filepath', 'ne', '');
 
         // Heading for search and replace settings.
@@ -102,16 +102,16 @@ class form extends \mod_vocab\toolform {
     }
 
     public function get_filetypes() {
-        return array(
+        return [
             'php' => get_string('phpfiles', $this->tool),
             'js' => get_string('jsfiles', $this->tool),
             'css' => get_string('cssfiles', $this->tool),
-            'xml' => get_string('xmlfiles', $this->tool)
-        );
+            'xml' => get_string('xmlfiles', $this->tool),
+        ];
     }
 
     public function get_actions() {
-        return array(
+        return [
             self::ACTION_NONE => get_string('none'),
             self::ACTION_REPORT_ALL => get_string('reportall', $this->tool),
             self::ACTION_REPORT_MISSING => get_string('reportmissing', $this->tool),
@@ -119,7 +119,8 @@ class form extends \mod_vocab\toolform {
             self::ACTION_FIX_ALL => get_string('fixall', $this->tool),
             self::ACTION_FIX_MISSING => get_string('fixmissing', $this->tool),
             self::ACTION_FIX_INCORRECT => get_string('fixincorrect', $this->tool),
-            self::ACTION_REMOVE_ALL => get_string('removeall', $this->tool)
-        );
+            self::ACTION_REMOVE_ALL => get_string('removeall', $this->tool),
+        ];
     }
 }
+

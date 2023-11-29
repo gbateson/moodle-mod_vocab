@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -65,7 +64,7 @@ class toolbase {
      * @return xxx
      * @todo Finish documenting this function
      */
-    static public function create() {
+    public static function create() {
         $class = get_called_class();
         return new $class();
     }
@@ -75,7 +74,7 @@ class toolbase {
      *
      * @return object moodle_url
      */
-    public function url($filepath, $escaped=null, $params=array()) {
+    public function url($filepath, $escaped=null, $params=[]) {
         if ($this->vocab && $this->vocab->cm) {
             $params['id'] = $this->vocab->cm->id;
         }
@@ -92,7 +91,7 @@ class toolbase {
      *
      * @return object moodle_url
      */
-    public function index_url($escaped=null, $params=array()) {
+    public function index_url($escaped=null, $params=[]) {
         return $this->url('index.php', $escaped, $params);
     }
 
@@ -115,7 +114,7 @@ class toolbase {
     public function get_mform() {
         global $PAGE;
         $mform = "\\$this->plugin\\form";
-        $params = array('tool' => $this);
+        $params = ['tool' => $this];
         return new $mform($PAGE->url->out(), $params);
     }
 

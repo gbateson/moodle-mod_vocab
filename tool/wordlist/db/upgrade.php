@@ -47,3 +47,4 @@ function xmldb_vocabtool_wordlist_upgrade($oldversion) {
 
     return $result;
 }
+

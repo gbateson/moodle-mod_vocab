@@ -65,13 +65,14 @@ class mobile {
             // in a good enough role, tell them to enrol.
             $html = $renderer->view_page_notenrolled();
         }
-        //$html = $OUTPUT->render_from_template("mod_vocab/mobile_view_page_$versioncode", $data);
+        // $html = $OUTPUT->render_from_template("mod_vocab/mobile_view_page_$versioncode", $data);
 
         return [
             'templates' => [['id' => 'main', 'html' => $html]],
             'javascript' => '',
             'otherdata' => '',
-            'files' => ''
+            'files' => '',
         ];
     }
 }
+
