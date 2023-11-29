@@ -62,6 +62,9 @@ class activity {
     /** @var stdclass vocab config settings */
     public $config = null;
 
+    /** @var stdclass course category record */
+    public $coursecat = null;
+
     /** @var stdclass course record */
     public $course = null;
 
@@ -757,5 +760,59 @@ class activity {
             $PAGE->set_pagelayout($this->pagelayout);
         }
     }
-}
 
+    public function get_writeable_contexts() {
+        $contexts = [];
+
+        // Check the module context.
+        $id = $this->vocab->cm->id;
+        $context = context_module::instance($id);
+        if (has_capability('mod/vocab:manage', $context)) {
+            $contexts[CONTEXT_MODULE] = $context;
+
+            // Check the course context.
+            $id = $this->vocab->course->id;
+            $context = context_course::instance($id);
+            if (has_capability('moodle/course:manageactivities', $context)) {
+                $contexts[CONTEXT_COURSE] = $context;
+
+                // Check the course category context.
+                $id = $this->vocab->course->category;
+                $context = context_coursecat::instance($id);
+                if (has_capability('moodle/category:manage', $context)) {
+                    $contexts[CONTEXT_COURSECAT] = $context;
+
+                    // Check the site context.
+                    $context = context_system::instance();
+                    if (has_capability('moodle/site:config', $context)) {
+                        $contexts[CONTEXT_SITE] = $context;
+                    }
+                }
+            }
+        }
+        return $contexts;
+    }
+
+    public function get_question_categories($toponly=false) {
+        global $CFG;
+        require_once($CFG->dirrot.'/lib/questionlib.php');
+
+        $categories = [];
+        $contexts = $this->get_writeable_contexts();
+        if ($toponly) {
+            // This will make only "top" question cateogries.
+            foreach ($contexts as $type => $context) {
+                $categories[$type] = question_get_top_category($context->id, true);
+            }
+        } else {
+            // This will make "top" and "default" question cateogries.
+            question_make_default_categories($contexts);
+            foreach ($contexts as $type => $context) {
+                $top = question_get_top_category($context->id);
+                $params = ['contextid' => $context->id, 'parent' => $top->id];
+                $categories[$type] = $DB->get_record('question_categories', $params);
+            }
+        }
+        return $categories;
+    }
+}

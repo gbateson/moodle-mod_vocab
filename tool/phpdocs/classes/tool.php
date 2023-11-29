@@ -217,18 +217,18 @@ class tool extends \mod_vocab\toolbase {
                     }
                 }
 
-                $filepath = $path.'/'.$item;
+                $itempath = $path.'/'.$item;
 
                 if ($item->isDir()) {
-                    $paths[] = $filepath;
+                    $paths[] = $itempath;
                 } else if ($item->isFile()) {
 
-                    $fullpath = $CFG->dirroot.'/'.$filepath;
+                    $fullpath = $CFG->dirroot.'/'.$itempath;
                     $filetype = pathinfo($path, PATHINFO_EXTENSION);
 
                     $update = false;
                     if ($contents = @file_get_contents($fullpath)) {
-                        if ($report = $this->copyright_action($mform, $data, $filepath, $caction, $contents, $update)) {
+                        if ($report = $this->copyright_action($mform, $data, $itempath, $caction, $contents, $update)) {
                             foreach ($report as $f => $r) {
                                 if (count($r)) {
                                     if (empty($result[$f])) {
@@ -239,7 +239,7 @@ class tool extends \mod_vocab\toolbase {
                                 }
                             }
                         }
-                        if ($report = $this->phpdocs_action($mform, $data, $filepath, $paction, $contents, $update)) {
+                        if ($report = $this->phpdocs_action($mform, $data, $itempath, $paction, $contents, $update)) {
                             foreach ($report as $f => $r) {
                                 if (count($r)) {
                                     if (empty($result[$f])) {
@@ -253,7 +253,7 @@ class tool extends \mod_vocab\toolbase {
                     }
 
                     if ($update) {
-                        echo "Write new content to $filepath<br>";
+                        echo "Write new content to $itempath<br>";
                         file_put_contents($fullpath, $contents);
                     }
                 }
@@ -280,9 +280,9 @@ class tool extends \mod_vocab\toolbase {
      */
     public function get_report_remove_fix($action, $missing, $incorrect, $mform) {
 
-        $fix = false;
-        $remove = false;
         $report = false;
+        $remove = false;
+        $fix = false;
 
         switch ($action) {
             case $mform::ACTION_REPORT_ALL: // 1
@@ -310,7 +310,7 @@ class tool extends \mod_vocab\toolbase {
                 break;
 
             case $mform::ACTION_REMOVE_ALL: // 7
-                $report = ($missing || $incorrect);
+                $remove = true;
                 break;
         }
         return [$report, $remove, $fix];
@@ -888,7 +888,7 @@ END;
         // get $pos(ition) of end of function
         if ($pos = strpos($contents, "\n$indent}", $start)) {
             $substr = substr($contents, $start, $pos - $start);
-            if (preg_match_all('/(? <= global )\$[^;]*(?=;)/', $substr, $matches)) {
+            if (preg_match_all('/(?<=global )\$[^;]*(?=;)/', $substr, $matches)) {
                 $globals = [];
                 foreach ($matches[0] as $match) {
                     $match = explode(',', $match);

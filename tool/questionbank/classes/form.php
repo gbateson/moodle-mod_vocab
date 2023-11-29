@@ -266,7 +266,7 @@ class form extends \mod_vocab\toolform {
                 $from = '{vocab_word_instances} vwi, {vocab_words} vw';
                 list($where, $params) = $DB->get_in_or_equal(array_keys($data->selectedwords));
                 $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where;
-                array_unshift($params, $this->get_vocab()->id);
+                $params = array_merge([$this->get_vocab()->id], $params);
                 $order = 'vwi.sortorder, vw.word';
 
                 $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
@@ -300,13 +300,13 @@ class form extends \mod_vocab\toolform {
             if (property_exists($data, $groupname)) {
                 if (array_key_exists($name, $data->$groupname)) {
                     $parentcatid = $data->{$groupname}[$name];
-                    $courseid = $this->get_vocab()->course->id;
-                    $contextid = \context_course::instance($courseid)->id;
-                    $params = ['id' => $parentcatid, 'contextid' => $contextid];
-                    if ($DB->record_exists('question_categories', $params)) {
-                        $parentcatname = $DB->get_field('question_categories', 'name', ['id' => $parentcatid]);
+                    $categories = $this->get_question_categories();
+                    if (array_key_exists($parentcatid, $categories)) {
+                        $parentcatname = $categories[$parentcatid];
                     } else {
-                        $parentcatid = 0; // shouldn't happen !!
+                        // We've been given an invalid $parentcatid !!
+                        $parentcatid = key($categories);
+                        $parentcatname = reset($categories);
                     }
                 }
                 unset($data->$groupname);
@@ -327,17 +327,26 @@ class form extends \mod_vocab\toolform {
                 $dd = ['class' => 'col-9'];
                 echo \html_writer::start_tag('dl', $dl);
                 if ($words) {
-                    echo \html_writer::tag('dt', 'Words: ', $dt).\html_writer::tag('dd', implode(', ', $words), $dd);
+                    echo \html_writer::tag('dt', 'Words: ', $dt).
+                         \html_writer::tag('dd', implode(', ', $words), $dd);
                 }
                 if ($qtypes) {
-                    echo \html_writer::tag('dt', 'Question types:', $dt).\html_writer::tag('dd', implode(', ', $qtypes), $dd);
+                    echo \html_writer::tag('dt', 'Question types:', $dt).
+                         \html_writer::tag('dd', implode(', ', $qtypes), $dd);
                 }
                 if ($qlevels) {
-                    echo \html_writer::tag('dt', 'Question levels:', $dt).\html_writer::tag('dd', implode(', ', $qlevels), $dd);
+                    echo \html_writer::tag('dt', 'Question levels:', $dt).
+                         \html_writer::tag('dd', implode(', ', $qlevels), $dd);
                 }
-                echo \html_writer::tag('dt', 'Question count:', $dt).\html_writer::tag('dd', $qcount, $dd);
-                echo \html_writer::tag('dt', 'Parent category:', $dt).\html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
-                echo \html_writer::tag('dt', 'Subcategory type:', $dt).\html_writer::tag('dd', $subcattype, $dd);
+                echo \html_writer::tag('dt', 'Question count:', $dt).
+                     \html_writer::tag('dd', $qcount, $dd);
+
+                echo \html_writer::tag('dt', 'Parent category:', $dt).
+                     \html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
+
+                echo \html_writer::tag('dt', 'Subcategory type:', $dt).
+                     \html_writer::tag('dd', $subcattype, $dd);
+
                 echo \html_writer::end_tag('dl');
             }
         }
