@@ -32,6 +32,8 @@ class tool extends \mod_vocab\toolbase {
 
     protected $paramnames = null;
 
+    protected $messages = [];
+
     /**
      * __construct
      *
@@ -259,13 +261,9 @@ class tool extends \mod_vocab\toolbase {
                 }
             }
             $path = next($paths);
-        }
+        } // end while
 
-        if (empty($result)) {
-            echo 'No items were updated.';
-        } else {
-            echo 'Updated items.';
-        }
+        $this->display_messages();
     }
 
     /**
@@ -344,27 +342,17 @@ class tool extends \mod_vocab\toolbase {
         $result = [$filepath => []];
 
         if ($report) {
-            $result[$filepath][] = $this->report_copyright();
+            $this->store_copyright_message($filepath, 'missing');
         } else {
-            if ($remove) {
-                $result[$filepath][] = $this->remove_coppyright($contents, $update);
+            if ($remove && $this->remove_copyright($contents, $update)) {
+                $this->store_copyright_message($filepath, 'removed');
             }
-            if ($fix) {
-                $result[$filepath][] = $this->add_copyright($contents, $update);
+            if ($fix && $this->add_copyright($contents, $update)) {
+                $this->store_copyright_message($filepath, 'added');
             }
         }
 
         return $result;
-    }
-
-    /**
-     * report_copyright
-     *
-     * @return xxx
-     * @todo Finish documenting this function
-     */
-    public function report_copyright() {
-        return get_string('copyrightmissing', 'vocabtool_phpdocs');
     }
 
     /**
@@ -379,11 +367,11 @@ class tool extends \mod_vocab\toolbase {
         $search = '// This file '.'is part of Moodle - http://moodle.org/';
         $search = '/\s*'.preg_quote($search, '/').'(.*?)\n+(?=[^\/])/us';
         $contents = preg_replace($search, "\n", $contents, 1, $count);
-        if ($count) {
-            $update = true;
-            return get_string('copyrightremoved', 'vocabtool_phpdocs');
+        if (empty($count)) {
+            return false;
         }
-        return '';
+        $update = true;
+        return true;
     }
 
     /**
@@ -405,7 +393,7 @@ class tool extends \mod_vocab\toolbase {
         }
         $contents = substr_replace($contents, $copyright, $pos, 0);
         $update = true;
-        return get_string('copyrightadded', 'vocabtool_phpdocs');
+        return true;
     }
 
     /**
@@ -583,10 +571,10 @@ class tool extends \mod_vocab\toolbase {
 
             $parameters = trim($matches[7][$i][0]);
             if (substr($parameters, 0, 1) == '(' && substr($parameters, -1) == ')') {
-                $phpdocsnew = $this->get_phpdocs_parameters($contents, $start, $indent, $blockname, $parameters);
+                $phpdocsnew = $this->get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters);
             } else {
                 // A "class" in in a PHP file.
-                $phpdocsnew = $this->get_phpdocs_block($data, $indent, $blockname);
+                $phpdocsnew = $this->get_phpdocs_block($filepath, $data, $indent, $blockname);
             }
             $missing = false;
             $incorrect = false;
@@ -597,19 +585,18 @@ class tool extends \mod_vocab\toolbase {
             }
             list($report, $remove, $fix) = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
 
-            $msg = '';
             if ($remove) {
                 $match = $matches[5][$i][0].$matches[6][$i][0].$matches[7][$i][0];
                 $match = $lastline.$comments.$spacer.$indent.$match.'{';
                 $contents = substr_replace($contents, $match, $start, $length);
-                $msg = 'phpdocsremoved';
+                $this->store_phpdocs_message($filepath, $blockname, 'removed');
                 $update = true;
             } else {
                 if ($report) {
                     if ($missing) {
-                        $msg = 'missingphpdocs';
+                        $this->store_phpdocs_message($filepath, $blockname, 'missing');
                     } else if ($incorrect) {
-                        $msg = 'incorrectphpdocs';
+                        $this->store_phpdocs_message($filepath, $blockname, 'incorrect');
                     }
                 } else if ($fix) {
                     $match = $matches[5][$i][0].$matches[6][$i][0].$matches[7][$i][0];
@@ -617,22 +604,121 @@ class tool extends \mod_vocab\toolbase {
                     $contents = substr_replace($contents, $match, $start, $length);
 
                     if ($missing) {
-                        $msg = 'phpdocsadded';
+                        $this->store_phpdocs_message($filepath, $blockname, 'added');
                     } else if ($incorrect) {
-                        $msg = 'phpdocsfixed';
+                        $this->store_phpdocs_message($filepath, $blockname, 'fixed');
                     }
                     $update = true;
                 }
             }
-            if ($msg) {
-                $a = (object)[
-                    'filepath' => $filepath,
-                    'functionname' => trim($matches[6][$i][0]),
-                ];
-                $msg = get_string($msg, $this->plugin, $a);
-                echo \html_writer::tag('p', $msg, ['class' => 'my-0']);
-            }
         }
+    }
+
+    /**
+     * store_copyright_message
+     *
+     * @param string $filepath
+     * @param mixed $type a PARAM_xxx constant value
+     * @todo Finish documenting this function
+     */
+    protected function store_copyright_message($filepath, $type) {
+        $this->store_message($filepath, 'copyright', 'copyright'.$type);
+    }
+
+    /**
+     * store_phpdocs_message
+     *
+     * @param string $filepath
+     * @param string $blockname
+     * @param mixed $type a PARAM_xxx constant value
+     * @todo Finish documenting this function
+     */
+    protected function store_phpdocs_message($filepath, $blockname, $type) {
+        $this->store_message($filepath, $blockname, 'phpdocs'.$type);
+    }
+
+    /**
+     * store_message
+     *
+     * @param string $filepath
+     * @param string $blockname
+     * @param mixed $type a PARAM_xxx constant value
+     * @todo Finish documenting this function
+     */
+    protected function store_message($filepath, $blockname, $type) {
+        if (! array_key_exists($filepath, $this->messages)) {
+            $this->messages[$filepath] = [];
+        }
+        if (! array_key_exists($type, $this->messages[$filepath])) {
+            $this->messages[$filepath][$type] = [];
+        }
+        $this->messages[$filepath][$type][] = $blockname;
+    }
+
+    /**
+     * display_messages
+     *
+     * @todo Finish documenting this function
+     */
+    protected function display_messages() {
+
+        $fileparams = ['class' => 'filelist'];
+        $typeparams = ['class' => 'text-info font-weight-bold list-unstyled typelist'];
+        $blockparams = ['class' => 'text-dark font-weight-normal blocklist'];
+
+        $str = (object)[];
+        $str->labelsep = get_string('labelsep', 'langconfig');
+        $str->listsep = get_string('listsep', 'langconfig');
+
+        // Cache copyright messages.
+        $types = ['added', 'removed', 'missing'];
+        foreach ($types as $type) {
+            $type = 'copyright'.$type;
+            $str->$type = get_string($type, $this->plugin);
+        }
+
+        // Cache PHPdocs messages.
+        $types = ['unknownparam', 'incorrect', 'missing', 'removed', 'fixed', 'added'];
+        foreach ($types as $type) {
+            $type = 'phpdocs'.$type;
+            $str->$type = get_string($type, $this->plugin);
+        }
+
+        // Sort the messages by filepath.
+        asort($this->messages);
+
+        $filelist = [];
+        foreach ($this->messages as $filepath => $types) {
+
+            // Sort the types by type.
+            $sortedtypes = [];
+            foreach (array_keys($types) as $type) {
+                $sortedtypes[$type] = $str->$type;
+            }
+            asort($sortedtypes);
+
+            $typelist = [];
+            foreach (array_keys($sortedtypes) as $type) {
+
+                if (substr($type, 0, 7) == 'phpdocs') {
+                    // The blocknames were selected starting at the end of
+                    // the file so we put them back into the original order.
+                    $blocklist = array_reverse($types[$type]);
+                    $blocklist = \html_writer::alist($blocklist, $blockparams, 'ul');
+                    $typelist[] = $str->$type.$str->labelsep.$blocklist;
+                } else {
+                    $typelist[] = $str->$type;
+                }
+            }
+            $typelist = \html_writer::alist($typelist, $typeparams, 'ul');
+            $filelist[] = $filepath.$str->labelsep.$typelist;
+        }
+        if (empty($filelist)) {
+            $filelist = 'No messages for the selected files.';
+        } else {
+            $filelist = \html_writer::alist($filelist, $fileparams, 'ul');
+        }
+        echo $filelist;
     }
 
     /**
@@ -767,19 +853,20 @@ class tool extends \mod_vocab\toolbase {
      * @todo Finish documenting this function
      */
     public function get_phpdocs_file($data, $indent, $filename) {
-        return $this->get_phpdocs_block($data, $indent, $filename);
+        return $this->get_phpdocs_block($filename, $data, $indent, $filename);
     }
 
     /**
      * get_phpdocs_block
      *
+     * @param string $filepath
      * @param stdClass $data submitted from the form
      * @param xxx $indent
      * @param xxx $blockname
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function get_phpdocs_block($data, $indent, $blockname) {
+    public function get_phpdocs_block($filepath, $data, $indent, $blockname) {
         $details = <<<END
 $indent * @package    $data->package
 $indent * @copyright  $data->startyear $data->authorname
@@ -840,6 +927,7 @@ END;
     /**
      * get_phpdocs_parameters
      *
+     * @param string $filepath
      * @param string $contents
      * @param xxx $start
      * @param xxx $indent
@@ -848,7 +936,7 @@ END;
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function get_phpdocs_parameters($contents, $start, $indent, $blockname, $parameters) {
+    public function get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters) {
 
         $details = '';
         $search = '/'.'(\w*)(\&?)(\$\w+)(\s*=\s*([^,]*))?'.'/';
@@ -867,10 +955,10 @@ END;
                     $type = $this->paramnames[$name]->type;
                     $text = $this->paramnames[$name]->text;
                 } else {
-                    $type = ($matches[1] ? $matches[1] : 'xxx');
+                    $type = ($matches[1][$i] ? $matches[1][$i] : 'xxx');
                     $text = '';
-                    $this->paramnames[$name] = (object)['type' => $type, 'text' => ''];
-                    echo "Unknown PARAM name: $name (type=$type)<br>";
+                    $this->paramnames[$name] = (object)['type' => $type, 'text' => $text];
+                    $this->store_phpdocs_message($filepath, $blockname, 'unknownparam');
                 }
 
                 $details .= rtrim("$indent * @param $type $name $text");

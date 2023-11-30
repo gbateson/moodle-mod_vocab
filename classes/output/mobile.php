@@ -27,6 +27,15 @@
 
 namespace mod_vocab\output;
 
+/**
+ * mobile
+ *
+ * @package    mod_vocab
+ * @copyright  2023 Gordon Bateson
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon Bateson gordonbateson@gmail.com
+ * @since      Moodle 4.1
+ */
 class mobile {
 
     /**

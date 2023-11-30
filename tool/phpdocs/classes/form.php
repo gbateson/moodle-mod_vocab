@@ -101,6 +101,12 @@ class form extends \mod_vocab\toolform {
         $this->add_action_buttons(true, get_string('proceed'));
     }
 
+    /**
+     * get_filetypes
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_filetypes() {
         return [
             'php' => get_string('phpfiles', $this->tool),
@@ -110,6 +116,12 @@ class form extends \mod_vocab\toolform {
         ];
     }
 
+    /**
+     * get_actions
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_actions() {
         return [
             self::ACTION_NONE => get_string('none'),

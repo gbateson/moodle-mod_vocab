@@ -45,7 +45,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
     /**
      * Attach a vocab activity to this renderer
      *
-     * @param stdClass \mod_vocab\activity object to represent a vocab activity.
+     * @param \mod_vocab\activity $vocab object to represent a vocab activity.
      * @return null, but will update the "vocab" property of this renderer.
      */
     public function attach_activity($vocab) {
@@ -500,9 +500,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_wordlist
+     * display a list of words
      *
-     * @param array $words.
+     * @param array $words array of words to be displayed.
      * @return string an HTML string.
      */
     public function view_wordlist($words) {
@@ -613,7 +613,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      *
      * @param string $startcolor an RGB color, e.g. '#ff6633'.
      * @param string $endcolor an RGB color, e.g. '#aabbcc'.
-     * @param integer number of colors to return.
+     * @param integer $n number of colors to return.
      * @return array containing "n" number of RGB colors.
      */
     public function get_colors($startcolor, $endcolor, $n) {

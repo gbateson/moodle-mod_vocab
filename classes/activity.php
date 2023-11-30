@@ -761,6 +761,12 @@ class activity {
         }
     }
 
+    /**
+     * get_writeable_contexts
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_writeable_contexts() {
         $contexts = [];
 
@@ -793,6 +799,14 @@ class activity {
         return $contexts;
     }
 
+    /**
+     * get_question_categories
+     *
+     * @uses $CFG
+     * @param xxx $toponly (optional, default=false)
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_question_categories($toponly=false) {
         global $CFG;
         require_once($CFG->dirrot.'/lib/questionlib.php');

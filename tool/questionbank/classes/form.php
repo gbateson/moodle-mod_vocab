@@ -111,6 +111,12 @@ class form extends \mod_vocab\toolform {
         $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
     }
 
+    /**
+     * get_question_types
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_question_types() {
         // ToDo: Maybe include: 'ordering', 'essayautograde', 'speakautograde', 'sassessment'
         $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
@@ -126,11 +132,23 @@ class form extends \mod_vocab\toolform {
         return $types;
     }
 
+    /**
+     * get_question_levels
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_question_levels() {
         $levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
         return array_combine($levels, $levels);
     }
 
+    /**
+     * add_parentcategory
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @todo Finish documenting this function
+     */
     public function add_parentcategory($mform) {
 
         $defaultid = 0;
@@ -168,6 +186,12 @@ class form extends \mod_vocab\toolform {
         $mform->setDefault($groupname.'['.$name.']', $defaultid);
     }
 
+    /**
+     * link_to_managequestioncategories
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function link_to_managequestioncategories() {
         $link = '/question/bank/managecategories/category.php';
         $params = ['courseid' => $this->get_vocab()->course->id];
@@ -181,6 +205,14 @@ class form extends \mod_vocab\toolform {
         return \html_writer::tag('small', $link, $params);
     }
 
+    /**
+     * get_question_categories
+     *
+     * @uses $CFG
+     * @uses $DB
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_question_categories() {
         global $CFG, $DB;
         require_once($CFG->dirroot.'/lib/questionlib.php');
@@ -206,6 +238,12 @@ class form extends \mod_vocab\toolform {
         }
     }
 
+    /**
+     * add_subcategories
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @todo Finish documenting this function
+     */
     public function add_subcategories($mform) {
         $name = 'subcategories';
         $label = get_string($name, $this->tool);
@@ -234,6 +272,15 @@ class form extends \mod_vocab\toolform {
         $mform->disabledIf($catname, $cattype, 'neq', 'single');
     }
 
+    /**
+     * validation
+     *
+     * @uses $USER
+     * @param stdClass $data submitted from the form
+     * @param array $files
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function validation($data, $files) {
         global $USER;
 
@@ -244,6 +291,12 @@ class form extends \mod_vocab\toolform {
         return $errors;
     }
 
+    /**
+     * generate_questions
+     *
+     * @uses $DB
+     * @todo Finish documenting this function
+     */
     public function generate_questions() {
         global $DB;
         if (($data = data_submitted()) && confirm_sesskey()) {

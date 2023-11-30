@@ -1304,6 +1304,13 @@ class form extends \mod_vocab\toolform {
         return $info;
     }
 
+    /**
+     * setup_totals
+     *
+     * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
+     * @param object $format
+     * @todo Finish documenting this function
+     */
     public function setup_totals(&$tableinfo, $format) {
         $this->totals = (object)[
             'name' => $format->settings['datafilename'],
@@ -1332,6 +1339,14 @@ class form extends \mod_vocab\toolform {
         }
     }
 
+    /**
+     * update_totals
+     *
+     * @param string $table name of a table in the database
+     * @param mixed $type a PARAM_xxx constant value
+     * @param xxx $msg (optional, default='')
+     * @todo Finish documenting this function
+     */
     public function update_totals($table, $type, $msg='') {
 
         // Check the table name is valid (it should be).
@@ -1396,6 +1411,12 @@ class form extends \mod_vocab\toolform {
         }
     }
 
+    /**
+     * report_totals_data
+     *
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function report_totals_data() {
 
         // Shortcuts to current sheet/row number.
@@ -1464,6 +1485,13 @@ class form extends \mod_vocab\toolform {
         return $cells;
     }
 
+    /**
+     * report_totals_head
+     *
+     * @param xxx $headers (passed by reference)
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function report_totals_head(&$headers) {
         $cells = [];
 
@@ -1481,6 +1509,12 @@ class form extends \mod_vocab\toolform {
         return $cells;
     }
 
+    /**
+     * report_totals_prune
+     *
+     * @param string $table name of a table in the database
+     * @todo Finish documenting this function
+     */
     public function report_totals_prune($table) {
         // Initialize the column index to 2 because we always
         // show column-1 (sheet: row) and column-2 (rowname).
@@ -2275,6 +2309,14 @@ class form extends \mod_vocab\toolform {
         return $id;
     }
 
+    /**
+     * fix_field_values
+     *
+     * @uses $DB
+     * @param string $table name of a table in the database
+     * @param array $fields of database field names (passed by reference)
+     * @todo Finish documenting this function
+     */
     public function fix_field_values($table, &$fields) {
         global $DB;
 

@@ -55,6 +55,16 @@ abstract class toolform extends \mod_vocab\form {
         return null;
     }
 
+    /**
+     * add_field_text
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name
+     * @param mixed $type a PARAM_xxx constant value
+     * @param mixed $default
+     * @param array $attributes (optional, default=null)
+     * @todo Finish documenting this function
+     */
     public function add_field_text($mform, $name, $type, $default, $attributes=null) {
         if ($attributes) {
             if (is_scalar($attributes)) {
@@ -76,6 +86,17 @@ abstract class toolform extends \mod_vocab\form {
         $mform->setType($name, $type);
     }
 
+    /**
+     * add_field_select
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name
+     * @param xxx $options
+     * @param mixed $type a PARAM_xxx constant value
+     * @param mixed $default
+     * @param array $attributes (optional, default=null)
+     * @todo Finish documenting this function
+     */
     public function add_field_select($mform, $name, $options, $type, $default, $attributes=null) {
         if ($attributes) {
             if (is_scalar($attributes)) {
@@ -93,6 +114,15 @@ abstract class toolform extends \mod_vocab\form {
         $mform->setDefault($name, $default);
     }
 
+    /**
+     * add_field_filepicker
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name
+     * @param array $attributes (optional, default=null)
+     * @param array $options (optional, default=null)
+     * @return void but may modify $mform
+     */
     public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
         $label = get_string($name, $this->tool);
         $mform->addElement('filepicker', $name, $label, $attributes, $options);
