@@ -17,7 +17,7 @@
 /**
  * mod/vocab/ai/chatgpt/lib.php
  *
- * @package    mod_vocab
+ * @package    vocabai_chatgpt
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -32,4 +32,3 @@ defined('MOODLE_INTERNAL') || die;
 function vocabai_chatgpt_get_fontawesome_icon_map() {
     return ['vocabai_chatgpt:chatgpt' => 'fa-globe'];
 }
-

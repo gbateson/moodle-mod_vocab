@@ -40,23 +40,46 @@ defined('MOODLE_INTERNAL') || die();
  */
 class activity {
 
+    /** @var string the type of this plugin */
     const PLUGINTYPE = 'mod';
+
+    /** @var string the name of this plugin */
     const PLUGINNAME = 'vocab';
 
+    /** @var integer database value to represent "live" mode */
     const MODE_LIVE = 0;
+
+    /** @var integer database value to represent "demo" mode */
     const MODE_DEMO = 1;
 
+    /** @var integer database value to represent "any" attempts */
     const ATTEMPTTYPE_ANY = 0;
+
+    /** @var database value to represent "recent" attempts */
     const ATTEMPTTYPE_RECENT = 1;
+
+    /** @var integer database value to represent "consecutive" attempts */
     const ATTEMPTTYPE_CONSECUTIVE = 2;
 
+    /** @var integer database value to represent "no" delay between attempts */
     const ATTEMPTDELAY_NONE = 0;
+
+    /** @var integer database value to represent a "fixed" delay between attempts */
     const ATTEMPTDELAY_FIXED = -1;
+
+    /** @var integer database value to represent an "expanding" delay between attempts */
     const ATTEMPTDELAY_EXPANDING = -2;
 
+    /** @var integer database value to denote expanding the navigation for "everyone" */
     const EXPAND_EVERYONE = 0;
-    const EXPAND_STUDENTS = 1; // expand for students (collapse for teachers)
-    const EXPAND_TEACHERS = 2; // expand for teachers (collapse for students)
+
+    /** @var integer database value to denote expanding the navigation only for "students" (for teachers, it will be collapsed) */
+    const EXPAND_STUDENTS = 1;
+
+    /** @var integer database value to denote expanding the navigation only for "teachers" (for students, it will be collapsed) */
+    const EXPAND_TEACHERS = 2;
+
+    /** @var integer database value to denote expanding the navigation for "no one" */
     const EXPAND_NO_ONE = 3;
 
     /** @var stdclass vocab config settings */
@@ -132,7 +155,14 @@ class activity {
     public $timemodified = 0;
 
     /**
-     * construct an instance of a Vocabulary activity
+     * Construct an instance of a Vocabulary activity
+     *
+     * @uses $COURSE
+     * @uses $SITE
+     * @param object $course a record form the "course" table in the Moodle database (optional, default=null)
+     * @param string $cm the course module object for the the current vocabulary activity (optional, default=null)
+     * @param object $instance a record form the "vocab" table in the Moodle database (optional, default=null)
+     * @param object $context a record form the "context" table in the Moodle database (optional, default=null)
      */
     public function __construct($course=null, $cm=null, $instance=null, $context=null) {
         global $COURSE, $SITE;
@@ -203,10 +233,13 @@ class activity {
     /**
      * Creates a new vocab activity object
      *
-     * @param stdclass $vocab a row from the vocab table
-     * @param stdclass $cm a row from the course_modules table
-     * @param stdclass $course a row from the course table
-     * @return vocab the new vocab object
+     * @uses $DB
+     * @param object $course a record form the "course" table in the Moodle database (optional, default=null)
+     * @param string $cm the course module object for the the current vocabulary activity (optional, default=null)
+     * @param object $instance a record form the "vocab" table in the Moodle database (optional, default=null)
+     * @param object $context a record form the "context" table in the Moodle database (optional, default=null)
+     * @param object $attempt a record form the "vocab_game_attempt" table in the Moodle database (optional, default=null)
+     * @return object a new \mod_vocab\activity object
      */
     public static function create($course=null, $cm=null, $instance=null, $context=null, $attempt=null) {
         global $DB;
@@ -257,8 +290,10 @@ class activity {
     /**
      * Return the value of an optional script parameter.
      *
-     * @param array of possible $names for the parameter.
-     * @return mixed the param $value
+     * @param array $names of possible names for the input parameter
+     * @param mixed $default value
+     * @param mixed $type a PARAM_xxx constant value
+     * @return mixed, either an actual value from the form, or a suitable default.
      */
     protected static function optional_param($names, $default, $type) {
         foreach ($names as $name) {
@@ -268,38 +303,39 @@ class activity {
         }
         return $default;
     }
-    // ============================================================
+
+    /*////////////////////////////////////////
     // availability API
-    // ============================================================
+    ////////////////////////////////////////*/
 
     /**
-     * not_viewable
+     * Determine if the current user is prevented from viewing this Vocab activity.
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return boolean TRUE if user is prevented from viewing; otherwise return FALSE
      */
     public function not_viewable() {
         return ($this->viewable ? false : true);
     }
 
     /**
-     * not_playable
+     * Determine if the current user is prevented from playing
+     * (=interacting with) games in this Vocab activity.
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return boolean TRUE if user is prevented from playing; otherwise return FALSE
      */
     public function not_playable() {
         return ($this->playable ? false : true);
     }
-    // ============================================================
+
+    /*////////////////////////////////////////
     // event and completion API
-    // ============================================================
+    ////////////////////////////////////////*/
 
     /**
-     * trigger_viewed_event_and_completion
+     * Trigger viewed event and completion status.
      *
      * @uses $CFG
-     * @todo Finish documenting this function
+     * @return void but may initiate a Moodle event of modifiy completion status
      */
     public function trigger_viewed_event_and_completion() {
         global $CFG;
@@ -320,18 +356,18 @@ class activity {
             $completion->set_module_viewed($this->cm);
         }
     }
-    // ============================================================
+
+    /*////////////////////////////////////////
     // url API
-    // ============================================================
+    ////////////////////////////////////////*/
 
     /**
-     * url
+     * Get a URL connected to this plugin.
      *
      * @param string $filepath
      * @param boolean $escaped (optional, default=null)
      * @param array $params (optional, default=array)
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return string a URL connected to this plugin
      */
     public function url($filepath, $escaped=null, $params=[]) {
         if ($this->cm) {
@@ -346,52 +382,75 @@ class activity {
     }
 
     /**
-     * @return moodle_url of this vocab's view page
+     * Get the URL of the main view page for this plugin.
+     *
+     * @param boolean $escaped (optional, default=null)
+     * @param array $params (optional, default=[])
+     * @return string URL of the main view page for this plugin
      */
     public function view_url($escaped=null, $params=[]) {
         return $this->url('view.php', $escaped, $params);
     }
 
     /**
-     * @return moodle_url of this vocab's report page
+     * Get the URL of the report page for this plugin.
+     *
+     * @param boolean $escaped (optional, default=null)
+     * @param array $params (optional, default=[])
+     * @return string URL of the report page for this plugin
      */
     public function report_url($escaped=null, $params=[]) {
         return $this->url('report.php', $escaped, $params);
     }
 
     /**
-     * @return moodle_url of this vocab's attempt page
+     * Get the URL of the attempt page for this plugin.
+     *
+     * @param boolean $escaped (optional, default=null)
+     * @param array $params (optional, default=[])
+     * @return string URL of the attempt page for this plugin
      */
     public function attempt_url($escaped=null, $params=[]) {
         return $this->url('attempt.php', $escaped, $params);
     }
 
     /**
-     * @return moodle_url of this vocab's attempt page
+     * Get the URL of the submit page for this plugin.
+     *
+     * @param boolean $escaped (optional, default=null)
+     * @param array $params (optional, default=[])
+     * @return string URL of the submit page for this plugin
      */
     public function submit_url($escaped=null, $params=[]) {
         return $this->url('submit.php', $escaped, $params);
     }
 
     /**
-     * @return moodle_url of the review page for an attempt at this vocab
+     * Get the URL of the attempt page for this plugin.
+     *
+     * @param boolean $escaped (optional, default=null)
+     * @param array $params (optional, default=[])
+     * @return string URL of the review page for this plugin
      */
     public function review_url($escaped=null, $params=[]) {
         return $this->url('review.php', $escaped, $params);
     }
 
     /**
-     * @return moodle_url of this course's vocab index page
+     * Get the URL of the index page for this plugin.
+     *
+     * @param boolean $escaped (optional, default=null)
+     * @param array $params (optional, default=[])
+     * @return string the URL of the index page for this plugin
      */
     public function index_url($escaped=null, $params=[]) {
         return new \moodle_url('/mod/vocab/index.php', ['id' => $this->course->id]);
     }
 
     /**
-     * course_url
+     * Get the URL of the course page for this Vocab activity
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return string the URL of the course page for this Vocab activity
      */
     public function course_url() {
         $sectionnum = 0;
@@ -418,10 +477,9 @@ class activity {
     }
 
     /**
-     * grades_url
+     * Get the URL of the grades page for the course page for this plugin.
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return string the URL of the grades page for the course page for this plugin
      */
     public function grades_url() {
         return new \moodle_url('/grade/index.php', ['id' => $this->course->id]);
@@ -439,7 +497,9 @@ class activity {
     /**
      * require
      *
-     * @return boolean TRUE if user has required capability; otherwise FALSE.
+     * @param string $capability
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function require($capability) {
         return require_capability("{$this->pluginpath}:$capability", $this->context);
@@ -448,7 +508,9 @@ class activity {
     /**
      * can
      *
-     * @return boolean TRUE if user has required capability; otherwise FALSE.
+     * @param string $capability
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function can($capability) {
         return has_capability("{$this->pluginpath}:$capability", $this->context);
@@ -524,24 +586,25 @@ class activity {
         return $this->can('reviewmyattempts');
     }
 
-    // ============================================================
+    /*////////////////////////////////////////
     // strings API
-    // ============================================================
+    ////////////////////////////////////////*/
 
-    /*
+    /**
      * get a string fro this plugin
      *
-     * @param string $name, the name of the string
-     * @param mixed $a, additional value or values required for the string
-     * @return string
-     **/
+     * @param string $name
+     * @param array $a additional value or values required for the language string (optional, default=null)
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_string($name, $a=null) {
         return get_string($name, $this->plugin, $a);
     }
 
-    // ============================================================
+    /*////////////////////////////////////////
     // users API
-    // ============================================================
+    ////////////////////////////////////////*/
 
     /**
      * get_groupmode
@@ -559,11 +622,14 @@ class activity {
         return NOGROUPS;
     }
 
-    /*
+    /**
      * get_userids that are accessible to the current user.
      *
-     * @return array of visible userids, if any; otherwise FALSE.
-     **/
+     * @uses $DB
+     * @param integer $groupid (optional, default=0)
+     * @return xxx
+     * @todo Finish documenting this function
+     */
     public function get_userids($groupid=0) {
         global $DB;
         $mode = $this->get_groupmode();
@@ -602,14 +668,14 @@ class activity {
         return ($this->operationmode == self::MODE_DEMO);
     }
 
-    // ============================================================
+    /*////////////////////////////////////////
     // words API
-    // ============================================================
+    ////////////////////////////////////////*/
 
-    /*
-     * get_wordlist_info
+    /**
+     * Get info about words in the word list for this Vocabulary activity
      *
-     * @return array of objects containing info about each word in the worlist for this Vocabulary activity; otherwise FALSE.
+     * @return array of objects representing the words in this wordlist
      */
     public function get_wordlist_info() {
         global $DB;
@@ -642,10 +708,10 @@ class activity {
         return $wordlist;
     }
 
-    /*
-     * get_wordlist_words
+    /**
+     * Get list of words in the word list for this Vocabulary activity
      *
-     * @return array of words, if any, in the word list for this Vocabulary activity; otherwise FALSE.
+     * @return array of words
      */
     public function get_wordlist_words() {
         global $DB;

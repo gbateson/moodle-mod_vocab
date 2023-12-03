@@ -57,4 +57,3 @@ echo $OUTPUT->header();
 $mform->display();
 
 echo $OUTPUT->footer();
-

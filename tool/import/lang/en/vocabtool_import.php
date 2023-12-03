@@ -17,7 +17,7 @@
 /**
  * tool/import/lang/en/vocabtool_import.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_import
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -112,4 +112,3 @@ $string['recordsfound'] = '{$a} records found';
 $string['errorsfound'] = '{$a} errors found';
 $string['importcompleted'] = 'Import is complete';
 $string['rowsfound'] = '{$a} rows found';
-

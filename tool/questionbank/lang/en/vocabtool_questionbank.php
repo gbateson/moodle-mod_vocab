@@ -17,7 +17,7 @@
 /**
  * tool/import/lang/en/vocabtool_import.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_questionbank
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -60,4 +60,3 @@ $string['automaticsubcategories'] = 'Automatic subcategories';
 
 $string['selectedwords_help'] = 'Select the words for which you wish to generate questions.';
 $string['selectedwords'] = 'Selected words';
-

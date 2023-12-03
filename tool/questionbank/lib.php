@@ -17,7 +17,7 @@
 /**
  * mod/vocab/tool/questionbank/lib.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_questionbank
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson

@@ -28,13 +28,10 @@ namespace vocabtool_import;
 
 defined('MOODLE_INTERNAL') || die;
 
-// Fetch the parent class.
-require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
-
 /**
  * form
  *
- * @package    mod_vocab
+ * @package    vocabtool_import
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
@@ -42,8 +39,8 @@ require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
  */
 class form extends \mod_vocab\toolform {
 
-    // cache the plugin name
-    public $tool = 'vocabtool_import';
+    /** @var string the name of this plugin */
+    public $subpluginname = 'vocabtool_import';
 
     const ACTION_ADD_NEW_ONLY = 1;
     const ACTION_ADD_AND_UPDATE = 2;
@@ -85,6 +82,15 @@ class form extends \mod_vocab\toolform {
 
     /**
      * constructor
+     *
+     * @uses $CFG
+     * @param integer $action (optional, default=null)
+     * @param array $customdata (optional, default=null)
+     * @param string $method (optional, default='post')
+     * @param string $target (optional, default='')
+     * @param array $attributes (optional, default=null)
+     * @param boolean $editable (optional, default=true)
+     * @todo Finish documenting this function
      */
     public function __construct($action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
         global $CFG;
@@ -210,10 +216,10 @@ class form extends \mod_vocab\toolform {
      */
     public function get_options_uploadaction($value=null) {
         $options = [
-            self::ACTION_ADD_NEW_ONLY => get_string('actionaddnewonly', $this->tool),
-            self::ACTION_ADD_AND_UPDATE => get_string('actionaddandupdate', $this->tool),
-            self::ACTION_UPDATE_EXISTING => get_string('actionupdateexisting', $this->tool),
-            self::ACTION_ADD_UPDATE_REMOVE => get_string('actionaddupdateremove', $this->tool),
+            self::ACTION_ADD_NEW_ONLY => get_string('actionaddnewonly', $this->subpluginname),
+            self::ACTION_ADD_AND_UPDATE => get_string('actionaddandupdate', $this->subpluginname),
+            self::ACTION_UPDATE_EXISTING => get_string('actionupdateexisting', $this->subpluginname),
+            self::ACTION_ADD_UPDATE_REMOVE => get_string('actionaddupdateremove', $this->subpluginname),
         ];
         if ($value === null) {
             return $options;
@@ -254,12 +260,12 @@ class form extends \mod_vocab\toolform {
         if ($submit && $cancel) {
             $name = 'buttons';
             $mform->addGroup([
-                $mform->createElement('submit', 'submit', get_string($submit, $this->tool)),
+                $mform->createElement('submit', 'submit', get_string($submit, $this->subpluginname)),
                 $mform->createElement('cancel', 'cancel', get_string($cancel)),
             ], $name, '', [' '], false);
             $mform->closeHeaderBefore($name);
         } else if ($submit) {
-            $mform->addElement('submit', 'submit', get_string($submit, $this->tool));
+            $mform->addElement('submit', 'submit', get_string($submit, $this->subpluginname));
         } else if ($cancel) {
             $mform->addElement('cancel', 'cancel', get_string($cancel));
         }
@@ -277,6 +283,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * transfer_incoming_values
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param array $values numbers to be displayed as a pie-chart
+     * @todo Finish documenting this function
      */
     public function transfer_incoming_values($mform, $values) {
         foreach ($values as $name => $type) {
@@ -293,6 +303,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * set_next_formstate
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $value
+     * @todo Finish documenting this function
      */
     public function set_next_formstate($mform, $value) {
         $name = 'formstate';
@@ -303,6 +317,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * validation
+     *
+     * @uses $USER
+     * @param stdClass $data submitted from the form
+     * @param array $files
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function validation($data, $files) {
         global $USER;
@@ -328,7 +348,7 @@ class form extends \mod_vocab\toolform {
                 $fs->delete_area_files($usercontext->id, 'user', 'draft', $data['datafile']);
             } else {
                 if (!$chpterfiles = toolvocab_import_get_chapter_files($file, $data['type'])) {
-                    $errors['datafile'] = get_string('errornochapters', $this->tool);
+                    $errors['datafile'] = get_string('errornochapters', $this->subpluginname);
                 }
             }
         }
@@ -384,15 +404,15 @@ class form extends \mod_vocab\toolform {
 
                 if ($format === null) {
                     $format = $this->create_format_xml($workbook, $datafilename);
-                    $table = \html_writer::tag('p', get_string('emptyxmlfile', $this->tool).' '.
-                                                    get_string('showsampleformatxml', $this->tool));
+                    $table = \html_writer::tag('p', get_string('emptyxmlfile', $this->subpluginname).' '.
+                                                    get_string('showsampleformatxml', $this->subpluginname));
                     $params = ['class' => 'rounded bg-dark text-white px-2 py-1'];
                     $table .= \html_writer::tag('pre', htmlspecialchars($format, ENT_COMPAT), $params);
                 } else {
                     $table->tablealign = 'center';
-                    $table->id = $this->tool.'_'.$this->formstate;
-                    $table->attributes['class'] = 'generaltable '.$this->tool;
-                    $table->summary = get_string($this->formstate, $this->tool);
+                    $table->id = $this->subpluginname.'_'.$this->formstate;
+                    $table->attributes['class'] = 'generaltable '.$this->subpluginname;
+                    $table->summary = get_string($this->formstate, $this->subpluginname);
 
                     list($totalsheets, $totalrows) = $this->get_sheetcount_rowcount($workbook);
                     list($targetsheets, $targetrows) = $this->get_sheetcount_rowcount($workbook, $format);
@@ -406,7 +426,7 @@ class form extends \mod_vocab\toolform {
 
                     if (empty($table->data)) {
                         // No data found - shouldn't happen!!
-                        $table = get_string('emptydatafile', $this->tool);
+                        $table = get_string('emptydatafile', $this->subpluginname);
                     }
                 }
             }
@@ -417,7 +437,7 @@ class form extends \mod_vocab\toolform {
             $table = \html_writer::tag('div', $table, ['class' => 'flexible-wrap']);
         } else {
             $table = \html_writer::tag('p', $table).
-                     \html_writer::tag('p', get_string('tryagain', $this->tool));
+                     \html_writer::tag('p', get_string('tryagain', $this->subpluginname));
             $table = \html_writer::tag('div', $table, ['class' => 'alert alert-warning']);
         }
 
@@ -430,6 +450,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_datafileinfo
+     *
+     * @param object $fs reference to Moodle file storage singleton object
+     * @param object $context a record form the "context" table in the Moodle database
+     * @param string $paramname
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_datafileinfo($fs, $context, $paramname) {
         $filename = '';
@@ -457,6 +483,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_formatfileinfo
+     *
+     * @param object $fs reference to Moodle file storage singleton object
+     * @param object $context a record form the "context" table in the Moodle database
+     * @param string $paramname
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_formatfileinfo($fs, $context, $paramname) {
         $filename = '';
@@ -478,6 +510,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * parse_format_xml
+     *
+     * @uses $CFG
+     * @param string $formatfilecontent
+     * @param string $xmlroot
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function parse_format_xml($formatfilecontent, $xmlroot) {
         global $CFG;
@@ -487,20 +525,20 @@ class form extends \mod_vocab\toolform {
 
         if (empty($formatfilecontent)) {
             return null;
-            // return get_string('emptyxmlfile', $this->tool);
+            // return get_string('emptyxmlfile', $this->subpluginname);
         }
 
         $xml = xmlize($formatfilecontent);
         if (empty($xml)) {
-            return get_string('invalidxmlfile', $this->tool);
+            return get_string('invalidxmlfile', $this->subpluginname);
         }
 
         $name = $xmlroot;
         if (empty($xml[$name]) || empty($xml[$name]['#'])) {
-            return get_string('xmltagmissing', $this->tool, htmlspecialchars("<$xmlroot>", ENT_COMPAT));
+            return get_string('xmltagmissing', $this->subpluginname, htmlspecialchars("<$xmlroot>", ENT_COMPAT));
         }
         if (empty($xml[$name]['#']['sheet'])) {
-            return get_string('xmltagmissing', $this->tool, htmlspecialchars("<sheet>", ENT_COMPAT));
+            return get_string('xmltagmissing', $this->subpluginname, htmlspecialchars("<sheet>", ENT_COMPAT));
         }
 
         // Initialize the main $format object.
@@ -548,6 +586,11 @@ class form extends \mod_vocab\toolform {
 
     /**
      * parse_format_xml_initnode
+     *
+     * @param string $xml (passed by reference)
+     * @param object $format
+     * @param string $name
+     * @todo Finish documenting this function
      */
     public function parse_format_xml_initnode(&$xml, $format, $name) {
 
@@ -581,6 +624,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * parse_format_xml_settings
+     *
+     * @param string $xml (passed by reference)
+     * @param object $format
+     * @todo Finish documenting this function
      */
     public function parse_format_xml_settings(&$xml, $format) {
 
@@ -603,6 +650,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * parse_format_xml_records
+     *
+     * @param string $xml (passed by reference)
+     * @param object $format
+     * @todo Finish documenting this function
      */
     public function parse_format_xml_records(&$xml, $format) {
 
@@ -647,6 +698,11 @@ class form extends \mod_vocab\toolform {
 
     /**
      * create_format_xml
+     *
+     * @param object $workbook
+     * @param string $datafilename
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function create_format_xml($workbook, $datafilename) {
         $nl = "\n";
@@ -761,9 +817,14 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_comment
+     *
+     * @param string $strname
+     * @param array $a additional value or values required for the language string (optional, default=null)
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_comment($strname, $a=null) {
-        return '<!-- '.get_string($strname, $this->tool, $a).' -->';
+        return '<!-- '.get_string($strname, $this->subpluginname, $a).' -->';
     }
 
     /**
@@ -797,6 +858,11 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_min_max_cols
+     *
+     * @param object $worksheet representing a sheet from the data file
+     * @param integer $r a row number
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_min_max_cols($worksheet, $r) {
 
@@ -823,6 +889,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_format_type
+     *
+     * @param string $filename
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_format_type($filename) {
         $type = $filename;
@@ -834,6 +904,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_clean_text
+     *
+     * @param string $txt
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_clean_text($txt) {
         // Replace all punctuation and spaces with an underscore, "_".
@@ -842,6 +916,11 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_total_rows
+     *
+     * @param object $workbook
+     * @param object $format (optional, default=null)
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_sheetcount_rowcount($workbook, $format=null) {
 
@@ -875,6 +954,10 @@ class form extends \mod_vocab\toolform {
 
     /**
      * number_format
+     *
+     * @param xxx $num
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function number_format($num) {
         return number_format($num,
@@ -896,27 +979,27 @@ class form extends \mod_vocab\toolform {
             'sheetcount' => $totalsheets,
             'rowcount' => $this->number_format($totalrows),
         ];
-        $caption[] = get_string('totalsheetrowcount', $this->tool, $a);
+        $caption[] = get_string('totalsheetrowcount', $this->subpluginname, $a);
 
         $a = (object)[
             'filename' => $formatfilename,
             'sheetcount' => $targetsheets,
             'rowcount' => $this->number_format($targetrows),
         ];
-        $caption[] = get_string('targetsheetrowcount', $this->tool, $a);
+        $caption[] = get_string('targetsheetrowcount', $this->subpluginname, $a);
 
         // 'upload', 'preview', 'review', 'import'
         switch ($this->formstate) {
             case 'preview':
                 $a = $this->get_previewrows();
-                $caption[] = get_string('headingsandpreviewrows', $this->tool, $a);
+                $caption[] = get_string('headingsandpreviewrows', $this->subpluginname, $a);
                 break;
             case 'review':
                 $a = $this->get_previewrows();
-                $caption[] = get_string('headingsandpreviewresults', $this->tool, $a);
+                $caption[] = get_string('headingsandpreviewresults', $this->subpluginname, $a);
                 break;
             case 'import':
-                $caption[] = get_string('headingsandresults', $this->tool, $targetrows);
+                $caption[] = get_string('headingsandresults', $this->subpluginname, $targetrows);
                 break;
         }
 
@@ -941,6 +1024,11 @@ class form extends \mod_vocab\toolform {
     /**
      * populate_preview_table
      * The preview table contains the raw data from the data file (usually a spreadsheet).
+     *
+     * @param object $workbook
+     * @param object $format
+     * @param string $table name of a table in the database
+     * @todo Finish documenting this function
      */
     public function populate_preview_table($workbook, $format, $table) {
 
@@ -973,7 +1061,7 @@ class form extends \mod_vocab\toolform {
                     // Loop through the rows in this row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
                         if ($rtype == self::TYPE_META) {
-                            $text = get_string('row', $this->tool);
+                            $text = get_string('row', $this->subpluginname);
                             $table->head = $this->get_row_cells($worksheet, $r, $cmin, $cmax, $text);
                             $table->align = array_merge(['center'], array_fill(0, $cmax, 'left'));
                         } else {
@@ -992,6 +1080,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * populate_review_table
+     *
+     * @param object $workbook
+     * @param object $format
+     * @param string $table name of a table in the database
+     * @param boolean $dryrun (optional, default=true)
+     * @todo Finish documenting this function
      */
     public function populate_review_table($workbook, $format, $table, $dryrun=true) {
         $this->populate_import_table($workbook, $format, $table, self::MODE_DRYRUN);
@@ -999,13 +1093,19 @@ class form extends \mod_vocab\toolform {
 
     /**
      * populate_import_table
+     *
+     * @param object $workbook
+     * @param object $format
+     * @param string $table name of a table in the database
+     * @param string $mode (optional, default=self::MODE_IMPORT)
+     * @todo Finish documenting this function
      */
     public function populate_import_table($workbook, $format, $table, $mode=self::MODE_IMPORT) {
 
         // Cache frequently used strings:
         $str = (object)[
-            'sheet' => get_string('sheet', $this->tool),
-            'row' => get_string('row', $this->tool),
+            'sheet' => get_string('sheet', $this->subpluginname),
+            'row' => get_string('row', $this->subpluginname),
         ];
 
         // Initialize the row index (number of rows processed so far in all sheets).
@@ -1143,25 +1243,25 @@ class form extends \mod_vocab\toolform {
             $msg = [];
             if ($rowindex) {
                 $rowindex = $this->number_format($rowindex);
-                $msg[] = get_string('rowsfound', $this->tool, $rowindex);
+                $msg[] = get_string('rowsfound', $this->subpluginname, $rowindex);
             }
             if ($added = $this->totals->added) {
                 $added = $this->number_format($added);
-                $msg[] = get_string('recordsadded', $this->tool, $added);
+                $msg[] = get_string('recordsadded', $this->subpluginname, $added);
             }
             if ($found = $this->totals->found) {
                 $found = $this->number_format($found);
-                $msg[] = get_string('recordsfound', $this->tool, $found);
+                $msg[] = get_string('recordsfound', $this->subpluginname, $found);
             }
             if ($error = $this->totals->error) {
                 $error = $this->number_format($error);
-                $msg[] = get_string('errorsfound', $this->tool, $error);
+                $msg[] = get_string('errorsfound', $this->subpluginname, $error);
             }
             $listsep = get_string('listsep', 'langconfig').' ';
             if ($msg = implode($listsep, $msg)) {
                 $msg = " ($msg)";
             }
-            $msg = get_string('importcompleted', $this->tool).$msg;
+            $msg = get_string('importcompleted', $this->subpluginname).$msg;
             $bar->update_full(100, $msg);
         }
 
@@ -1327,7 +1427,7 @@ class form extends \mod_vocab\toolform {
                         continue; // already added
                     }
                     $this->totals->tables[$record->table] = (object)[
-                        'name' => get_string($record->table, $this->tool),
+                        'name' => get_string($record->table, $this->subpluginname),
                         'total' => 0,
                         'added' => 0,
                         'found' => 0,
@@ -1446,13 +1546,13 @@ class form extends \mod_vocab\toolform {
                     if ($totals->sheets[$s]->rows[$r]->total) {
                         if ($added = $totals->sheets[$s]->rows[$r]->added) {
                             if ($this->formstate == 'import') {
-                                $msg[] = get_string('recordsadded', $this->tool, $added);
+                                $msg[] = get_string('recordsadded', $this->subpluginname, $added);
                             } else {
-                                $msg[] = get_string('recordswillbeadded', $this->tool, $added);
+                                $msg[] = get_string('recordswillbeadded', $this->subpluginname, $added);
                             }
                         }
                         if ($found = $totals->sheets[$s]->rows[$r]->found) {
-                            $msg[] = get_string('recordsfound', $this->tool, $found);
+                            $msg[] = get_string('recordsfound', $this->subpluginname, $found);
                         }
                     }
                     $errors += $totals->sheets[$s]->rows[$r]->error;
@@ -1477,7 +1577,7 @@ class form extends \mod_vocab\toolform {
         }
 
         if ($errors) {
-            $text = get_string('errorsfound', $this->tool, $errors);
+            $text = get_string('errorsfound', $this->subpluginname, $errors);
             $params = ['class' => 'bg-warning text-light rounded px-1 errors'];
             $cells[1]->text .= ' '.\html_writer::tag('div', $text, $params);
         }
@@ -1495,15 +1595,15 @@ class form extends \mod_vocab\toolform {
     public function report_totals_head(&$headers) {
         $cells = [];
 
-        $label = get_string('sheet', $this->tool);
+        $label = get_string('sheet', $this->subpluginname);
         $label .= get_string('labelsep', 'langconfig');
-        $label .= get_string('row', $this->tool);
+        $label .= get_string('row', $this->subpluginname);
 
         $cells[] = new \html_table_cell($label);
         $cells[] = new \html_table_cell(reset($headers));
 
         foreach ($this->totals->tables as $tablename => $totals) {
-            $cells[] = new \html_table_cell(get_string($tablename, $this->tool));
+            $cells[] = new \html_table_cell(get_string($tablename, $this->subpluginname));
         }
 
         return $cells;
@@ -1539,6 +1639,11 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_sheet_range
+     *
+     * @param object $workbook
+     * @param object $sheet
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_sheet_range($workbook, $sheet) {
         $defaultmin = 1;
@@ -1548,6 +1653,11 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_row_range
+     *
+     * @param object $worksheet representing a sheet from the data file
+     * @param object $row
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_row_range($worksheet, $row) {
         $defaultmin = 1;
@@ -1557,6 +1667,13 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_item_range
+     *
+     * @param object $item representing an item in the XML file
+     * @param string $prefix
+     * @param integer $defaultmin
+     * @param integer $defaultmax
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_item_range($item, $prefix, $defaultmin, $defaultmax) {
 
@@ -1623,7 +1740,10 @@ class form extends \mod_vocab\toolform {
     /**
      * get_cell_range
      * this method is NOT USED anywhere.
-     * @todo remove this method from this class.
+     *
+     * @param object $row
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_cell_range($row) {
 
@@ -1673,12 +1793,14 @@ class form extends \mod_vocab\toolform {
     /**
      * get_row_cells
      *
-     * @param worksheet
-     * @param integer $r the row number
-     * @param integer $cmin the lowet column number
-     * @param integer $cmax the highest column number
-     * @param string $text to go in first column
-     * @param boolean $isheader(optional, default=FALSE) whether or not $text is a header
+     * @param object $worksheet representing a sheet from the data file
+     * @param integer $r a row number
+     * @param integer $cmin the minimum column number
+     * @param integer $cmax the maximum column number
+     * @param string $text
+     * @param boolean $cellheader if TRUE, the 1st cell should be made a TH cell (optional, default=false)
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $cellheader=false) {
         $cells = [];
@@ -1696,6 +1818,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_singleline_value
+     *
+     * @param object $worksheet representing a sheet from the data file
+     * @param integer $c a column number
+     * @param integer $r a row number
+     * @return xxx
+     * @todo Finish documenting this function
      */
     protected function get_singleline_value($worksheet, $c, $r) {
         $value = $this->get_cell_value($worksheet, $c, $r);
@@ -1704,6 +1832,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_cell_value
+     *
+     * @param object $worksheet representing a sheet from the data file
+     * @param integer $c a column number
+     * @param integer $r a row number
+     * @return xxx
+     * @todo Finish documenting this function
      */
     protected function get_cell_value($worksheet, $c, $r) {
         $coffset = ($this->phpspreadsheet ? 1 : 0); // column offset
@@ -2207,7 +2341,7 @@ class form extends \mod_vocab\toolform {
     public function get_record_ids(&$tableinfo, $table, &$fields) {
 
         if (! array_key_exists($table, $tableinfo)) {
-            throw new \moodle_exception('tableaccessnotallowed', $this->tool, '', $table);
+            throw new \moodle_exception('tableaccessnotallowed', $this->subpluginname, '', $table);
         }
 
         foreach ($fields as $name => $value) {
@@ -2216,7 +2350,7 @@ class form extends \mod_vocab\toolform {
                     'tablename' => $table,
                     'fieldname' => $name,
                 ];
-                throw new \moodle_exception('fieldaccessnotallowed', $this->tool, '', $a);
+                throw new \moodle_exception('fieldaccessnotallowed', $this->subpluginname, '', $a);
             }
             if (empty($value) || $value === '0') {
                 $a = (object)[
@@ -2224,7 +2358,7 @@ class form extends \mod_vocab\toolform {
                     'fieldname' => $name,
                 ];
                 unset($fields[$name]);
-                // throw new \moodle_exception('idparametermissing', $this->tool, '', $a);
+                // throw new \moodle_exception('idparametermissing', $this->subpluginname, '', $a);
             }
         }
 
@@ -2310,12 +2444,13 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * fix_field_values
+     * Check the field values so that we can report missing fields,
+     * truncate long values, and add default values where possible.
      *
      * @uses $DB
      * @param string $table name of a table in the database
      * @param array $fields of database field names (passed by reference)
-     * @todo Finish documenting this function
+     * @return void (but may update values in $fields array and/or report errors)
      */
     public function fix_field_values($table, &$fields) {
         global $DB;
@@ -2364,7 +2499,7 @@ class form extends \mod_vocab\toolform {
                             // Shorten the string, at a word boundary if possible,
                             // but with no trailing string. ("lib/moodlelib.php")
                             $fields[$name] = shorten_text($value, $maxlength, false, '');
-                            $msg = get_string('valueshortened', $this->tool, (object)[
+                            $msg = get_string('valueshortened', $this->subpluginname, (object)[
                                 'fieldname' => $name,
                                 'maxlength' => $maxlength,
                             ]);
@@ -2391,6 +2526,7 @@ class form extends \mod_vocab\toolform {
 
     /**
      * get_punctuation
+     * (this function does not apepar to be used)
      *
      * @return xxx
      * @todo Finish documenting this function
@@ -2452,4 +2588,3 @@ class form extends \mod_vocab\toolform {
         return $this->punctuation;
     }
 }
-

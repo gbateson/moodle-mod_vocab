@@ -17,7 +17,7 @@
 /**
  * db/upgrade.php: Upgrade code for mod_vocab
  *
- * @package    mod_vocab
+ * @package    vocabtool_import
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -47,4 +47,3 @@ function xmldb_vocabtool_import_upgrade($oldversion) {
 
     return $result;
 }
-

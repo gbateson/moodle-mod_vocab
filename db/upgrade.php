@@ -146,6 +146,14 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2023120236;
+    if ($oldversion < $newversion) {
+        // Rename "vocab_ai_access" table to "vocab_ai_config".
+        $tablenames = ['vocab_ai_access' => 'vocab_ai_config'];
+        xmldb_vocab_rename_tables($dbman, $tablenames);
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 
@@ -153,9 +161,10 @@ function xmldb_vocab_upgrade($oldversion) {
  * Rename fields without failing if the field to delete is
  * not found or a field with the new name already exists.
  *
- * @param object $dbman
- * @param array $fieldnames
- * @return void (but may rename or drop field from database)
+ * @param object $dbman the Moodle database manager
+ * @param string $table name of a table in the database
+ * @param array $fields of database field names
+ * @return void, (but may drop or rename fields in the database)
  */
 function xmldb_vocab_rename_fields($dbman, $table, $fields) {
     $table = new xmldb_table($table);
@@ -174,9 +183,9 @@ function xmldb_vocab_rename_fields($dbman, $table, $fields) {
  * Rename tables without failing if the table to delete is
  * not found or a table with the new name already exists.
  *
- * @param object $dbman
- * @param array $tablenames
- * @return void (but may rename or drop table from database)
+ * @param object $dbman the database manager
+ * @param array $tablenames map old names to new names
+ * @return void (but may drop or rename tables in the database)
  */
 function xmldb_vocab_rename_tables($dbman, $tablenames) {
     foreach ($tablenames as $oldname => $newname) {
@@ -196,10 +205,9 @@ function xmldb_vocab_rename_tables($dbman, $tablenames) {
  *
  * @uses $CFG
  * @uses $DB
- * @param xxx $dbman
- * @param xxx $tablenames (optional, default=null)
+ * @param object $dbman the database manager
+ * @param array $tablenames (optional, default=null) specific tables to check
  * @return void (but may update database structure)
- * @todo Finish documenting this function
  */
 function xmldb_vocab_check_structure($dbman, $tablenames=null) {
     global $CFG, $DB;
@@ -252,6 +260,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
 
     foreach ($errors as $tablename => $messages) {
 
+        // Skip tables that have already been checked.
         if (array_key_exists($tablename, $checked)) {
             continue;
         }

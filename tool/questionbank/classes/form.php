@@ -28,13 +28,10 @@ namespace vocabtool_questionbank;
 
 defined('MOODLE_INTERNAL') || die;
 
-// Fetch the parent class.
-require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
-
 /**
  * form
  *
- * @package    mod_vocab
+ * @package    vocabtool_questionbank
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
@@ -42,8 +39,8 @@ require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
  */
 class form extends \mod_vocab\toolform {
 
-    // cache the plugin name
-    public $tool = 'vocabtool_questionbank';
+    /** @var string the name of this plugin */
+    public $subpluginname = 'vocabtool_questionbank';
 
     const SUBCAT_NONE = 'none';
     const SUBCAT_SINGLE = 'single';
@@ -64,7 +61,7 @@ class form extends \mod_vocab\toolform {
         $this->add_heading($mform, $name, 'mod_vocab', true);
 
         $name = 'selectedwords';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
 
         $elements = [];
 
@@ -83,9 +80,9 @@ class form extends \mod_vocab\toolform {
         }
         $br = \html_writer::tag('span', '', ['class' => 'w-100']);
         $mform->addGroup($elements, $name, $label, $br);
-        $mform->addHelpButton($name, $name, $this->tool);
+        $mform->addHelpButton($name, $name, $this->subpluginname);
 
-        $this->add_heading($mform, 'questionsettings', $this->tool, true);
+        $this->add_heading($mform, 'questionsettings', $this->subpluginname, true);
 
         $name = 'questiontypes';
         $options = $this->get_question_types();
@@ -99,13 +96,13 @@ class form extends \mod_vocab\toolform {
         $this->add_field_text($mform, $name, PARAM_INT, 5, 2);
 
         $name = 'categorysettings';
-        $this->add_heading($mform, $name, $this->tool, true);
+        $this->add_heading($mform, $name, $this->subpluginname, true);
 
         $this->add_parentcategory($mform);
         $this->add_subcategories($mform);
 
         // Use "generatequestions" as the label for the submit button.
-        $label = get_string('generatequestions', $this->tool);
+        $label = get_string('generatequestions', $this->subpluginname);
         $this->add_action_buttons(true, $label);
 
         $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
@@ -172,7 +169,7 @@ class form extends \mod_vocab\toolform {
         }
 
         $name = 'parentcategory';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
         $groupname = $name.'elements';
 
         $elements = [
@@ -180,7 +177,7 @@ class form extends \mod_vocab\toolform {
             $mform->createElement('html', $this->link_to_managequestioncategories()),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
+        $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
         $mform->setType($groupname.'['.$name.']', PARAM_TEXT);
         $mform->setDefault($groupname.'['.$name.']', $defaultid);
@@ -197,7 +194,7 @@ class form extends \mod_vocab\toolform {
         $params = ['courseid' => $this->get_vocab()->course->id];
         $link = new \moodle_url($link, $params);
 
-        $text = get_string('managequestioncategories', $this->tool);
+        $text = get_string('managequestioncategories', $this->subpluginname);
         $params = ['onclick' => "this.target='VOCAB'"];
         $link = \html_writer::link($link, $text, $params);
 
@@ -246,23 +243,19 @@ class form extends \mod_vocab\toolform {
      */
     public function add_subcategories($mform) {
         $name = 'subcategories';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
 
         $groupname = $name.'elements';
         $cattype = $groupname.'[cattype]';
         $catname = $groupname.'[catname]';
 
-        $options = [
-            self::SUBCAT_NONE => get_string('none'),
-            self::SUBCAT_SINGLE => get_string('singlesubcategory', $this->tool),
-            self::SUBCAT_AUTOMATIC => get_string('automaticsubcategories', $this->tool),
-        ];
+        $options = $this->get_subcategory_types();
         $elements = [
             $mform->createElement('select', 'cattype', '', $options),
             $mform->createElement('text', 'catname', '', ['size' => 20]),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
+        $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
         $mform->setType($cattype, PARAM_ALPHA);
         $mform->setDefault($cattype, self::SUBCAT_AUTOMATIC);
@@ -270,6 +263,19 @@ class form extends \mod_vocab\toolform {
         $mform->setType($catname, PARAM_TEXT);
         // $mform->setDefault($catname, '');
         $mform->disabledIf($catname, $cattype, 'neq', 'single');
+    }
+
+    /**
+     * Get subcategory options
+     *
+     * @return array of subcategory options.
+     */
+    public function get_subcategory_types() {
+        return [
+            self::SUBCAT_NONE => get_string('none'),
+            self::SUBCAT_SINGLE => get_string('singlesubcategory', $this->subpluginname),
+            self::SUBCAT_AUTOMATIC => get_string('automaticsubcategories', $this->subpluginname),
+        ];
     }
 
     /**
@@ -309,7 +315,7 @@ class form extends \mod_vocab\toolform {
             $parentcatid = 0;
             $parentcatname = '';
 
-            $subcattype = '';
+            $subcattype = 0;
             $subcatname = '';
 
             if (property_exists($data, 'selectedwords')) {
@@ -369,7 +375,13 @@ class form extends \mod_vocab\toolform {
             $groupname = 'subcategorieselements';
             if (property_exists($data, $groupname)) {
                 if (array_key_exists($name, $data->$groupname)) {
-                    $subcattype = $data->{$groupname}[$name];
+                    $type = $data->{$groupname}[$name];
+                    $types = $this->get_subcategory_types();
+                    if (array_key_exists($type, $types)) {
+                        $subcattype = $type;
+                        $subcatname = $types[$type];
+                    }
+                    unset($type, $types);
                 }
                 unset($data->$groupname);
             }
@@ -398,11 +410,10 @@ class form extends \mod_vocab\toolform {
                      \html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
 
                 echo \html_writer::tag('dt', 'Subcategory type:', $dt).
-                     \html_writer::tag('dd', $subcattype, $dd);
+                     \html_writer::tag('dd', "$subcatname (type=$subcattype)", $dd);
 
                 echo \html_writer::end_tag('dl');
             }
         }
     }
 }
-

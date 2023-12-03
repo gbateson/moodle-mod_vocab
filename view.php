@@ -64,4 +64,3 @@ if ($vocab->viewable) {
 }
 
 echo $renderer->footer();
-

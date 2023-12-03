@@ -63,4 +63,3 @@ if ($mform->is_submitted() && $mform->is_validated()) {
 $mform->display();
 
 echo $OUTPUT->footer();
-

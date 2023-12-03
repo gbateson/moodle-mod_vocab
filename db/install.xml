@@ -299,7 +299,7 @@
         <KEY NAME="wordinstanceid" TYPE="foreign" FIELDS="wordinstanceid" REFTABLE="vocab_word_instances" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="vocab_ai_access" COMMENT="Details of URLs, keys and other login data required to acesss APIs fo AI assistants.">
+    <TABLE NAME="vocab_ai_config" COMMENT="Details of URLs, keys and other settings for AI assistants">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The highest context in which these settings can be used: site, category, course, activity"/>
@@ -332,7 +332,7 @@
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="accessid" TYPE="foreign" FIELDS="accessid" REFTABLE="user" REFFIELDS="id"/>
-        <KEY NAME="owneruserid" TYPE="foreign" FIELDS="owneruserid" REFTABLE="vocab_ai_access" REFFIELDS="id"/>
+        <KEY NAME="owneruserid" TYPE="foreign" FIELDS="owneruserid" REFTABLE="vocab_ai_config" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

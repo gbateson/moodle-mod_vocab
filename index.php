@@ -24,13 +24,15 @@
  * @since      Moodle 3.11
  */
 
-require_once('../../config.php'); // get $CFG
-require_once($CFG->dirroot.'/mod/vocab/lib.php');
+require_once('../../config.php');
 
-$id = required_param('id', PARAM_INT); // course id
+// Get the course id.
+$id = required_param('id', PARAM_INT);
 
+// Initialize the $PAGE url.
 $PAGE->set_url('/mod/vocab/index.php', ['id' => $id]);
 
+// Get the course record from the database.
 if (! $course = $DB->get_record('course', ['id' => $id])) {
     throw new \moodle_exception('invalidcourseid');
 }
@@ -84,4 +86,3 @@ echo html_writer::table($table);
 
 // Finish the page.
 echo $OUTPUT->footer();
-

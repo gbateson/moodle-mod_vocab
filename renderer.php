@@ -452,6 +452,21 @@ class mod_vocab_renderer extends plugin_renderer_base {
         return $output;
     }
 
+    /**
+     * Generate SVG code for the pie-graph's key.
+     *
+     * @param integer $xoffset
+     * @param integer $xspace
+     * @param integer $yoffset
+     * @param integer $yspace
+     * @param integer $size
+     * @param array $colors strings colors expressed as RGB colors
+     * @param string $delimiter
+     * @param array $texts
+     * @param array $textparams
+     * @param array $rectparams
+     * @return string SVG code to represent the pie graph key
+     */
     public function pie_graph_key($xoffset, $xspace, $yoffset, $yspace,
         $size, $colors, $delimiter, $texts, $textparams, $rectparams) {
 
@@ -564,17 +579,17 @@ class mod_vocab_renderer extends plugin_renderer_base {
             }
         } else {
             $games = [];
-            /* ====================== *\
-            Get the list of games available for this Vocab activity.
-            Each game can be hidden or shown in any Vocab activity,
-            and furthermore may have it's own settings to add into
-            the module settings page.
-            Each game can define its own icon (as an svg) of fontawesome icon.
-            vocab_games table looks like this:
-                id name siteenabled
-            vocab_game_instances table looks like this:
-                vocabid gameid enabled configdata
-            \* ====================== */
+            /*
+                Get the list of games available for this Vocab activity.
+                Each game can be hidden or shown in any Vocab activity,
+                and furthermore may have it's own settings to add into
+                the module settings page.
+                Each game can define its own icon (as an svg) of fontawesome icon.
+                vocab_games table looks like this:
+                    id name siteenabled
+                vocab_game_instances table looks like this:
+                    vocabid gameid enabled configdata
+            */
         }
         return $games;
     }

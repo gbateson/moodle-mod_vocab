@@ -50,4 +50,3 @@ class vocabai extends base {
         return true;
     }
 }
-

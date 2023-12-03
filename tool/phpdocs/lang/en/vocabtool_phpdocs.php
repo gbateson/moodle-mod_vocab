@@ -17,7 +17,7 @@
 /**
  * tool/import/lang/en/vocabtool_import.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_phpdocs
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -88,4 +88,3 @@ $string['authorcontact'] = 'Author contact';
 
 $string['sinceversion_help'] = 'The earliest version of Moodle on which these files will function.';
 $string['sinceversion'] = 'Since Moodle version';
-

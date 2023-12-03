@@ -28,13 +28,10 @@ namespace vocabtool_wordlist;
 
 defined('MOODLE_INTERNAL') || die;
 
-// Fetch the parent class.
-require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
-
 /**
  * form
  *
- * @package    mod_vocab
+ * @package    vocabtool_wordlist
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
@@ -42,8 +39,8 @@ require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
  */
 class form extends \mod_vocab\toolform {
 
-    // cache the plugin name
-    public $tool = 'vocabtool_wordlist';
+    /** @var string the name of this plugin */
+    public $subpluginname = 'vocabtool_wordlist';
 
     /**
      * definition
@@ -87,61 +84,61 @@ class form extends \mod_vocab\toolform {
             }
         }
 
-        $this->add_heading($mform, 'currentlist', $this->tool, true);
+        $this->add_heading($mform, 'currentlist', $this->subpluginname, true);
 
         $name = 'currentlist';
         $mform->addElement('html', $this->get_wordlist());
 
         $name = 'addwords';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
         $options = ['rows' => 2, 'cols' => 20];
         $elements = [
             $mform->createElement('textarea', $name, '', $options),
-            $mform->createElement('submit', $name.'button', get_string('add', $this->tool)),
+            $mform->createElement('submit', $name.'button', get_string('add', $this->subpluginname)),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
+        $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
         $name = 'selectwords';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
         $elements = [
             $mform->createElement('text', $name, $label, ['size' => 2]),
-            $mform->createElement('submit', $name.'button', get_string('select', $this->tool)),
+            $mform->createElement('submit', $name.'button', get_string('select', $this->subpluginname)),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
+        $mform->addHelpButton($groupname, $name, $this->subpluginname);
         $mform->setDefault($groupname.'['.$name.']', 10);
         $mform->setType($groupname.'['.$name.']', PARAM_INT);
 
-        $this->add_heading($mform, 'import', $this->tool, false);
+        $this->add_heading($mform, 'import', $this->subpluginname, false);
 
         $name = 'importfile';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
         $options = ['accepted_types' => ['.txt', '.xml']]; // '.csv', '.xlsx', '.xls', '.ods'
         $elements = [
             $mform->createElement('filepicker', $name, $label, '', $options),
-            $mform->createElement('submit', $name.'button', get_string('import', $this->tool)),
+            $mform->createElement('submit', $name.'button', get_string('import', $this->subpluginname)),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
+        $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
-        $this->add_heading($mform, 'export', $this->tool, false);
+        $this->add_heading($mform, 'export', $this->subpluginname, false);
 
         $filename = $this->get_vocab()->name;
         $filename = preg_replace('/[ \.]+/', '_', $filename).'.xml';
 
         $name = 'exportfile';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->tool);
+        $label = get_string($name, $this->subpluginname);
         $elements = [
             $mform->createElement('text', $name, $label, '', ['size' => 20]),
-            $mform->createElement('submit', $name.'button', get_string('export', $this->tool)),
+            $mform->createElement('submit', $name.'button', get_string('export', $this->subpluginname)),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->tool);
+        $mform->addHelpButton($groupname, $name, $this->subpluginname);
         $mform->setDefault($groupname.'['.$name.']', $filename);
         $mform->setType($groupname.'['.$name.']', PARAM_FILE);
 
@@ -150,6 +147,12 @@ class form extends \mod_vocab\toolform {
 
     /**
      * validation
+     *
+     * @uses $USER
+     * @param stdClass $data submitted from the form
+     * @param array $files
+     * @return xxx
+     * @todo Finish documenting this function
      */
     public function validation($data, $files) {
         global $USER;
@@ -168,6 +171,7 @@ class form extends \mod_vocab\toolform {
         global $OUTPUT;
         $list = [];
         $words = $this->get_vocab()->get_wordlist_words();
+
         if (count($words)) {
             $params = ['class' => 'rounded border bg-light py-2 pr-3'];
             return \html_writer::alist(array_values($words), $params, 'ol');
@@ -210,14 +214,14 @@ class form extends \mod_vocab\toolform {
         foreach ($newwords as $newword) {
 
             if (in_array($newword, $words)) {
-                $msg[] = get_string('wordexistsinlist', $this->tool, $newword);
+                $msg[] = get_string('wordexistsinlist', $this->subpluginname, $newword);
             } else {
                 $lemma = $this->get_lemma($newword, $langcode);
                 $langid = $this->get_record_id('vocab_langs', ['langcode' => $langcode]);
                 $lemmaid = $this->get_record_id('vocab_lemmas', ['langid' => $langid, 'lemma' => $lemma]);
                 $wordid = $this->get_record_id('vocab_words', ['lemmaid' => $lemmaid, 'word' => $newword]);
                 $id = $this->get_record_id('vocab_word_instances', ['vocabid' => $vocabid, 'wordid' => $wordid]);
-                $msg[] = get_string('wordaddedtolist', $this->tool, $newword);
+                $msg[] = get_string('wordaddedtolist', $this->subpluginname, $newword);
                 $words[$wordid] = $newword;
             }
         }
@@ -361,4 +365,3 @@ class form extends \mod_vocab\toolform {
         }
     }
 }
-

@@ -20,7 +20,7 @@
  * All the vocab specific functions, needed to implement the module
  * logic, should go here. Never include this file from your lib.php!
  *
- * @package    mod_vocab
+ * @package    vocabtool_wordlist
  * @copyright  2018 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,13 +32,13 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * tool
  *
- * @package    mod_vocab
+ * @package    vocabtool_wordlist
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
  * @since      Moodle 3.11
  */
 class tool extends \mod_vocab\toolbase {
-    const PLUGINNAME = 'wordlist';
+    /** @var string holds the name of this plugin */
+    const SUBPLUGINNAME = 'wordlist';
 }
-

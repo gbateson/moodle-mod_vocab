@@ -175,14 +175,13 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * set_type_default_advanced
+     * Set the default type for an advanced field.
      *
-     * @param $mform
-     * @param $config
-     * @param $name of field
-     * @param $type PARAM_xxx constant value
-     * @param $default (optional, default = null)
-     * @todo Finish documenting this function
+     * @param object $mform representing the Moodle form
+     * @param object $config settings for this plugin
+     * @param string $name of field
+     * @param mixed $type PARAM_xxx constant value
+     * @param mixed $default (optional, default = null)
      */
     public static function set_type_default_advanced($mform, $config, $name, $type, $default=null) {
         $mform->setType($name, $type);
@@ -198,11 +197,11 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * add_attemptscore
+     * Add the attemptscore field to the $mform.
      *
-     * @param $mform
-     * @param $plugin
-     * @todo Finish documenting this function
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
      */
     public function add_attemptscore($mform, $plugin) {
         $name = 'attemptscore';
@@ -214,11 +213,11 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * add_attemptcount
+     * Add the attemptcount field to the $mform.
      *
-     * @param $mform
-     * @param $plugin
-     * @todo Finish documenting this function
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
      */
     public function add_attemptcount($mform, $plugin) {
         global $OUTPUT;
@@ -252,11 +251,11 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * add_attemptdelay
+     * Add the attemptdelay field to the $mform.
      *
-     * @param $mform
-     * @param $plugin
-     * @todo Finish documenting this function
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
      */
     public function add_attemptdelay($mform, $plugin) {
         $name = 'attemptdelay';
@@ -301,10 +300,10 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * data_preprocessing
+     * Add data to the form before it is displayed.
      *
      * @param array $data to be added to the form (passed by reference)
-     * @todo Finish documenting this function
+     * @return void, but may update values in the $data array
      */
     public function data_preprocessing(&$data) {
         $name = 'attemptdelay';
@@ -321,10 +320,10 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * data_postprocessing
+     * Add data to the form after it has been submitted.
      *
-     * @param stdClass $data submitted from the form
-     * @todo Finish documenting this function
+     * @param object $data from the form (passed by reference)
+     * @return void, but may update values in the $data array
      */
     public function data_postprocessing($data) {
         $name = 'attemptdelay';
@@ -338,32 +337,29 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * add_completion_rules
+     * Add completion rules
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return array
      */
     public function add_completion_rules() {
         return [];
     }
 
     /**
-     * completion_rule_enabled
+     * Determine whether or not a completion rule is enabled.
      *
      * @param stdClass $data submitted from the form
-     * @return mixed
-     * @todo Finish documenting this function
+     * @return boolean
      */
     public function completion_rule_enabled($data) {
         return false;
     }
 
     /**
-     * get_pagelayouts
+     * Get an array of available page layouts.
      *
      * @uses $PAGE
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return array of page layouts.
      */
     public function get_pagelayouts() {
         global $PAGE;
@@ -387,11 +383,10 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * get_pagelayout_options
+     * Fetch the list of pagelayout options.
      *
      * @param string $plugin name
      * @return array of page layout names
-     * @todo Finish documenting this function
      */
     public function get_pagelayout_options($plugin) {
         $strman = get_string_manager();
@@ -531,4 +526,3 @@ class mod_vocab_mod_form extends moodleform_mod {
         )->collapse_navigation();
     }
 }
-

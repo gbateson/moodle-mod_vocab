@@ -122,4 +122,3 @@ $capabilities = [
         'clonepermissionsfrom' => 'moodle/quiz:attempt',
     ],
 ];
-

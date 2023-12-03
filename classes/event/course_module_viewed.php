@@ -39,4 +39,3 @@ class course_module_viewed extends \core\event\course_module_viewed {
         $this->data['objecttable'] = 'vocab';
     }
 }
-

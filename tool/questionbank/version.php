@@ -17,7 +17,7 @@
 /**
  * tool/import/version.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_questionbank
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -32,4 +32,3 @@ $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
 $plugin->version   = 2023110707;
 $plugin->release   = '2023-11-07 (07)';
-

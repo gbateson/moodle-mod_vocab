@@ -17,7 +17,7 @@
 /**
  * tool/import/lang/en/vocabai_chatgpt.php
  *
- * @package    mod_vocab
+ * @package    vocabai_chatgpt
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -27,4 +27,3 @@
 $string['pluginname'] = 'ChatGPT AI assistant for a Vocabulary activity.';
 $string['privacy:metadata'] = 'The vocabai_chatgpt plugin does not store any personal data.';
 $string['chatgpt'] = 'ChatGPT';
-

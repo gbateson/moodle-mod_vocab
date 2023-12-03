@@ -24,7 +24,7 @@
  * @since      Moodle 3.11
  */
 
-/**
+/*
 Word dictionary tables
 $tables = [
     'mdl_vocab_antonyms',
@@ -66,4 +66,4 @@ $tables = [
     'mdl_vocab_game_attempts',
     'mdl_vocab_word_attempts',
 ];
-\* ======================== */
+*/

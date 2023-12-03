@@ -17,7 +17,7 @@
 /**
  * tool/import/lang/en/vocabtool_import.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_wordlist
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -49,4 +49,3 @@ $string['export'] = 'Export';
 
 $string['wordaddedtolist'] = 'Word "{$a}" was added to this word list.';
 $string['wordexistsinlist'] = 'Word "{$a}" is already in this word list.';
-

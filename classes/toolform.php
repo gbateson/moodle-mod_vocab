@@ -17,9 +17,6 @@
 /**
  * Internal library of functions for the Vocabulary activity module
  *
- * All the vocab specific functions, needed to implement the module
- * logic, should go here. Never include this file from your lib.php!
- *
  * @package    mod_vocab
  * @copyright  2018 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -28,9 +25,6 @@
 namespace mod_vocab;
 
 defined('MOODLE_INTERNAL') || die;
-
-// Fetch the parent class.
-require_once($CFG->dirroot.'/mod/vocab/classes/form.php');
 
 /**
  * \mod_vocab\toolform
@@ -41,111 +35,10 @@ require_once($CFG->dirroot.'/mod/vocab/classes/form.php');
  * @author     Gordon Bateson gordonbateson@gmail.com
  * @since      Moodle 3.11
  */
-abstract class toolform extends \mod_vocab\form {
-
-    /**
-     * get_vocab
-     *
-     * @return object $vocab
-     */
-    public function get_vocab() {
-        if (isset($this->_customdata['tool'])) {
-            return $this->_customdata['tool']->vocab;
-        }
-        return null;
-    }
-
-    /**
-     * add_field_text
-     *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $name
-     * @param mixed $type a PARAM_xxx constant value
-     * @param mixed $default
-     * @param array $attributes (optional, default=null)
-     * @todo Finish documenting this function
-     */
-    public function add_field_text($mform, $name, $type, $default, $attributes=null) {
-        if ($attributes) {
-            if (is_scalar($attributes)) {
-                if (is_numeric($attributes)) {
-                    $attributes = ['size' => $attributes];
-                } else {
-                    // e.g. 'disabled'
-                    $attributes = [$attributes => $attributes];
-                }
-            }
-            if (array_key_exists('multiple', $attributes)) {
-                $attributes['size'] = min(6, count($options));
-            }
-        }
-        $label = get_string($name, $this->tool);
-        $mform->addElement('text', $name, $label, $attributes);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setDefault($name, $default);
-        $mform->setType($name, $type);
-    }
-
-    /**
-     * add_field_select
-     *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $name
-     * @param xxx $options
-     * @param mixed $type a PARAM_xxx constant value
-     * @param mixed $default
-     * @param array $attributes (optional, default=null)
-     * @todo Finish documenting this function
-     */
-    public function add_field_select($mform, $name, $options, $type, $default, $attributes=null) {
-        if ($attributes) {
-            if (is_scalar($attributes)) {
-                // e.g. 'disabled' or 'multiple'
-                $attributes = [$attributes => $attributes];
-            }
-            if (array_key_exists('multiple', $attributes)) {
-                $attributes['size'] = min(6, count($options));
-            }
-        }
-        $label = get_string($name, $this->tool);
-        $mform->addElement('select', $name, $label, $options, $attributes);
-        $mform->addHelpButton($name, $name, $this->tool);
-        $mform->setType($name, $type);
-        $mform->setDefault($name, $default);
-    }
-
-    /**
-     * add_field_filepicker
-     *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $name
-     * @param array $attributes (optional, default=null)
-     * @param array $options (optional, default=null)
-     * @return void but may modify $mform
-     */
-    public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
-        $label = get_string($name, $this->tool);
-        $mform->addElement('filepicker', $name, $label, $attributes, $options);
-        $mform->addHelpButton($name, $name, $this->tool);
-        if ($options) {
-            if (is_array($options) && array_key_exists('required', $options)) {
-                $required = ($options['required'] ? true : false);
-            } else if (is_scalar($options)) {
-                $required = ($options == 'required');
-            } else {
-                $required = false;
-            }
-            if ($required) {
-                $mform->addRule($name, null, 'required');
-            }
-        }
-    }
-
+abstract class toolform extends \mod_vocab\subpluginform {
     /**
      * Get the id of the record that is uniquely identified by an array of
      * field names of values. If no such record exists it will be created.
-     * Any field values that are too long for the corresponding database
-     * field will be truncated to a suitable length.
      *
      * @uses $DB
      * @param string $table name of a table in the database

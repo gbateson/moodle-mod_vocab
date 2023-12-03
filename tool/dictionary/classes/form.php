@@ -28,23 +28,16 @@ namespace vocabtool_dictionary;
 
 defined('MOODLE_INTERNAL') || die;
 
-// Fetch the parent class.
-require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
-
 /**
  * form
  *
- * @package    mod_vocab
+ * @package    vocabtool_dictionary
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\toolform {
-
-    // cache the plugin name
-    public $tool = 'vocabtool_dictionary';
-
     /**
      * definition
      *
@@ -58,4 +51,3 @@ class form extends \mod_vocab\toolform {
         $mform->addElement('html', $msg);
     }
 }
-

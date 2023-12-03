@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * backup/moodle2/backup_vocab_stepslib.php
+ * Defines the complete vocab structure for backup, with file and id annotations
  *
  * @package    mod_vocab
  * @copyright  2023 Gordon BATESON
@@ -24,18 +24,7 @@
  * @since      Moodle 3.11
  */
 
-/**
- * backup_vocab_activity_structure_step
- * Defines the complete vocab structure for backup, with file and id annotations
- *
- * @copyright 2010 Gordon Bateson (gordon.bateson@gmail.com)
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since     Moodle 2.0
- * @package    mod
- * @subpackage vocab
- */
-
-/**
+/*
 Word dictionary tables
 $tables = [
     'mdl_vocab_antonyms',
@@ -77,7 +66,7 @@ $tables = [
     'mdl_vocab_game_attempts',
     'mdl_vocab_word_attempts',
 ];
-\* ======================== */
+*/
 
 /**
  * backup_vocab_activity_structure_step
@@ -104,9 +93,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         // are we including userinfo?
         $userinfo = $this->get_setting_value('userinfo');
 
-        // ============================================================
-        // XML nodes declaration - dictionary data and games
-        // ============================================================
+        /*////////////////////////////////////////
+        // XML nodes declaration - words and games
+        ////////////////////////////////////////*/
 
         // games
         $games = new backup_nested_element('games');
@@ -172,9 +161,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         $include = $this->get_fieldnames('vocab_synonyms', $exclude);
         $synonym = new backup_nested_element('synonym', ['id', $include]);
 
-        // ============================================================
+        /*////////////////////////////////////////
         // XML nodes declaration - non-user data
-        // ============================================================
+        ///////////////////////////////////////*/
 
         // vocab
         $exclude = ['id', 'course'];
@@ -191,9 +180,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         $include = $this->get_fieldnames('vocab_words', $exclude);
         $wordinstance = new backup_nested_element('wordinstance', ['id', $include]);
 
-        // ============================================================
+        /*////////////////////////////////////////
         // XML nodes declaration - user data
-        // ============================================================
+        ////////////////////////////////////////*/
 
         if ($userinfo) {
 
@@ -214,9 +203,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $wordattempt = new backup_nested_element('wordattempt', ['id', $include]);
         }
 
-        // ============================================================
+        /*////////////////////////////////////////
         // build the tree in the order needed for restore
-        // ============================================================
+        ////////////////////////////////////////*/
 
         $dictionary = new backup_nested_element('dictionary');
 
@@ -274,17 +263,17 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $wordusages->add_child($wordusage);
         }
 
-        // ============================================================
+        /*////////////////////////////////////////
         // data sources - non-user data
-        // ============================================================
+        ////////////////////////////////////////*/
 
         $vocab->set_source_table('vocab', ['id' => backup::VAR_ACTIVITYID]);
         $game->set_source_table('vocab_games', ['vocabid' => backup::VAR_PARENTID]);
         $condition->set_source_table('vocab_conditions', ['taskid' => backup::VAR_PARENTID]);
 
-        // ============================================================
+        /*////////////////////////////////////////
         // data sources - user related data
-        // ============================================================
+        ////////////////////////////////////////*/
 
         if ($userinfo) {
 
@@ -318,9 +307,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $string->set_source_sql("SELECT * FROM {vocab_strings} WHERE id $filter", $params);
         }
 
-        // ============================================================
+        /*////////////////////////////////////////
         // id annotations (foreign keys on non-parent tables)
-        // ============================================================
+        ////////////////////////////////////////*/
 
         $vocab->annotate_ids('course_modules', 'entrycm');
         $vocab->annotate_ids('course_modules', 'exitcm');
@@ -337,9 +326,9 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $response->annotate_ids('vocab_game_attempts', 'attemptid');
         }
 
-        // ============================================================
+        /*////////////////////////////////////////
         // file annotations
-        // ============================================================
+        ////////////////////////////////////////*/
 
         $vocab->annotate_files('mod_vocab', 'sourcefile', null);
         $vocab->annotate_files('mod_vocab', 'entrytext',  null);

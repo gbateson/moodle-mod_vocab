@@ -240,12 +240,13 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
 }
 
 /**
- * vocab_extend_subplugin_navigation
+ * Add a navigation node for the specified subplugin $type and $name.
  *
- * @param object $node the parent navigation node
- * @param integer $type of the navigation node (see "lib/navigationlib.php")
- * @param string $name of this subplugin e.g. phpdocs
+ * @param navigation_node $node the parent navigation node
+ * @param string $type of this plugin e.g. "tool"
+ * @param string $name of this subplugin e.g. "phpdocs"
  * @param object $cm the course module object for the the current vocabulary activity
+ * @return void but adds a navigation node for the specified subplugin $type and $name
  */
 function vocab_extend_subplugin_navigation(navigation_node $node, $type, $name, $cm) {
     $label = get_string($name, "vocab{$type}_{$name}");
@@ -268,4 +269,3 @@ function mod_vocab_get_fontawesome_icon_map() {
         'mod_vocab:wordlist' => 'fa-list',
     ];
 }
-

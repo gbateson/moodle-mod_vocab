@@ -28,13 +28,10 @@ namespace vocabtool_phpdocs;
 
 defined('MOODLE_INTERNAL') || die;
 
-// Fetch the parent class.
-require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
-
 /**
  * form
  *
- * @package    mod_vocab
+ * @package    vocabtool_phpdocs
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
@@ -42,8 +39,8 @@ require_once($CFG->dirroot.'/mod/vocab/classes/toolform.php');
  */
 class form extends \mod_vocab\toolform {
 
-    // cache the plugin name
-    public $tool = 'vocabtool_phpdocs';
+    /** @var string the name of this plugin */
+    public $subpluginname = 'vocabtool_phpdocs';
 
     const ACTION_NONE = 0;
     const ACTION_FIX_ALL = 1;
@@ -72,7 +69,7 @@ class form extends \mod_vocab\toolform {
         $actions = $this->get_actions();
 
         // Heading for file settings.
-        $this->add_heading($mform, 'filesettings', $this->tool, true);
+        $this->add_heading($mform, 'filesettings', $this->subpluginname, true);
 
         $params = array_merge($textoptions, ['disabled' => 'disabled']);
         $this->add_field_text($mform, 'folderpath', PARAM_PATH, '/mod/vocab', $params);
@@ -82,13 +79,13 @@ class form extends \mod_vocab\toolform {
         $mform->disabledIf('filetypes', 'filepath', 'ne', '');
 
         // Heading for search and replace settings.
-        $this->add_heading($mform, 'searchreplaceactions', $this->tool, true);
+        $this->add_heading($mform, 'searchreplaceactions', $this->subpluginname, true);
 
         $this->add_field_select($mform, 'copyrightaction', $actions, PARAM_INT, self::ACTION_REPORT_ALL);
         $this->add_field_select($mform, 'phpdocsaction', $actions, PARAM_INT, self::ACTION_REPORT_ALL);
 
         // Heading for copyright settings.
-        $this->add_heading($mform, 'copyrightsettings', $this->tool, true);
+        $this->add_heading($mform, 'copyrightsettings', $this->subpluginname, true);
 
         $this->add_field_text($mform, 'package', PARAM_TEXT, 'mod_vocab', $textoptions);
         $this->add_field_text($mform, 'startyear', PARAM_TEXT, date('Y'), $textoptions);
@@ -109,10 +106,10 @@ class form extends \mod_vocab\toolform {
      */
     public function get_filetypes() {
         return [
-            'php' => get_string('phpfiles', $this->tool),
-            'js' => get_string('jsfiles', $this->tool),
-            'css' => get_string('cssfiles', $this->tool),
-            'xml' => get_string('xmlfiles', $this->tool),
+            'php' => get_string('phpfiles', $this->subpluginname),
+            'js' => get_string('jsfiles', $this->subpluginname),
+            'css' => get_string('cssfiles', $this->subpluginname),
+            'xml' => get_string('xmlfiles', $this->subpluginname),
         ];
     }
 
@@ -125,14 +122,13 @@ class form extends \mod_vocab\toolform {
     public function get_actions() {
         return [
             self::ACTION_NONE => get_string('none'),
-            self::ACTION_REPORT_ALL => get_string('reportall', $this->tool),
-            self::ACTION_REPORT_MISSING => get_string('reportmissing', $this->tool),
-            self::ACTION_REPORT_INCORRECT => get_string('reportincorrect', $this->tool),
-            self::ACTION_FIX_ALL => get_string('fixall', $this->tool),
-            self::ACTION_FIX_MISSING => get_string('fixmissing', $this->tool),
-            self::ACTION_FIX_INCORRECT => get_string('fixincorrect', $this->tool),
-            self::ACTION_REMOVE_ALL => get_string('removeall', $this->tool),
+            self::ACTION_REPORT_ALL => get_string('reportall', $this->subpluginname),
+            self::ACTION_REPORT_MISSING => get_string('reportmissing', $this->subpluginname),
+            self::ACTION_REPORT_INCORRECT => get_string('reportincorrect', $this->subpluginname),
+            self::ACTION_FIX_ALL => get_string('fixall', $this->subpluginname),
+            self::ACTION_FIX_MISSING => get_string('fixmissing', $this->subpluginname),
+            self::ACTION_FIX_INCORRECT => get_string('fixincorrect', $this->subpluginname),
+            self::ACTION_REMOVE_ALL => get_string('removeall', $this->subpluginname),
         ];
     }
 }
-

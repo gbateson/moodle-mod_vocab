@@ -21,17 +21,21 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * tool
  *
- * @package    mod_vocab
+ * @package    vocabtool_phpdocs
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
  * @since      Moodle 3.11
  */
 class tool extends \mod_vocab\toolbase {
-    const PLUGINNAME = 'phpdocs';
 
+    /** @var string holds the name of this plugin */
+    const SUBPLUGINNAME = 'phpdocs';
+
+    /** @var array maps known parameter names to their type and description */
     protected $paramnames = null;
 
+    /** @var array stores errors and warnings of each type in each file */
     protected $messages = [];
 
     /**
@@ -41,6 +45,8 @@ class tool extends \mod_vocab\toolbase {
      */
     public function __construct() {
         parent::__construct();
+
+        // ToDo: put this list into a file that can be added in main form for this plugin.
         $this->paramnames = [
             '$a' => (object)['type' => 'array', 'text' => 'additional value or values required for the language string'],
             '$action' => (object)['type' => 'integer', 'text' => ''],
@@ -55,7 +61,7 @@ class tool extends \mod_vocab\toolbase {
             '$cm' => (object)['type' => 'string', 'text' => 'the course module object for the the current vocabulary activity'],
             '$cmax' => (object)['type' => 'integer', 'text' => 'the maximum column number'],
             '$cmin' => (object)['type' => 'integer', 'text' => 'the minimum column number'],
-            '$colors' => (object)['type' => 'array', 'text' => 'strings colors expressed as RGB colors'],
+            '$colors' => (object)['type' => 'array', 'text' => 'string colors expressed as RGB colors'],
             '$component' => (object)['type' => 'string', 'text' => 'the frakenstyle name of a Moodle plugin'],
             '$config' => (object)['type' => 'object', 'text' => ''],
             '$contents' => (object)['type' => 'string',  'text' => ''],
@@ -70,6 +76,7 @@ class tool extends \mod_vocab\toolbase {
             '$default' => (object)['type' => 'mixed', 'text' => ''],
             '$defaultmax' => (object)['type' => 'integer', 'text' => ''],
             '$defaultmin' => (object)['type' => 'integer', 'text' => ''],
+            '$delimiter' => (object)['type' => 'string', 'text' => ''],
             '$details' => (object)['type' => 'string', 'text' => ''],
             '$dryrun' => (object)['type' => 'boolean', 'text' => ''],
             '$editable' => (object)['type' => 'boolean', 'text' => ''],
@@ -124,9 +131,11 @@ class tool extends \mod_vocab\toolbase {
             '$r' => (object)['type' => 'integer', 'text' => 'a row number'],
             '$radius' => (object)['type' => 'integer', 'text' => 'radius of the pie-chart (in pixels)'],
             '$recordids' => (object)['type' => 'array', 'text' => 'of ids from the database'],
+            '$rectparams' => (object)['type' => 'array', 'text' => ''],
             '$row' => (object)['type' => 'object', 'text' => ''],
             '$settings' => (object)['type' => 'object', 'text' => 'The "settings" navigation node for this Vocabulary activity'],
             '$sheet' => (object)['type' => 'object', 'text' => ''],
+            '$size' => (object)['type' => 'integer', 'text' => ''],
             '$start' => (object)['type' => 'integer', 'text' => ''],
             '$startcolor' => (object)['type' => 'string', 'text' => "an RGB color, e.g. '#ff6633'"],
             '$strname' => (object)['type' => 'string', 'text' => ''],
@@ -140,6 +149,8 @@ class tool extends \mod_vocab\toolbase {
             '$target' => (object)['type' => 'string', 'text' => ''],
             '$text' => (object)['type' => 'string', 'text' => ''],
             '$textcolor' => (object)['type' => 'string', 'text' => 'the text color as an RGB color'],
+            '$textparams' => (object)['type' => 'array', 'text' => ''],
+            '$texts' => (object)['type' => 'array', 'text' => ''],
             '$txt' => (object)['type' => 'string', 'text' => ''],
             '$type' => (object)['type' => 'mixed', 'text' => 'a PARAM_xxx constant value'],
             '$update' => (object)['type' => 'boolean', 'text' => ''],
@@ -155,6 +166,10 @@ class tool extends \mod_vocab\toolbase {
             '$worksheet' => (object)['type' => 'object', 'text' => 'representing a sheet from the data file'],
             '$xml' => (object)['type' => 'string', 'text' => ''],
             '$xmlroot' => (object)['type' => 'string', 'text' => ''],
+            '$xoffset' => (object)['type' => 'integer', 'text' => ''],
+            '$xspace' => (object)['type' => 'integer', 'text' => ''],
+            '$yoffset' => (object)['type' => 'integer', 'text' => ''],
+            '$yspace' => (object)['type' => 'integer', 'text' => ''],
         ];
     }
 
@@ -458,7 +473,7 @@ class tool extends \mod_vocab\toolbase {
         $comments   = '((?:[ \t]*\/\/[^\n\r]*[\n\r]+)*)';
         $phpdocs    = '([ \t]*\/\*+[\r\n]+(?:[ \t]*\*[^\r\n]*[\r\n]+)*[ \t]*\*+\/[\r\n]+)?';
         $indent     = '([ \t]*)';
-        $parameters = '([^\n\r{]*)'; // includes function return type ( *:  *\w+)?
+        $parameters = '([^{]*)'; // includes function return type ( *:  *\w+)?
 
         switch ($type) {
             case 1:
@@ -482,7 +497,7 @@ class tool extends \mod_vocab\toolbase {
                 // php functions/methods
                 // e.g. public static function FooBar($x, $y=0, $z="z") {
                 $keywords = '((?:(?:abstract|public|private|protected|static)[ \t]+)*function[ \t]+)';
-                $blockname = '(\w+)[ \t]*';
+                $blockname = '(pie_gra\w+)[ \t]*';
                 $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
                 break;
 
@@ -569,19 +584,27 @@ class tool extends \mod_vocab\toolbase {
                     return false; // shouldn't happen !!
             }
 
+            // Parse the old PHPdocs so that we can extract the old comments and
+            // check that the old param definitions match params for this block.
+            $parseold = $this->parse_phpdocs($filepath, $blockname, $phpdocsold);
+
             $parameters = trim($matches[7][$i][0]);
             if (substr($parameters, 0, 1) == '(' && substr($parameters, -1) == ')') {
-                $phpdocsnew = $this->get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters);
+                $phpdocsnew = $this->get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters, $parseold->comments);
             } else {
                 // A "class" in in a PHP file.
-                $phpdocsnew = $this->get_phpdocs_block($filepath, $data, $indent, $blockname);
+                $phpdocsnew = $this->get_phpdocs_block($data, $indent, $blockname);
             }
+
+            // Parse the new PHPdocs.
+            $parsenew = $this->parse_phpdocs($filepath, $blockname, $phpdocsnew);
+
             $missing = false;
             $incorrect = false;
             if ($phpdocsold == '') {
                 $missing = true;
             } else {
-                $incorrect = $this->different_params($blockname, $phpdocsold, $phpdocsnew);
+                $incorrect = $this->different_params($blockname, $parseold, $parsenew);
             }
             list($report, $remove, $fix) = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
 
@@ -666,9 +689,14 @@ class tool extends \mod_vocab\toolbase {
         $typeparams = ['class' => 'text-info font-weight-bold list-unstyled typelist'];
         $blockparams = ['class' => 'text-dark font-weight-normal blocklist'];
 
+        // Initialize the string cache.
         $str = (object)[];
-        $str->labelsep = get_string('labelsep', 'langconfig');
-        $str->listsep = get_string('listsep', 'langconfig');
+
+        // Cache the separators.
+        $types = ['labelsep', 'listsep'];
+        foreach ($types as $type) {
+            $str->$type = get_string($type, 'langconfig');
+        }
 
         // Cache copyright messages.
         $types = ['added', 'removed', 'missing'];
@@ -706,12 +734,15 @@ class tool extends \mod_vocab\toolbase {
                     $blocklist = array_reverse($types[$type]);
                     $blocklist = \html_writer::alist($blocklist, $blockparams, 'ul');
                     $typelist[] = $str->$type.$str->labelsep.$blocklist;
-                } else {
+                } else if (substr($type, 0, 9) == 'copyright') {
+                    // A copyright message has no "blockname".
                     $typelist[] = $str->$type;
+                } else {
+                    $typelist[] = $type; // Shouldn't happen !!
                 }
             }
             $typelist = \html_writer::alist($typelist, $typeparams, 'ul');
-            $filelist[] = $filepath.$str->labelsep.$typelist;
+            $filelist[] = $filepath.$typelist;
         }
         if (empty($filelist)) {
             $filelist = 'No messages for the selected files.';
@@ -722,16 +753,19 @@ class tool extends \mod_vocab\toolbase {
     }
 
     /**
-     * parse_phpdocs
+     * Parse a string containing a block of PHPdocs, and return
+     * an object containing comments and tags in those PHPdocs.
      *
-     * @param string $blockname
-     * @param string $phpdocs
-     * @return object to represent these $phpdocs
-     * @todo Finish documenting this function
+     * @param string $filepath the name of the file containing this block of PHP code
+     * @param string $blockname the name for this block of PHP code
+     * @param string $phpdocs a string containing PHPdocs
+     * @return object to represent $phpdocs
      */
-    public function parse_phpdocs($blockname, $phpdocs) {
+    public function parse_phpdocs($filepath, $blockname, $phpdocs) {
 
         $parse = (object)[
+            'filepath' => $filepath,
+            'blockname' => $blockname,
             'comments' => [],
             'tags' => [],
         ];
@@ -817,15 +851,11 @@ class tool extends \mod_vocab\toolbase {
      * are different from those in the "new" (=proposed) phpdocs
      *
      * @param string $blockname name of this function or code block
-     * @param string $phpdocsold the old PHPDocs
-     * @param string $phpdocsnew the expected PHPDocs
+     * @param object $parseold parsed version of the old PHPDocs
+     * @param object $parsenew parsed version of the expected PHPDocs
      * @return boolean TRUE if params are different, FALSE if they are the same.
      */
-    public function different_params($blockname, $phpdocsold, $phpdocsnew) {
-
-        $parseold = $this->parse_phpdocs($blockname, $phpdocsold);
-        $parsenew = $this->parse_phpdocs($blockname, $phpdocsnew);
-
+    public function different_params($blockname, $parseold, $parsenew) {
         if (array_key_exists('param', $parseold->tags)) {
             $paramsold = array_keys($parseold->tags['param']);
             sort($paramsold);
@@ -839,34 +869,31 @@ class tool extends \mod_vocab\toolbase {
         } else {
             $paramsnew = [];
         }
-
         return ($paramsold !== $paramsnew);
     }
 
     /**
-     * get_phpdocs_file
+     * Get PHPdocs for a file, including the package and copyright
      *
      * @param stdClass $data submitted from the form
-     * @param xxx $indent
-     * @param string $filename
-     * @return xxx
-     * @todo Finish documenting this function
+     * @param string $indent white space indentation for each line of the PHPdocs
+     * @param string $filename used as the comment for this file
+     * @return string containing the PHPdocs for a file
      */
     public function get_phpdocs_file($data, $indent, $filename) {
-        return $this->get_phpdocs_block($filename, $data, $indent, $filename);
+        return $this->get_phpdocs_block($data, $indent, $filename);
     }
 
     /**
-     * get_phpdocs_block
+     * Get PHPdocs for a block of PHP code, including the package and copyright
      *
-     * @param string $filepath
      * @param stdClass $data submitted from the form
-     * @param xxx $indent
-     * @param xxx $blockname
+     * @param string $indent
+     * @param string $blockname
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function get_phpdocs_block($filepath, $data, $indent, $blockname) {
+    public function get_phpdocs_block($data, $indent, $blockname) {
         $details = <<<END
 $indent * @package    $data->package
 $indent * @copyright  $data->startyear $data->authorname
@@ -880,33 +907,43 @@ END;
     /**
      * get_phpdoc
      *
-     * @param xxx $indent
-     * @param xxx $blockname
-     * @param xxx $details
+     * @param string $indent
+     * @param xxx $comments
+     * @param string $details
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function get_phpdoc($indent, $blockname, $details) {
+    public function get_phpdoc($indent, $comments, $details) {
         return $indent.'/'.'**'."\n".
-               $this->get_name_phpdoc($blockname, $indent).
+               $this->get_comments_phpdoc($comments, $indent).
                $this->get_details_phpdoc($details, $indent).
                $indent.' *'.'/'."\n";
     }
 
     /**
-     * get_name_phpdoc
+     * get_comments_phpdoc
      *
-     * @param xxx $blockname
-     * @param xxx $indent
+     * @param xxx $comments
+     * @param string $indent
      * @return xxx
      * @todo Finish documenting this function
      */
-    public function get_name_phpdoc($blockname, $indent) {
-        $name = trim($blockname);
-        if ($pos = strrpos($name, '.')) {
-            $name = substr($name, $pos + 1);
+    public function get_comments_phpdoc($comments, $indent) {
+        if (is_scalar($comments)) {
+            // Probably a function name on new PHPdocs.
+            $comment = trim($comments);
+            if ($pos = strrpos($comment, '.')) {
+                $comment = substr($comment, $pos + 1);
+            }
+            $comments = "$indent * $comment\n";
+        } else {
+            // Probably old PHPdocs.
+            foreach ($comments as $i => $comment) {
+                $comments[$i] = "$indent * $comment\n";
+            }
+            $comments = implode('', $comments);
         }
-        return "$indent * $name\n";
+        return $comments;
     }
 
     /**
@@ -927,18 +964,19 @@ END;
     /**
      * get_phpdocs_parameters
      *
-     * @param string $filepath
-     * @param string $contents
-     * @param xxx $start
-     * @param xxx $indent
-     * @param xxx $blockname
-     * @param xxx $parameters
-     * @return xxx
-     * @todo Finish documenting this function
+     * @param string $filepath relative to $CFG->dirroot
+     * @param string $contents the content of the file
+     * @param integer $start position of the start of this block with the file contents
+     * @param string $indent white space to begin each line of PHPdocs
+     * @param string $blockname the function name e.g. "xmldb_vocab_check_structure"
+     * @param string $parameters the function parameters e.g. "($dbman, $tablenames=null)"
+     * @param mixed $comments comments to use in the PHPdocs. If empty, then $blockname will be used.
+     * @return string containing the PHPdocs for a block of PHP code
      */
-    public function get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters) {
+    public function get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters, $comments) {
 
         $details = '';
+        $unknownparams = [];
         $search = '/'.'(\w*)(\&?)(\$\w+)(\s*=\s*([^,]*))?'.'/';
         // [0][$i] : type + reference + name + default value
         // [1][$i] : parameter type (optional)
@@ -958,7 +996,7 @@ END;
                     $type = ($matches[1][$i] ? $matches[1][$i] : 'xxx');
                     $text = '';
                     $this->paramnames[$name] = (object)['type' => $type, 'text' => $text];
-                    $this->store_phpdocs_message($filepath, $blockname, 'unknownparam');
+                    $unknownparams[] = $name;
                 }
 
                 $details .= rtrim("$indent * @param $type $name $text");
@@ -971,6 +1009,10 @@ END;
                 }
                 $details .= "\n";
             }
+        }
+
+        if ($unknownparams = implode(', ', $unknownparams)) {
+            $this->store_phpdocs_message($filepath, "$blockname ($unknownparams)", 'unknownparam');
         }
 
         // get $pos(ition) of end of function
@@ -997,7 +1039,10 @@ END;
 
         $details .= "$indent * @todo Finish documenting this function\n";
 
-        return $this->get_phpdoc($indent, $blockname, $details);
+        if (empty($comments)) {
+            $comments = $blockname;
+        }
+        return $this->get_phpdoc($indent, $comments, $details);
     }
 
     /**
@@ -1059,4 +1104,3 @@ END;
         return $header.$copyright."\n".$footer;
     }
 }
-

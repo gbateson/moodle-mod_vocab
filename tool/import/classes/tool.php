@@ -20,7 +20,7 @@
  * All the vocab specific functions, needed to implement the module
  * logic, should go here. Never include this file from your lib.php!
  *
- * @package    mod_vocab
+ * @package    vocabtool_import
  * @copyright  2018 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,15 +30,15 @@ namespace vocabtool_import;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * tool
+ * Main class for a "tool" subplugin of the mod_vocab plugin.
  *
- * @package    mod_vocab
+ * @package    vocabtool_import
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon Bateson gordonbateson@gmail.com
  * @since      Moodle 3.11
  */
 class tool extends \mod_vocab\toolbase {
-    const PLUGINNAME = 'import';
+    /** @var string holds the name of this plugin */
+    const SUBPLUGINNAME = 'import';
 }
-

@@ -17,7 +17,7 @@
 /**
  * tool/dictionary/lang/en/vocabtool_dictionary.php
  *
- * @package    mod_vocab
+ * @package    vocabtool_dictionary
  * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Gordon BATESON https://github.com/gbateson
@@ -27,4 +27,3 @@
 $string['pluginname'] = 'Edit dictionary data used by Vocabulary activities';
 $string['privacy:metadata'] = 'The vocabtool_dictionary plugin does not store any personal data.';
 $string['dictionary'] = 'Edit dictionary';
-

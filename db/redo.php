@@ -15,10 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * mod/vocab/db/redo.php
+ * Redo an upgrade. This script is intended only for development purposes.
  *
- * @package    mod
- * @subpackage vocab
+ * @package    mod_vocab
  * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      Moodle 3.11
@@ -102,7 +101,7 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
 
     // extract and format versions from upgrade script
     $contents = file_get_contents($CFG->dirroot.'/mod/vocab/db/upgrade.php');
-    preg_match_all('/(? <= \$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
+    preg_match_all('/(?<=\$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
     $imax = count($matches[0]);
     for ($i = 0; $i < $imax; $i++) {
         $version = $matches[0][$i];
@@ -125,4 +124,3 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
 
 echo $renderer->box_end();
 echo $renderer->footer();
-
