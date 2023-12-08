@@ -59,7 +59,7 @@ $string['explainstartend'] = 'Define "start" (default=1) and "end" (default=last
 $string['explainsettings'] = 'Default values for form settings can be overridden by specifying the name and value.';
 
 $string['headingsandpreviewrows'] = 'The headings and first {$a} rows of data appear below.';
-$string['headingsandpreviewresults'] = 'The headings and expected results for the first {$a} rows appear below.';
+$string['headingsandpreviewresults'] = 'The headings and expected results for the first {$a} rows of data appear below.';
 $string['headingsandresults'] = 'The headings and results for the {$a} target rows appear below.';
 $string['review'] = 'Review formatted data';
 

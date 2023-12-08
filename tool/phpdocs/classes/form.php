@@ -106,10 +106,10 @@ class form extends \mod_vocab\toolform {
      */
     public function get_filetypes() {
         return [
-            'php' => get_string('phpfiles', $this->subpluginname),
-            'js' => get_string('jsfiles', $this->subpluginname),
-            'css' => get_string('cssfiles', $this->subpluginname),
-            'xml' => get_string('xmlfiles', $this->subpluginname),
+            'php' => $this->get_string('phpfiles'),
+            'js' => $this->get_string('jsfiles'),
+            'css' => $this->get_string('cssfiles'),
+            'xml' => $this->get_string('xmlfiles'),
         ];
     }
 
@@ -122,13 +122,13 @@ class form extends \mod_vocab\toolform {
     public function get_actions() {
         return [
             self::ACTION_NONE => get_string('none'),
-            self::ACTION_REPORT_ALL => get_string('reportall', $this->subpluginname),
-            self::ACTION_REPORT_MISSING => get_string('reportmissing', $this->subpluginname),
-            self::ACTION_REPORT_INCORRECT => get_string('reportincorrect', $this->subpluginname),
-            self::ACTION_FIX_ALL => get_string('fixall', $this->subpluginname),
-            self::ACTION_FIX_MISSING => get_string('fixmissing', $this->subpluginname),
-            self::ACTION_FIX_INCORRECT => get_string('fixincorrect', $this->subpluginname),
-            self::ACTION_REMOVE_ALL => get_string('removeall', $this->subpluginname),
+            self::ACTION_REPORT_ALL => $this->get_string('reportall'),
+            self::ACTION_REPORT_MISSING => $this->get_string('reportmissing'),
+            self::ACTION_REPORT_INCORRECT => $this->get_string('reportincorrect'),
+            self::ACTION_FIX_ALL => $this->get_string('fixall'),
+            self::ACTION_FIX_MISSING => $this->get_string('fixmissing'),
+            self::ACTION_FIX_INCORRECT => $this->get_string('fixincorrect'),
+            self::ACTION_REMOVE_ALL => $this->get_string('removeall'),
         ];
     }
 }

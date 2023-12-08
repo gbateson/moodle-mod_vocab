@@ -132,25 +132,14 @@ function xmldb_vocab_upgrade($oldversion) {
         xmldb_vocab_rename_fields($dbman, 'vocab', ['expandnavigation' => $field]);
     }
 
-    $newversion = 2023110215;
-    if ($oldversion < $newversion) {
-        // Add new table, "vocab_word_states".
-        xmldb_vocab_check_structure($dbman, ['vocab_word_states']);
-        upgrade_mod_savepoint(true, "$newversion", 'vocab');
-    }
+    /*/////////////////////////////////////
+    // Interim updates are all obviated by
+    // full structure check for 2023120640
+    /////////////////////////////////////*/
 
-    $newversion = 2023112831;
+    $newversion = 2023120640;
     if ($oldversion < $newversion) {
-        // Add new tables, "vocab_ai_access" and "vocab_ai_prompt".
-        xmldb_vocab_check_structure($dbman, ['vocab_ai_access', 'vocab_ai_prompt']);
-        upgrade_mod_savepoint(true, "$newversion", 'vocab');
-    }
-
-    $newversion = 2023120236;
-    if ($oldversion < $newversion) {
-        // Rename "vocab_ai_access" table to "vocab_ai_config".
-        $tablenames = ['vocab_ai_access' => 'vocab_ai_config'];
-        xmldb_vocab_rename_tables($dbman, $tablenames);
+        xmldb_vocab_check_structure($dbman);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
@@ -212,28 +201,55 @@ function xmldb_vocab_rename_tables($dbman, $tablenames) {
 function xmldb_vocab_check_structure($dbman, $tablenames=null) {
     global $CFG, $DB;
 
-    static $checkedall = false;
+    // The path (relative to $CFG->dirroot) to the main folder for this plugin.
+    $plugindir = 'mod/vocab';
+
+    // The full frakenstyle name of this plugin.
+    $pluginname = 'mod_vocab';
+
+    // The prefix for DB tables belonging to this plugin.
+    $tableprefix = 'vocab';
+
+    // array [$pluginname => boolean] to cache whether or not we have checked all tables for this plugin
+    static $checkedall = [];
+
+    // array [$pluginname => [$tablenames]] to cache which tables for this plugin have already been checked
     static $checked = [];
 
-    if ($checkedall) {
+    // If this is the frst time to check any tables for this plugin,
+    // initialize its $checkedall flag and $checked array.
+    if (! array_key_exists($pluginname, $checkedall)) {
+        $checkedall[$pluginname] = false;
+        $checked[$pluginname] = [];
+    }
+
+    // If we have already checked all tables for this plugin,
+    // we can stop here.
+    if ($checkedall[$pluginname]) {
         return true;
     }
 
+    // If we are going to check all tables for this $plugin,
+    // then we can set its $checkall flag to "true".
     if ($tablenames === null) {
-        $checkedall = true;
+        $checkedall[$pluginname] = true;
     }
 
-    $filepath = '/mod/vocab/db/install.xml';
+    // Locate the XML file for this plugin, and try to read it.
+    $filepath = "/$plugindir/db/install.xml";
     $file = new xmldb_file($CFG->dirroot.$filepath);
 
-    $loaded = $file->loadXMLStructure();
-    $structure = $file->getStructure();
-
     if (! $file->fileExists()) {
+        // Presumably this would only happen on a development site.
         $error = "XML file not found: $filepath";
         throw new ddl_exception('ddlxmlfileerror', null, $error);
     }
 
+    // Parse the the structure of the XML.
+    $loaded = $file->loadXMLStructure();
+    $structure = $file->getStructure();
+
+    // Check that the XML file could be loaded.
     if (! $file->isLoaded()) {
         if ($structure && ($error = $structure->getAllErrors())) {
             $error = implode (', ', $error);
@@ -244,27 +260,34 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         throw new ddl_exception('ddlxmlfileerror', null, $error);
     }
 
+    // Get a list of tables for this plugin that are defined in the XML.
     if (! $tables = $structure->getTables()) {
         $error = "No tables found in XML file ($filepath)";
         throw new ddl_exception('ddlxmlfileerror', null, $error);
     }
 
+    // Get a list of "$errors" in the schema. Actually, an "$error"
+    // is really just something different between the XML schema
+    // and the current structure of the Moodle database.
     $errors = $dbman->check_database_schema($structure);
     if ($tablenames) {
         $keys = array_values($tablenames);
     } else {
         $keys = array_keys($errors);
     }
-    $keys = preg_grep('/^vocab(_|$)/', $keys);
+
+    // Extract only errors relating to tables for this plugin.
+    $keys = preg_grep('/^'.$tableprefix.'(_|$)/', $keys);
     $errors = array_intersect_key($errors, array_flip($keys));
 
+    // Loop through $tablenames mentioned in the $errors for this plugin.
     foreach ($errors as $tablename => $messages) {
 
         // Skip tables that have already been checked.
-        if (array_key_exists($tablename, $checked)) {
+        if (array_key_exists($tablename, $checked[$pluginname])) {
             continue;
         }
-        $checked[$tablename] = true;
+        $checked[$pluginname][$tablename] = true;
 
         $i = $file->findObjectInArray($tablename, $tables);
         if (is_numeric($i)) {
@@ -285,7 +308,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
         // If we try to change any fields that are indexed, the $dbman will abort with an error.
         // As a workaround, we make a note of which fields are used in the keys/indexes,
         // and then if any of them is to be changed, we first remove the keys/indexes,
-        // then change the field and then add the keys/index back to the table.
+        // then change the field and finally add the keys/index back to the table.
 
         $special = (object)[
             'keyfields' => [],
@@ -297,9 +320,11 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
             'indexes' => [],
         ];
 
+        // Map each key field onto an array of keys that use the field.
         foreach ($table->getKeys() as $key) {
             foreach ($key->getFields() as $field) {
                 if ($key->getType() == XMLDB_KEY_PRIMARY) {
+                    // We can never alter the "id" field.
                     continue;
                 }
                 if (empty($special->keyfields[$field])) {
@@ -309,6 +334,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
             }
         }
 
+        // Map each index field onto an array of indexes that use the field.
         foreach ($table->getIndexes() as $index) {
             foreach ($index->getFields() as $field) {
                 if (empty($special->indexfields[$field])) {
@@ -318,6 +344,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
             }
         }
 
+        // Loop through the error messages relating to this table.
         foreach ($messages as $message) {
 
             switch (true) {
@@ -415,11 +442,12 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                     break;
 
                 default:
-                    echo '<p>Unknown XMLDB error in mod_vocab:<br>'.$message.'</p>';
+                    echo '<p>Unknown XMLDB error in '.$pluginname.':<br>'.$message.'</p>';
                     // die;
             }
         }
 
+        // Restore any keys that were dropped.
         foreach ($dropped->keys as $key) {
             $index = new xmldb_index($key->getName(), $key->getType(), $key->getFields());
             if (! $dbman->index_exists($table, $index)) {
@@ -427,6 +455,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
             }
         }
 
+        // Restore any indexes that were dropped.
         foreach ($dropped->indexes as $index) {
             if (! $dbman->index_exists($table, $index)) {
                 $dbman->add_index($table, $index);

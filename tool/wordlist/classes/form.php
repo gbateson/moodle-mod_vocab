@@ -91,21 +91,21 @@ class form extends \mod_vocab\toolform {
 
         $name = 'addwords';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $options = ['rows' => 2, 'cols' => 20];
         $elements = [
             $mform->createElement('textarea', $name, '', $options),
-            $mform->createElement('submit', $name.'button', get_string('add', $this->subpluginname)),
+            $mform->createElement('submit', $name.'button', $this->get_string('add')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
         $name = 'selectwords';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $elements = [
             $mform->createElement('text', $name, $label, ['size' => 2]),
-            $mform->createElement('submit', $name.'button', get_string('select', $this->subpluginname)),
+            $mform->createElement('submit', $name.'button', $this->get_string('select')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
@@ -116,11 +116,11 @@ class form extends \mod_vocab\toolform {
 
         $name = 'importfile';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $options = ['accepted_types' => ['.txt', '.xml']]; // '.csv', '.xlsx', '.xls', '.ods'
         $elements = [
             $mform->createElement('filepicker', $name, $label, '', $options),
-            $mform->createElement('submit', $name.'button', get_string('import', $this->subpluginname)),
+            $mform->createElement('submit', $name.'button', $this->get_string('import')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
@@ -132,10 +132,10 @@ class form extends \mod_vocab\toolform {
 
         $name = 'exportfile';
         $groupname = $name.'elements';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $elements = [
             $mform->createElement('text', $name, $label, '', ['size' => 20]),
-            $mform->createElement('submit', $name.'button', get_string('export', $this->subpluginname)),
+            $mform->createElement('submit', $name.'button', $this->get_string('export')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
@@ -214,14 +214,14 @@ class form extends \mod_vocab\toolform {
         foreach ($newwords as $newword) {
 
             if (in_array($newword, $words)) {
-                $msg[] = get_string('wordexistsinlist', $this->subpluginname, $newword);
+                $msg[] = $this->get_string('wordexistsinlist', $newword);
             } else {
                 $lemma = $this->get_lemma($newword, $langcode);
                 $langid = $this->get_record_id('vocab_langs', ['langcode' => $langcode]);
                 $lemmaid = $this->get_record_id('vocab_lemmas', ['langid' => $langid, 'lemma' => $lemma]);
                 $wordid = $this->get_record_id('vocab_words', ['lemmaid' => $lemmaid, 'word' => $newword]);
                 $id = $this->get_record_id('vocab_word_instances', ['vocabid' => $vocabid, 'wordid' => $wordid]);
-                $msg[] = get_string('wordaddedtolist', $this->subpluginname, $newword);
+                $msg[] = $this->get_string('wordaddedtolist', $newword);
                 $words[$wordid] = $newword;
             }
         }

@@ -299,40 +299,29 @@
         <KEY NAME="wordinstanceid" TYPE="foreign" FIELDS="wordinstanceid" REFTABLE="vocab_word_instances" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="vocab_ai_config" COMMENT="Details of URLs, keys and other settings for AI assistants">
+    <TABLE NAME="vocab_config" COMMENT="Config settings for mod_vocab subplugins">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The highest context in which these settings can be used: site, category, course, activity"/>
-        <FIELD NAME="owneruserid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Only this user can view or edit this setting. Other users can use this setting within the given conext."/>
-        <FIELD NAME="plugin" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="value" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="owneruserid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Only this user can view or edit this setting. Other users can use this setting within the given context."/>
+        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The highest context in which this setting can be used"/>
+        <FIELD NAME="subplugin" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="contextid" TYPE="foreign" FIELDS="contextid" REFTABLE="context" REFFIELDS="id"/>
         <KEY NAME="owneruserid" TYPE="foreign" FIELDS="owneruserid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="contextid" TYPE="foreign" FIELDS="contextid" REFTABLE="context" REFFIELDS="id"/>
       </KEYS>
-      <INDEXES>
-        <INDEX NAME="plugin" UNIQUE="false" FIELDS="contextid, plugin"/>
-      </INDEXES>
     </TABLE>
-    <TABLE NAME="vocab_ai_prompt" COMMENT="Prompts used by the AI assistant subplugins of the Vocab activity module.">
+    <TABLE NAME="vocab_config_settings" COMMENT="Config setting names and values for mod_vocab subplugins">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="accessid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="owneruserid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="type" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="name" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="description" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="prompt" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="configid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="value" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="accessid" TYPE="foreign" FIELDS="accessid" REFTABLE="user" REFFIELDS="id"/>
-        <KEY NAME="owneruserid" TYPE="foreign" FIELDS="owneruserid" REFTABLE="vocab_ai_config" REFFIELDS="id"/>
+        <KEY NAME="configid" TYPE="foreign" FIELDS="configid" REFTABLE="vocab_config" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

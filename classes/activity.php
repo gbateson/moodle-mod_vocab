@@ -154,6 +154,9 @@ class activity {
     /** @var string vocab activity timemodified */
     public $timemodified = 0;
 
+    /** @var array of readable contexts the include this vocab activity */
+    public $contexts = null;
+
     /**
      * Construct an instance of a Vocabulary activity
      *
@@ -801,6 +804,9 @@ class activity {
                 break;
         }
 
+        // Since the default setting is to expand the navigation menu,
+        // we only need to do something if $forceopen is FALSE.
+
         if ($forceopen === false) {
             $rootnodekeys = [
                 'site', 'myprofile', 'currentcourse',
@@ -815,10 +821,10 @@ class activity {
     }
 
     /**
-     * set_pagelayout
+     * Set the page layout
      *
      * @uses $PAGE
-     * @todo Finish documenting this function
+     * @return void (but may update pagelayout in $PAGE object)
      */
     public function set_pagelayout() {
         global $PAGE;
@@ -828,41 +834,84 @@ class activity {
     }
 
     /**
-     * get_writeable_contexts
+     * Get context related to the current Vocabulary activity.
      *
-     * @return xxx
-     * @todo Finish documenting this function
+     * @return array of context objects indexed by contextlevel
      */
-    public function get_writeable_contexts() {
-        $contexts = [];
+    public function get_contexts() {
+        if ($this->contexts === null) {
+            $this->contexts = [
+                CONTEXT_MODULE => \context_module::instance($this->cm->id),
+                CONTEXT_COURSE => \context_course::instance($this->course->id),
+                CONTEXT_COURSECAT => \context_coursecat::instance($this->course->category),
+                CONTEXT_SYSTEM => \context_system::instance(),
+            ];
+        }
+        return $this->contexts;
+    }
 
-        // Check the module context.
-        $id = $this->vocab->cm->id;
-        $context = context_module::instance($id);
-        if (has_capability('mod/vocab:manage', $context)) {
-            $contexts[CONTEXT_MODULE] = $context;
+    /**
+     * Get readable contexts relevant to this vocab activity.
+     *
+     * @param string $keyfield (optional, default = '') the name of the field to use as keys in the return array. If blank, keys will be numeric.
+     * @param string $valuefield (optional, default = '') the name of the field to use as values in the return array. If blank, complete context records will be returned.
+     * @return array
+     */
+    public function get_readable_contexts($keyfield='', $valuefield='') {
+        $readable = [];
+        foreach ($this->get_contexts() as $context) {
+            $key = ($keyfield ? $context->$keyfield : count($readable));
+            $value = ($valuefield ? $context->$valuefield : $context);
+            $readable[$key] = $value;
+        }
+        return $readable;
+    }
 
-            // Check the course context.
-            $id = $this->vocab->course->id;
-            $context = context_course::instance($id);
-            if (has_capability('moodle/course:manageactivities', $context)) {
-                $contexts[CONTEXT_COURSE] = $context;
+    /**
+     * Get writeable contexts relevant to this vocab activity.
+     *
+     * @param string $keyfield (optional, default = '') the name of the field to use as keys in the return array. If blank, keys will be numeric.
+     * @param string $valuefield (optional, default = '') the name of the field to use as values in the return array. If blank, complete context records will be returned.
+     * @return array
+     */
+    public function get_writeable_contexts($keyfield='', $valuefield='') {
 
-                // Check the course category context.
-                $id = $this->vocab->course->category;
-                $context = context_coursecat::instance($id);
-                if (has_capability('moodle/category:manage', $context)) {
-                    $contexts[CONTEXT_COURSECAT] = $context;
+        // Get array of contexts indexed by contextlevel (low to high).
+        $contexts = $this->get_contexts();
 
-                    // Check the site context.
-                    $context = context_system::instance();
-                    if (has_capability('moodle/site:config', $context)) {
-                        $contexts[CONTEXT_SITE] = $context;
-                    }
-                }
+        $writeable = [];
+        foreach ($contexts as $context) {
+
+            switch ($context->contextlevel) {
+                case CONTEXT_MODULE:
+                    $capability = 'mod/vocab:manage';
+                    break;
+                case CONTEXT_COURSE:
+                    $capability = 'moodle/course:manageactivities';
+                    break;
+                case CONTEXT_COURSECAT:
+                    $capability = 'moodle/category:manage';
+                    break;
+                case CONTEXT_SYSTEM:
+                    $capability = 'moodle/site:config';
+                    break;
+                default:
+                    // Unrecognized context - shouldn't happen !!
+                    $capability = '';
+            }
+            if ($capability && has_capability($capability, $context)) {
+                $key = ($keyfield ? $context->$keyfield : count($writeable));
+                $value = ($valuefield ? $context->$valuefield : $context);
+                // Prepend key/value so that they are returned
+                // in order from high to low contextlevel.
+                $writeable = [$key => $value] + $writeable;
+            } else {
+                // If we can't write at the current context level,
+                // then we can skip any higher level contexts.
+                break;
             }
         }
-        return $contexts;
+        return $writeable;
     }
 
     /**
@@ -878,19 +927,19 @@ class activity {
         require_once($CFG->dirrot.'/lib/questionlib.php');
 
         $categories = [];
-        $contexts = $this->get_writeable_contexts();
+        $contexts = $this->get_writeable_contexts('contextlevel');
         if ($toponly) {
             // This will make only "top" question cateogries.
-            foreach ($contexts as $type => $context) {
-                $categories[$type] = question_get_top_category($context->id, true);
+            foreach ($contexts as $level => $context) {
+                $categories[$level] = question_get_top_category($context->id, true);
             }
         } else {
             // This will make "top" and "default" question cateogries.
             question_make_default_categories($contexts);
-            foreach ($contexts as $type => $context) {
+            foreach ($contexts as $level => $context) {
                 $top = question_get_top_category($context->id);
                 $params = ['contextid' => $context->id, 'parent' => $top->id];
-                $categories[$type] = $DB->get_record('question_categories', $params);
+                $categories[$level] = $DB->get_record('question_categories', $params);
             }
         }
         return $categories;

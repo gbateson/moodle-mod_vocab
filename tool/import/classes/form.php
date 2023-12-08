@@ -216,10 +216,10 @@ class form extends \mod_vocab\toolform {
      */
     public function get_options_uploadaction($value=null) {
         $options = [
-            self::ACTION_ADD_NEW_ONLY => get_string('actionaddnewonly', $this->subpluginname),
-            self::ACTION_ADD_AND_UPDATE => get_string('actionaddandupdate', $this->subpluginname),
-            self::ACTION_UPDATE_EXISTING => get_string('actionupdateexisting', $this->subpluginname),
-            self::ACTION_ADD_UPDATE_REMOVE => get_string('actionaddupdateremove', $this->subpluginname),
+            self::ACTION_ADD_NEW_ONLY => $this->get_string('actionaddnewonly'),
+            self::ACTION_ADD_AND_UPDATE => $this->get_string('actionaddandupdate'),
+            self::ACTION_UPDATE_EXISTING => $this->get_string('actionupdateexisting'),
+            self::ACTION_ADD_UPDATE_REMOVE => $this->get_string('actionaddupdateremove'),
         ];
         if ($value === null) {
             return $options;
@@ -260,12 +260,12 @@ class form extends \mod_vocab\toolform {
         if ($submit && $cancel) {
             $name = 'buttons';
             $mform->addGroup([
-                $mform->createElement('submit', 'submit', get_string($submit, $this->subpluginname)),
+                $mform->createElement('submit', 'submit', $this->get_string($submit)),
                 $mform->createElement('cancel', 'cancel', get_string($cancel)),
             ], $name, '', [' '], false);
             $mform->closeHeaderBefore($name);
         } else if ($submit) {
-            $mform->addElement('submit', 'submit', get_string($submit, $this->subpluginname));
+            $mform->addElement('submit', 'submit', $this->get_string($submit));
         } else if ($cancel) {
             $mform->addElement('cancel', 'cancel', get_string($cancel));
         }
@@ -348,7 +348,7 @@ class form extends \mod_vocab\toolform {
                 $fs->delete_area_files($usercontext->id, 'user', 'draft', $data['datafile']);
             } else {
                 if (!$chpterfiles = toolvocab_import_get_chapter_files($file, $data['type'])) {
-                    $errors['datafile'] = get_string('errornochapters', $this->subpluginname);
+                    $errors['datafile'] = $this->get_string('errornochapters');
                 }
             }
         }
@@ -404,15 +404,15 @@ class form extends \mod_vocab\toolform {
 
                 if ($format === null) {
                     $format = $this->create_format_xml($workbook, $datafilename);
-                    $table = \html_writer::tag('p', get_string('emptyxmlfile', $this->subpluginname).' '.
-                                                    get_string('showsampleformatxml', $this->subpluginname));
+                    $table = \html_writer::tag('p', $this->get_string('emptyxmlfile').' '.
+                                                    $this->get_string('showsampleformatxml'));
                     $params = ['class' => 'rounded bg-dark text-white px-2 py-1'];
                     $table .= \html_writer::tag('pre', htmlspecialchars($format, ENT_COMPAT), $params);
                 } else {
                     $table->tablealign = 'center';
                     $table->id = $this->subpluginname.'_'.$this->formstate;
                     $table->attributes['class'] = 'generaltable '.$this->subpluginname;
-                    $table->summary = get_string($this->formstate, $this->subpluginname);
+                    $table->summary = $this->get_string($this->formstate);
 
                     list($totalsheets, $totalrows) = $this->get_sheetcount_rowcount($workbook);
                     list($targetsheets, $targetrows) = $this->get_sheetcount_rowcount($workbook, $format);
@@ -426,7 +426,7 @@ class form extends \mod_vocab\toolform {
 
                     if (empty($table->data)) {
                         // No data found - shouldn't happen!!
-                        $table = get_string('emptydatafile', $this->subpluginname);
+                        $table = $this->get_string('emptydatafile');
                     }
                 }
             }
@@ -437,7 +437,7 @@ class form extends \mod_vocab\toolform {
             $table = \html_writer::tag('div', $table, ['class' => 'flexible-wrap']);
         } else {
             $table = \html_writer::tag('p', $table).
-                     \html_writer::tag('p', get_string('tryagain', $this->subpluginname));
+                     \html_writer::tag('p', $this->get_string('tryagain'));
             $table = \html_writer::tag('div', $table, ['class' => 'alert alert-warning']);
         }
 
@@ -525,12 +525,12 @@ class form extends \mod_vocab\toolform {
 
         if (empty($formatfilecontent)) {
             return null;
-            // return get_string('emptyxmlfile', $this->subpluginname);
+            // return $this->get_string('emptyxmlfile');
         }
 
         $xml = xmlize($formatfilecontent);
         if (empty($xml)) {
-            return get_string('invalidxmlfile', $this->subpluginname);
+            return $this->get_string('invalidxmlfile');
         }
 
         $name = $xmlroot;
@@ -824,7 +824,7 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function get_comment($strname, $a=null) {
-        return '<!-- '.get_string($strname, $this->subpluginname, $a).' -->';
+        return '<!-- '.$this->get_string($strname, $a).' -->';
     }
 
     /**
@@ -971,36 +971,42 @@ class form extends \mod_vocab\toolform {
      * render_caption
      */
     public function render_caption($datafilename, $totalsheets, $totalrows,
-                                 $formatfilename, $targetsheets, $targetrows) {
+                                   $formatfilename, $targetsheets, $targetrows) {
         $caption = [];
 
-        $a = (object)[
+        $caption[] = $this->get_string('totalsheetrowcount', (object)[
             'filename' => $datafilename,
             'sheetcount' => $totalsheets,
             'rowcount' => $this->number_format($totalrows),
-        ];
-        $caption[] = get_string('totalsheetrowcount', $this->subpluginname, $a);
+        ]);
 
-        $a = (object)[
+        $caption[] = $this->get_string('targetsheetrowcount', (object)[
             'filename' => $formatfilename,
             'sheetcount' => $targetsheets,
             'rowcount' => $this->number_format($targetrows),
-        ];
-        $caption[] = get_string('targetsheetrowcount', $this->subpluginname, $a);
+        ]);
 
         // 'upload', 'preview', 'review', 'import'
         switch ($this->formstate) {
             case 'preview':
+                $name = 'headingsandpreviewrows';
                 $a = $this->get_previewrows();
-                $caption[] = get_string('headingsandpreviewrows', $this->subpluginname, $a);
                 break;
             case 'review':
+                $name = 'headingsandpreviewresults';
                 $a = $this->get_previewrows();
-                $caption[] = get_string('headingsandpreviewresults', $this->subpluginname, $a);
                 break;
             case 'import':
-                $caption[] = get_string('headingsandresults', $this->subpluginname, $targetrows);
+                $name = 'headingsandresults';
+                $a = $targetrows;
                 break;
+            default:
+                // Unknown formstate - shouldn't happen !!
+                $name = '';
+                $a = null;
+        }
+        if ($name) {
+            $caption[] = $this->get_string($name, $a);
         }
 
         foreach ($caption as $i => $text) {
@@ -1061,7 +1067,7 @@ class form extends \mod_vocab\toolform {
                     // Loop through the rows in this row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
                         if ($rtype == self::TYPE_META) {
-                            $text = get_string('row', $this->subpluginname);
+                            $text = $this->get_string('row');
                             $table->head = $this->get_row_cells($worksheet, $r, $cmin, $cmax, $text);
                             $table->align = array_merge(['center'], array_fill(0, $cmax, 'left'));
                         } else {
@@ -1104,8 +1110,8 @@ class form extends \mod_vocab\toolform {
 
         // Cache frequently used strings:
         $str = (object)[
-            'sheet' => get_string('sheet', $this->subpluginname),
-            'row' => get_string('row', $this->subpluginname),
+            'sheet' => $this->get_string('sheet'),
+            'row' => $this->get_string('row'),
         ];
 
         // Initialize the row index (number of rows processed so far in all sheets).
@@ -1243,25 +1249,25 @@ class form extends \mod_vocab\toolform {
             $msg = [];
             if ($rowindex) {
                 $rowindex = $this->number_format($rowindex);
-                $msg[] = get_string('rowsfound', $this->subpluginname, $rowindex);
+                $msg[] = $this->get_string('rowsfound', $rowindex);
             }
             if ($added = $this->totals->added) {
                 $added = $this->number_format($added);
-                $msg[] = get_string('recordsadded', $this->subpluginname, $added);
+                $msg[] = $this->get_string('recordsadded', $added);
             }
             if ($found = $this->totals->found) {
                 $found = $this->number_format($found);
-                $msg[] = get_string('recordsfound', $this->subpluginname, $found);
+                $msg[] = $this->get_string('recordsfound', $found);
             }
             if ($error = $this->totals->error) {
                 $error = $this->number_format($error);
-                $msg[] = get_string('errorsfound', $this->subpluginname, $error);
+                $msg[] = $this->get_string('errorsfound', $error);
             }
             $listsep = get_string('listsep', 'langconfig').' ';
             if ($msg = implode($listsep, $msg)) {
                 $msg = " ($msg)";
             }
-            $msg = get_string('importcompleted', $this->subpluginname).$msg;
+            $msg = $this->get_string('importcompleted').$msg;
             $bar->update_full(100, $msg);
         }
 
@@ -1427,7 +1433,7 @@ class form extends \mod_vocab\toolform {
                         continue; // already added
                     }
                     $this->totals->tables[$record->table] = (object)[
-                        'name' => get_string($record->table, $this->subpluginname),
+                        'name' => $this->get_string($record->table),
                         'total' => 0,
                         'added' => 0,
                         'found' => 0,
@@ -1546,13 +1552,13 @@ class form extends \mod_vocab\toolform {
                     if ($totals->sheets[$s]->rows[$r]->total) {
                         if ($added = $totals->sheets[$s]->rows[$r]->added) {
                             if ($this->formstate == 'import') {
-                                $msg[] = get_string('recordsadded', $this->subpluginname, $added);
+                                $msg[] = $this->get_string('recordsadded', $added);
                             } else {
-                                $msg[] = get_string('recordswillbeadded', $this->subpluginname, $added);
+                                $msg[] = $this->get_string('recordswillbeadded', $added);
                             }
                         }
                         if ($found = $totals->sheets[$s]->rows[$r]->found) {
-                            $msg[] = get_string('recordsfound', $this->subpluginname, $found);
+                            $msg[] = $this->get_string('recordsfound', $found);
                         }
                     }
                     $errors += $totals->sheets[$s]->rows[$r]->error;
@@ -1577,7 +1583,7 @@ class form extends \mod_vocab\toolform {
         }
 
         if ($errors) {
-            $text = get_string('errorsfound', $this->subpluginname, $errors);
+            $text = $this->get_string('errorsfound', $errors);
             $params = ['class' => 'bg-warning text-light rounded px-1 errors'];
             $cells[1]->text .= ' '.\html_writer::tag('div', $text, $params);
         }
@@ -1595,15 +1601,15 @@ class form extends \mod_vocab\toolform {
     public function report_totals_head(&$headers) {
         $cells = [];
 
-        $label = get_string('sheet', $this->subpluginname);
+        $label = $this->get_string('sheet');
         $label .= get_string('labelsep', 'langconfig');
-        $label .= get_string('row', $this->subpluginname);
+        $label .= $this->get_string('row');
 
         $cells[] = new \html_table_cell($label);
         $cells[] = new \html_table_cell(reset($headers));
 
         foreach ($this->totals->tables as $tablename => $totals) {
-            $cells[] = new \html_table_cell(get_string($tablename, $this->subpluginname));
+            $cells[] = new \html_table_cell($this->get_string($tablename));
         }
 
         return $cells;
@@ -2499,7 +2505,7 @@ class form extends \mod_vocab\toolform {
                             // Shorten the string, at a word boundary if possible,
                             // but with no trailing string. ("lib/moodlelib.php")
                             $fields[$name] = shorten_text($value, $maxlength, false, '');
-                            $msg = get_string('valueshortened', $this->subpluginname, (object)[
+                            $msg = $this->get_string('valueshortened', (object)[
                                 'fieldname' => $name,
                                 'maxlength' => $maxlength,
                             ]);

@@ -53,12 +53,12 @@ abstract class subpluginform extends \moodleform {
                                 $target='', $attributes=null, $editable=true,
                                 $ajaxformdata=null) {
 
+        // Set the subplugin name.
+        $this->subpluginname = $customdata['subplugin']->plugin;
+
         // Call the parent constructor in the usual way.
         parent::__construct($action, $customdata, $method, $target,
                             $attributes, $editable, $ajaxformdata);
-
-        // Set the subplugin name.
-        $this->subpluginname = $customdata['subplugin']->plugin;
     }
 
     /**
@@ -82,6 +82,17 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
+     * Get a string for the subplugin that is displaying this form.
+     *
+     * @param string $name the name of the required string
+     * @param mixed $a (optional, default=null) additional value or values required for the string
+     * @return string requested string from the lang pack for the current subplugin
+     */
+    public function get_string($name, $a=null) {
+        return $this->get_subplugin()->get_string($name, $a);
+    }
+
+    /**
      * Set the id of this form. This is useful for CSS styling.
      *
      * @param object $mform representing the Moodle form
@@ -102,7 +113,7 @@ abstract class subpluginform extends \moodleform {
      * Add a heading to the given $mform
      *
      * @param object $mform representing the Moodle form
-     * @param string $name
+     * @param string $name the name of this heading
      * @param string $component
      * @param boolean $expanded
      * @return void (but will update $mform)
@@ -119,7 +130,7 @@ abstract class subpluginform extends \moodleform {
      * Add a text field to the given $mform
      *
      * @param moodleform $mform representing the Moodle form
-     * @param string $name
+     * @param string $name the name of this text element
      * @param mixed $type a PARAM_xxx constant value
      * @param mixed $default
      * @param array $attributes (optional, default=null)
@@ -139,7 +150,7 @@ abstract class subpluginform extends \moodleform {
                 $attributes['size'] = min(6, count($options));
             }
         }
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $mform->addElement('text', $name, $label, $attributes);
         $mform->addHelpButton($name, $name, $this->subpluginname);
         $mform->setDefault($name, $default);
@@ -150,8 +161,8 @@ abstract class subpluginform extends \moodleform {
      * Add a select field to the given $mform
      *
      * @param moodleform $mform representing the Moodle form
-     * @param string $name
-     * @param xxx $options
+     * @param string $name the name of this select element
+     * @param array $options to display in the drop menu
      * @param mixed $type a PARAM_xxx constant value
      * @param mixed $default
      * @param array $attributes (optional, default=null)
@@ -167,11 +178,25 @@ abstract class subpluginform extends \moodleform {
                 $attributes['size'] = min(6, count($options));
             }
         }
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $mform->addElement('select', $name, $label, $options, $attributes);
         $mform->addHelpButton($name, $name, $this->subpluginname);
         $mform->setType($name, $type);
         $mform->setDefault($name, $default);
+    }
+
+    /**
+     * Add a date_time field to the given $mform
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name the name of this date_time element
+     * @param array $attributes (optional, default=null)
+     * @return void (but will update $mform)
+     */
+    public function add_field_datetime($mform, $name, $attributes=null) {
+        $label = $this->get_string($name);
+        $mform->addElement('date_time_selector', $name, $label, $attributes);
+        $mform->addHelpButton($name, $name, $this->subpluginname);
     }
 
     /**
@@ -184,7 +209,7 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $mform->addElement('filepicker', $name, $label, $attributes, $options);
         $mform->addHelpButton($name, $name, $this->subpluginname);
         if ($options) {

@@ -61,7 +61,7 @@ class form extends \mod_vocab\toolform {
         $this->add_heading($mform, $name, 'mod_vocab', true);
 
         $name = 'selectedwords';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
 
         $elements = [];
 
@@ -102,7 +102,7 @@ class form extends \mod_vocab\toolform {
         $this->add_subcategories($mform);
 
         // Use "generatequestions" as the label for the submit button.
-        $label = get_string('generatequestions', $this->subpluginname);
+        $label = $this->get_string('generatequestions');
         $this->add_action_buttons(true, $label);
 
         $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
@@ -169,7 +169,7 @@ class form extends \mod_vocab\toolform {
         }
 
         $name = 'parentcategory';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
         $groupname = $name.'elements';
 
         $elements = [
@@ -194,7 +194,7 @@ class form extends \mod_vocab\toolform {
         $params = ['courseid' => $this->get_vocab()->course->id];
         $link = new \moodle_url($link, $params);
 
-        $text = get_string('managequestioncategories', $this->subpluginname);
+        $text = $this->get_string('managequestioncategories');
         $params = ['onclick' => "this.target='VOCAB'"];
         $link = \html_writer::link($link, $text, $params);
 
@@ -243,7 +243,7 @@ class form extends \mod_vocab\toolform {
      */
     public function add_subcategories($mform) {
         $name = 'subcategories';
-        $label = get_string($name, $this->subpluginname);
+        $label = $this->get_string($name);
 
         $groupname = $name.'elements';
         $cattype = $groupname.'[cattype]';
@@ -273,8 +273,8 @@ class form extends \mod_vocab\toolform {
     public function get_subcategory_types() {
         return [
             self::SUBCAT_NONE => get_string('none'),
-            self::SUBCAT_SINGLE => get_string('singlesubcategory', $this->subpluginname),
-            self::SUBCAT_AUTOMATIC => get_string('automaticsubcategories', $this->subpluginname),
+            self::SUBCAT_SINGLE => $this->get_string('singlesubcategory'),
+            self::SUBCAT_AUTOMATIC => $this->get_string('automaticsubcategories'),
         ];
     }
 

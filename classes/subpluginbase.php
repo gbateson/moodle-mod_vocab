@@ -139,7 +139,7 @@ class subpluginbase {
     /*
      * Get a string for this vocabtool plugin
      *
-     * @param string $name the name of the string
+     * @param string $name the name of the required string
      * @param mixed $a (optional, default=null) additional value or values required for the string
      * @return string
      **/

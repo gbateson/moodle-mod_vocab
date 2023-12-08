@@ -46,7 +46,7 @@ echo $OUTPUT->header();
 
 if ($mform->is_submitted() && $mform->is_validated()) {
     echo $OUTPUT->box_start();
-    echo $mform->saveconfig();
+    echo $mform->save_config();
     echo $OUTPUT->box_end();
 }
 
