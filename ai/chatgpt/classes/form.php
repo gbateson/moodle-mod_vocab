@@ -39,8 +39,6 @@ defined('MOODLE_INTERNAL') || die;
  */
 class form extends \mod_vocab\aiform {
 
-    public $settings = ['chatgpturl', 'chatgptkey', 'chatgptmodel', 'sharedfrom', 'shareduntil'];
-
     /**
      * Add fields to the main form for this subplugin.
      */
@@ -50,97 +48,181 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        list($otherconfigs, $myconfigs, $configs) = $this->get_configs();
+        // Try and get current config for editing.
+        if ($default = $this->get_subplugin()->config) {
 
-        if (count($otherconfigs)) {
+            $name = 'cid';
+            $mform->addElement('hidden', $name, $default->id);
+            $mform->setType($name, PARAM_INT);
+
+            $name = 'action';
+            $mform->addElement('hidden', $name, $this->get_subplugin()->action);
+            $mform->setType($name, PARAM_ALPHA);
+
+            // Check we have expected fields.
+            foreach ($this->get_subplugin()->get_settingnames() as $name) {
+                if (empty($default->$name)) {
+                    $default->$name = '';
+                }
+            }
+
+            $mainheading = 'editkey';
+            $submitlabel = get_string('save');
+
+        } else {
+
+            $mainheading = 'addnewkey';
+            $submitlabel = get_string('add');
+            
+            // Get current year, month and day.
+            list($year, $month, $day) = explode(' ', date('Y m d'));
+
+            // Define default values for new key.
+            $default = (object)[
+                'id' => 0,
+                'chatgpturl' => 'https://api.openai.com/v1/chat/completions',
+                'chatgptkey' => '',
+                'chatgptmodel' => 'gpt-4',
+                'contextlevel' => CONTEXT_MODULE,
+                'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
+                'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
+            ];
+        }
+
+        // Display the config settings that apply to this context and are
+        // owned by other users. These are NOT editable by the current user.
+        $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id);
+        if (count($configs)) {
 
             $name = 'keysownedbyothers';
             $this->add_heading($mform, $name, $this->subpluginname, true);
 
-            $text = \html_writer::tag('span', 'Note:', ['class' => 'text-danger']);
-            $text = "$text You cannot edit these keys.";
-            $text = \html_writer::tag('h5', $text, array('class' => 'cannotedit'));
-            $mform->addElement('html', $text);
+            if (is_siteadmin()) {
+                // Site admin can always edit, copy and delete anything.
+                $actions = ['edit', 'copy', 'delete'];
+            } else {
+                $actions = [];
 
-            // Display the config settings that apply to this context and are
-            // owned by other users. These are not editable by the current user.
-            foreach ($otherconfigs as $configid => $config) {
-                $config = $this->format_config($mform, $config, true);
+                // Display message to non-admin users (e.g. teachers)
+                // explaining that they cannot edit keys owned by other people.
+                $text = $this->get_string('note');
+                $text = \html_writer::tag('span', $text, ['class' => 'text-danger']);
+                $text = $text.get_string('labelsep', 'langconfifg');
+                $text = $text.$this->get_string('cannoteditkeys');
+                $text = \html_writer::tag('h5', $text, array('class' => 'cannotedit'));
+                $mform->addElement('html', $text);
+            }
+            foreach ($configs as $configid => $config) {
+                if ($html = $this->format_config($config, $actions, true)) {
+                    $mform->addElement('html', $html, "config-$configid");
+                }
             }
         }
 
-        if (count($myconfigs)) {
+        // Display the config settings that are owned by this user but do not
+        // apply to the current context. These are editable by the current user.
+        $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id);
+        if (count($configs)) {
 
             $name = 'otherkeysownedbyme';
             $this->add_heading($mform, $name, $this->subpluginname, true);
 
-            // Display the config settings that owned by this user and apply to the current context.
-            // These are not editable by the current user.
-            foreach ($myconfigs as $configid => $config) {
-                $config = $this->format_config($mform, $config, false, 'copy');
+            $actions = ['edit', 'copy', 'delete'];
+            foreach ($configs as $configid => $config) {
+                if ($html = $this->format_config($config, $actions)) {
+                    $mform->addElement('html', $html, "config-$configid");
+                }
             }
         }
 
+        // Display the config settings that owned by this user and apply to
+        // the current context. These are editable by the current user.
+        $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id);
         if (count($configs)) {
 
             $name = 'keysownedbyme';
             $this->add_heading($mform, $name, $this->subpluginname, true);
 
-            // Display the config settings that owned by this user and apply to the current context.
-            // These are not editable by the current user.
+            $actions = ['edit', 'delete'];
             foreach ($configs as $configid => $config) {
-                $config = $this->format_config($mform, $config, false, 'edit');
+                if ($html = $this->format_config($config, $actions)) {
+                    $mform->addElement('html', $html, "config-$configid");
+                }
             }
         }
 
-        $name = 'addnewkey';
-        $this->add_heading($mform, $name, $this->subpluginname, true);
+        /*////////////////////////////
+        // Main form starts here.
+        ////////////////////////////*/
+        
+        $this->add_heading($mform, $mainheading, $this->subpluginname, true);
+
+        // Cache message that is used for missing form values.
+        $addmissingvalue = $this->get_string('addmissingvalue');
 
         $name = 'chatgpturl';
-        $default = ($mymodsettings->$name ?? 'https://api.openai.com/v1/chat/completions');
-        $this->add_field_text($mform, $name, PARAM_URL, $default, ['size' => '40']);
+        $this->add_field_text($mform, $name, PARAM_URL, $default->$name, ['size' => '40']);
+        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'chatgptkey';
-        $default = ($mymodsettings->$name ?? 'sk2-');
-        $this->add_field_text($mform, $name, PARAM_URL, $default, ['size' => '40']);
+        $this->add_field_text($mform, $name, PARAM_URL, $default->$name, ['size' => '40']);
+        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'chatgptmodel';
         $options = ['gpt-3-turbo' => 'gpt-3-turbo', 'gpt-4' => 'gpt-4'];
-        $default = ($mymodsettings->$name ?? 'gpt-4');
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default);
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'sharingcontext';
         $options = $this->get_sharingcontext_options();
-        $default = ($mymodsettings->contextlevel ?? CONTEXT_MODULE);
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default);
-
-        // Get current year, month and day.
-        list($year, $month, $day) = explode(' ', date('Y m d'));
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);
 
         // Shared from/until date are both optional.
         $params = ['optional' => true];
 
         // Shared from date and time (default is start of today).
-        $params['defaulttime'] = mktime(0, 0, 0, $month, $day, $year);
-        $this->add_field_datetime($mform, 'sharedfrom', $params);
+        $name = 'sharedfrom';
+        $params['defaulttime'] = $default->$name;
+        $this->add_field_datetime($mform, $name, $params);
 
         // Shared until date and time (default is end of today).
-        $params['defaulttime'] = mktime(23, 59, 59, $month, $day, $year);
-        $this->add_field_datetime($mform, 'shareduntil', $params);
+        $name = 'shareduntil';
+        $params['defaulttime'] = $default->$name;
+        $this->add_field_datetime($mform, $name, $params);
 
-        $this->add_action_buttons(true, get_string('add'));
+        $this->add_action_buttons(true, $submitlabel);
     }
 
     /**
-     * Get a list of availability options for a ChatGPT key;
+     * validation
      *
-     * $param object $mform
+     * @uses $USER
+     * @param stdClass $data submitted from the form
+     * @param array $files
+     * @return xxx
+     * @todo Finish documenting this function
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        $names = ['chatgpturl', 'chatgptkey', 'chatgptmodel'];
+        foreach ($names as $name) {
+            if (empty($data[$name])) {
+                $errors[$name] = $this->get_string('addmissingvalue');
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Format config settings for a ChatGPT key.
+     *
      * $param object $config
      * @return array of availability options [contextlevel => availability description]
      */
-    public function format_config($mform, $config, $showowner=false, $buttonname='') {
-        global $CFG, $DB, $OUTPUT, $PAGE;
-        require_once($CFG->dirroot.'/lib/outputcomponents.php');
+    public function format_config($config, $actions=[], $showowner=false, $showownerpic=false) {
+        global $DB, $OUTPUT, $PAGE, $USER;
 
         $html = '';
 
@@ -152,37 +234,46 @@ class form extends \mod_vocab\aiform {
         $dl = ['class' => 'row my-0 mx-0'];
         $dt = ['class' => 'col-6 col-sm-4 col-md-3 col-xl-2 my-1 mx-0'];
         $dd = ['class' => 'col-6 col-sm-8 col-md-9 col-xl-10 my-1 mx-0'];
-        $link = ['class' => 'btn btn-dark'];
 
         // Format the key to show only the 1st 4 chars and the final 4 chars..
         $name = 'chatgptkey';
-        $label = $this->get_string($name).$labelsep;
-        $label = \html_writer::tag('dt', $label, $dt);
-        $value = $config->$name;
-        $value = substr($value, 0, 4).' ... '.substr($value, -4);
-        $value = \html_writer::tag('dd', $value, $dd);
-        $html .= \html_writer::tag('dl', $label.$value, $dl);
+        if (isset($config->$name)) {
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = $config->$name;
+            $value = substr($value, 0, 4).' ... '.substr($value, -4);
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
 
         // Format the owner's name.
-        if ($showowner) {
+        if ($showowner && isset($config->owneruserid)) {
             $name = 'owner';
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
             $user = $DB->get_record('user', ['id' => $config->owneruserid]);
             $value = fullname($user);
             if ($showownerpic) {
-                $value .= $OUTPUT->user_picture($user, ['popup' => true]);
+                $value = $OUTPUT->user_picture($user).' '.$value;
             }
+            $url = new \moodle_url('/user/profile.php', ['id' => $user->id]);
+            $value = $OUTPUT->action_link($url, $value, new \component_action(
+                // "this" is actually a Y_node, so we could use the "set" method,
+                // but "setAttribute" is compatible with normal DOM, so use that.
+                'click', 'function(){this.setAttribute("target", "CHATGPT")}'
+            ));
             $value = \html_writer::tag('dd', $value, $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
         $name = 'chatgptmodel';
-        $label = $this->get_string($name).$labelsep;
-        $label = \html_writer::tag('dt', $label, $dt);
-        $value = $config->$name;
-        $value = \html_writer::tag('dd', $value, $dd);
-        $html .= \html_writer::tag('dl', $label.$value, $dl);
+        if (isset($config->$name)) {
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = $config->$name;
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
 
         $name = 'sharedfrom';
         if (isset($config->$name)) {
@@ -202,111 +293,90 @@ class form extends \mod_vocab\aiform {
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
-        // Format the context level.
-        $context = $config->contextlevel;
-        switch ($context) {
-            case CONTEXT_MODULE:
-                $context = $this->get_string('sharedinvocabcontext');
+
+        // Extract the sharing context id and level.
+        $contextid = (empty($config->contextid) ? 0 : $config->contextid);
+        $contextlevel = (empty($config->contextlevel) ? 0 : $config->contextlevel);
+
+        // Get a descriptor for the sharing context.
+        switch (true) {
+
+            case ($contextid > 0):
+                $context = \context::instance_by_id($contextid);
+                $sharingcontext = $context->get_context_name();
                 break;
-            case CONTEXT_COURSE:
-                $context = $this->get_string('sharedincoursecontext');
+
+            case ($contextlevel == CONTEXT_MODULE):
+                $sharingcontext = $this->get_string('sharedinvocabcontext');
                 break;
-            case CONTEXT_COURSECAT:
-                $context = $this->get_string('sharedincoursecatcontext');
+
+            case ($contextlevel == CONTEXT_COURSE):
+                $sharingcontext = $this->get_string('sharedincoursecontext');
                 break;
-            case CONTEXT_SYSTEM:
-                $context = $this->get_string('sharedinsystemcontext');
+
+            case ($contextlevel == CONTEXT_COURSECAT):
+                $sharingcontext = $this->get_string('sharedincoursecatcontext');
                 break;
+
+            case ($contextlevel == CONTEXT_SYSTEM):
+                $sharingcontext = $this->get_string('sharedinsystemcontext');
+                break;
+
             default:
-                $context = $this->get_string('sharedinunknowncontext', $config->contextlevel);
+                $sharingcontext = $this->get_string('sharedinunknowncontext', $config->contextlevel);
         }
 
-        $name = 'sharingcontext';
-        $label = $this->get_string($name).$labelsep;
-        $label = \html_writer::tag('dt', $label, $dt);
-        $value = \html_writer::tag('dd', $context, $dd);
-        $html .= \html_writer::tag('dl', $label.$value, $dl);
-        if ($buttonname) {
-            $url = $PAGE->url;
-            $url->param('cid', $config->id);
-            $btn = \html_writer::link($url, get_string($buttonname), $link);
-            $label = \html_writer::tag('dt', '', $dt);
-            $value = \html_writer::tag('dd', $btn, $dd);
+        // Format the sharing context (= context name or level).
+        if ($sharingcontext) {
+            $label = $this->get_string('sharingcontext').$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = \html_writer::tag('dd', $sharingcontext, $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
-        $params = ['class' => 'chatgptkeyinfo'];
-        $html = \html_writer::tag('div', $html, $params);
+        if ($html) {
+            // Convert actions to links that look like buttons.
+            foreach ($actions as $i => $action) {
+                $url = $PAGE->url;
+                $url->param('action', $action);
+                $url->param('cid', $config->id);
+                switch ($action) {
+                    case 'edit':
+                        $btncolor = 'btn-success';
+                        break;
+                    case 'delete':
+                        $btncolor = 'btn-danger';
+                        break;
+                    case 'copy':
+                        $btncolor = 'btn-dark';
+                        break;
+                    default:
+                        // This shouldn't happen !!
+                        $btncolor = 'btn-light';
+                }
+                // ToDo: convert this to ...
+                // $text = $this->get_string('confirm'.$action.'key');
+                // $actionlabel = $this->get_string($action);
+                // $cancellabel = get_string('cancel);
+                // $action = new \confirm_action($text, $callback, $actionlabel, $cancellabel);
+                // $actions[$i] = $OUTPUT->action_link($url, $text, $action);
+                $actions[$i] = \html_writer::link(
+                    $url,
+                    $this->get_string($action),
+                    ['class' => "btn $btncolor"]
+                );
+            }
+            if ($actions = implode(' ', $actions)) {
+                $label = \html_writer::tag('dt', '', $dt);
+                $value = \html_writer::tag('dd', $actions, $dd);
+                $html .= \html_writer::tag('dl', $label.$value, $dl);
+            }
 
-        $mform->addElement('html', $html);
-    }
-
-    private function format_config_old() {
-
-        // see "userdate" function in "block_maj_submissions.php
-        // for a better way to display a date range.
-
-        $fmt = get_string('strftimedatemonthtimeshort', 'langconfig');
-        $period = (object)[
-            'from' => (empty($config->sharedfrom) ? '' : userdate($config->sharedfrom, $fmt)),
-            'until' => (empty($config->shareduntil) ? '' : userdate($config->shareduntil, $fmt)),
-        ];
-
-        switch (true) {
-
-            case ($period->from && $period->until):
-                $period = $this->get_string('sharedfromuntildate', $period);
-                break;
-
-            case ($period->from):
-                $period = $this->get_string('sharedfromdate', $period->from);
-                break;
-
-            case ($period->until):
-                $period = $this->get_string('shareduntildate', $period->until);
-                break;
-
-            default:
-                $period = $this->get_string('sharedanydate');
-                break;
+            $params = ['class' => 'chatgptkeyinfo'];
+            $html = \html_writer::tag('div', $html, $params);
         }
 
-
-        // Cache the label separator.
-        $labelsep = get_string('labelsep', 'langconfig');
-        $dl = ['class' => 'row my-0'];
-        $dt = ['class' => 'col-4 my-0 py-0'];
-        $dd = ['class' => 'col-8 my-0 py-0'];
-
-        $key = \html_writer::tag('big', $key, ['class' => 'bg-secondary text-dark px-2 rounded']);
-
-        $label = $this->get_string($name).$labelsep;
-        $label = \html_writer::tag('dt', $label, $dt);
-        $model = \html_writer::tag('dd', $model, $dd);
-        $model = \html_writer::tag('dl', $label.$model, $dl);
-
-        if ($owner) {
-            $label = $this->get_string('owner').$labelsep;
-            $label = \html_writer::tag('dt', $label, $dt);
-            $owner = \html_writer::tag('dd', $owner, $dd);
-            $owner = \html_writer::tag('dl', $label.$owner, $dl);
-        }
-
-        $label = $this->get_string('sharingperiod').$labelsep;
-        $label = \html_writer::tag('dt', $label, $dt);
-        $period = \html_writer::tag('dd', $period, $dd);
-        $period = \html_writer::tag('dl', $label.$period, $dl);
-
-        $label = $this->get_string('sharingcontext').$labelsep;
-        $label = \html_writer::tag('dt', $label, $dt);
-        $context = \html_writer::tag('dd', $context, $dd);
-        $context = \html_writer::tag('dl', $label.$context, $dl);
-
-        $output = $key.$model.$owner.$period.$context;
-        $params = ['class' => 'container striped'];
-        $output = \html_writer::tag('div', $output, $params);
-
-        return $output;
+        return $html;
     }
 
     /**
@@ -344,191 +414,5 @@ class form extends \mod_vocab\aiform {
             }
         }
         return $options;
-    }
-
-    /**
-     * Get config settings relevant to this context and user.
-     *
-     * @uses $DB
-     * @uses $USER
-     * @return array [$myconfigs, $configs] of settings
-     */
-    public function get_configs() {
-        global $DB, $USER;
-
-        $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, '.
-                  'vc.owneruserid, vc.contextid, '.
-                  'ctx.contextlevel';
-
-        $from = '{vocab_config_settings} vcs '.
-                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id '.
-                'JOIN {context} ctx ON vc.contextid = ctx.id';
-
-        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
-        list($where, $params) = $DB->get_in_or_equal($contexts);
-
-        // We're interested in config settings for this subplugin
-        // that are shared in this context or any parent context.
-        // We also want other config settings owned by the current user.
-        $where = "vc.subplugin = ? AND (vc.owneruserid = ? OR vc.contextid $where)";
-        $params = array_merge([$this->subpluginname, $USER->id], $params);
-
-        // Sort by owner, context level and configid.
-        $sort = 'vc.owneruserid, ctx.contextlevel, vcs.configid';
-
-        $otherconfigs = [];
-        $myconfigs = [];
-        $configs = [];
-        $config = null;
-
-        $sql = "SELECT $select FROM $from WHERE $where ORDER BY $sort";
-        if ($settings = $DB->get_records_sql($sql, $params)) {
-
-            $settingids = array_keys($settings);
-            $smax = count($settingids);
-            for ($s = 0; $s <= $smax; $s++) {
-
-                if ($s == $smax) {
-                    // Final iteration.
-                    $settingid = 0;
-                    $setting = null;
-                } else {
-                    // First iteration.
-                    $settingid = $settingids[$s];
-                    $setting = $settings[$settingid];
-                }
-
-                switch (true) {
-                    case ($config === null):
-                        // First iteration.
-                        $storeconfig = false;
-                        break;
-
-                    case ($setting === null):
-                        // Final iteration.
-                        $storeconfig = true;
-                        break;
-
-                    case ($config->id == $setting->configid):
-                        // $config->id has not changed.
-                        $storeconfig = false;
-                        break;
-
-                    default:
-                        // $config->id has changed.
-                        $storeconfig = true;
-                }
-
-                if ($storeconfig) {
-                    if ($config->owneruserid == $USER->id) {
-                        if (in_array($config->contextid, $contexts)) {
-                            // A config that is owned by the current user
-                            // and is relevant to the current context.
-                            $configs[$config->id] = $config;
-                        } else {
-                            // A config that is owned by the current user,
-                            // but is for an unrelated context.
-                            $myconfigs[$config->id] = $config;
-                        }
-                    } else {
-                        // A config that is relevant to the current
-                        // context but owned by a another user.
-                        $otherconfigs[$config->id] = $config;
-                    }
-                    $config = null;
-                }
-
-                if ($setting) {
-                    if ($config === null) {
-                        $config = (object)[
-                            'id' => $setting->configid,
-                            'contextid' => $setting->contextid,
-                            'contextlevel' => $setting->contextlevel,
-                            'owneruserid' => $setting->owneruserid,
-                        ];
-                    }
-                    $config->{$setting->name} = $setting->value;
-                }
-            }
-        }
-
-        return [$otherconfigs, $myconfigs, $configs];
-    }
-
-    /**
-     * save the config settings form the input form.
-     */
-    public function save_config() {
-        global $DB, $USER;
-
-        if ($data = $this->get_data()) {
-
-            $vocab = $this->get_vocab();
-            $contexts = $vocab->get_writeable_contexts('contextlevel', 'id');
-
-            $name = 'sharingcontext';
-            if (isset($data->$name) && isset($contexts[$data->$name])) {
-                $contextid = $contexts[$data->$name];
-                $contextlevel = $data->$name;
-            } else if ($vocab->cm) {
-                // Shouldn't happen, but we can continue.
-                $contextlevel = CONTEXT_MODULE;
-                $contextid = $vocab->context->id;
-            } else {
-                // Definitely shouldn't happen !!
-                $contextlevel = 0;
-                $contextid = 0;
-            }
-            if (isset($data->$name)) {
-                unset($data->$name);
-            }
-
-            if ($contextlevel && $contextid) {
-
-                // Get or create the config record.
-                $table = 'vocab_config';
-                $params = [
-                    'owneruserid' => $USER->id,
-                    'contextid' => $contextid,
-                    'subplugin' => $this->subpluginname,
-                ];
-                $config = $DB->get_record($table, $params);
-                if (empty($config)) {
-                    // Config record does not exist, so create it.
-                    $params['id'] = $DB->insert_record($table, $params);
-                    $config = (object)$params;
-                }
-
-                // Add or update the settings for this config record.
-                $table = 'vocab_config_settings';
-                foreach ($this->settings as $name) {
-
-                    $params = [
-                        'configid' => $config->id,
-                        'name' => $name,
-                    ];
-                    if (empty($data->$name)) {
-                        // Remove previous value, if there was one.
-                        if ($DB->record_exists($table, $params)) {
-                            $DB->delete_records($table, $params);
-                        }
-                    } else {
-                        $value = $data->$name;
-                        if ($setting = $DB->get_record($table, $params)) {
-                            // Update previous value, if it has changed.
-                            if ($setting->value != $value) {
-                                $setting->value = $value;
-                                $DB->set_field($table, 'value', $value, ['id' => $setting->id]);
-                            }
-                        } else {
-                            // Add a new setting name and value.
-                            $params['value'] = $value;
-                            $setting = (object)$params;
-                            $setting->id = $DB->insert_record($table, $setting);
-                        }
-                    }
-                }
-            }
-        }
     }
 }

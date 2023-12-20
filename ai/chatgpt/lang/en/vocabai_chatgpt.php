@@ -45,6 +45,7 @@ $string['keysownedbyothers'] = 'Keys owned by other users';
 $string['otherkeysownedbyme'] = 'Other keys owned by me';
 
 $string['addnewkey'] = 'Add a new key';
+$string['editkey'] = 'Edit existing key';
 $string['key'] = 'Key';
 $string['owner'] = 'Owner';
 
@@ -63,6 +64,27 @@ $string['sharingperiod'] = 'Sharing period';
 $string['sharingcontext'] = 'Sharing context';
 $string['sharingcontext_help'] = 'The context in which this key can be shared.';
 
+$string['edit'] = 'Edit';
+$string['copy'] = 'Copy';
+$string['delete'] = 'Delete';
+
+$string['addmissingvalue'] = 'Please add a value here.';
+
+$string['deletekey'] = 'Delete API key for ChatGPT';
+$string['confirmdeletekey'] = 'Are you sure you want to delete this key?';
+
+$string['copykey'] = 'Copy API key for ChatGPT';
+$string['confirmcopykey'] = 'Are you sure you want to copy this key?';
+
+$string['editcompleted'] = 'The modified key was successfully saved.';
+$string['editcancelled'] = 'Editing of the key was cancelled.';
+
+$string['copycompleted'] = 'The key was successfully copied.';
+$string['copycancelled'] = 'Copying of the key was cancelled.';
+
+$string['deletecompleted'] = 'The key was successfully deleted.';
+$string['deletecancelled'] = 'Key deletion was cancelled.';
+
 $string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
 $string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
 $string['sharedincoursecontext'] = 'Shared in all activities in the current course';
@@ -70,3 +92,6 @@ $string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activit
 $string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
 
 $string['nokeysfound'] = 'No keys found';
+
+$string['note'] = 'Note';
+$string['cannoteditkeys'] = 'You cannot edit these keys.';

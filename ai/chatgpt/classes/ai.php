@@ -36,6 +36,17 @@ defined('MOODLE_INTERNAL') || die();
  * @since      Moodle 3.11
  */
 class ai extends \mod_vocab\aibase {
-    /** @var string holds the name of this plugin */
+    /**
+     * @var string the name of this subplugin
+     */
     const SUBPLUGINNAME = 'chatgpt';
+
+    /**
+     * @var array the names of config settings that this subplugin maintains.
+     */
+    const SETTINGNAMES = [
+        'chatgpturl', 'chatgptkey', 'chatgptmodel',
+        'sharedfrom', 'shareduntil',
+    ];
+
 }

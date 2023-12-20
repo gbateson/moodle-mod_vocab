@@ -298,9 +298,9 @@ class activity {
      * @param mixed $type a PARAM_xxx constant value
      * @return mixed, either an actual value from the form, or a suitable default.
      */
-    protected static function optional_param($names, $default, $type) {
+    public static function optional_param($names, $default, $type) {
         foreach ($names as $name) {
-            if ($value = optional_param($name, $default, $type)) {
+            if ($value = optional_param($name, '', $type)) {
                 return $value;
             }
         }
@@ -841,6 +841,7 @@ class activity {
     public function get_contexts() {
         if ($this->contexts === null) {
             $this->contexts = [
+                // SYSTEM=10, COURSECAT=40, COURSE=50, MODULE=70
                 CONTEXT_MODULE => \context_module::instance($this->cm->id),
                 CONTEXT_COURSE => \context_course::instance($this->course->id),
                 CONTEXT_COURSECAT => \context_coursecat::instance($this->course->category),
@@ -882,6 +883,7 @@ class activity {
         $writeable = [];
         foreach ($contexts as $context) {
 
+            // MODULE=70, COURSE=50, COURSECAT=40, SYSTEM=10
             switch ($context->contextlevel) {
                 case CONTEXT_MODULE:
                     $capability = 'mod/vocab:manage';

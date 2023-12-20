@@ -305,7 +305,11 @@ class form extends \mod_vocab\toolform {
      */
     public function generate_questions() {
         global $DB;
-        if (($data = data_submitted()) && confirm_sesskey()) {
+        // Use "and" here because it has lower precedence than "=", so the assignment
+        // operation will be done first. If we use "&&", we need to add parentheses
+        // around the "=" expression because "&&" has higher precendence than "=".
+        // https://www.php.net/manual/en/language.operators.precedence.php.
+        if ($data = data_submitted() and confirm_sesskey()) {
 
             $words = false;
             $qtypes = false;
