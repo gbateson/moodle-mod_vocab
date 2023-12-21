@@ -62,7 +62,7 @@ class form extends \mod_vocab\aiform {
             // Check we have expected fields.
             foreach ($this->get_subplugin()->get_settingnames() as $name) {
                 if (empty($default->$name)) {
-                    $default->$name = '';
+                    $default->$name = null;
                 }
             }
 

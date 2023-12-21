@@ -308,8 +308,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function get_wordcounts($words) {
         $total = count($words);
         if ($this->vocab->is_demo()) {
-            $completed = rand(0, $total * 0.9);
-            $inprogress = rand(0, ($total - $completed) * 0.9);
+            // Note, casting to integer is required for PHP >= 8.2.
+            $completed = rand(0, (int)(0.9 * $total));
+            $inprogress = rand(0, (int)(0.9 * ($total - $completed)));
         } else {
             $completed = 0;
             $inprogress = 0;

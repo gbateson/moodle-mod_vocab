@@ -412,30 +412,41 @@ class subpluginbase {
      * @param integer $contextid (optional, default = 0) a specific contextid
      * @return integer if settings could be found/added the configid; otherwise 0.
      */
-    public function save_config_settings($settings, $contextid=0) {
+    public function save_config_settings($settings, $contextid=0, $contextlevel=0) {
         global $DB, $USER;
 
+        if ($contextlevel == 0 && isset($settings->contextlevel)) {
+            $contextlevel = $settings->contextlevel;
+        }
         if ($contextid == 0 && isset($settings->contextid)) {
             $contextid = $settings->contextid;
         }
-        if ($contextid == 0) {
+        if ($contextid == 0 || $contextlevel == 0) {
             // Generate some error?
             return 0;
         }
 
         // Get or create the config record.
         $table = 'vocab_config';
-        $params = [
-            'owneruserid' => $USER->id,
-            'contextid' => $contextid,
-            'subplugin' => $this->plugin,
-        ];
 
-        $config = $DB->get_record($table, $params);
-        if (empty($config)) {
-            // Config record does not exist, so create it.
-            $params['id'] = $DB->insert_record($table, $params);
-            $config = (object)$params;
+
+        if ($this->config) {
+            $config = $this->config;
+            $config->contextid = $contextid;
+            $config->contextlevel = $contextlevel;
+            $DB->update_record($table, $config);
+        } else {
+            $params = [
+                'owneruserid' => $USER->id,
+                'contextid' => $contextid,
+                'subplugin' => $this->plugin,
+            ];
+            $config = $DB->get_record($table, $params);
+            if (empty($config)) {
+                // Config record does not exist, so create it.
+                $params['id'] = $DB->insert_record($table, $params);
+                $config = (object)$params;
+            }
         }
 
         // Add or update the settings for this config record.
@@ -470,7 +481,9 @@ class subpluginbase {
         }
 
         // Update the current config object.
-        $this->config = $config;
+        if ($this->config) {
+            $this->config = $config;
+        }
 
         return $config->id;
     }
@@ -488,8 +501,8 @@ class subpluginbase {
 
             $name = 'sharingcontext';
             if (isset($data->$name) && isset($contexts[$data->$name])) {
-                $contextid = $contexts[$data->$name];
                 $contextlevel = $data->$name;
+                $contextid = $contexts[$contextlevel];
             } else if ($this->vocab->cm) {
                 // Shouldn't happen, but we can continue.
                 $contextlevel = CONTEXT_MODULE;
@@ -505,7 +518,7 @@ class subpluginbase {
             }
 
             if ($contextlevel && $contextid) {
-                $this->save_config_settings($data, $contextid);
+                $this->save_config_settings($data, $contextid, $contextlevel);
             }
         }
     }

@@ -157,6 +157,18 @@ class activity {
     /** @var array of readable contexts the include this vocab activity */
     public $contexts = null;
 
+    /** @var string the full frankenstyle name of this plugin e.g. "mod_vocab" */
+    public $plugin = '';
+
+    /** @var string the path to this plugin e.g. "mod/vocab" */
+    public $pluginpath = '';
+
+    /** @var boolean denotes whether or not the current user can view this activity */
+    public $viewable = '';
+
+    /** @var boolean denotes whether or not the activity is playable by the current user */
+    public $playable = '';
+
     /**
      * Construct an instance of a Vocabulary activity
      *
@@ -206,7 +218,8 @@ class activity {
             $this->context = \context_system::instance();
         }
 
-        $this->time = time();
+        // Cache the time stamp so that the same value is used in comparisons.
+        $time = time();
 
         // "viewable" means the user can view the first page of the activity.
         if ($this->can_manage()) {
