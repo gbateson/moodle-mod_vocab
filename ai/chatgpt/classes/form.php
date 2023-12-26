@@ -372,7 +372,7 @@ class form extends \mod_vocab\aiform {
                 $html .= \html_writer::tag('dl', $label.$value, $dl);
             }
 
-            $params = ['class' => 'chatgptkeyinfo'];
+            $params = ['class' => 'configinfo'];
             $html = \html_writer::tag('div', $html, $params);
         }
 

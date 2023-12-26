@@ -4,7 +4,7 @@
 
 /** add bg colors to form headings */
 .path-mod-vocab fieldset.collapsible > div:first-of-type {
-    background-color: #ffcc99;
+    background-color: #fc9;
     border-radius: 0.25rem;
     border: 1px solid #666;
 }
@@ -84,4 +84,46 @@
 }
 .path-mod-vocab .vocab-games .btn {
     max-width: 110px;
+}
+
+/** The following styles are shared among the TOOL subplugins */
+
+.path-mod-vocab-tool fieldset.collapsible > div:first-of-type {
+    background-color: #e6ffe6; /* very light green */
+}
+
+/** The following styles are shared among the AI subplugins */
+
+/* Put each info block into a rounded box */
+.path-mod-vocab-ai .configinfo {
+    background-color: #f8f9fa; /* bg-light */
+    border: 1px solid #dee2e6; /* border */
+    border-radius: 0.25rem; /* rounded */
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    max-width: 960px;
+    width: 100%;
+}
+
+.path-mod-vocab-ai .configinfo dl:nth-of-type(odd) {
+     /* very light grey, just lighter than bg-light */
+    background-color: #f0f2f4;
+}
+
+.path-mod-vocab-ai .configinfo dl:first-of-type {
+     /* increase vertical padding */
+    padding-top: 0.25rem;
+    padding-bottom: 0rem;
+
+     /* large bold font */
+    font-size: 1.2rem;
+    font-weight: 400;
+
+     /* text-light - requires a dark background color */
+    background-color: #333; /* should be overridden */
+    color: #f8f9fa;
+
+     /* Rounded corners for top left and right */
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
 }

@@ -72,13 +72,12 @@ class form extends \mod_vocab\toolform {
         ];
         $elements[] = $mform->createElement('checkbox', 'selectall', get_string('selectall'), '', $params);
 
-        $i = 0;
         $words = $this->get_vocab()->get_wordlist_words();
         foreach ($words as $id => $word) {
-            $i++;
             $elements[] = $mform->createElement('checkbox', $id, $word);
         }
-        $br = \html_writer::tag('span', '', ['class' => 'w-100']);
+        $br = \html_writer::tag('span', '', ['style' => 'width: 100%!important']);
+        $spacer = \html_writer::tag('span', '', ['style' => 'width: 24px!important']);
         $mform->addGroup($elements, $name, $label, $br);
         $mform->addHelpButton($name, $name, $this->subpluginname);
 
@@ -90,7 +89,7 @@ class form extends \mod_vocab\toolform {
 
         $name = 'questionlevels';
         $options = $this->get_question_levels();
-        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'B1', 'multiple');
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'A2', 'multiple');
 
         $name = 'questioncount';
         $this->add_field_text($mform, $name, PARAM_INT, 5, 2);
@@ -136,8 +135,15 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function get_question_levels() {
-        $levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-        return array_combine($levels, $levels);
+        // ToDo: get these levels from the vocab_levelnames table.
+        return [
+            'A1' => $this->get_string('cefr_a1_description'),
+            'A2' => $this->get_string('cefr_a2_description'),
+            'B1' => $this->get_string('cefr_b1_description'),
+            'B2' => $this->get_string('cefr_b2_description'),
+            'C1' => $this->get_string('cefr_c1_description'),
+            'C2' => $this->get_string('cefr_c2_description'),
+        ];
     }
 
     /**
@@ -288,10 +294,16 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function validation($data, $files) {
-        global $USER;
+        $errors = parent::validation($data, $files);
 
-        if ($errors = parent::validation($data, $files)) {
-            return $errors;
+        $names = ['selectedwords', 'questiontypes',
+                  'questionlevels', 'questioncount',
+                  'parentcategoryelements', 'subcategorieselements'];
+
+        foreach ($names as $name) {
+            if (empty($data[$name])) {
+                $errors[$name] = $this->get_string('empty'.$name);
+            }
         }
 
         return $errors;
@@ -348,7 +360,7 @@ class form extends \mod_vocab\toolform {
                 unset($data->questiontypes);
             }
 
-            if (property_exists($data, 'questionlevels')) {
+            if (property_exists($data, 'questionlevels') && is_array($data->questionlevels)) {
                 $qlevels = $this->get_question_levels();
                 foreach ($qlevels as $name => $text) {
                     if (! in_array($name, $data->questionlevels)) {
@@ -391,9 +403,12 @@ class form extends \mod_vocab\toolform {
             }
 
             if ($words || $qtypes || $qlevels) {
+
                 $dl = ['class' => 'row', 'style' => 'max-width: 720px;'];
                 $dt = ['class' => 'col-3 text-right'];
                 $dd = ['class' => 'col-9'];
+                $br = \html_writer::empty_tag('br');
+
                 echo \html_writer::start_tag('dl', $dl);
                 if ($words) {
                     echo \html_writer::tag('dt', 'Words: ', $dt).
@@ -401,11 +416,11 @@ class form extends \mod_vocab\toolform {
                 }
                 if ($qtypes) {
                     echo \html_writer::tag('dt', 'Question types:', $dt).
-                         \html_writer::tag('dd', implode(', ', $qtypes), $dd);
+                         \html_writer::tag('dd', implode($br, $qtypes), $dd);
                 }
                 if ($qlevels) {
                     echo \html_writer::tag('dt', 'Question levels:', $dt).
-                         \html_writer::tag('dd', implode(', ', $qlevels), $dd);
+                         \html_writer::tag('dd', implode($br, $qlevels), $dd);
                 }
                 echo \html_writer::tag('dt', 'Question count:', $dt).
                      \html_writer::tag('dd', $qcount, $dd);

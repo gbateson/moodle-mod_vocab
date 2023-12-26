@@ -123,6 +123,7 @@ if ($ai->config && ($ai->action == 'copy' || $ai->action == 'delete')) {
 
 if ($data = data_submitted() and confirm_sesskey()) {
     $ai->save_config($data);
+    $ai->unset_form_elements($data);
     if ($ai->config && $ai->action == 'edit') {
         $completed = $ai->action.'completed';
         redirect($ai->index_url(), $ai->get_string($completed));

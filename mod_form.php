@@ -122,7 +122,6 @@ class mod_vocab_mod_form extends moodleform_mod {
         $name = 'pagelayouts';
         $label = get_string($name, $plugin);
         $mform->addElement('header', $name, $label);
-        // $mform->setExpanded($name, true);
         // -----------------------------------------------------------------------------
 
         $mform->addElement('html', $this->get_pagelayouts_table($plugin));

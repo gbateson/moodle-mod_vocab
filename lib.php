@@ -192,7 +192,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
             'report' => [],
             'game' => [],
             'tool' => ['wordlist', 'dictionary', 'questionbank', 'import', 'phpdocs'],
-            'ai' => ['chatgpt'],
+            'ai' => ['prompts', 'chatgpt'],
         ];
 
         foreach ($types as $type => $order) {

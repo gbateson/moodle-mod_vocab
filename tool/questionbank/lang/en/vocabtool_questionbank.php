@@ -33,9 +33,9 @@ $string['questioncategory'] = 'Question category';
 $string['questioncount_help'] = 'The number of new questions to generate at each level.';
 $string['questioncount'] = 'Question count';
 $string['questionlevels_help'] = 'The CEFR levels of the questions to generate.';
-$string['questionlevels'] = 'Question level';
+$string['questionlevels'] = 'Question levels';
 $string['questiontypes_help'] = 'The types of questions to generate.';
-$string['questiontypes'] = 'Question type';
+$string['questiontypes'] = 'Question types';
 
 $string['parentcategory_help'] = 'Select the question category in which you wish to add the new questions.';
 $string['parentcategory'] = 'Parent category';
@@ -60,3 +60,17 @@ $string['automaticsubcategories'] = 'Automatic subcategories';
 
 $string['selectedwords_help'] = 'Select the words for which you wish to generate questions.';
 $string['selectedwords'] = 'Selected words';
+
+$string['cefr_a1_description'] = 'A1: Basic';
+$string['cefr_a2_description'] = 'A2: Elementary';
+$string['cefr_b1_description'] = 'B1: Intermediate';
+$string['cefr_b2_description'] = 'B2: Upper-intermediate';
+$string['cefr_c1_description'] = 'C1: Advanced';
+$string['cefr_c2_description'] = 'C2: Proficient';
+
+$string['emptyselectedwords'] = 'Select at least one word.';
+$string['emptyquestiontypes'] = 'Select at least one question type.';
+$string['emptyquestionlevels'] = 'Select at least one level.';
+$string['emptyquestioncount'] = 'Number of questions should be greater than zero.';
+$string['emptyparentcategoryelements'] = 'Select a question category.';
+$string['emptysubcategorieselements'] = 'Select at least one type question subcategory.';

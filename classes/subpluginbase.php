@@ -493,8 +493,8 @@ class subpluginbase {
      */
     public function save_config($data) {
 
-        // Make sure we have a at least a key value.
-        $name = 'chatgptkey';
+        // Make sure we have a at least a primary field (e.g. "chatgptkey" or "prompt").
+        $name = static::SETTINGNAMES[0];
         if (isset($data->$name) && $data->$name) {
 
             $contexts = $this->vocab->get_writeable_contexts('contextlevel', 'id');
@@ -528,7 +528,7 @@ class subpluginbase {
      *
      * @todo Finish documenting this function
      */
-    public function unset_form_elements() {
+    public function unset_form_elements($data) {
         foreach ($this->get_settingnames() as $name) {
             if (isset($data->$name)) {
                 $this->unset_element($name);

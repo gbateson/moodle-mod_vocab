@@ -158,6 +158,28 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
+     * Add a textarea field to the given $mform
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name the name of this text element
+     * @param mixed $type a PARAM_xxx constant value
+     * @param mixed $default
+     * @param array $attributes (optional, default=null)
+     * @return void (but may update $mform)
+     */
+    public function add_field_textarea($mform, $name, $type, $default, $attributes=null) {
+        if ($attributes) {
+            $attributes['rows'] = 5;
+            $attributes['cols'] = '40';
+        }
+        $label = $this->get_string($name);
+        $mform->addElement('textarea', $name, $label, $attributes);
+        $mform->addHelpButton($name, $name, $this->subpluginname);
+        $mform->setDefault($name, $default);
+        $mform->setType($name, $type);
+    }
+
+    /**
      * Add a select field to the given $mform
      *
      * @param moodleform $mform representing the Moodle form
