@@ -38,18 +38,19 @@ $addons = [
                     'class' => '',
                 ],
                 'delegate' => 'CoreCourseModuleDelegate',
-                // "method" must exist in "mod/vocab/classes/output/mobile.php"
+                // The "method" must exist in "mod/vocab/classes/output/mobile.php".
                 'method' => 'mobile_view_activity',
-                // 'offlinefunctions' => ['mobile_view_activity' => []],
+                // Maybe we could add 'offlinefunctions' => ['mobile_view_activity' => []],
+                // but I'm not sure yet how to use those.
                 'styles' => [
                     'url' => $CFG->wwwroot . '/mod/vocab/mobile/styles.css',
-                    'version' => 1, // bumping this will regenerate CSS.
+                    'version' => 1, // Bumping this will regenerate CSS - maybe.
                 ],
             ],
         ],
         // Language strings that are used in all the handlers.
         // They can be inserted into the template as follows:
-        // {{ 'plugin.mod_vocab.STRINGNAME' | translate }}
+        // {{ 'plugin.mod_vocab.STRINGNAME' | translate }} !!
         'lang' => [
             ['pluginname', 'vocab'],
         ],

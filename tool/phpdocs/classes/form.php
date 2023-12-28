@@ -26,8 +26,6 @@
 
 namespace vocabtool_phpdocs;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * form
  *
@@ -42,13 +40,28 @@ class form extends \mod_vocab\toolform {
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_phpdocs';
 
+    /** @var integer internal value to represent none action */
     const ACTION_NONE = 0;
+
+    /** @var integer internal value to represent "fix all" action */
     const ACTION_FIX_ALL = 1;
+
+    /** @var integer internal value to represent "fix missing" action */
     const ACTION_FIX_MISSING = 2;
+
+    /** @var integer internal value to represent "fix incorrect" action */
     const ACTION_FIX_INCORRECT = 3;
+
+    /** @var integer internal value to represent "report all" action */
     const ACTION_REPORT_ALL = 4;
+
+    /** @var integer internal value to represent "report missing" action */
     const ACTION_REPORT_MISSING = 5;
+
+    /** @var integer internal value to represent "report incorrect" action */
     const ACTION_REPORT_INCORRECT = 6;
+
+    /** @var integer internal value to represent "remove all" action */
     const ACTION_REMOVE_ALL = 7;
 
     /**

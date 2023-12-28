@@ -24,8 +24,6 @@
 
 namespace mod_vocab;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * \mod_vocab\aiform
  *

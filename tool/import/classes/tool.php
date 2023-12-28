@@ -27,8 +27,6 @@
 
 namespace vocabtool_import;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Main class for a "tool" subplugin of the mod_vocab plugin.
  *

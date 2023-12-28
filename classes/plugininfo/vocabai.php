@@ -27,8 +27,6 @@ namespace mod_vocab\plugininfo;
 
 use core\plugininfo\base;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * vocabai
  *

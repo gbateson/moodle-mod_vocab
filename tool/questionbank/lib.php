@@ -24,11 +24,10 @@
  * @since      Moodle 3.11
  */
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Define the icon for this vocab tool
  */
 function vocabtool_questionbank_get_fontawesome_icon_map() {
-    return ['vocabtool_questionbank:questionbank' => 'fa-list-alt']; // clipboard, list-check
+    return ['vocabtool_questionbank:questionbank' => 'fa-list-alt'];
+    // The "clipboard" and "list-check" icons might also work.
 }

@@ -27,8 +27,6 @@
 
 namespace vocabtool_questionbank;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * tool
  *

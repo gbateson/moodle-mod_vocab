@@ -57,7 +57,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform = $this->_form;
 
         $plugin = 'mod_vocab';
-        $config = get_config($plugin); // sitewide settings
+        $config = get_config($plugin); // Get sitewide settings.
 
         $dateoptions = ['optional' => true];
         $textoptions = ['size' => self::TEXT_NUM_SIZE];
@@ -130,28 +130,27 @@ class mod_vocab_mod_form extends moodleform_mod {
         $name = 'timing';
         $label = get_string($name, 'form');
         $mform->addElement('header', $name, $label);
-        // $mform->setExpanded($name, true);
         // -----------------------------------------------------------------------------
 
-        $name = 'activityopen'; // viewablefrom
+        $name = 'activityopen'; // Old name was "viewablefrom".
         $label = get_string($name, $plugin);
         $mform->addElement('date_time_selector', $name, $label, $dateoptions);
         $mform->addHelpButton($name, $name, $plugin);
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
-        $name = 'activityclose'; // viewableuntile
+        $name = 'activityclose'; // Old name was "viewableuntil".
         $label = get_string($name, $plugin);
         $mform->addElement('date_time_selector', $name, $label, $dateoptions);
         $mform->addHelpButton($name, $name, $plugin);
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
-        $name = 'gamesopen'; // playablefrom
+        $name = 'gamesopen'; // Old name was "playablefrom".
         $label = get_string($name, $plugin);
         $mform->addElement('date_time_selector', $name, $label, $dateoptions);
         $mform->addHelpButton($name, $name, $plugin);
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
-        $name = 'gamesclose'; // playableuntil
+        $name = 'gamesclose'; // Old name was "playableuntil".
         $label = get_string($name, $plugin);
         $mform->addElement('date_time_selector', $name, $label, $dateoptions);
         $mform->addHelpButton($name, $name, $plugin);
@@ -278,7 +277,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $value = \mod_vocab\activity::ATTEMPTDELAY_FIXED;
         $elements[] = $mform->createElement('radio', $name, $text, '', $value);
 
-        $options = ['defaultunit' => 60]; // minutes
+        $options = ['defaultunit' => 60]; // Default units are "minutes".
         $elements[] = $mform->createElement('duration', $name.'fixed', '', $options);
         $elements[] = $mform->createElement('html', $linebreak);
 
@@ -364,12 +363,12 @@ class mod_vocab_mod_form extends moodleform_mod {
         global $PAGE;
         $layouts = [];
         $duplicates = [
-            // duplicates of the "base" layout
+            // Duplicates of the "base" layout.
             'course', 'coursecategory', 'incourse', 'frontpage',
             'admin', 'mycourses', 'mydashboard', 'mypublic', 'report',
-            // duplicates of the "popup" layouts
+            // Duplicates of the "popup" layouts.
             'print', 'redirect',
-            // duplicate of the "embedded" layout
+            // Duplicate of the "embedded" layout.
             'frametop',
         ];
         foreach ($PAGE->theme->layouts as $name => $layout) {
@@ -443,7 +442,7 @@ class mod_vocab_mod_form extends moodleform_mod {
                     if (is_scalar($optionvalue)) {
                         $row['option_'.$optionname] = $optionvalue;
                     } else {
-                        // "activityheader" is an array of options.
+                        // The "activityheader" is an array of options.
                         foreach ($optionvalue as $n => $v) {
                             $row['option_'.$optionname.'_'.$n] = $v;
                         }
@@ -465,7 +464,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         foreach ($rows as $r => $row) {
 
             if ($r == 0) {
-                // Set up headings
+                // Set up headings.
                 $keys = array_keys($row);
                 foreach ($keys as $c => $key) {
 
@@ -485,7 +484,10 @@ class mod_vocab_mod_form extends moodleform_mod {
                     $table->head[$c] = $cell;
 
                     $table->align[$c] = 'center';
-                    // $table->colclasses[$c] = ($c % 2 ? '' : 'bg-light');
+
+                    // We could implement alternate dark-light striping of columns
+                    // using $table->colclasses[$c] = ($c % 2 ? '' : 'bg-light');
+                    // but this is not necessary because the table is not very large.
                 }
             }
 
@@ -505,7 +507,11 @@ class mod_vocab_mod_form extends moodleform_mod {
             }
 
             $table->data[] = new \html_table_row(array_values($row));
-            // $table->rowclasses[$r] = ($r % 2 ? '' : 'bg-light');
+
+            // We could implement alternate dark-light striping of columns
+            // using $table->rowclasses[$r] = ($r % 2 ? '' : 'bg-light')
+            // but this is not necessary because this table is created
+            // with the "generaltable" CSS class, which includes stripes.
         }
 
         return \html_writer::table($table);

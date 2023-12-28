@@ -26,8 +26,6 @@
 
 namespace vocabtool_import\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy provider implementation for vocabtool_import.
  *

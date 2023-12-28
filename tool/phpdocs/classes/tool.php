@@ -16,8 +16,6 @@
 
 namespace vocabtool_phpdocs;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * tool
  *
@@ -51,7 +49,8 @@ class tool extends \mod_vocab\toolbase {
             '$a' => (object)['type' => 'array', 'text' => 'additional value or values required for the language string'],
             '$action' => (object)['type' => 'integer', 'text' => ''],
             '$args' => (object)['type' => 'array',   'text' => ''],
-            '$attempt' => (object)['type' => 'object', 'text' => 'a record form the "vocab_game_attempt" table in the Moodle database'],
+            '$attempt' => (object)[
+                'type' => 'object', 'text' => 'a record form the "vocab_game_attempt" table in the Moodle database'],
             '$attributes' => (object)['type' => 'array', 'text' => ''],
             '$blockname' => (object)['type' => 'string', 'text' => ''],
             '$c' => (object)['type' => 'integer', 'text' => 'a column number'],
@@ -83,7 +82,8 @@ class tool extends \mod_vocab\toolbase {
             '$endcolor' => (object)['type' => 'string', 'text' => "an RGB color, e.g. '#aabbcc'"],
             '$escaped' => (object)['type' => 'boolean', 'text' => ''],
             '$excluded_fieldnames' => (object)['type' => 'array', 'text' => ''],
-            '$expanded' => (object)['type' => 'boolean', 'text' => 'if TRUE, the heading will be expanded; otherwise it will remain collapsed'],
+            '$expanded' => (object)[
+                'type' => 'boolean', 'text' => 'if TRUE, the heading will be expanded; otherwise it will remain collapsed'],
             '$feature' => (object)['type' => 'string', 'text' => 'a FEATURE_xxx constant e.g. mod_intro'],
             '$fieldname' => (object)['type' => 'string', 'text' => ''],
             '$fields' => (object)['type' => 'array', 'text' => 'of database field names'],
@@ -100,10 +100,12 @@ class tool extends \mod_vocab\toolbase {
             '$gamecolor' => (object)['type' => 'string', 'text' => 'the game button color as an RGB color'],
             '$groupid' => (object)['type' => 'integer', 'text' => ''],
             '$height' => (object)['type' => 'integer', 'text' => 'required height (in pixels)'],
-            '$id' => (object)['type' => 'integer', 'text' => 'settings to be used in the <path> tag e.g. "stroke", "stroke-width"'],
+            '$id' => (object)[
+                'type' => 'integer', 'text' => 'settings to be used in the <path> tag e.g. "stroke", "stroke-width"'],
             '$incorrect' => (object)['type' => 'boolean', 'text' => ''],
             '$indent' => (object)['type' => 'string', 'text' => ''],
-            '$instance' => (object)['type' => 'object', 'text' => 'a record form the "vocab" table in the Moodle database'],
+            '$instance' => (object)[
+                'type' => 'object', 'text' => 'a record form the "vocab" table in the Moodle database'],
             '$item' => (object)['type' => 'object', 'text' => 'representing an item in the XML file'],
             '$itemvars' => (object)['type' => 'array',   'text' => ''],
             '$langcode' => (object)['type' => 'string', 'text' => ''],
@@ -117,8 +119,10 @@ class tool extends \mod_vocab\toolbase {
             '$names' => (object)['type' => 'array', 'text' => ''],
             '$newwords' => (object)['type' => 'array', 'text' => ''],
             '$node' => (object)['type' => 'string', 'text' => 'the current navigation node'],
-            '$offsetx' => (object)['type' => 'integer', 'text' => 'the "x" offset (in pixels) to the left hand edge of the pie chart'],
-            '$offsety' => (object)['type' => 'integer', 'text' => 'the "y" offset (in pixels) to the top edge of the pie chart'],
+            '$offsetx' => (object)[
+                'type' => 'integer', 'text' => 'the "x" offset (in pixels) to the left hand edge of the pie chart'],
+            '$offsety' => (object)[
+                'type' => 'integer', 'text' => 'the "y" offset (in pixels) to the top edge of the pie chart'],
             '$oldversion' => (object)['type' => 'string', 'text' => ''],
             '$parameters' => (object)['type' => 'array', 'text' => ''],
             '$paramname' => (object)['type' => 'string', 'text' => ''],
@@ -126,14 +130,16 @@ class tool extends \mod_vocab\toolbase {
             '$phpdocs' => (object)['type' => 'string', 'text' => ''],
             '$phpdocsnew' => (object)['type' => 'string', 'text' => ''],
             '$phpdocsold' => (object)['type' => 'string', 'text' => ''],
-            '$plugin' => (object)['type' => 'string', 'text' => 'the frankenstyle name of the plugin. e.g. mod_vocab'],
+            '$plugin' => (object)[
+                'type' => 'string', 'text' => 'the frankenstyle name of the plugin. e.g. mod_vocab'],
             '$prefix' => (object)['type' => 'string', 'text' => ''],
             '$r' => (object)['type' => 'integer', 'text' => 'a row number'],
             '$radius' => (object)['type' => 'integer', 'text' => 'radius of the pie-chart (in pixels)'],
             '$recordids' => (object)['type' => 'array', 'text' => 'of ids from the database'],
             '$rectparams' => (object)['type' => 'array', 'text' => ''],
             '$row' => (object)['type' => 'object', 'text' => ''],
-            '$settings' => (object)['type' => 'object', 'text' => 'The "settings" navigation node for this Vocabulary activity'],
+            '$settings' => (object)[
+                'type' => 'object', 'text' => 'The "settings" navigation node for this Vocabulary activity'],
             '$sheet' => (object)['type' => 'object', 'text' => ''],
             '$size' => (object)['type' => 'integer', 'text' => ''],
             '$start' => (object)['type' => 'integer', 'text' => ''],
@@ -143,7 +149,8 @@ class tool extends \mod_vocab\toolbase {
             '$strokewidth' => (object)['type' => 'integer', 'text' => 'the width (in pixels)'],
             '$submit' => (object)['type' => 'boolean', 'text' => ''],
             '$table' => (object)['type' => 'string', 'text' => 'name of a table in the database'],
-            '$tableinfo' => (object)['type' => 'array', 'text' => 'two dimensional array of tables and columns which may be accessed'],
+            '$tableinfo' => (object)[
+                'type' => 'array', 'text' => 'two dimensional array of tables and columns which may be accessed'],
             '$tablename' => (object)['type' => 'string', 'text' => ''],
             '$tablenames' => (object)['type' => 'array', 'text' => ''],
             '$target' => (object)['type' => 'string', 'text' => ''],
@@ -186,8 +193,8 @@ class tool extends \mod_vocab\toolbase {
 
         $data = $mform->get_data();
 
-        // folderpath is something like "/mod/vocab".
-        // filetypes is something like ["php", "js"].
+        // The folderpath is something like "/mod/vocab".
+        // The filetypes are something like ["php", "js"].
         $folderpath = $data->folderpath;
         if ($filepath = $data->filepath) {
             $filepath = trim($filepath, ' ./');
@@ -276,7 +283,7 @@ class tool extends \mod_vocab\toolbase {
                 }
             }
             $path = next($paths);
-        } // end while
+        } // End while.
 
         $this->display_messages();
     }
@@ -426,13 +433,13 @@ class tool extends \mod_vocab\toolbase {
 
         switch (substr($filepath, strrpos($filepath, '.'))) {
             case '.js':
-                // fix js functions and methods
+                // Fix js functions and methods.
                 $this->fix_file_contents($mform, $data, $filepath, $action, $contents, $update, 1);
                 $this->fix_file_contents($mform, $data, $filepath, $action, $contents, $update, 2);
                 break;
 
             case '.php':
-                // fix php functions/methods and classes
+                // Fix php functions/methods and classes.
                 $this->fix_file_contents($mform, $data, $filepath, $action, $contents, $update, 3);
                 $this->fix_file_contents($mform, $data, $filepath, $action, $contents, $update, 4);
                 break;
@@ -457,76 +464,55 @@ class tool extends \mod_vocab\toolbase {
     public function fix_file_contents($mform, $data, $filepath, $action, &$contents, &$update, $type) {
         global $CFG;
 
-        // Class
-        // (^ *)(abstract|readonly +)?(class +)(\w+ *)(extends|implements +\?\w+)*\{
-
-        // Constant
-        // (^ *)(const +)(\w+ *)(= *)(.*?);
-
-        // Property
-        // (^ *)(abstract|readonly|public|protected|private|static|var +)|($\w+ *)(= *)(.*?);
-
-        // Function/Method
-        // (^ *)(abstract|public|protected|private|static +)?(function +)?($\w+ *)\{
-
         $lastline   = '((?:^|\{|\}|;|-|,)[ \t]*(?:\/\/[^\n\r]*)?[\n\r]*)';
         $comments   = '((?:[ \t]*\/\/[^\n\r]*[\n\r]+)*)';
         $phpdocs    = '([ \t]*\/\*+[\r\n]+(?:[ \t]*\*[^\r\n]*[\r\n]+)*[ \t]*\*+\/[\r\n]+)?';
         $indent     = '([ \t]*)';
-        $parameters = '([^{]*)'; // includes function return type ( *:  *\w+)?
+        $parameters = '([^{]*)'; // Includes function return type ( *:  *\w+)? !!
 
         switch ($type) {
             case 1:
-                // javascript functions
-                // e.g. function FooBar(x, y, z) {
+                // Handle Javascript functions.
                 $keywords = '(function[ \t]+)';
                 $blockname = '(\w+)[ \t]*';
                 $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
                 break;
 
             case 2:
-                // javascript methods
-                // e.g. this.FooBar = function (x, y, z) {
-                // e.g. FooBar: function(x, y, z) {
+                // Handle Javascript methods.
                 $blockname = '(\w+(?:\.\w+)*[ \t]*)';
                 $keywords = '([=:][ \t]*function[ \t]*)';
                 $search = '/'.$lastline.$comments.$phpdocs.$indent.$blockname.$keywords.$parameters.'\{/s';
                 break;
 
             case 3:
-                // php functions/methods
-                // e.g. public static function FooBar($x, $y=0, $z="z") {
+                // PHP functions and methods.
                 $keywords = '((?:(?:abstract|public|private|protected|static)[ \t]+)*function[ \t]+)';
                 $blockname = '(pie_gra\w+)[ \t]*';
                 $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
                 break;
 
             case 4:
-                // php classes
-                // e.g. abstract class FooBar extends Foo {
-                // e.g. class tool extends \mod_vocab\toolbase
+                // PHP classes.
                 $keywords = '((?:(?:abstract|readonly)[ \t]+)?(?:class|interface)[ \t]+)';
                 $blockname = '(\w+[ \t]*)';
                 $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
                 break;
 
             case 5:
-                // PHP class constants
-                //
-                // e.g const CONST_NAME = CONST_VALUE (e.g. 99 'string' "string" true false null);
+                // PHP class constants.
                 break;
 
             case 6:
-                // PHP class variables
-                //
-                // e.g. (protected|public|private|static|var) $VAR_NAME = DEFAULT_VALUE (e.g. 99 'string' "string" [) true false null]
+                // PHP class variables.
                 break;
 
             default:
-                return; // shouldn't happen !!
+                return; // Shouldn't happen !!
         }
         unset($lastline, $comments, $indent, $parameters, $keywords, $blockname);
 
+        // The matches should be be available as follows:
         // [0][$i][0] : the whole match (i.e. all of the following)
         // [1][$i][0] : last line of previous code block, if any
         // [2][$i][0] : single line comments, if any, preceeding PHPDocs
@@ -535,9 +521,9 @@ class tool extends \mod_vocab\toolbase {
         // [5][$i][0] : PHP/javascript keywords
         // [6][$i][0] : code block name
         // [7][$i][0] : code block parameters (including parentheses)
-        // Note: if $type is 2, then [5] and [6] switch position
+        // Note: if $type is 2, then [5] and [6] switch position.
 
-        // locate all occurrences of this block $type
+        // Locate all occurrences of this block $type.
         if (! preg_match_all($search, $contents, $matches, PREG_OFFSET_CAPTURE)) {
             return false;
         }
@@ -568,20 +554,20 @@ class tool extends \mod_vocab\toolbase {
             $indent = $matches[4][$i][0];
 
             switch ($type) {
-                case 1: // js functions
+                case 1: // JS functions.
                     $blockname = $matches[6][$i][0];
                     break;
-                case 2: // js methods
+                case 2: // JS methods.
                     $blockname = $matches[5][$i][0];
                     break;
-                case 3: // php functions/methods
+                case 3: // PHP functions/methods.
                     $blockname = $matches[6][$i][0];
                     break;
-                case 4: // php classes
+                case 4: // PHP classes.
                     $blockname = $matches[6][$i][0];
                     break;
                 default:
-                    return false; // shouldn't happen !!
+                    return false; // Shouldn't happen !!
             }
 
             // Parse the old PHPdocs so that we can extract the old comments and
@@ -590,7 +576,8 @@ class tool extends \mod_vocab\toolbase {
 
             $parameters = trim($matches[7][$i][0]);
             if (substr($parameters, 0, 1) == '(' && substr($parameters, -1) == ')') {
-                $phpdocsnew = $this->get_phpdocs_parameters($filepath, $contents, $start, $indent, $blockname, $parameters, $parseold->comments);
+                $phpdocsnew = $this->get_phpdocs_parameters($filepath, $contents, $start,
+                                    $indent, $blockname, $parameters, $parseold->comments);
             } else {
                 // A "class" in in a PHP file.
                 $phpdocsnew = $this->get_phpdocs_block($data, $indent, $blockname);
@@ -776,11 +763,11 @@ class tool extends \mod_vocab\toolbase {
                  '[ \t]*\*+\/[\r\n]+?';
         $tag = '\*\s+@(\w+)\s+(.*)';
 
-        // https://docs.phpdoc.org/3.0/guide/references/phpdoc/tags/
+        // See https://docs.phpdoc.org/3.0/guide/references/phpdoc/tags/
         // @uses $VARNAME [<description>]
         // @param [<Type>] [name] [<description>]
         // @return [Type] [<description>]
-        // @todo [description]
+        // @todo [description] !!
 
         if (preg_match('/^'.$block.'$/us', $phpdocs, $blockmatch)) {
             if (preg_match_all('/'.$line.'/us', $blockmatch[1], $lines)) {
@@ -809,7 +796,7 @@ class tool extends \mod_vocab\toolbase {
                         }
 
                         // Fix for missing $type, such as:
-                        // * @param $mform
+                        // * @param $mform !!
                         if (substr($type, 0, 1) === '$') {
                             $text = $name;
                             $name = $type;
@@ -828,7 +815,7 @@ class tool extends \mod_vocab\toolbase {
                             $parse->tags[$token] = [];
                         }
 
-                        // Add this $token (params require a $name)
+                        // Add this $token (params require a $name).
                         if ($token == 'param') {
                             if ($name == '') {
                                 $name = 'param_'.count($parse->tags[$token]);
@@ -978,12 +965,13 @@ END;
         $details = '';
         $unknownparams = [];
         $search = '/'.'(\w*)(\&?)(\$\w+)(\s*=\s*([^,]*))?'.'/';
+        // The matches should be available as follows
         // [0][$i] : type + reference + name + default value
         // [1][$i] : parameter type (optional)
         // [2][$i] : reference (optional leading "&")
         // [3][$i] : parameter name (with leading "$")
         // [4][$i] : default value expression (i.e. "=" + default $value)
-        // [5][$i] : default value
+        // [5][$i] : default value !!
         if (preg_match_all($search, trim($parameters, ' ()'), $matches)) {
             $imax = count($matches[0]);
             for ($i = 0; $i < $imax; $i++) {
@@ -1015,7 +1003,7 @@ END;
             $this->store_phpdocs_message($filepath, "$blockname ($unknownparams)", 'unknownparam');
         }
 
-        // get $pos(ition) of end of function
+        // Get the $pos(ition) of the end of the function.
         if ($pos = strpos($contents, "\n$indent}", $start)) {
             $substr = substr($contents, $start, $pos - $start);
             if (preg_match_all('/(?<=global )\$[^;]*(?=;)/', $substr, $matches)) {
@@ -1055,10 +1043,10 @@ END;
      */
     public function remove_phpdocs(&$contents, &$update) {
         $search = '/'.
-                  '(^ *\/\*\*[\r\n]+)'. // top line
-                  '(^ *\*.*?[\r\n]+)+'. // mid line
-                  '(^ *\*\/[\r\n]+)'. // bottom line
-                  '/um'; // unicode, multiline
+                  '(^ *\/\*\*[\r\n]+)'. // Top line.
+                  '(^ *\*.*?[\r\n]+)+'. // Mid line.
+                  '(^ *\*\/[\r\n]+)'. // Bottom line.
+                  '/um'; // Settings for unicode and multiline.
         $contents = preg_replace($search, '', $contents, -1, $count);
         return [($count > 0), $contents];
     }

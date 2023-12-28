@@ -15,8 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * mod/vocab/classes/output/mobile.php
- * the mobile output class for the Vocab activity module
+ * The mobile output class for the Vocab activity module.
  *
  * @package    mod_vocab
  * @copyright  2023 Gordon BATESON
@@ -74,7 +73,8 @@ class mobile {
             // in a good enough role, tell them to enrol.
             $html = $renderer->view_page_notenrolled();
         }
-        // $html = $OUTPUT->render_from_template("mod_vocab/mobile_view_page_$versioncode", $data);
+        // Later we can generate the output using mustache template using something like the following:
+        // $html = $OUTPUT->render_from_template("mod_vocab/mobile_view_page_$versioncode", $data); !!
 
         return [
             'templates' => [['id' => 'main', 'html' => $html]],

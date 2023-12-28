@@ -24,8 +24,6 @@
  * @since      Moodle 3.11
  */
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Adds module specific settings to the settings block
  *

@@ -15,7 +15,6 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace mod_vocab\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * course_module_viewed

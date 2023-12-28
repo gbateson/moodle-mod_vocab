@@ -24,8 +24,6 @@
 
 namespace vocabai_prompts;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * ai
  *

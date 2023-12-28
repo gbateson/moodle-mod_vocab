@@ -24,8 +24,6 @@
 
 namespace mod_vocab;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * This base class for subplugins of the mod_vocab plugin.
  *
@@ -49,7 +47,12 @@ class subpluginbase {
     const SETTINGNAMES = [];
 
     /**
-     * The full frankenstyle name of this subplugin
+     * @var array the names of date settings that this subplugin maintains.
+     */
+    const DATESETTINGNAMES = [];
+
+    /**
+     * @var string The full frankenstyle name of this subplugin
      * e.g. vocabtool_import. This will be set automatically
      * from the SUBPLUGINTYPE and SUBPLUGINNAME.
      * It is intended for use in the get_string() method.
@@ -57,7 +60,7 @@ class subpluginbase {
     public $plugin = '';
 
     /**
-     * the path to subplugin folder relative to $CFG->dirroot
+     * @var string the path to subplugin folder relative to $CFG->dirroot
      * e.g. mod/vocab/tool/import. This will be set automatically
      * from the SUBPLUGINTYPE and SUBPLUGINNAME.
      */
@@ -196,19 +199,56 @@ class subpluginbase {
         return new $mform($PAGE->url->out(), $params);
     }
 
-    /*
+    /**
      * Get a string for this vocabtool plugin
      *
      * @param string $name the name of the required string
      * @param mixed $a (optional, default=null) additional value or values required for the string
      * @return string
-     **/
+     */
     public function get_string($name, $a=null) {
         return get_string($name, $this->plugin, $a);
     }
 
+    /**
+     * Get the array containing the names of all the config settings for this subplugin.
+     */
     public function get_settingnames() {
         return static::SETTINGNAMES;
+    }
+
+    /**
+     * Is the given setting $name a date setting?
+     *
+     * @param string $name the name of the setting to be checked.
+     * @return boolean TRUE if the $name is that of a data settings; otherwise FALSE
+     */
+    public function is_date_setting($name) {
+        return in_array($name, static::DATESETTINGNAMES);
+    }
+
+    /**
+     * Get the data value of an array containing date fields,
+     * such as those returned from a date field in a Moodle form.
+     *
+     * @param array $value time and date values to be converted to a time stamp.
+     * @return integer a time/date stamp
+     */
+    public function get_date_value($value) {
+        if (is_array($value)) {
+            if (empty($value['enabled'])) {
+                return 0;
+            }
+            $hour = (int)($value['hour'] ?? 0);
+            $minute = (int)($value['minute'] ?? 0);
+            $second = (int)($value['second'] ?? 0);
+            $month = (int)($value['month'] ?? 0);
+            $day = (int)($value['day'] ?? 0);
+            $year = (int)($value['year'] ?? 0);
+            return mktime($hour, $minute, $second, $month, $day, $year);
+        }
+        // Not an array - unexpected !!
+        return $value;
     }
 
     /**
@@ -259,6 +299,7 @@ class subpluginbase {
      *
      * @param string $returnuser (optional, default='') Either "otherusers" or "thisuser"
      * @param string $returncontext (optional, default='') Either "othercontexts" or "thiscontext"
+     * @param boolean $removeconfigid (optional, default=false)
      * @return array
      */
     public function get_configs($returnuser='', $returncontext='', $removeconfigid=false) {
@@ -311,12 +352,12 @@ class subpluginbase {
                             break;
 
                         case ($config->id == $setting->configid):
-                            // $config->id has not changed.
+                            // The value of $config->id has not changed.
                             $storeconfig = false;
                             break;
 
                         default:
-                            // $config->id has changed.
+                            // The value of $config->id has changed.
                             $storeconfig = true;
                     }
 
@@ -361,7 +402,7 @@ class subpluginbase {
                 'thisuser' => (object)[
                     'othercontexts' => $myothercontexts,
                     'thiscontext' => $mycurrentcontexts,
-                ]
+                ],
             ];
         }
 
@@ -379,7 +420,7 @@ class subpluginbase {
     /**
      * Find the config with the given id.
      *
-     * @param integer The id of the required config record.
+     * @param integer $configid The id of the required config record.
      * @return object The required config record, or NULL if it is not found.
      */
     public function find_config($configid) {
@@ -410,6 +451,7 @@ class subpluginbase {
      * @uses $USER
      * @param object $settings the form data containing the settings
      * @param integer $contextid (optional, default = 0) a specific contextid
+     * @param integer $contextlevel (optional, default = 0) a specific context level
      * @return integer if settings could be found/added the configid; otherwise 0.
      */
     public function save_config_settings($settings, $contextid=0, $contextlevel=0) {
@@ -428,7 +470,6 @@ class subpluginbase {
 
         // Get or create the config record.
         $table = 'vocab_config';
-
 
         if ($this->config) {
             $config = $this->config;
@@ -463,7 +504,11 @@ class subpluginbase {
                     $DB->delete_records($table, $params);
                 }
             } else {
-                $value = $settings->$name;
+                if ($this->is_date_setting($name)) {
+                    $value = $this->get_date_value($settings->$name);
+                } else {
+                    $value = $settings->$name;
+                }
                 if ($setting = $DB->get_record($table, $params)) {
                     // Update previous value, if it has changed.
                     if ($setting->value != $value) {
@@ -489,7 +534,10 @@ class subpluginbase {
     }
 
     /**
-     * save the config settings form the input form.
+     * Save the config settings from the input form.
+     *
+     * @param object $data the form data
+     * @return void (but may add config settings to the database)
      */
     public function save_config($data) {
 
@@ -526,7 +574,8 @@ class subpluginbase {
     /**
      * unset_elements
      *
-     * @todo Finish documenting this function
+     * @param object $data the form data
+     * @return void (but may remove properties from the form $data)
      */
     public function unset_form_elements($data) {
         foreach ($this->get_settingnames() as $name) {
@@ -540,7 +589,7 @@ class subpluginbase {
      * unset_element
      *
      * @param string $name
-     * @todo Finish documenting this function
+     * @return void (but may remove an item from $_GET and $_POST)
      */
     public function unset_element($name) {
         if (isset($_GET[$name])) {
@@ -551,6 +600,11 @@ class subpluginbase {
         }
     }
 
+    /**
+     * Delete items from the vocab_config and vocab_config_settings tables.
+     *
+     * @return void (but may remove an items form the database)
+     */
     public function delete_config() {
         global $DB;
 
@@ -575,6 +629,11 @@ class subpluginbase {
         return true;
     }
 
+    /**
+     * Copy the current config settings to a new config record.
+     *
+     * @return void (but may add items to the database)
+     */
     public function copy_config() {
         global $DB, $USER;
 
@@ -591,7 +650,7 @@ class subpluginbase {
             $newconfig->contextlevel = key($contexts);
         }
 
-        // if the contextid/level and user are the same - don't do anything.
+        // If the contextid/level and user are the same - don't do anything.
         if ($newconfig->contextid == $contexts[$newconfig->contextlevel]) {
             if ($newconfig->owneruserid == $USER->id) {
                 return $this->config->id;

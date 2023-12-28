@@ -25,7 +25,6 @@
  */
 
 namespace mod_vocab\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * course_module_instance_list_viewed

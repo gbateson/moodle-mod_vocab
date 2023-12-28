@@ -26,8 +26,6 @@
 
 namespace vocabtool_import;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * form
  *
@@ -42,43 +40,74 @@ class form extends \mod_vocab\toolform {
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_import';
 
+    /** @var integer internal value to represent "Add new only" action */
     const ACTION_ADD_NEW_ONLY = 1;
+
+    /** @var integer internal value to represent "Add and update" action */
     const ACTION_ADD_AND_UPDATE = 2;
+
+    /** @var integer internal value to represent "Update existing" action */
     const ACTION_UPDATE_EXISTING = 3;
+
+    /** @var integer internal value to represent "Add, update and remove" action */
     const ACTION_ADD_UPDATE_REMOVE  = 4;
 
+    /** @var integer internal value to represent "Select none" */
     const SELECT_NONE = 0;
+
+    /** @var integer internal value to represent "Select all" */
     const SELECT_ALL  = 1;
+
+    /** @var integer internal value to represent "Select new" */
     const SELECT_NEW  = 2;
 
+    /** @var integer internal value to represent "Neither meta nor data row" */
     const TYPE_NONE = 0;
+
+    /** @var integer internal value to represent "Meta rows" e.g. headings */
     const TYPE_META = 1;
+
+    /** @var integer internal value to represent "Data rows" */
     const TYPE_DATA = 2;
 
+    /** @var integer internal value to represent "Dry run mode" */
     const MODE_DRYRUN = 1;
+
+    /** @var integer internal value to represent "Import mode" */
     const MODE_IMPORT = 2;
 
+    /** @var string the corrent form state */
     protected $formstate = '';
+
+    /** @var object representing the import data file */
     protected $phpspreadsheet = null;
+
+    /** @var array to hold punctuation characters */
     protected $punctuation = null;
 
-    // Array of cell values to ignore. e.g. "N/A".
+    /** @var array of cell values to ignore. e.g. "N/A" */
     public $ignorevalues = null;
 
-    // Array to map aliases (e.g. 'ALIAS_ROW_99') to non-scalar values
-    // (i.e. arrays and objects) that are passed as parameters to functions.
+    /**
+     * @var array to map aliases (e.g. 'ALIAS_ROW_99') to non-scalar values
+     * (i.e. arrays and objects) that are passed as parameters to functions
+     */
     protected $aliases = [];
 
-    // Array of vocab tables that have been updated by this import tool.
+    /** @var array of vocab tables that have been updated by this import tool */
     protected $totals = null;
 
-    // Index on current sheet and row in data file.
+    /** @var integer index on current sheet data file */
     protected $currentsheet = 0;
+
+    /** @var integer Index on current row data file */
     protected $currentrow = 0;
 
-    // Names of current sheet and row in data file.
-    protected $currentsheetname = 0;
-    protected $currentrowname = 0;
+    /** @var string name of current sheet in data file */
+    protected $currentsheetname = '';
+
+    /** @var string name of current row in data file */
+    protected $currentrowname = '';
 
     /**
      * constructor
@@ -113,7 +142,7 @@ class form extends \mod_vocab\toolform {
             }
         }
 
-        // check for new PhpExcel (Moodle >= 3.8)
+        // Check for new PhpExcel (Moodle >= 3.8).
         $this->phpspreadsheet = file_exists($CFG->dirroot.'/lib/phpspreadsheet');
         parent::__construct($action, $customdata, $method, $target, $attributes, $editable);
     }
@@ -160,7 +189,7 @@ class form extends \mod_vocab\toolform {
     public function definition_upload($mform) {
 
         $name = 'datafile';
-        $params = ['.xlsx', '.xls', '.ods']; // , '.csv', '.txt'
+        $params = ['.xlsx', '.xls', '.ods']; // Could also offer '.csv', '.txt'.
         $params = ['required' => 1, 'accepted_types' => $params];
         $this->add_field_filepicker($mform, $name, null, $params);
 
@@ -185,7 +214,7 @@ class form extends \mod_vocab\toolform {
      */
     public function definition_preview($mform) {
 
-        // transfer values from "upload" form
+        // Transfer values from "upload" form.
         $values = [
             'datafile' => PARAM_INT,
             'formatfile' => PARAM_INT,
@@ -325,34 +354,11 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function validation($data, $files) {
-        global $USER;
 
-        if ($errors = parent::validation($data, $files)) {
-            return $errors;
-        }
+        $errors = parent::validation($data, $files)
 
-        /*****************************\
-        $usercontext = \context_user::instance($USER->id);
-
-        $fs = get_file_storage();
-        $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $data['datafile'], 'id', false);
-
-        if ($files) {
-            $errors['datafile'] = get_string('required');
-            return $errors;
-        } else {
-            $file = reset($files);
-            if ($file->get_mimetype() != 'application/zip') {
-                $errors['datafile'] = get_string('invalidfiletype', 'error', $file->get_filename());
-                // better delete current file, it is not usable anyway
-                $fs->delete_area_files($usercontext->id, 'user', 'draft', $data['datafile']);
-            } else {
-                if (!$chpterfiles = toolvocab_import_get_chapter_files($file, $data['type'])) {
-                    $errors['datafile'] = $this->get_string('errornochapters');
-                }
-            }
-        }
-        \*****************************/
+        // For an example of what to do if expected files are missing,
+        // see mod/book/tool/importhtml/import_form.php.
 
         return $errors;
     }
@@ -368,13 +374,13 @@ class form extends \mod_vocab\toolform {
     public function render_data_table() {
         global $CFG, $USER;
 
-        // get the path to main PHPExcel file and object
+        // Get the path to main PHPExcel file and object.
         if ($this->phpspreadsheet) {
-            // Moodle >= 3.8
+            // Moodle >= 3.8.
             $filepath = $CFG->dirroot.'/lib/phpspreadsheet/vendor/autoload.php';
             $iofactory = '\\PhpOffice\\PhpSpreadsheet\\IOFactory';
         } else {
-            // Moodle 2.5 - 3.7
+            // Moodle 2.5 - 3.7.
             $filepath = $CFG->dirroot.'/lib/phpexcel/PHPExcel/IOFactory.php';
             $iofactory = 'PHPExcel_IOFactory';
         }
@@ -520,12 +526,13 @@ class form extends \mod_vocab\toolform {
     public function parse_format_xml($formatfilecontent, $xmlroot) {
         global $CFG;
 
-        // get XML parsing library
+        // Get XML parsing library.
         require_once($CFG->dirroot.'/lib/xmlize.php');
 
         if (empty($formatfilecontent)) {
+            // This shoujldn't happen. We could return an error
+            // message such as $this->get_string('emptyxmlfile').
             return null;
-            // return $this->get_string('emptyxmlfile');
         }
 
         $xml = xmlize($formatfilecontent);
@@ -657,11 +664,10 @@ class form extends \mod_vocab\toolform {
      */
     public function parse_format_xml_records(&$xml, $format) {
 
-        // initialize the index on records in the $format object.
+        // Initialize the index on records in the $format object.
         $rindex = count($format->records);
 
-        // Add records.
-        // Add record items
+        // Add records and record items.
         $record = &$xml['#']['record'];
         $r = 0;
         while (array_key_exists($r, $record)) {
@@ -707,9 +713,9 @@ class form extends \mod_vocab\toolform {
     public function create_format_xml($workbook, $datafilename) {
         $nl = "\n";
         $tab = str_repeat(' ', 4);
-        $i = 1; // indent counter
+        $i = 1; // The indent counter.
 
-        $coffset = ($this->phpspreadsheet ? 1 : 0); // column offset
+        $coffset = ($this->phpspreadsheet ? 1 : 0); // The column offset.
 
         $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'.$nl;
         $xml .= '<datafileformat type="'.$this->get_format_type($datafilename).'">'.$nl;
@@ -718,7 +724,7 @@ class form extends \mod_vocab\toolform {
         $xml .= str_repeat($tab, $i).$this->get_comment('explainsettings').$nl;
         $xml .= str_repeat($tab, $i++).'<settings>'.$nl;
 
-        // Set default form settings
+        // Set default form settings.
         $setting = (object)[
             'name' => 'uploadaction',
             'value' => self::ACTION_ADD_AND_UPDATE,
@@ -765,20 +771,28 @@ class form extends \mod_vocab\toolform {
 
                 if ($cmin < $cmax) {
                     $comment = $this->get_comment('explainstartend', 'row');
+
                     $xmlmetarow .= $nl.
                                    str_repeat($tab, $i).$comment.$nl.
                                    str_repeat($tab, $i).'<row start="'.$r.'" end="'.$r.'">'.$nl;
+
                     $xmldatarow .= $nl.
                                    str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i++).'<row start="'.($r + 1).'" end="'.$rmax.'">'.$nl;
+                                   str_repeat($tab, $i).'<row start="'.($r + 1).'" end="'.$rmax.'">'.$nl;
+                    $i++;
 
                     $comment = $this->get_comment('explainstartend', 'column');
+
+                    $tag = '<cells type="meta" start="'.($cmin + $coffset).'" end="'.($cmax + $coffset).'">';
                     $xmlmetarow .= $nl.
                                    str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i).'<cells type="meta" start="'.($cmin + $coffset).'" end="'.($cmax + $coffset).'">'.$nl;
+                                   str_repeat($tab, $i).$tag.$nl;
+
+                    $tag = '<cells type="data" start="'.($cmin + $coffset).'" end="'.($cmax + $coffset).'">';
                     $xmldatarow .= $nl.
                                    str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i++).'<cells type="data" start="'.($cmin + $coffset).'" end="'.($cmax + $coffset).'">'.$nl;
+                                   str_repeat($tab, $i).$tag.$nl;
+                    $i++;
 
                     $cells = [];
                     for ($c = $cmin; $c <= $cmax; $c++) {
@@ -794,7 +808,7 @@ class form extends \mod_vocab\toolform {
                     $xmlmetarow .= str_repeat($tab, --$i).'</row>'.$nl;
                     $xmldatarow .= str_repeat($tab, $i).'</row>'.$nl;
 
-                    break; // stop looping through the rows
+                    break; // Stop looping through the rows.
                 }
             }
 
@@ -969,6 +983,14 @@ class form extends \mod_vocab\toolform {
 
     /**
      * render_caption
+     *
+     * @param string $datafilename
+     * @param integer $totalsheets
+     * @param integer $totalrows
+     * @param string $formatfilename
+     * @param integer $targetsheets
+     * @param integer $targetrows
+     * @return HTML list of items to show in the table caption
      */
     public function render_caption($datafilename, $totalsheets, $totalrows,
                                    $formatfilename, $targetsheets, $targetrows) {
@@ -986,7 +1008,7 @@ class form extends \mod_vocab\toolform {
             'rowcount' => $this->number_format($targetrows),
         ]);
 
-        // 'upload', 'preview', 'review', 'import'
+        // Possible formstates are upload, preview, review and import.
         switch ($this->formstate) {
             case 'preview':
                 $name = 'headingsandpreviewrows';
@@ -1038,7 +1060,7 @@ class form extends \mod_vocab\toolform {
      */
     public function populate_preview_table($workbook, $format, $table) {
 
-        // override form defaults with settings from $format file
+        // Override the form defaults with settings from $format file.
         if (isset($format->settings)) {
             $mform = $this->_form;
             foreach ($format->settings as $name => $value) {
@@ -1108,14 +1130,14 @@ class form extends \mod_vocab\toolform {
      */
     public function populate_import_table($workbook, $format, $table, $mode=self::MODE_IMPORT) {
 
-        // Cache frequently used strings:
+        // Cache frequently used strings.
         $str = (object)[
             'sheet' => $this->get_string('sheet'),
             'row' => $this->get_string('row'),
         ];
 
-        // Initialize the row index (number of rows processed so far in all sheets).
-        // and sheetindex (number of sheets processed, inluding skipped sheets)
+        // Initialize the row index (number of rows processed so far in all sheets)
+        // and sheetindex (number of sheets processed, inluding skipped sheets).
         $rowindex = 0;
         $sheetindex = 0;
 
@@ -1130,7 +1152,8 @@ class form extends \mod_vocab\toolform {
         // Set limit for number of preview rows (0 means "no limit").
         if ($mode == self::MODE_IMPORT) {
             $previewrows = 0;
-        } else { // self::MODE_DRYRUN
+        } else {
+            // All other values in including self::MODE_DRYRUN.
             $previewrows = $this->get_previewrows();
         }
 
@@ -1160,7 +1183,7 @@ class form extends \mod_vocab\toolform {
 
         if ($mode == self::MODE_IMPORT) {
             $bar = new \progress_bar('vocabtool_import_pbar', 500, true);
-            // see "lib/outputcomponents.php" for details
+            // See "lib/outputcomponents.php" for details.
         } else {
             $bar = false;
         }
@@ -1191,7 +1214,7 @@ class form extends \mod_vocab\toolform {
                     // Loop through the rows in this $row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
 
-                        // increment row index and update progress bar.
+                        // Increment the row index and update progress bar.
                         $rowindex++;
                         if ($bar) {
                             $msg = "{$str->sheet}: $s, ".
@@ -1271,7 +1294,7 @@ class form extends \mod_vocab\toolform {
             $bar->update_full(100, $msg);
         }
 
-        // add field name and descriptions to header row
+        // Add field name and descriptions to header row.
         if (empty($table->head) && count($table->data)) {
             $table->head = $this->report_totals_head($headers);
         }
@@ -1321,7 +1344,7 @@ class form extends \mod_vocab\toolform {
     public function skip_row($row, &$vars, &$tableinfo, &$rowvars) {
 
         if (empty(array_filter($rowvars))) {
-            return true; // empty row - shouldn't happen !!
+            return true; // An empty row - shouldn't happen !!
         }
 
         $names = ['skip', 'skiprow', 'rowskip'];
@@ -1347,9 +1370,9 @@ class form extends \mod_vocab\toolform {
             $labelsep = get_string('labelsep', 'langconfig');
             return $this->currentsheet.$labelsep.$this->currentrow;
         } else {
-            $rowname = $row->settings[$name]; // e.g. VALUE(word)
+            $rowname = $row->settings[$name]; // E.g. VALUE(word).
             $rowname = $this->format_field($tableinfo, $name, $rowname, $vars, 'ROW');
-            return trim($rowname, ' "'); // trim leading and trailing quotes.
+            return trim($rowname, ' "'); // Trim leading and trailing quotes.
         }
     }
 
@@ -1362,7 +1385,7 @@ class form extends \mod_vocab\toolform {
 
         // We only allow this tool access
         // to the following "vocab" tables,
-        // which together form the "dictionary":
+        // which together form the "dictionary".
         $dictionarytables = [
             'vocab_antonyms',
             'vocab_corpuses',
@@ -1385,12 +1408,12 @@ class form extends \mod_vocab\toolform {
         // interaction with the dictionary data.
         // vocab_ai_(access|prompt)
         // vocab_game_(attempts|instances)
-        // vocab_word_(attempts|instances|usages)
+        // vocab_word_(attempts|instances|usages).
         $usertables = [
             'vocab',
             'vocab_ai_access',
             'vocab_ai_prompt',
-            'vocab_games', // not needed?
+            'vocab_games', // Not needed?
             'vocab_game_attempts',
             'vocab_game_instances',
             'vocab_word_attempts',
@@ -1430,7 +1453,7 @@ class form extends \mod_vocab\toolform {
             foreach ($sheet->rows as $row) {
                 foreach ($row->records as $record) {
                     if (array_key_exists($record->table, $this->totals->tables)) {
-                        continue; // already added
+                        continue; // Table has already been added, so skip it.
                     }
                     $this->totals->tables[$record->table] = (object)[
                         'name' => $this->get_string($record->table),
@@ -1636,7 +1659,7 @@ class form extends \mod_vocab\toolform {
                     unset($table->data[$r][$c]);
                 }
 
-                // decrement column index, as this column no longer exists.
+                // Decrement the column index, as this column no longer exists.
                 $c--;
             }
             $c++;
@@ -1786,13 +1809,13 @@ class form extends \mod_vocab\toolform {
                 $this->$name = array_map('trim', $this->$name);
                 $this->$name = array_filter($this->$name);
             } else {
-                $this->$name = []; // shouldn't happen !!
+                $this->$name = []; // Shouldn't happen !!
             }
         }
         if (strpos($value, 'storeKey') === false) {
             return in_array($value, $this->ignorevalues);
         } else {
-            return true; // always remove "storeKey" values.
+            return true; // Always remove "storeKey" values.
         }
     }
 
@@ -1846,7 +1869,7 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     protected function get_cell_value($worksheet, $c, $r) {
-        $coffset = ($this->phpspreadsheet ? 1 : 0); // column offset
+        $coffset = ($this->phpspreadsheet ? 1 : 0); // The column offset.
         $value = $worksheet->getCellByColumnAndRow($c + $coffset, $r)->getFormattedValue();
         return ($this->ignore_value($value) ? '' : $value);
     }
@@ -1880,10 +1903,10 @@ class form extends \mod_vocab\toolform {
      */
     public function format_field(&$tableinfo, $fieldname, $value, &$vars, $aliastype) {
 
-        // These are the functions that we know about:
+        // These are the functions that we know about.
         $search = '/EMPTY|IDS|ID|VALUE|JOIN|SPLIT|NEWLINE|REPLACE|SUBSTRING|LOWERCASE|PROPERCASE|UPPERCASE/u';
 
-        // search and replace function names (starting from the rightmost one)
+        // Search for, and replace function names (starting from the rightmost one).
         if (preg_match_all($search, $value, $matches, PREG_OFFSET_CAPTURE)) {
 
             for ($m = count($matches[0]); $m > 0; $m--) {
@@ -1891,6 +1914,7 @@ class form extends \mod_vocab\toolform {
                 list($match, $start) = $matches[0][$m - 1];
 
                 $mode = 0;
+                // The possible values for $mode are:
                 // 0: find open parentheses
                 // 1: find start argument
                 // 2: find end unquoted argument
@@ -1900,7 +1924,7 @@ class form extends \mod_vocab\toolform {
                 // 6: error !!
 
                 $args = [];
-                $a = -1; // index on $args
+                $a = -1; // The index on $args.
 
                 $imax = strlen($value);
                 $i = ($start + strlen($match));
@@ -1908,14 +1932,14 @@ class form extends \mod_vocab\toolform {
                     switch ($mode) {
 
                         case 0:
-                            // expecting opening parenthesis
+                            // Expecting opening parenthesis.
                             switch ($value[$i]) {
 
-                                // leading white space is ignored
+                                // Leading white space is ignored.
                                 case ' ':
                                     break;
 
-                                // opening parenthesis - yay!
+                                // Opening parenthesis - yay!
                                 case '(':
                                     $mode = 1;
                                     break;
@@ -1927,10 +1951,10 @@ class form extends \mod_vocab\toolform {
                             break;
 
                         case 1:
-                            // expecting start of argument
+                            // Expecting the start of an argument.
                             switch ($value[$i]) {
 
-                                // leading white space is ignored
+                                // Leading white space is ignored.
                                 case ' ':
                                     break;
 
@@ -1939,19 +1963,19 @@ class form extends \mod_vocab\toolform {
                                     $args = "Comma not expected parsing $match";
                                     break;
 
-                                // closing parenthesis (i.e. end of arguments)
+                                // A closing parenthesis (i.e. end of arguments).
                                 case ')':
                                     $mode = 5;
                                     break;
 
-                                // start of a quoted quoted argument
+                                // The start of a quoted quoted argument.
                                 case '"':
                                     $a++;
                                     $args[$a] = '';
                                     $mode = 3;
                                     break;
 
-                                // first char of an unquoted argument
+                                // The first char of an unquoted argument.
                                 default:
                                     $a++;
                                     $args[$a] = $value[$i];
@@ -1960,7 +1984,7 @@ class form extends \mod_vocab\toolform {
                             break;
 
                         case 2:
-                            // expecting end of unquoted argument
+                            // Expecting the end of an unquoted argument.
                             switch ($value[$i]) {
                                 case ',':
                                     $mode = 1;
@@ -1971,13 +1995,13 @@ class form extends \mod_vocab\toolform {
                                     break;
 
                                 default:
-                                    // next char of an unquoted argument
+                                    // The next char of an unquoted argument.
                                     $args[$a] .= $value[$i];
                             }
                             break;
 
                         case 3:
-                            // expecting end of quoted argument
+                            // Expecting the end of a quoted argument.
                             switch ($value[$i]) {
                                 case '\\':
                                     // The backslash signifies an escaped character.
@@ -1987,18 +2011,18 @@ class form extends \mod_vocab\toolform {
                                     break;
 
                                 case '"':
-                                    // end of quoted string
+                                    // The end of a quoted string.
                                     $mode = 4;
                                     break;
 
                                 default:
-                                    // next char of an quoted argument
+                                    // The next char of an quoted argument.
                                     $args[$a] .= $value[$i];
                             }
                             break;
 
                         case 4:
-                            // expecting comma or closing parenthesis
+                            // Expecting a comma or closing parenthesis.
                             switch ($value[$i]) {
                                 case ' ':
                                     break;
@@ -2018,10 +2042,10 @@ class form extends \mod_vocab\toolform {
                             break;
                     }
                     $i++;
-                } // end while
+                } // End while.
 
                 if ($mode == 6) {
-                    $replace = $args; // error message
+                    $replace = $args; // An error message.
                 } else {
                     $replace = $this->format_function($tableinfo, $match, $args, $vars);
                     if (is_array($replace)) {
@@ -2030,15 +2054,15 @@ class form extends \mod_vocab\toolform {
                         } else if (count($replace) == 1) {
                             $replace = reset($replace);
                         } else {
-                            // e.g. the result of SPLIT(";", "happy; joyful; merry")
+                            // E.g. the result of SPLIT(";", "happy; joyful; merry").
                             $replace = $this->get_value_alias($replace, $aliastype);
                         }
                     }
                 }
                 $value = substr_replace($value, $replace, $start, ($i - $start));
 
-            } // end for ($m ...; $m--)
-        } // end if (preg_match_all(...))
+            } // End for $m.
+        } // End if preg_match_all.
 
         return $value;
     }
@@ -2053,7 +2077,7 @@ class form extends \mod_vocab\toolform {
      */
     protected function get_value_alias($value, $aliastype) {
         $aliasname = 'ALIAS_'.$aliastype.'_';
-        $aliasname .= count($this->aliases); // unique id.
+        $aliasname .= count($this->aliases); // A unique id.
         $this->aliases[$aliasname] = $value;
         return $aliasname;
     }
@@ -2137,7 +2161,8 @@ class form extends \mod_vocab\toolform {
         switch ($functionname) {
 
             case 'EMPTY':
-                // Argument is empty (or missing).
+
+                // Is argument is empty (or missing)?
                 if (empty($args[0])) {
                     return true;
                 }
@@ -2148,8 +2173,9 @@ class form extends \mod_vocab\toolform {
                 // Argument is not empty.
                 return false;
 
-            case 'IDS': // (table, field1, values1, field2, values2, ...)
+            case 'IDS':
 
+                // Expected syntax is (table, field1, values1, field2, values2, ...).
                 $table = (isset($args[0]) ? $args[0] : '');
                 if (empty($table) || ! is_string($table)) {
                     return [];
@@ -2190,8 +2216,9 @@ class form extends \mod_vocab\toolform {
                 }
                 return $ids;
 
-            case 'ID': // (table, field1, value1, ...)
+            case 'ID':
 
+                // Expected syntax is (table, field1, value1, ...).
                 $table = (isset($args[0]) ? $args[0] : '');
                 if (empty($table) || ! is_string($table)) {
                     return '';
@@ -2214,7 +2241,9 @@ class form extends \mod_vocab\toolform {
                 }
                 return $this->get_record_ids($tableinfo, $table, $params);
 
-            case 'VALUE': // (name, default='')
+            case 'VALUE':
+
+                // Expected syntax is (name, default).
                 if (array_key_exists(0, $args) && is_string($args[0])) {
                     $value = $args[0];
                     if (array_key_exists($value, $vars)) {
@@ -2232,7 +2261,9 @@ class form extends \mod_vocab\toolform {
                 }
                 return '"'.addslashes($value).'"';
 
-            case 'JOIN': // (joiner, string)
+            case 'JOIN':
+
+                // Expected syntax is (joiner, string).
                 if (array_key_exists(0, $args) && is_string($args[0])) {
                     if (array_key_exists(1, $args) && is_string($args[1])) {
                         return implode($args[0], $args[1]);
@@ -2240,11 +2271,12 @@ class form extends \mod_vocab\toolform {
                 }
                 return [];
 
-            case 'SPLIT': // (separator, string)
+            case 'SPLIT':
+                // Expected syntax is (separator, string).
                 if (array_key_exists(0, $args) && is_string($args[0])) {
                     if (array_key_exists(1, $args) && is_string($args[1])) {
-                        // In case we have more than one array, we could append them to the values.
-                        // $values = implode($args[0], array_slice($args, 1));
+                        // In case we have more than one array, we could append them to the values
+                        // using something like $values = implode($args[0], array_slice($args, 1)).
                         $values = explode($args[0], $args[1]);
                         $values = array_map('trim', $values);
                         $values = array_filter($values);
@@ -2256,7 +2288,7 @@ class form extends \mod_vocab\toolform {
             case 'NEWLINE':
                 return "\n";
 
-            case 'REPLACE': // (string, search1, replace1, ...)
+            case 'REPLACE': // Expecting (string, search1, replace1, ...).
                 $i = 1;
                 $params = [];
                 while (array_key_exists($i, $args) && array_key_exists($i + 1, $args)) {
@@ -2269,8 +2301,8 @@ class form extends \mod_vocab\toolform {
 
             case 'SUBSTRING':
                 switch (count($args)) {
-                    case 0: $args[0] = ''; // intentional drop through
-                    case 1: $args[1] = 1; // intentional drop through
+                    case 0: $args[0] = ''; // An intentional drop through.
+                    case 1: $args[1] = 1; // An intentional drop through.
                     case 2: $args[2] = core_text::strlen($args[0]);
                 }
                 return core_text::substr($args[0], $args[1] - 1, $args[2]);
@@ -2327,7 +2359,7 @@ class form extends \mod_vocab\toolform {
             // Convert aliases to non-scalar values (e.g. arrays).
             $this->get_alias_values($fields);
 
-            // skip rows with empty fields.
+            // Skip rows with empty fields.
             if (in_array('', $fields, true)) {
                 continue;
             }
@@ -2345,6 +2377,7 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function get_record_ids(&$tableinfo, $table, &$fields) {
+        $debug = false;
 
         if (! array_key_exists($table, $tableinfo)) {
             throw new \moodle_exception('tableaccessnotallowed', $this->subpluginname, '', $table);
@@ -2359,12 +2392,14 @@ class form extends \mod_vocab\toolform {
                 throw new \moodle_exception('fieldaccessnotallowed', $this->subpluginname, '', $a);
             }
             if (empty($value) || $value === '0') {
-                $a = (object)[
-                    'tablename' => $table,
-                    'fieldname' => $name,
-                ];
+                if ($debug) {
+                    $a = (object)[
+                        'tablename' => $table,
+                        'fieldname' => $name,
+                    ];
+                    throw new \moodle_exception('idparametermissing', $this->subpluginname, '', $a);
+                }
                 unset($fields[$name]);
-                // throw new \moodle_exception('idparametermissing', $this->subpluginname, '', $a);
             }
         }
 
@@ -2467,11 +2502,11 @@ class form extends \mod_vocab\toolform {
                 continue;
             }
             if (empty($column->not_null)) {
-                // e.g. vocab_pronunciations.fieldid
+                // E.g. vocab_pronunciations.fieldid.
                 continue;
             }
             // We don't need to report all of these.
-            // e.g. vocab_synonyms.synonymwordid
+            // E.g. vocab_synonyms.synonymwordid.
             if (substr($name, -2) == 'id' && empty($fields[$name])) {
                 $msg = get_string('missingfield', 'error', $name);
                 $this->update_totals($table, 'error', $msg);
@@ -2486,7 +2521,7 @@ class form extends \mod_vocab\toolform {
                 $column = $columns[$name];
                 switch ($column->meta_type) {
 
-                    // lib/dml/database_column_info.php
+                    // See lib/dml/database_column_info.php
                     // R - counter (integer primary key)
                     // I - integers
                     // N - numbers (floats)
@@ -2495,7 +2530,7 @@ class form extends \mod_vocab\toolform {
                     // B - binary blobs
                     // L - boolean (1 bit)
                     // T - timestamp - unsupported
-                    // D - date - unsupported
+                    // D - date - unsupported !!
 
                     case 'C':
                     case 'X':
@@ -2503,7 +2538,7 @@ class form extends \mod_vocab\toolform {
                         $length = \core_text::strlen($value);
                         if ($length > $maxlength) {
                             // Shorten the string, at a word boundary if possible,
-                            // but with no trailing string. ("lib/moodlelib.php")
+                            // but with no trailing string. ("lib/moodlelib.php").
                             $fields[$name] = shorten_text($value, $maxlength, false, '');
                             $msg = $this->get_string('valueshortened', (object)[
                                 'fieldname' => $name,
@@ -2542,15 +2577,15 @@ class form extends \mod_vocab\toolform {
             $this->punctuation = [
                 /* 00D7 */ '×' => '*',
 
-                // "General Punctuation"
-                // https://0g0.org/category/2000-206F/1/
+                // General Punctuation characters
+                // https://0g0.org/category/2000-206F/1/ .
                 /* 2014 */ '—' => '-', '‖' => '|', /* 2016 */
                 /* 2018 */ '‘' => "'", '’' => "'", /* 2019 */
                 /* 201C */ '“' => '"', '”' => '"', /* 201D */
                 /* 2026 */ '…' => '-',
 
-                // "CJK Symbols and Punctuation" 3000-303F
-                // https://0g0.org/category/3000-303F/1/
+                // CJK Symbols and Punctuation 3000-303F
+                // https://0g0.org/category/3000-303F/1/ .
                 /* 3000 */ '　' => ' ', '、' => ',', /* 3001 */
                 /* 3002 */ '。' => '.', '〃' => '"', /* 3003 */
                 /* 3007 */ '〇' => 'O',
@@ -2566,8 +2601,8 @@ class form extends \mod_vocab\toolform {
                 /* 301C */ '〜' => '~', '〝' => '"', /* 301D */
                 /* 301E */ '〞' => '"', '〟' => '"', /* 301F */
 
-                // "Halfwidth and Fullwidth Forms" FF00-FFEF
-                // https://0g0.org/category/FF00-FFEF/1/
+                // Halfwidth and Fullwidth Forms FF00-FFEF
+                // https://0g0.org/category/FF00-FFEF/1/ .
                 /* FF01 */ '！' => '!', '＂' => '"', /* FF02 */
                 /* FF03 */ '＃' => '#', '＄' => '$', /* FF04 */
                 /* FF05 */ '％' => '%', '＆' => '&', /* FF06 */

@@ -31,10 +31,10 @@ require_capability('moodle/site:config', context_system::instance());
 
 $vocab = \mod_vocab\activity::create();
 
-// set page url
+// Set the page url.
 $PAGE->set_url(new moodle_url('/mod/vocab/redo.php'));
 
-// set page title
+// Set the page title.
 $title = get_string('pluginname', 'mod_vocab');
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
@@ -46,11 +46,12 @@ $renderer->attach_activity($vocab);
 echo $renderer->header();
 echo $renderer->box_start();
 
-$dateformat = 'jS M Y'; // for date() function
+// Define the format string for the date() function.
+$dateformat = 'jS M Y';
 
 if ($version = optional_param('version', 0, PARAM_INT)) {
 
-    // format version
+    // Format the plugin version.
     if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})/', "$version", $match)) {
         $yy = $match[1];
         $mm = $match[2];
@@ -58,37 +59,37 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
         $vv = intval($match[4]);
         $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).($vv == 0 ? '' : " ($vv)");
     } else {
-        $text = ''; // shouldn't happen !!
+        $text = ''; // Shouldn't happen !!
     }
 
-    // reset the plugin version
+    // Reset the plugin version.
     $dbman = $DB->get_manager();
     if ($dbman->table_exists('config_plugins')) {
-        // Moodle >= 2.6
+        // This table is available in Moodle >= 2.6.
         $params = ['plugin' => 'mod_vocab', 'name' => 'version'];
         $DB->set_field('config_plugins', 'value', $version - 1, $params);
-        // force Moodle to refetch versions
+        // Force Moodle to refetch versions.
         if (isset($CFG->allversionshash)) {
             unset_config('allversionshash');
         }
     }
 
-    // report
+    // Inform user that module version has been reset.
     echo html_writer::tag('p', "Vocab activity module version set to just before $version - $text");
 
-    // link to upgrade page
+    // Add a link to the upgrade page.
     $href = new moodle_url('/admin/index.php', ['confirmplugincheck' => 1, 'cache' => 0]);
     echo html_writer::tag('p', html_writer::tag('a', 'Click here to continue', ['href' => $href]));
 
-} else { // no $version given, so offer a form to select $version
+} else { // No $version given, so offer a form to select $version.
 
-    // start form
+    // Start the form.
     echo html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
     echo html_writer::start_tag('div');
 
     $versions = [];
 
-    // extract and format the current version
+    // Extract and format the current version.
     $contents = file_get_contents($CFG->dirroot.'/mod/vocab/version.php');
     if (preg_match('/^\$plugin->version *= *(\d{4})(\d{2})(\d{2})(\d{2});/m', $contents, $matches)) {
         $yy = $matches[1];
@@ -99,7 +100,7 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
         $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
     }
 
-    // extract and format versions from upgrade script
+    // Extract and format versions from the upgrade script.
     $contents = file_get_contents($CFG->dirroot.'/mod/vocab/db/upgrade.php');
     preg_match_all('/(?<=\$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
     $imax = count($matches[0]);
@@ -113,11 +114,11 @@ if ($version = optional_param('version', 0, PARAM_INT)) {
     }
     krsort($versions);
 
-    // add form elements
+    // Add the form elements.
     echo get_string('version').' '.html_writer::select($versions, 'version').' ';
     echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
 
-    // finish form
+    // Finish the form.
     echo html_writer::end_tag('div');
     echo html_writer::end_tag('form');
 }

@@ -49,6 +49,17 @@ abstract class subpluginform extends \moodleform {
      */
     public $subpluginname = '';
 
+    /**
+     * The constructor function for vocab subpluginform class.
+     *
+     * @param mixed $action the action attribute for the form.
+     * @param mixed $customdata if your form definition method needs access to other data.
+     * @param string $method "post" or "get".
+     * @param string $target target frame for form submission.
+     * @param mixed $attributes you can pass a string of html attributes here or an array.
+     * @param bool $editable
+     * @param array $ajaxformdata Forms submitted via ajax, must pass their data here.
+     */
     public function __construct($action=null, $customdata=null, $method='post',
                                 $target='', $attributes=null, $editable=true,
                                 $ajaxformdata=null) {
@@ -140,9 +151,10 @@ abstract class subpluginform extends \moodleform {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 if (is_numeric($attributes)) {
+                    // A single number is assumed to be the 'size'.
                     $attributes = ['size' => $attributes];
                 } else {
-                    // e.g. 'disabled'
+                    // An on/off attribute e.g. 'disabled'.
                     $attributes = [$attributes => $attributes];
                 }
             }
@@ -193,7 +205,7 @@ abstract class subpluginform extends \moodleform {
     public function add_field_select($mform, $name, $options, $type, $default, $attributes=null) {
         if ($attributes) {
             if (is_scalar($attributes)) {
-                // e.g. 'disabled' or 'multiple'
+                // An on/off attribute e.g. 'disabled' or 'multiple'.
                 $attributes = [$attributes => $attributes];
             }
             if (array_key_exists('multiple', $attributes)) {

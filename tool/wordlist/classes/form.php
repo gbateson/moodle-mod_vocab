@@ -26,8 +26,6 @@
 
 namespace vocabtool_wordlist;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * form
  *
@@ -57,9 +55,9 @@ class form extends \mod_vocab\toolform {
         // operation will be done first. If we use "&&", we need to add parentheses
         // around the "=" expression because "&&" has higher precendence than "=".
         // https://www.php.net/manual/en/language.operators.precedence.php.
-        if ($data = data_submitted() and confirm_sesskey()) {
+        if (($data = data_submitted()) && confirm_sesskey()) {
 
-            // element name => type of associated value
+            // Map element name => type of associated value.
             $names = [
                 'addwords' => PARAM_TEXT,
                 'selectwords' => PARAM_INT,
@@ -121,7 +119,8 @@ class form extends \mod_vocab\toolform {
         $name = 'importfile';
         $groupname = $name.'elements';
         $label = $this->get_string($name);
-        $options = ['accepted_types' => ['.txt', '.xml']]; // '.csv', '.xlsx', '.xls', '.ods'
+        $options = ['accepted_types' => ['.txt', '.xml']];
+        // Perhaps we could also consider csv, xlsx, xls, ods?
         $elements = [
             $mform->createElement('filepicker', $name, $label, '', $options),
             $mform->createElement('submit', $name.'button', $this->get_string('import')),
@@ -287,7 +286,7 @@ class form extends \mod_vocab\toolform {
         $select = 'vw.id, vw.word';
         $from = '{vocab_words} vw, {vocab_lemmas} vl';
         if (count($words)) {
-            // Get SQL for "<>" or "NOT IN (...)"
+            // Get SQL for "<>" or "NOT IN (...)".
             list($where, $params) = $DB->get_in_or_equal($words, SQL_PARAMS_QM, 'param', false);
             $where = "vw.id $where";
         } else {

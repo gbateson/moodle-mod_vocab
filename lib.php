@@ -24,8 +24,6 @@
  * @since      Moodle 3.11
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Specifies which Moodle features this plugin supports.
  * (for a full list of features, see "lib/moodlelib.php")
@@ -35,33 +33,33 @@ defined('MOODLE_INTERNAL') || die();
  * @todo Finish documenting this function
  */
 function vocab_supports($feature) {
-    // these constants are defined in "lib/moodlelib.php"
+    // These constants are defined in "lib/moodlelib.php".
     $constants = [
         'FEATURE_ADVANCED_GRADING' => false,
-        'FEATURE_BACKUP_MOODLE2' => true, // default=false
+        'FEATURE_BACKUP_MOODLE2' => true, // Default is FALSE.
         'FEATURE_COMMENT' => true,
         'FEATURE_COMPLETION_HAS_RULES' => true,
         'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
         'FEATURE_CONTROLS_GRADE_VISIBILITY' => false,
-        'FEATURE_GRADE_HAS_GRADE' => true, // default=false
+        'FEATURE_GRADE_HAS_GRADE' => true, // Default is FALSE.
         'FEATURE_GRADE_OUTCOMES' => true,
-        'FEATURE_GROUPINGS' => true, // default=false
-        'FEATURE_GROUPMEMBERSONLY' => true, // default=false
+        'FEATURE_GROUPINGS' => true, // Default is FALSE.
+        'FEATURE_GROUPMEMBERSONLY' => true, // Default is FALSE.
         'FEATURE_GROUPS' => true,
-        'FEATURE_IDNUMBER' => true, // Moodle >= 2.0
+        'FEATURE_IDNUMBER' => true, // Available in Moodle >= 2.0.
         'FEATURE_MOD_INTRO' => true,
         'FEATURE_MODEDIT_DEFAULT_COMPLETION' => true,
         'FEATURE_NO_VIEW_LINK' => false,
         'FEATURE_PLAGIARISM' => false,
         'FEATURE_RATE' => false,
-        'FEATURE_DESCRIPTION' => true, // default=false
+        'FEATURE_DESCRIPTION' => true, // Default is FALSE.
         'FEATURE_USES_QUESTIONS' => false,
     ];
     if (defined('MOD_ARCHETYPE_OTHER')) {
-        $constants['FEATURE_MOD_ARCHETYPE'] = MOD_ARCHETYPE_OTHER; // Moodle >= 2.x
+        $constants['FEATURE_MOD_ARCHETYPE'] = MOD_ARCHETYPE_OTHER; // Available in Moodle >= 2.x.
     }
     if (defined('MOD_PURPOSE_ASSESSMENT')) {
-        $constants['FEATURE_MOD_PURPOSE'] = MOD_PURPOSE_ASSESSMENT; // Moodle >= 4.x
+        $constants['FEATURE_MOD_PURPOSE'] = MOD_PURPOSE_ASSESSMENT; // Available in Moodle >= 4.x.
     }
     foreach ($constants as $constant => $value) {
         if (defined($constant) && $feature == constant($constant)) {
@@ -128,33 +126,36 @@ function vocab_update_instance($data, $mform) {
 function vocab_delete_instance($id) {
     global $DB;
 
-    if (! $vocab = $DB->get_record('vocab', array('id' => $id))) {
+    if (! $vocab = $DB->get_record('vocab', ['id' => $id])) {
         return false;
     }
 
     $cm = get_coursemodule_from_instance('vocab', $id);
     \core_completion\api::update_completion_date_event($cm->id, 'vocab', $id, null);
 
-    // delete related records first (using $params), then ...
+    // Delete related records first (using $params), then ...
     $DB->delete_records('vocab', ['id' => $vocab->id]);
 
 }
 
+
 /**
- * Extends the global navigation tree by adding vocab nodes if there is a relevant content.
+ * Adds module specific settings to the settings block
  *
- * This can be called by an AJAX request so do not rely on $PAGE as it might not be set up properly.
+ * This function is called when the context for the page is a vocab module.
+ * This is not called by AJAX so it is safe to rely on the $PAGE.
  *
- * "vocab_extend_navigation" is called by
- * "load_activity" in "lib/navigationlib.php"
+ * "vocab_extend_settings_navigation" is called by
+ * "load_module_settings" in "lib/navigationlib.php"
  *
- * @param navigation_node $vocabnode An object representing the navigation tree node of the vocab module instance
- * @param stdClass $course
- * @param stdClass $instance
- * @param cm_info $cm
+ * @param navigation_node $node An object representing the navigation tree node of the vocab module instance
+ * @param stdClass $course A record from the "course" table in the database.
+ * @param stdClass $vocab A record form the "vocab" table in the database.
+ * @param cm_info $cm An object representing the current Vocab course module.
+ * @return void (but may add items to $node)
  */
-// function vocab_extend_navigation(navigation_node $node, stdclass $course, stdclass $vocab, cm_info $cm) {
-// }
+function vocab_extend_navigation(navigation_node $node, stdClass $course, stdClass $vocab, cm_info $cm) {
+}
 
 /**
  * Adds module specific settings to the settings block
@@ -177,7 +178,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
 
         // Locate the "Edit settings" node by its key,
         // and use the key for the node AFTER that as
-        // the "beforekey" for the new nodes
+        // the "beforekey" for the new nodes.
         $keys = $vocabnode->get_children_key_list();
         $i = array_search('modedit', $keys);
         $i = ($i === false ? 0 : $i + 1);
@@ -187,7 +188,8 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
             $beforekey = null;
         }
 
-        // define the order of subplugins
+        // Define the order of subplugins. Other subplugins will
+        // be added alphabetically after the ones defined here.
         $types = [
             'report' => [],
             'game' => [],
@@ -198,7 +200,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
         foreach ($types as $type => $order) {
 
              // Create the "navigation_node" for this subplugin type.
-            $label = get_string($type.'s', 'vocab'); // e.g. "tools"
+            $label = get_string($type.'s', 'vocab'); // E.g. "tools".
             $node = navigation_node::create($label);
             $node->force_open();
 

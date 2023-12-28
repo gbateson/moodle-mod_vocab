@@ -26,8 +26,6 @@
 
 namespace vocabtool_questionbank;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * form
  *
@@ -42,8 +40,13 @@ class form extends \mod_vocab\toolform {
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_questionbank';
 
+    /** @var string internal value to represent creating no question subcategories */
     const SUBCAT_NONE = 'none';
+
+    /** @var string internal value to represent the creation of a "single" question subcategory */
     const SUBCAT_SINGLE = 'single';
+
+    /** @var string internal value to represent the "automatic" creation of question subcategories */
     const SUBCAT_AUTOMATIC = 'automatic';
 
     /**
@@ -114,7 +117,7 @@ class form extends \mod_vocab\toolform {
      * @todo Finish documenting this function
      */
     public function get_question_types() {
-        // ToDo: Maybe include: 'ordering', 'essayautograde', 'speakautograde', 'sassessment'
+        // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
         $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
         $types = \core_component::get_plugin_list('qtype');
         foreach ($types as $name => $dir) {
@@ -124,7 +127,7 @@ class form extends \mod_vocab\toolform {
                 unset($types[$name]);
             }
         }
-        asort($types); // sort alphabetically (maintain key association)
+        asort($types); // Sort alphabetically (maintain key association).
         return $types;
     }
 
@@ -171,7 +174,7 @@ class form extends \mod_vocab\toolform {
         // Extract the id of the default question category in this course.
         $defaultid = array_search($defaultname, $categories);
         if ($defaultid === false) {
-            $defaultid = 0; // shouldn't happen !!
+            $defaultid = 0; // Shouldn't happen !!
         }
 
         $name = 'parentcategory';
@@ -222,7 +225,7 @@ class form extends \mod_vocab\toolform {
 
         $courseid = $this->get_vocab()->course->id;
         $coursecontext = \context_course::instance($courseid);
-        $coursecategory = question_get_top_category($coursecontext->id, true); // create if necessary
+        $coursecategory = question_get_top_category($coursecontext->id, true); // Create if necessary.
 
         $categories = question_categorylist($coursecategory->id);
         list($select, $params) = $DB->get_in_or_equal($categories);
@@ -267,7 +270,7 @@ class form extends \mod_vocab\toolform {
         $mform->setDefault($cattype, self::SUBCAT_AUTOMATIC);
 
         $mform->setType($catname, PARAM_TEXT);
-        // $mform->setDefault($catname, '');
+        $mform->setDefault($catname, '');
         $mform->disabledIf($catname, $cattype, 'neq', 'single');
     }
 
@@ -317,11 +320,8 @@ class form extends \mod_vocab\toolform {
      */
     public function generate_questions() {
         global $DB;
-        // Use "and" here because it has lower precedence than "=", so the assignment
-        // operation will be done first. If we use "&&", we need to add parentheses
-        // around the "=" expression because "&&" has higher precendence than "=".
-        // https://www.php.net/manual/en/language.operators.precedence.php.
-        if ($data = data_submitted() and confirm_sesskey()) {
+
+        if (($data = data_submitted()) confirm_sesskey()) {
 
             $words = false;
             $qtypes = false;

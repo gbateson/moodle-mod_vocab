@@ -24,8 +24,6 @@
 
 namespace mod_vocab;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The base class for "tool" subplugins of the mod_vocab plugin.
  *

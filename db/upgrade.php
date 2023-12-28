@@ -24,8 +24,6 @@
  * @since      Moodle 3.11
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * xmldb_vocab_upgrade
  *
@@ -201,6 +199,10 @@ function xmldb_vocab_rename_tables($dbman, $tablenames) {
 function xmldb_vocab_check_structure($dbman, $tablenames=null) {
     global $CFG, $DB;
 
+    // To see what tables/fields/indexes were added/changed/dropped,
+    // set the $debug flag to TRUE during development of this script.
+    $debug = false;
+
     // The path (relative to $CFG->dirroot) to the main folder for this plugin.
     $plugindir = 'mod/vocab';
 
@@ -210,10 +212,12 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
     // The prefix for DB tables belonging to this plugin.
     $tableprefix = 'vocab';
 
-    // array [$pluginname => boolean] to cache whether or not we have checked all tables for this plugin
+    // Define array [$pluginname => boolean] to cache
+    // whether or not we have checked all tables for this plugin.
     static $checkedall = [];
 
-    // array [$pluginname => [$tablenames]] to cache which tables for this plugin have already been checked
+    // Define array [$pluginname => [$tablenames]] to cache
+    // which tables for this plugin have already been checked.
     static $checked = [];
 
     // If this is the frst time to check any tables for this plugin,
@@ -349,22 +353,25 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
 
             switch (true) {
 
-                // Moodle <= 2.7 uses "Table"
-                // Moodle >= 2.8 uses "table"
+                // Moodle <= 2.7 uses "Table".
+                // Moodle >= 2.8 uses "table".
                 case preg_match('/[Tt]able is missing/', $message):
                     $dbman->create_table($table);
-                    // echo "Table $tablename was created<br>";
+                    if ($debug) {
+                        echo "Table $tablename was created<br>";
+                    }
                     break;
 
-                // Moodle <= 2.7 uses "Table"
-                // Moodle >= 2.8 uses "table"
+                // Moodle <= 2.7 uses "Table".
+                // Moodle >= 2.8 uses "table".
                 case preg_match('/[Tt]able is not expected/', $message):
                     $dbman->drop_table($table);
-                    // echo "Table $tablename was dropped<br>";
+                    if ($debug) {
+                        echo "Table $tablename was dropped<br>".
+                    }
                     break;
-
-                // Moodle <= 2.7 uses "Field"
-                // Moodle >= 2.8 uses "column"
+                // Moodle <= 2.7 uses "Field".
+                // Moodle >= 2.8 uses "column".
                 case preg_match('/(Field|column) (.*?) (.*)/', $message, $match):
                     $name = trim($match[2], "'");
                     $text = trim($match[3]);
@@ -406,19 +413,25 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                     }
 
                     if (substr($text, 0, 15) == 'is not expected') {
-                        // e.g. column 'xyz' is not expected
+                        // E.g. column 'xyz' is not expected.
                         if ($dbman->field_exists($table, $field)) {
                             $dbman->drop_field($table, $field);
-                            // echo "Field $name was dropped from table $tablename<br>";
+                            if ($debug) {
+                                echo "Field $name was dropped from table $tablename<br>";
+                            }
                         }
                     } else {
-                        // e.g. column 'xyz' is missing
+                        // E.g. column 'xyz' is missing.
                         if ($dbman->field_exists($table, $field)) {
                             $dbman->change_field_type($table, $field);
-                            // echo "Field $name was updated<br>";
+                            if ($debug) {
+                                echo "Field $name was updated<br>";
+                            }
                         } else {
                             $dbman->add_field($table, $field);
-                            // echo "Field $name was added<br>";
+                            if ($debug) {
+                                echo "Field $name was added<br>";
+                            }
                         }
                     }
                     break;
@@ -426,7 +439,9 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                 // Note: early versions of Moodle may not have this.
                 case preg_match('/CREATE(.*?)INDEX(.*?)ON(.*?);/', $message, $match):
                     $DB->execute(rtrim($match[0], '; '));
-                    // echo 'Index '.$match[1].' was added<br>';
+                    if ($debug) {
+                        echo 'Index '.$match[1].' was added<br>';
+                    }
                     break;
 
                 // Note: early versions of Moodle may not have this.
@@ -437,13 +452,17 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                         $index->setFromADOIndex($indexes[$name]);
                         $dbman->drop_index($table, $index);
                         unset($indexes[$name]);
-                        // echo 'Index '.$match[1].' was dropped<br>';
+                        if ($debug) {
+                            echo 'Index '.$match[1].' was dropped<br>';
+                        }
                     }
                     break;
 
                 default:
-                    echo '<p>Unknown XMLDB error in '.$pluginname.':<br>'.$message.'</p>';
-                    // die;
+                    if ($debug) {
+                        echo '<p>Unknown XMLDB error in '.$pluginname.':<br>'.$message.'</p>';
+                        die;
+                    }
             }
         }
 

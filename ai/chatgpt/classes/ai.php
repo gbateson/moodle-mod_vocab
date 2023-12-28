@@ -24,8 +24,6 @@
 
 namespace vocabai_chatgpt;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * ai
  *
@@ -49,4 +47,10 @@ class ai extends \mod_vocab\aibase {
         'sharedfrom', 'shareduntil',
     ];
 
+    /**
+     * @var array the names of settings that dates.
+     */
+    const DATESETTINGNAMES = [
+        'sharedfrom', 'shareduntil',
+    ];
 }

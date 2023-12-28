@@ -14,6 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * mod/vocab/ai/prompts/index.php
+ *
+ * @package    vocabai_prompts
+ * @copyright  2023 Gordon BATESON
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
+ * @since      Moodle 3.11
+ */
+
 require('../../../../config.php');
 
 $ai = \vocabai_prompts\ai::create();
@@ -86,9 +96,9 @@ if ($ai->config && ($ai->action == 'copy' || $ai->action == 'delete')) {
 
     // XHTML strict requires a container for the hidden input elements.
     echo html_writer::start_tag('fieldset', ['style' => 'display: none']);
-    echo html_writer::empty_tag('input', ['type'=>'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    echo html_writer::empty_tag('input', ['type'=>'hidden', 'name' => 'action', 'value' => $ai->action]);
-    echo html_writer::empty_tag('input', ['type'=>'hidden', 'name' => 'configid', 'value' => $ai->config->id]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $ai->action]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'configid', 'value' => $ai->config->id]);
     echo html_writer::end_tag('fieldset');
 
     // XHTML strict requires a container for the contents of the form.
@@ -96,7 +106,7 @@ if ($ai->config && ($ai->action == 'copy' || $ai->action == 'delete')) {
 
     echo $ai->get_mform()->format_config($ai->config, [], true);
 
-    echo html_writer::start_tag('div', array('class' => 'buttons'));
+    echo html_writer::start_tag('div', ['class' => 'buttons']);
     echo html_writer::tag('p', $message);
 
     echo html_writer::empty_tag('input', [
@@ -121,7 +131,7 @@ if ($ai->config && ($ai->action == 'copy' || $ai->action == 'delete')) {
     exit;
 }
 
-if ($data = data_submitted() and confirm_sesskey()) {
+if (($data = data_submitted()) && confirm_sesskey()) {
     $ai->save_config($data);
     $ai->unset_form_elements($data);
     if ($ai->config && $ai->action == 'edit') {

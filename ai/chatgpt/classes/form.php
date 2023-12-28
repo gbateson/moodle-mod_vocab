@@ -26,8 +26,6 @@
 
 namespace vocabai_chatgpt;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Main settings form for a ChatGPT AI assistant subplugin.
  *
@@ -73,7 +71,7 @@ class form extends \mod_vocab\aiform {
 
             $mainheading = 'addnewkey';
             $submitlabel = get_string('add');
-            
+
             // Get current year, month and day.
             list($year, $month, $day) = explode(' ', date('Y m d'));
 
@@ -109,7 +107,7 @@ class form extends \mod_vocab\aiform {
                 $text = \html_writer::tag('span', $text, ['class' => 'text-danger']);
                 $text = $text.get_string('labelsep', 'langconfifg');
                 $text = $text.$this->get_string('cannoteditkeys');
-                $text = \html_writer::tag('h5', $text, array('class' => 'cannotedit'));
+                $text = \html_writer::tag('h5', $text, ['class' => 'cannotedit']);
                 $mform->addElement('html', $text);
             }
             foreach ($configs as $configid => $config) {
@@ -154,7 +152,7 @@ class form extends \mod_vocab\aiform {
         /*////////////////////////////
         // Main form starts here.
         ////////////////////////////*/
-        
+
         $this->add_heading($mform, $mainheading, $this->subpluginname, true);
 
         // Cache message that is used for missing form values.
@@ -218,7 +216,10 @@ class form extends \mod_vocab\aiform {
     /**
      * Format config settings for a ChatGPT key.
      *
-     * $param object $config
+     * @param object $config
+     * @param array $actions (optional, default=[])
+     * @param boolean $showowner (optional, default=false)
+     * @param boolean $showownerpic (optional, default=false)
      * @return array of availability options [contextlevel => availability description]
      */
     public function format_config($config, $actions=[], $showowner=false, $showownerpic=false) {
@@ -258,8 +259,8 @@ class form extends \mod_vocab\aiform {
             }
             $url = new \moodle_url('/user/profile.php', ['id' => $user->id]);
             $value = $OUTPUT->action_link($url, $value, new \component_action(
-                // "this" is actually a Y_node, so we could use the "set" method,
-                // but "setAttribute" is compatible with normal DOM, so use that.
+                // Since "this" is actually a Y_node, we could use the "set" method,
+                // but "setAttribute" is compatible with normal DOM, so we use that.
                 'click', 'function(){this.setAttribute("target", "CHATGPT")}'
             ));
             $value = \html_writer::tag('dd', $value, $dd);
@@ -292,7 +293,6 @@ class form extends \mod_vocab\aiform {
             $value = \html_writer::tag('dd', $value, $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
-
 
         // Extract the sharing context id and level.
         $contextid = (empty($config->contextid) ? 0 : $config->contextid);
@@ -359,7 +359,7 @@ class form extends \mod_vocab\aiform {
                 // $actionlabel = $this->get_string($action);
                 // $cancellabel = get_string('cancel);
                 // $action = new \confirm_action($text, $callback, $actionlabel, $cancellabel);
-                // $actions[$i] = $OUTPUT->action_link($url, $text, $action);
+                // $actions[$i] = $OUTPUT->action_link($url, $text, $action); !!
                 $actions[$i] = \html_writer::link(
                     $url,
                     $this->get_string($action),

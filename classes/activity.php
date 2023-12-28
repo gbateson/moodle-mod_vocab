@@ -27,8 +27,6 @@
 
 namespace mod_vocab;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * activity
  *
@@ -115,8 +113,14 @@ class activity {
     /** @var integer the "mode" of the current Vocab activity */
     public $operationmode = 0;
 
-    /** @var integer denoting whether to show (=expand) or hide (=collapse) the "mycourses" navigation menu */
-    public $expandnavigation = 3; // 0=everyone, 1=students, 2=teachers, 3=no one
+    /**
+     * @var integer denoting whether to show (=expand) or hide (=collapse) the "mycourses" navigation menu
+     *      0: expand for everyone
+     *      1: expand for students (collapse for teachers)
+     *      2: expand for teachers (collapse for students)
+     *      3: expand no one (i.e. collapse for everyone)
+     */
+    public $expandnavigation = 3;
 
     /** @var string specifying the preferred page layout, at least for the main "view" page */
     public $pagelayout = '';
@@ -221,25 +225,32 @@ class activity {
         // Cache the time stamp so that the same value is used in comparisons.
         $time = time();
 
-        // "viewable" means the user can view the first page of the activity.
+        // Set "viewable" to true if user can view the first page of the activity.
         if ($this->can_manage()) {
-            $this->viewable = true; // teacher/admin can always view.
+            // A teacher/admin can always view.
+            $this->viewable = true;
         } else if ($this->activityopen && $this->activityopen > $this->time) {
-            $this->viewable = false; // not open yet!
+            // The activity is not open yet!
+            $this->viewable = false;
         } else if ($this->activityclose && $this->activityclose < $this->time) {
-            $this->viewable = false; // already closed!
+            // The activity is already closed!
+            $this->viewable = false;
         } else {
             $this->viewable = $this->can_view();
         }
 
-        // "playable" means the user can access the games.
+        // Set "playable" to true if the user can access the games.
         if ($this->can_manage()) {
-            $this->playable = true; // teacher/admin can always play.
+            // A teacher/admin can always play the games.
+            $this->playable = true;
         } else if ($this->gamesopen && $this->gamesopen > $this->time) {
-            $this->playable = false; // not open yet!
+            // The games are not open yet!
+            $this->playable = false;
         } else if ($this->gamesclose && $this->gamesclose < $this->time) {
-            $this->playable = false; // already closed!
+            // The games are already closed!
+            $this->playable = false;
         } else {
+            // Otherwise, the games are playable if the activity is viewable.
             $this->playable = $this->viewable;
         }
 
@@ -367,7 +378,7 @@ class activity {
             $event->add_record_snapshot('vocab', $this->instance);
             $event->trigger();
 
-            // Update 'viewed' state if required by completion system
+            // Update 'viewed' state if required by completion system.
             $completion = new \completion_info($this->course);
             $completion->set_module_viewed($this->cm);
         }
@@ -471,7 +482,7 @@ class activity {
     public function course_url() {
         $sectionnum = 0;
         if ($this->course && isset($this->course->coursedisplay) && defined('COURSE_DISPLAY_MULTIPAGE')) {
-            // Moodle >= 2.3
+            // Available on Moodle >= 2.3.
             if ($this->course->coursedisplay == COURSE_DISPLAY_MULTIPAGE) {
                 if ($modinfo = get_fast_modinfo($this->course)) {
                     $sections = $modinfo->get_section_info_all();
@@ -804,15 +815,15 @@ class activity {
         $forceopen = true;
         switch ($this->expandnavigation) {
             case self::EXPAND_TEACHERS:
-                // Expand for teachers (collapse for students)
+                // Expand for teachers (collapse for students).
                 $forceopen = $teacher;
                 break;
             case self::EXPAND_STUDENTS:
-                // Expand for students (collapse for teachers)
+                // Expand for students (collapse for teachers).
                 $forceopen = $student;
                 break;
             case self::EXPAND_NO_ONE:
-                // Expand for no one (i.e. collapse for all)
+                // Expand for no one (i.e. collapse for all).
                 $forceopen = false;
                 break;
         }
@@ -854,7 +865,7 @@ class activity {
     public function get_contexts() {
         if ($this->contexts === null) {
             $this->contexts = [
-                // SYSTEM=10, COURSECAT=40, COURSE=50, MODULE=70
+                // For reference, SYSTEM is 10, COURSECAT is 40, COURSE is 50, MODULE is 70.
                 CONTEXT_MODULE => \context_module::instance($this->cm->id),
                 CONTEXT_COURSE => \context_course::instance($this->course->id),
                 CONTEXT_COURSECAT => \context_coursecat::instance($this->course->category),
@@ -867,8 +878,11 @@ class activity {
     /**
      * Get readable contexts relevant to this vocab activity.
      *
-     * @param string $keyfield (optional, default = '') the name of the field to use as keys in the return array. If blank, keys will be numeric.
-     * @param string $valuefield (optional, default = '') the name of the field to use as values in the return array. If blank, complete context records will be returned.
+     * @param string $keyfield (optional, default = '') the name of the field to
+     *                use askeys in the return array. If blank, keys will be numeric.
+     * @param string $valuefield (optional, default = '') the name of the field to
+     *                use as values in the return array.
+     *                If blank, complete context records will be returned.
      * @return array
      */
     public function get_readable_contexts($keyfield='', $valuefield='') {
@@ -884,8 +898,11 @@ class activity {
     /**
      * Get writeable contexts relevant to this vocab activity.
      *
-     * @param string $keyfield (optional, default = '') the name of the field to use as keys in the return array. If blank, keys will be numeric.
-     * @param string $valuefield (optional, default = '') the name of the field to use as values in the return array. If blank, complete context records will be returned.
+     * @param string $keyfield (optional, default = '') the name of the field to use
+     *               as keys in the return array. If blank, keys will be numeric.
+     * @param string $valuefield (optional, default = '') the name of the field to use
+     *               as values in the return array. If blank, complete context records
+     *               will be returned.
      * @return array
      */
     public function get_writeable_contexts($keyfield='', $valuefield='') {
@@ -896,7 +913,7 @@ class activity {
         $writeable = [];
         foreach ($contexts as $context) {
 
-            // MODULE=70, COURSE=50, COURSECAT=40, SYSTEM=10
+            // For reference, SYSTEM is 10, COURSECAT is 40, COURSE is 50, MODULE is 70.
             switch ($context->contextlevel) {
                 case CONTEXT_MODULE:
                     $capability = 'mod/vocab:manage';

@@ -26,8 +26,6 @@
 
 namespace vocabtool_dictionary\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy provider implementation for vocabtool_dictionary.
  *

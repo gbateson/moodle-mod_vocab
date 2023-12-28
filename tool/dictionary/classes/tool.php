@@ -24,8 +24,6 @@
 
 namespace vocabtool_dictionary;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * tool
  *

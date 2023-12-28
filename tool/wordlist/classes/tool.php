@@ -27,8 +27,6 @@
 
 namespace vocabtool_wordlist;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * tool
  *

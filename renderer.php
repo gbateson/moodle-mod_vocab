@@ -24,8 +24,6 @@
  * @since      Moodle 3.11
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * mod_vocab_renderer
  *
@@ -67,8 +65,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
         }
 
         // Locate the position of the end of the <body...> tag.
+        // Could add '<html', '>', '<head', '>', '</head>'.
         $pos = 0;
-        $tags = ['<body', '>']; // '<html', '>', '<head', '>', '</head>',
+        $tags = ['<body', '>'];
         while (count($tags) && is_numeric($pos)) {
             $pos = strpos($header, array_shift($tags), $pos);
         }
@@ -76,15 +75,15 @@ class mod_vocab_renderer extends plugin_renderer_base {
         // Locate the first <h2...> or <h1...> tag.
         if (is_numeric($pos)) {
             if ($start = strpos($header, '<h2', $pos)) {
-                // base, embedded, popup, secure
+                // E.g. base, embedded, popup, secure.
                 $start = strpos($header, '>', $start) + 1;
                 $end = strpos($header, '</h2>', $start);
             } else if ($start = strpos($header, '<h1>', $pos)) {
-                // maintenance, secure
+                // E.g. includes maintenance, secure.
                 $start = strpos($header, '>', $start) + 1;
                 $end = strpos($header, '</h1', $start);
             } else {
-                // "login" page has neither <h1> nor <h2>.
+                // E.g. the "login" page which has neither <h1> nor <h2>.
                 $start = $end = 0;
             }
             if ($start === false || $end === false || $start >= $end) {
@@ -234,13 +233,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $inprogresspercent = round(100 * $inprogress / $total, 1);
             $notstartedpercent = round(100 * $notstarted / $total, 1);
 
-            // Use view-box to make svg responsive. This prevents overflow on narrow screens.
-            // view-box: https://www.digitalocean.com/community/tutorials/svg-svg-viewbox
+            // Use view-box to make svg responsive. This prevents overflow on narrow screens
+            // view-box: https://www.digitalocean.com/community/tutorials/svg-svg-viewbox .
             $width = '360';
             $height = '200';
             $params = [
                 'xmlns' => 'http://www.w3.org/2000/svg',
-                'role' => 'img', // for accessibility
+                'role' => 'img', // For accessibility.
                 'viewBox' => "0 0 $width $height",
                 'class' => 'results-pie-chart',
             ];
@@ -287,9 +286,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
 
             // Define the pie graph key.
             $output .= $this->pie_graph_key(220, 10, 30, 20, 30, $colors,
-                $delimiter, array_values((array)$a), // delimiter & texts
-                ['font-size' => 14, 'fill' => '#333'], // textparams
-                ['stroke' => '#333', 'stroke-width' => '1'] // rectparams
+                $delimiter, array_values((array)$a), // The delimiter and texts.
+                ['font-size' => 14, 'fill' => '#333'], // The textparams.
+                ['stroke' => '#333', 'stroke-width' => '1'] // The rectparams.
             );
             $output .= html_writer::end_tag('svg');
         }
@@ -394,10 +393,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
         // M: coordinates of the starting point of the path (always the center of the pie)
         // L: coordinate of the end point of a straight line (a point on the edge of the pie)
         // A: the radii length, flags and end point of an arc
-        // Z: return to start point (M)
+        // Z: return to start point (M) .
 
         // Cache the number of radians in a fullcircle.
-        $fullcircleradians = deg2rad(360); // = 2 * pi() radians
+        // We can use "deg2rad(360)" or "2 * pi() radians".
+        $fullcircleradians = deg2rad(360);
 
         // Define the center of the circle.
         $center = ($offsetx + $radius).','.($offsety + $radius);
@@ -436,8 +436,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     // draw a (nearly) complete circle.
                     $a = "$radius,$radius 0 1 1 ".($x - 1).",$y";
                 } else {
-                    // "rotation" is always 0, and "sweep" is always 1.
-                    // "largearc" is set to 1 if arc covers more than half the pie.
+                    // The "rotation" always 0, and "sweep" is always 1.
+                    // The "largearc" is set to 1 if arc covers more than half the pie.
                     $largearc = ($value < ($total / 2) ? 0 : 1);
                     $a = "$radius,$radius 0 $largearc 1 $x,$y";
                 }
@@ -605,8 +605,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @todo Finish documenting this function
      */
     public function game_button($game, $gamecolor='', $textcolor='') {
-        // see "single_button" method in "lib/outputrenderers.php".
-        // single_button($url, $label, $method='post', array $options=null)
+        // See "single_button" method in "lib/outputrenderers.php".
         $style = [];
         if ($gamecolor) {
             $style[] = "background-color: $gamecolor;";
