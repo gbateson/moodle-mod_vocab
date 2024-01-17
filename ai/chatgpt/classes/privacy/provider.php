@@ -13,3 +13,34 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * classes/privacy/provider.php
+ *
+ * @package    vocabai_chatgpt
+ * @copyright  2023 Gordon BATESON
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
+ * @since      Moodle 3.11
+ */
+
+namespace vocabai_chatgpt\privacy;
+
+/**
+ * Privacy provider implementation for vocabai_chatgpt.
+ *
+ * @copyright  2018 Mihail Geshoski <mihail@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+
+    /**
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason() : string {
+        return 'privacy:metadata';
+    }
+}

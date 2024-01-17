@@ -13,3 +13,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * mod/vocab/ai/index.php
+ *
+ * @package    mod_vocab
+ * @copyright  2023 Gordon BATESON
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
+ * @since      Moodle 3.11
+ */

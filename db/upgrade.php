@@ -367,7 +367,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                 case preg_match('/[Tt]able is not expected/', $message):
                     $dbman->drop_table($table);
                     if ($debug) {
-                        echo "Table $tablename was dropped<br>".
+                        echo "Table $tablename was dropped<br>";
                     }
                     break;
                 // Moodle <= 2.7 uses "Field".
