@@ -31,7 +31,7 @@ $string['prompts'] = 'Prompts';
 $string['promptname_help'] = 'The name of the prompt. This should be short but meaningful, descriptive and unique.';
 $string['promptname'] = 'Prompt name';
 
-$string['prompttext_help'] = 'The prompt text that wil be passed to the AI assistant. Placeholdres for values are specified using double-braces. e.g. {{num-of-questions}}';
+$string['prompttext_help'] = 'The prompt text that will be passed to the AI assistant. Placeholders for values are specified using double-braces. e.g. {{num-of-questions}}';
 $string['prompttext'] = 'Prompt text';
 
 $string['promptai_help'] = 'The AI assistant with which this prompt is intended to be used.';

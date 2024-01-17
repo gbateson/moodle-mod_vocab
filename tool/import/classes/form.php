@@ -355,7 +355,7 @@ class form extends \mod_vocab\toolform {
      */
     public function validation($data, $files) {
 
-        $errors = parent::validation($data, $files)
+        $errors = parent::validation($data, $files);
 
         // For an example of what to do if expected files are missing,
         // see mod/book/tool/importhtml/import_form.php.
@@ -1362,7 +1362,7 @@ class form extends \mod_vocab\toolform {
      * @param object $row settings, cell names, record definitions.
      * @param array $vars values from the cells in this row.
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
-     * @return boolean TRUE if this row should be skipped; otherwise FALSE.
+     * @return string The string to be used as the "name" for the given row.
      */
     public function get_rowname($row, &$vars, &$tableinfo) {
         $name = 'rowname';
@@ -1639,10 +1639,9 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * report_totals_prune
+     * Remove unused columns from the given HTML table object.
      *
-     * @param string $table name of a table in the database
-     * @todo Finish documenting this function
+     * @param object $table the HTML table to be pruned
      */
     public function report_totals_prune($table) {
         // Initialize the column index to 2 because we always
@@ -2100,7 +2099,6 @@ class form extends \mod_vocab\toolform {
 
     /**
      * Retrieve an non-scalar value that has been cached with an alias.
-     * To reduce memory requirements, value will be removed from the cache.
      *
      * @param string $alias
      * @return array the value that was cached with the given alias.

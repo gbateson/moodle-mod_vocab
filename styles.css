@@ -4,7 +4,7 @@
 
 /** add bg colors to form headings */
 .path-mod-vocab fieldset.collapsible > div:first-of-type {
-    background-color: #fc9;
+    background-color: #fdc; /* lighter shade of #fc9 */ 
     border-radius: 0.25rem;
     border: 1px solid #666;
 }
