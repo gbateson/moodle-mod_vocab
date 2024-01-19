@@ -321,6 +321,7 @@ class form extends \mod_vocab\toolform {
     public function generate_questions() {
         global $DB;
 
+        // Get form data, if any.
         if (($data = data_submitted()) && confirm_sesskey()) {
 
             $words = false;

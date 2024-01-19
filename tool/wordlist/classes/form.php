@@ -51,10 +51,7 @@ class form extends \mod_vocab\toolform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        // Use "and" here because it has lower precedence than "=", so the assignment
-        // operation will be done first. If we use "&&", we need to add parentheses
-        // around the "=" expression because "&&" has higher precendence than "=".
-        // https://www.php.net/manual/en/language.operators.precedence.php.
+        // Get form data, if any.
         if (($data = data_submitted()) && confirm_sesskey()) {
 
             // Map element name => type of associated value.
@@ -304,8 +301,11 @@ class form extends \mod_vocab\toolform {
             case 'oracle':
                 $order = "DBMS_RANDOM.value FETCH NEXT $count ROWS ONLY";
                 break;
+            case 'postgres':
+                $order = 'RANDOM()';
+                break;
             default:
-                // MySQL, PostgreSQL ... and anything else.
+                // MySQL ... and anything else.
                 $order = 'RAND()';
         }
         $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";

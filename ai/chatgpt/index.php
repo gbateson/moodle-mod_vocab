@@ -131,6 +131,7 @@ if ($ai->config && ($ai->action == 'copy' || $ai->action == 'delete')) {
     exit;
 }
 
+// Get form data, if any.
 if (($data = data_submitted()) && confirm_sesskey()) {
     $ai->save_config($data);
     $ai->unset_form_elements($data);
