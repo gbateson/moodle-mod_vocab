@@ -36,7 +36,7 @@ function vocab_supports($feature) {
     // These constants are defined in "lib/moodlelib.php".
     $constants = [
         'FEATURE_ADVANCED_GRADING' => false,
-        'FEATURE_BACKUP_MOODLE2' => true, // Default is FALSE.
+        'FEATURE_BACKUP_MOODLE2' => false, // Default is FALSE.
         'FEATURE_COMMENT' => true,
         'FEATURE_COMPLETION_HAS_RULES' => true,
         'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
