@@ -31,13 +31,13 @@
  * @param navigation_node $node The node to which the node for this tool will be added.
  */
 function vocabtool_phpdocs_extend_settings_navigation(settings_navigation $settings, navigation_node $node) {
-    global $CFG, $USER;
+    global $CFG, $PAGE, $USER;
     // Restrict this tool to use by the main developer in the development environment.
     if (is_siteadmin() && $USER->username == 'gbateson') {
         if (isset($CFG->debug) && $CFG->debug == DEBUG_DEVELOPER) {
             if (parse_url($CFG->wwwroot, PHP_URL_HOST) == 'localhost') {
                 $function = 'vocab_extend_subplugin_navigation';
-                $function($node, 'tool', 'phpdocs', $settings->get_page()->cm);
+                $function($node, 'tool', 'phpdocs', $PAGE->cm);
             }
         }
     }

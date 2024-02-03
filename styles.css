@@ -3,12 +3,13 @@
 }
 
 /** add bg colors to form headings */
-.path-mod-vocab fieldset.collapsible > div:first-of-type {
+
+.path-mod-vocab fieldset.collapsible > div:first-of-type:not(.fcontainer) {
     background-color: #fdc; /* lighter shade of #fc9 */ 
     border-radius: 0.25rem;
     border: 1px solid #666;
 }
-.path-mod-vocab fieldset.collapsible > div:first-of-type a.icons-collapse-expand {
+.path-mod-vocab fieldset.collapsible > div:first-of-type:not(.fcontainer) a.icons-collapse-expand {
     background-color: #fff;
     border: 1px solid #666;
     justify-content: center;
@@ -88,7 +89,7 @@
 
 /** The following styles are shared among the TOOL subplugins */
 
-.path-mod-vocab-tool fieldset.collapsible > div:first-of-type {
+.path-mod-vocab-tool fieldset.collapsible > div:first-of-type:not(.fcontainer) {
     background-color: #e6ffe6; /* very light green */
 }
 

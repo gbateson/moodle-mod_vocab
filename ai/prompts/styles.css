@@ -1,5 +1,5 @@
 /* Use light yellow as the background color on headings. */
-.path-mod-vocab-ai-prompts fieldset.collapsible>div:first-of-type {
+.path-mod-vocab-ai-prompts fieldset.collapsible > div:first-of-type:not(.fcontainer) {
     background-color: #ffffe6; /* light yellow */
 }
 

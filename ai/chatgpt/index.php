@@ -38,10 +38,12 @@ require_capability('mod/vocab:manage', $ai->vocab->context);
 $PAGE->set_url($ai->index_url());
 $PAGE->set_title($ai->get_string('pluginname'));
 $PAGE->set_heading($ai->get_string('pluginname'));
-$PAGE->activityheader->set_attrs([
-    'hidecompletion' => true,
-    'description' => $ai->get_string('pluginname'),
-]);
+if (isset($PAGE->activityheader)) {
+    $PAGE->activityheader->set_attrs([
+        'hidecompletion' => true,
+        'description' => $ai->get_string('pluginname'),
+    ]);
+}
 
 $ai->vocab->collapse_navigation();
 $ai->vocab->set_pagelayout();

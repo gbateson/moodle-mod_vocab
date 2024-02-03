@@ -171,8 +171,10 @@ function vocab_extend_navigation(navigation_node $node, stdClass $course, stdCla
  * @return void (but may add items to $vocabnode)
  */
 function vocab_extend_settings_navigation(settings_navigation $settings, navigation_node $vocabnode) {
+    global $PAGE;
 
-    $cm = $settings->get_page()->cm;
+    //$cm = $settings->get_page()->cm;
+    $cm = $PAGE->cm;
     $capability = 'mod/vocab:manage';
     if (has_capability($capability, $cm->context)) {
 

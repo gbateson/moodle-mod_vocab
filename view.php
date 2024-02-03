@@ -38,7 +38,9 @@ $PAGE->set_url($vocab->view_url());
 $PAGE->set_title($vocab->name);
 $PAGE->set_heading($vocab->course->fullname);
 
-$PAGE->activityheader->set_attrs(['hidecompletion' => true]);
+if (isset($PAGE->activityheader)) {
+    $PAGE->activityheader->set_attrs(['hidecompletion' => true]);
+}
 
 $vocab->collapse_navigation();
 $vocab->set_pagelayout();

@@ -1,5 +1,6 @@
 /* Use light green as the background color on headings. */
-.path-mod-vocab-ai-chatgpt fieldset.collapsible>div:first-of-type {
+
+.path-mod-vocab-ai-chatgpt fieldset.collapsible > div:first-of-type:not(.fcontainer) {
     background-color: #e6e6ff; /* light purple */
 }
 

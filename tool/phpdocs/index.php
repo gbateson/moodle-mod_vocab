@@ -39,10 +39,12 @@ if (empty($tool->vocab) || empty($tool->vocab->cm)) {
 $PAGE->set_url($tool->index_url());
 $PAGE->set_title($tool->get_string('pluginname'));
 $PAGE->set_heading($tool->get_string('pluginname'));
-$PAGE->activityheader->set_attrs([
-    'hidecompletion' => true,
-    'description' => $tool->get_string('pluginname'),
-]);
+if (isset($PAGE->activityheader)) {
+    $PAGE->activityheader->set_attrs([
+        'hidecompletion' => true,
+        'description' => $tool->get_string('pluginname'),
+    ]);
+}
 
 $tool->vocab->collapse_navigation();
 $tool->vocab->set_pagelayout();
