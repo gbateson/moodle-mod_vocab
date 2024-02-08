@@ -1136,8 +1136,7 @@ class form extends \mod_vocab\toolform {
                             $table->head = $this->get_row_cells($worksheet, $r, $cmin, $cmax, $text);
                             $table->align = array_merge(['center'], array_fill(0, $cmax, 'left'));
                         } else {
-                            $text = $this->get_row_cells($worksheet, $r, $cmin, $cmax, $r, true);
-                            $table->data[] = $text;
+                            $table->data[] = $this->get_row_cells($worksheet, $r, $cmin, $cmax, $r, true);
                             $rowindex++;
                             if ($rowindex >= $previewrows) {
                                 break 4;
@@ -1146,6 +1145,49 @@ class form extends \mod_vocab\toolform {
                     }
                 }
             }
+        }
+
+        // Remove empty columns from the right of the $table.
+        $this->prune_table($table);
+    }
+
+    /**
+     * Remove empty columns from the right of the given HTML table object.
+     *
+     * @param object $table the HTML table to be pruned
+     */
+    public function prune_table($table) {
+
+        // Get total number of cells used in each column.
+        $totals = [];
+        for ($r = 0; $r < count($table->data); $r++) {
+            $row = $table->data[$r];
+            for ($c = 0; $c < count($row); $c++) {
+                if (! array_key_exists($c, $totals)) {
+                    $totals[$c] = 0;
+                }
+                $cell = $row[$c];
+                if (is_string($cell)) {
+                    $totals[$c] += ($cell ? 1 : 0);
+                } else {
+                    $totals[$c] += ($cell->text ? 1 : 0);
+                }
+            }
+        }
+
+        $c = max(array_keys($totals));
+        while ($c >= 0 && $totals[$c] == 0) {
+
+            // Remove this column from the head row.
+            unset($table->head[$c]);
+
+            // Remove this column from all data rows.
+            foreach (array_keys($table->data) as $r) {
+                unset($table->data[$r][$c]);
+            }
+
+            unset($totals[$c]);
+            $c--;
         }
     }
 
@@ -1346,7 +1388,7 @@ class form extends \mod_vocab\toolform {
         }
 
         // Remove empty columns from the report.
-        $this->report_totals_prune($table);
+        $this->prune_report_totals($table);
     }
 
     /**
@@ -1704,7 +1746,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $table the HTML table to be pruned
      */
-    public function report_totals_prune($table) {
+    public function prune_report_totals($table) {
         // Initialize the column index to 2 because we always
         // show column-1 (sheet: row) and column-2 (rowname).
         $c = 2;
@@ -1841,7 +1883,7 @@ class form extends \mod_vocab\toolform {
     public function get_cell_range($row) {
 
         $cmin = 0;
-        $cmax = count($row->cells);
+        $cmax = max(array_keys($row->cells));
         $ctype = self::TYPE_DATA;
 
         if (isset($row->settings) && is_array($row->settings)) {
@@ -1895,12 +1937,12 @@ class form extends \mod_vocab\toolform {
      * @param integer $cmin the minimum column number
      * @param integer $cmax the maximum column number
      * @param string $text
-     * @param boolean $cellheader if TRUE, the 1st cell should be made a TH cell (optional, default=false)
+     * @param boolean $th if TRUE, the 1st cell should be made a TH cell (optional, default=false)
      * @return xxx
      *
      * TODO: Finish documenting this function
      */
-    public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $cellheader=false) {
+    public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $th=false) {
         $cells = [];
         for ($c = $cmin; $c <= $cmax; $c++) {
             $cells[] = $this->get_cell_value($worksheet, $c, $r);
@@ -1908,7 +1950,7 @@ class form extends \mod_vocab\toolform {
 
         $cell = new \html_table_cell();
         $cell->text = ($text ? $text : '');
-        $cell->header = ($cellheader ? true : false);
+        $cell->header = ($th ? true : false);
         $cells = array_merge([$cell], $cells);
 
         return $cells;
