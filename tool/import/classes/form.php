@@ -82,6 +82,9 @@ class form extends \mod_vocab\toolform {
     /** @var object representing the import data file */
     protected $phpspreadsheet = null;
 
+    /** @var boolean TRUE if branch pruning is available (Excel on Moodle >= 4.x), otherwise FALSE */
+    protected $phpbranchpruning = null;
+
     /** @var array to hold punctuation characters */
     protected $punctuation = null;
 
@@ -145,6 +148,12 @@ class form extends \mod_vocab\toolform {
 
         // Check for new PhpExcel (Moodle >= 3.8).
         $this->phpspreadsheet = file_exists($CFG->dirroot.'/lib/phpspreadsheet');
+
+        // Check for branch pruning on the Excel calculation engine.
+        $class = '\PhpOffice\PhpSpreadsheet\Calculation\Engine\BranchPruner';
+        $this->phpbranchpruning = class_exists($class);
+
+        // Continue with normal setup.
         parent::__construct($action, $customdata, $method, $target, $attributes, $editable);
     }
 
@@ -420,6 +429,11 @@ class form extends \mod_vocab\toolform {
 
                 $reader = $iofactory::createReaderForFile($datafilepath);
                 $workbook = $reader->load($datafilepath);
+
+                // Disable Branch Pruning on Moodle >= 4.x.
+                if ($this->phpbranchpruning) {
+                    $workbook->getCalculationEngine()->disableBranchPruning();
+                }
 
                 if ($format === null) {
                     $format = $this->create_format_xml($workbook, $datafilename);
@@ -1863,10 +1877,13 @@ class form extends \mod_vocab\toolform {
                 $this->$name = []; // Shouldn't happen !!
             }
         }
+        // Normally, there should be no storeKey values, because
+        // pruning was disabled when we created the Workbook.
         if (strpos($value, 'storeKey') === false) {
             return in_array($value, $this->ignorevalues);
         } else {
-            return true; // Always remove "storeKey" values.
+            // Always remove "storeKey" values.
+            return true;
         }
     }
 
@@ -1923,14 +1940,12 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     protected function get_cell_value($worksheet, $c, $r) {
-        static $prunerclass = '\PhpOffice\PhpSpreadsheet\Calculation\Engine\BranchPruner';
-        static $formatclass = '\PhpOffice\PhpSpreadsheet\Style\NumberFormat';
-        static $formatmethod = 'toFormattedString';
-        
+
         $coffset = ($this->phpspreadsheet ? 1 : 0); // The column offset.
         $cell = $worksheet->getCellByColumnAndRow($c + $coffset, $r);
+
         if ($cell->isFormula()) {
-            if (class_exists($prunerclass)) {
+            if ($this->phpbranchpruning) {
                 // Moodle >= 4.x has no problem with full column references.
                 $cancalculate = true;
             } else if (preg_match('/(\$[0-9A-F]+):\1/', $cell->getValue())) {
@@ -1943,13 +1958,17 @@ class form extends \mod_vocab\toolform {
         } else {
             $cancalculate = true;
         }
+
         if ($cancalculate) {
             // On Moodle >= 4.x, we can use the standard formatter.
             $value = $cell->getFormattedValue();
         } else {
             // On Moodle <= 3.11, we mimic "getFormattedValue()",
             // but use the "old" calculated value.
-            $value = call_user_func_array([$formatclass, $formatmethod], [
+            $value = call_user_func_array([
+                '\PhpOffice\PhpSpreadsheet\Style\NumberFormat',
+                'toFormattedString',
+            ], [
                 $cell->getOldCalculatedValue(),
                 $cell->getStyle()->getNumberFormat()->getFormatCode(),
             ]);
