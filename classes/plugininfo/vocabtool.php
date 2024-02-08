@@ -42,7 +42,8 @@ class vocabtool extends base {
      * is_uninstall_allowed
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function is_uninstall_allowed() {
         return true;

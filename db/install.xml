@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/vocab/db" VERSION="20231128" COMMENT="XMLDB file for Moodle mod/vocab"
+<XMLDB PATH="mod/vocab/db" VERSION="20240206" COMMENT="XMLDB file for Moodle mod/vocab"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -30,16 +30,67 @@
         <KEY NAME="course" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="vocab_antonyms" COMMENT="Information about antonyms (words with the opposite meaning)">
+    <TABLE NAME="vocab_attribute_names" COMMENT="Names of word attributes">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="antonymwordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="attrname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="attrname" UNIQUE="false" FIELDS="attrname" COMMENT="Index on the attribute names"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="vocab_attribute_values" COMMENT="Values of word attributes">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="attrvalue" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="attrvalue" UNIQUE="false" FIELDS="attrvalue" COMMENT="Index on the attribute values"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="vocab_attributes" COMMENT="Attributes (e.g. pos) for words">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The ID of a vocabulary word"/>
+        <FIELD NAME="nameid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The ID of an attribute name"/>
+        <FIELD NAME="valueid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The ID of an attribute value"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
-        <KEY NAME="antonymwordid" TYPE="foreign" FIELDS="antonymwordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="nameid" TYPE="foreign" FIELDS="nameid" REFTABLE="vocab_attribute_names" REFFIELDS="id"/>
+        <KEY NAME="valueid" TYPE="foreign" FIELDS="valueid" REFTABLE="vocab_attribute_values" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="vocab_config" COMMENT="Config settings for mod_vocab subplugins">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="owneruserid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Only this user can view or edit this setting. Other users can use this setting within the given context."/>
+        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The highest context in which this setting can be used"/>
+        <FIELD NAME="subplugin" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="owneruserid" TYPE="foreign" FIELDS="owneruserid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="contextid" TYPE="foreign" FIELDS="contextid" REFTABLE="context" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="vocab_config_settings" COMMENT="Config setting names and values for mod_vocab subplugins">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="configid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="value" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="configid" TYPE="foreign" FIELDS="configid" REFTABLE="vocab_config" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_corpuses" COMMENT="Information about corpuses and wordlists">
@@ -224,16 +275,55 @@
         <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="vocab_synonyms" COMMENT="Information about synonyms (words with the same meaning)">
+    <TABLE NAME="vocab_relationship_names" COMMENT="Names of word relationships">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="synonymwordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="relname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="relname" UNIQUE="false" FIELDS="relname" COMMENT="Index on relationship names"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="vocab_relationships" COMMENT="Map words to related words">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the main word"/>
+        <FIELD NAME="relnameid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the relationship name"/>
+        <FIELD NAME="relwordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the related word"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
-        <KEY NAME="synonymwordid" TYPE="foreign" FIELDS="synonymwordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="relnameid" TYPE="foreign" FIELDS="relnameid" REFTABLE="vocab_relationship_names" REFFIELDS="id"/>
+        <KEY NAME="relwordid" TYPE="foreign" FIELDS="relwordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="vocab_samples" COMMENT="Sample sentences for Vocabulary Activities">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language of the sample sentence"/>
+        <FIELD NAME="levelid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The level of the sample sentence"/>
+        <FIELD NAME="sample" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="A sample sentence or phrase"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
+        <KEY NAME="levelid" TYPE="foreign" FIELDS="levelid" REFTABLE="vocab_levels" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="vocab_sample_words" COMMENT="Index of words used in sample sentences">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="sampleid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="sampleid" TYPE="foreign" FIELDS="sampleid" REFTABLE="vocab_samples" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_words" COMMENT="Individual words for Vocabulary activities">
@@ -299,31 +389,5 @@
         <KEY NAME="wordinstanceid" TYPE="foreign" FIELDS="wordinstanceid" REFTABLE="vocab_word_instances" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="vocab_config" COMMENT="Config settings for mod_vocab subplugins">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="owneruserid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Only this user can view or edit this setting. Other users can use this setting within the given context."/>
-        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The highest context in which this setting can be used"/>
-        <FIELD NAME="subplugin" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="owneruserid" TYPE="foreign" FIELDS="owneruserid" REFTABLE="user" REFFIELDS="id"/>
-        <KEY NAME="contextid" TYPE="foreign" FIELDS="contextid" REFTABLE="context" REFFIELDS="id"/>
-      </KEYS>
-    </TABLE>
-    <TABLE NAME="vocab_config_settings" COMMENT="Config setting names and values for mod_vocab subplugins">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="configid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="value" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="configid" TYPE="foreign" FIELDS="configid" REFTABLE="vocab_config" REFFIELDS="id"/>
-      </KEYS>
-    </TABLE>
   </TABLES>
 </XMLDB>
-

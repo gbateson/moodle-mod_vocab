@@ -31,7 +31,8 @@
  * @uses $DB
  * @param xxx $oldversion
  * @return xxx
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function xmldb_vocabtool_wordlist_upgrade($oldversion) {
     global $CFG, $DB;

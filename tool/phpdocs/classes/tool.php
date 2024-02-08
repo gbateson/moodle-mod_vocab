@@ -39,7 +39,8 @@ class tool extends \mod_vocab\toolbase {
     /**
      * __construct
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function __construct() {
         parent::__construct();
@@ -185,7 +186,8 @@ class tool extends \mod_vocab\toolbase {
      *
      * @uses $CFG
      * @param moodleform $mform representing the Moodle form
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function phpdocs($mform) {
         global $CFG;
@@ -296,7 +298,8 @@ class tool extends \mod_vocab\toolbase {
      * @param boolean $incorrect
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_report_remove_fix($action, $missing, $incorrect, $mform) {
 
@@ -346,7 +349,8 @@ class tool extends \mod_vocab\toolbase {
      * @param string $contents (passed by reference)
      * @param boolean $update (passed by reference)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function copyright_action($mform, $data, $filepath, $action, &$contents, &$update) {
 
@@ -383,7 +387,8 @@ class tool extends \mod_vocab\toolbase {
      * @param string $contents (passed by reference)
      * @param boolean $update (passed by reference)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function remove_copyright(&$contents, &$update) {
         $search = '// This file '.'is part of Moodle - http://moodle.org/';
@@ -402,7 +407,8 @@ class tool extends \mod_vocab\toolbase {
      * @param string $contents (passed by reference)
      * @param boolean $update (passed by reference)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function add_copyright(&$contents, &$update) {
         $copyright = $this->get_copyright()."\n";
@@ -427,7 +433,8 @@ class tool extends \mod_vocab\toolbase {
      * @param integer $action
      * @param string $contents (passed by reference)
      * @param boolean $update (passed by reference)
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function phpdocs_action($mform, $data, $filepath, $action, &$contents, &$update) {
 
@@ -459,7 +466,8 @@ class tool extends \mod_vocab\toolbase {
      * @param boolean $update (passed by reference)
      * @param xxx $type
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function fix_file_contents($mform, $data, $filepath, $action, &$contents, &$update, $type) {
         global $CFG;
@@ -629,7 +637,8 @@ class tool extends \mod_vocab\toolbase {
      *
      * @param string $filepath
      * @param mixed $type a PARAM_xxx constant value
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function store_copyright_message($filepath, $type) {
         $this->store_message($filepath, 'copyright', 'copyright'.$type);
@@ -641,7 +650,8 @@ class tool extends \mod_vocab\toolbase {
      * @param string $filepath
      * @param string $blockname
      * @param mixed $type a PARAM_xxx constant value
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function store_phpdocs_message($filepath, $blockname, $type) {
         $this->store_message($filepath, $blockname, 'phpdocs'.$type);
@@ -653,7 +663,8 @@ class tool extends \mod_vocab\toolbase {
      * @param string $filepath
      * @param string $blockname
      * @param mixed $type a PARAM_xxx constant value
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function store_message($filepath, $blockname, $type) {
         if (! array_key_exists($filepath, $this->messages)) {
@@ -668,7 +679,8 @@ class tool extends \mod_vocab\toolbase {
     /**
      * display_messages
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function display_messages() {
 
@@ -878,7 +890,8 @@ class tool extends \mod_vocab\toolbase {
      * @param string $indent
      * @param string $blockname
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_phpdocs_block($data, $indent, $blockname) {
         $details = <<<END
@@ -898,7 +911,8 @@ END;
      * @param xxx $comments
      * @param string $details
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_phpdoc($indent, $comments, $details) {
         return $indent.'/'.'**'."\n".
@@ -913,7 +927,8 @@ END;
      * @param xxx $comments
      * @param string $indent
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_comments_phpdoc($comments, $indent) {
         if (is_scalar($comments)) {
@@ -939,7 +954,8 @@ END;
      * @param xxx $details
      * @param xxx $indent
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_details_phpdoc($details, $indent) {
         if ($details) {
@@ -1025,7 +1041,8 @@ END;
             }
         }
 
-        $details .= "$indent * @todo Finish documenting this function\n";
+        $details .= "$indent * 
+ * TODO: Finish documenting this function\n";
 
         if (empty($comments)) {
             $comments = $blockname;
@@ -1039,7 +1056,8 @@ END;
      * @param string $contents (passed by reference)
      * @param boolean $update (passed by reference)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function remove_phpdocs(&$contents, &$update) {
         $search = '/'.
@@ -1056,7 +1074,8 @@ END;
      *
      * @param string $filetype file type/extension (optional, default='')
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_copyright($filetype='') {
         $header = '';

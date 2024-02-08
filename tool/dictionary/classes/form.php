@@ -39,7 +39,8 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition() {
         $mform = $this->_form;

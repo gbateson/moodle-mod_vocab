@@ -526,7 +526,8 @@ class activity {
      *
      * @param string $capability
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function require($capability) {
         return require_capability("{$this->pluginpath}:$capability", $this->context);
@@ -537,7 +538,8 @@ class activity {
      *
      * @param string $capability
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can($capability) {
         return has_capability("{$this->pluginpath}:$capability", $this->context);
@@ -547,7 +549,8 @@ class activity {
      * can_addinstance
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_addinstance() {
         return $this->can('addinstance');
@@ -557,7 +560,8 @@ class activity {
      * can_manage
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_manage() {
         return $this->can('manage');
@@ -567,7 +571,8 @@ class activity {
      * can_viewreports
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_viewreports() {
         return $this->can('viewreports');
@@ -577,7 +582,8 @@ class activity {
      * can_deleteattempts
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_deleteattempts() {
         return $this->can('deleteattempts');
@@ -587,7 +593,8 @@ class activity {
      * can_view
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_view() {
         return $this->can('view');
@@ -597,7 +604,8 @@ class activity {
      * can_attempt
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_attempt() {
         return $this->can('attempt');
@@ -607,7 +615,8 @@ class activity {
      * can_reviewmyattempts
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function can_reviewmyattempts() {
         return $this->can('reviewmyattempts');
@@ -623,7 +632,8 @@ class activity {
      * @param string $name
      * @param array $a additional value or values required for the language string (optional, default=null)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_string($name, $a=null) {
         return get_string($name, $this->plugin, $a);
@@ -637,7 +647,8 @@ class activity {
      * get_groupmode
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_groupmode() {
         if ($this->cm) {
@@ -655,7 +666,8 @@ class activity {
      * @uses $DB
      * @param integer $groupid (optional, default=0)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_userids($groupid=0) {
         global $DB;
@@ -689,7 +701,8 @@ class activity {
      * is_demo
      *
      * @return boolean
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function is_demo() {
         return ($this->operationmode == self::MODE_DEMO);
@@ -769,7 +782,8 @@ class activity {
      *
      * @param xxx $length
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_random_word($length) {
         $vowels = [
@@ -800,7 +814,8 @@ class activity {
      * collapse_navigation
      *
      * @uses $PAGE
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function collapse_navigation() {
         global $PAGE;
@@ -952,7 +967,8 @@ class activity {
      * @uses $CFG
      * @param xxx $toponly (optional, default=false)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_question_categories($toponly=false) {
         global $CFG;

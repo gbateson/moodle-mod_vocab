@@ -30,7 +30,8 @@ class course_module_viewed extends \core\event\course_module_viewed {
     /**
      * init
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function init() {
         $this->data['crud'] = 'r';

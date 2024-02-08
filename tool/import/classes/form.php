@@ -119,7 +119,8 @@ class form extends \mod_vocab\toolform {
      * @param string $target (optional, default='')
      * @param array $attributes (optional, default=null)
      * @param boolean $editable (optional, default=true)
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function __construct($action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
         global $CFG;
@@ -150,7 +151,8 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition() {
         $mform = $this->_form;
@@ -184,7 +186,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition_upload($mform) {
 
@@ -210,7 +213,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition_preview($mform) {
 
@@ -241,7 +245,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $value (optional, default=null)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_options_uploadaction($value=null) {
         $options = [
@@ -264,7 +269,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition_review($mform) {
         $values = [
@@ -283,7 +289,8 @@ class form extends \mod_vocab\toolform {
      * @param moodleform $mform representing the Moodle form
      * @param boolean $submit
      * @param boolean $cancel
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition_buttons($mform, $submit, $cancel) {
         if ($submit && $cancel) {
@@ -304,7 +311,8 @@ class form extends \mod_vocab\toolform {
      * get_state
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_state() {
         return $this->formstate;
@@ -315,7 +323,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param array $values numbers to be displayed as a pie-chart
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function transfer_incoming_values($mform, $values) {
         foreach ($values as $name => $type) {
@@ -335,7 +344,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $value
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function set_next_formstate($mform, $value) {
         $name = 'formstate';
@@ -351,7 +361,8 @@ class form extends \mod_vocab\toolform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function validation($data, $files) {
 
@@ -369,7 +380,8 @@ class form extends \mod_vocab\toolform {
      * @uses $CFG
      * @uses $USER
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function render_data_table() {
         global $CFG, $USER;
@@ -394,6 +406,7 @@ class form extends \mod_vocab\toolform {
         $format = $this->parse_format_xml($formatfilecontent, 'datafileformat');
 
         if (is_string($format)) {
+            // This is probably an error - shouldn't happen !!
             $table = $format;
         } else {
             $table = new \html_table();
@@ -461,7 +474,8 @@ class form extends \mod_vocab\toolform {
      * @param object $context a record form the "context" table in the Moodle database
      * @param string $paramname
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_datafileinfo($fs, $context, $paramname) {
         $filename = '';
@@ -494,7 +508,8 @@ class form extends \mod_vocab\toolform {
      * @param object $context a record form the "context" table in the Moodle database
      * @param string $paramname
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_formatfileinfo($fs, $context, $paramname) {
         $filename = '';
@@ -521,7 +536,8 @@ class form extends \mod_vocab\toolform {
      * @param string $formatfilecontent
      * @param string $xmlroot
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function parse_format_xml($formatfilecontent, $xmlroot) {
         global $CFG;
@@ -530,7 +546,7 @@ class form extends \mod_vocab\toolform {
         require_once($CFG->dirroot.'/lib/xmlize.php');
 
         if (empty($formatfilecontent)) {
-            // This shoujldn't happen. We could return an error
+            // This shouldn't happen. We could return an error
             // message such as $this->get_string('emptyxmlfile').
             return null;
         }
@@ -597,7 +613,8 @@ class form extends \mod_vocab\toolform {
      * @param string $xml (passed by reference)
      * @param object $format
      * @param string $name
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function parse_format_xml_initnode(&$xml, $format, $name) {
 
@@ -634,7 +651,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $xml (passed by reference)
      * @param object $format
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function parse_format_xml_settings(&$xml, $format) {
 
@@ -660,7 +678,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $xml (passed by reference)
      * @param object $format
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function parse_format_xml_records(&$xml, $format) {
 
@@ -708,7 +727,8 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param string $datafilename
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function create_format_xml($workbook, $datafilename) {
         $nl = "\n";
@@ -835,7 +855,8 @@ class form extends \mod_vocab\toolform {
      * @param string $strname
      * @param array $a additional value or values required for the language string (optional, default=null)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_comment($strname, $a=null) {
         return '<!-- '.$this->get_string($strname, $a).' -->';
@@ -846,7 +867,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $worksheet representing a sheet from the data file
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_min_max_rows($worksheet) {
         $rmin = 0;
@@ -876,7 +898,8 @@ class form extends \mod_vocab\toolform {
      * @param object $worksheet representing a sheet from the data file
      * @param integer $r a row number
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_min_max_cols($worksheet, $r) {
 
@@ -906,7 +929,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $filename
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_format_type($filename) {
         $type = $filename;
@@ -921,7 +945,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $txt
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_clean_text($txt) {
         // Replace all punctuation and spaces with an underscore, "_".
@@ -934,7 +959,8 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $format (optional, default=null)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_sheetcount_rowcount($workbook, $format=null) {
 
@@ -971,7 +997,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param xxx $num
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function number_format($num) {
         return number_format($num,
@@ -1043,7 +1070,8 @@ class form extends \mod_vocab\toolform {
      * get_previewrows
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_previewrows() {
         return optional_param('previewrows', 10, PARAM_INT);
@@ -1056,7 +1084,8 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $format
      * @param string $table name of a table in the database
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function populate_preview_table($workbook, $format, $table) {
 
@@ -1113,7 +1142,8 @@ class form extends \mod_vocab\toolform {
      * @param object $format
      * @param string $table name of a table in the database
      * @param boolean $dryrun (optional, default=true)
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function populate_review_table($workbook, $format, $table, $dryrun=true) {
         $this->populate_import_table($workbook, $format, $table, self::MODE_DRYRUN);
@@ -1126,7 +1156,8 @@ class form extends \mod_vocab\toolform {
      * @param object $format
      * @param string $table name of a table in the database
      * @param string $mode (optional, default=self::MODE_IMPORT)
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function populate_import_table($workbook, $format, $table, $mode=self::MODE_IMPORT) {
 
@@ -1153,7 +1184,7 @@ class form extends \mod_vocab\toolform {
         if ($mode == self::MODE_IMPORT) {
             $previewrows = 0;
         } else {
-            // All other values in including self::MODE_DRYRUN.
+            // All other values for $mode including self::MODE_DRYRUN.
             $previewrows = $this->get_previewrows();
         }
 
@@ -1238,6 +1269,7 @@ class form extends \mod_vocab\toolform {
 
                             // Generate output depending on table/field definitions in XML.
                             if (! $this->skip_row($row, $vars, $tableinfo, $rowvars)) {
+
                                 // Set the current row (for reporting purposes).
                                 $this->currentrow = $r;
                                 $this->currentrowname = $this->get_rowname($row, $vars, $tableinfo);
@@ -1387,7 +1419,9 @@ class form extends \mod_vocab\toolform {
         // to the following "vocab" tables,
         // which together form the "dictionary".
         $dictionarytables = [
-            'vocab_antonyms',
+            'vocab_attribute_names',
+            'vocab_attribute_values',
+            'vocab_attributes',
             'vocab_corpuses',
             'vocab_definitions',
             'vocab_frequencies',
@@ -1398,7 +1432,10 @@ class form extends \mod_vocab\toolform {
             'vocab_levels',
             'vocab_multimedia',
             'vocab_pronunciations',
-            'vocab_synonyms',
+            'vocab_relationship_names',
+            'vocab_relationships',
+            'vocab_samples',
+            'vocab_word_samples',
             'vocab_words',
         ];
 
@@ -1421,6 +1458,12 @@ class form extends \mod_vocab\toolform {
             'vocab_word_usages',
         ];
 
+        // Access to config tables is also disallowed.
+        $configtables = [
+            'vocab_config',
+            'vocab_config_settings',
+        ];
+
         foreach ($DB->get_tables() as $table) {
             if (in_array($table, $dictionarytables)) {
                 $info[$table] = [];
@@ -1438,7 +1481,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
      * @param object $format
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function setup_totals(&$tableinfo, $format) {
         $this->totals = (object)[
@@ -1474,7 +1518,8 @@ class form extends \mod_vocab\toolform {
      * @param string $table name of a table in the database
      * @param mixed $type a PARAM_xxx constant value
      * @param xxx $msg (optional, default='')
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function update_totals($table, $type, $msg='') {
 
@@ -1544,7 +1589,8 @@ class form extends \mod_vocab\toolform {
      * report_totals_data
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function report_totals_data() {
 
@@ -1619,7 +1665,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param xxx $headers (passed by reference)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function report_totals_head(&$headers) {
         $cells = [];
@@ -1671,7 +1718,8 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $sheet
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_sheet_range($workbook, $sheet) {
         $defaultmin = 1;
@@ -1685,7 +1733,8 @@ class form extends \mod_vocab\toolform {
      * @param object $worksheet representing a sheet from the data file
      * @param object $row
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_row_range($worksheet, $row) {
         $defaultmin = 1;
@@ -1701,7 +1750,8 @@ class form extends \mod_vocab\toolform {
      * @param integer $defaultmin
      * @param integer $defaultmax
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_item_range($item, $prefix, $defaultmin, $defaultmax) {
 
@@ -1771,7 +1821,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $row
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_cell_range($row) {
 
@@ -1795,7 +1846,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $value
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function ignore_value($value) {
         $name = 'ignorevalues';
@@ -1828,7 +1880,8 @@ class form extends \mod_vocab\toolform {
      * @param string $text
      * @param boolean $cellheader if TRUE, the 1st cell should be made a TH cell (optional, default=false)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $cellheader=false) {
         $cells = [];
@@ -1851,7 +1904,8 @@ class form extends \mod_vocab\toolform {
      * @param integer $c a column number
      * @param integer $r a row number
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function get_singleline_value($worksheet, $c, $r) {
         $value = $this->get_cell_value($worksheet, $c, $r);
@@ -1865,11 +1919,41 @@ class form extends \mod_vocab\toolform {
      * @param integer $c a column number
      * @param integer $r a row number
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function get_cell_value($worksheet, $c, $r) {
+        static $prunerclass = '\PhpOffice\PhpSpreadsheet\Calculation\Engine\BranchPruner';
+        static $formatclass = '\PhpOffice\PhpSpreadsheet\Style\NumberFormat';
+        static $formatmethod = 'toFormattedString';
+        
         $coffset = ($this->phpspreadsheet ? 1 : 0); // The column offset.
-        $value = $worksheet->getCellByColumnAndRow($c + $coffset, $r)->getFormattedValue();
+        $cell = $worksheet->getCellByColumnAndRow($c + $coffset, $r);
+        if ($cell->isFormula()) {
+            if (class_exists($prunerclass)) {
+                // Moodle >= 4.x has no problem with full column references.
+                $cancalculate = true;
+            } else if (preg_match('/(\$[0-9A-F]+):\1/', $cell->getValue())) {
+                // Moodle <= 3.11 cannot handle absolute full column
+                // references in Excel, such as "textbooks!$F:$F".
+                $cancalculate = false;
+            } else {
+                $cancalculate = true;
+            }
+        } else {
+            $cancalculate = true;
+        }
+        if ($cancalculate) {
+            // On Moodle >= 4.x, we can use the standard formatter.
+            $value = $cell->getFormattedValue();
+        } else {
+            // On Moodle <= 3.11, we mimic "getFormattedValue()",
+            // but use the "old" calculated value.
+            $value = call_user_func_array([$formatclass, $formatmethod], [
+                $cell->getOldCalculatedValue(),
+                $cell->getStyle()->getNumberFormat()->getFormatCode(),
+            ]);
+        }
         return ($this->ignore_value($value) ? '' : $value);
     }
 
@@ -1903,7 +1987,7 @@ class form extends \mod_vocab\toolform {
     public function format_field(&$tableinfo, $fieldname, $value, &$vars, $aliastype) {
 
         // These are the functions that we know about.
-        $search = '/EMPTY|IDS|ID|VALUE|JOIN|SPLIT|NEWLINE|REPLACE|SUBSTRING|LOWERCASE|PROPERCASE|UPPERCASE/u';
+        $search = '/\b(EMPTY|IDS|ID|SET|VALUE|JOIN|SPLIT|NEWLINE|REPLACE|SUBSTRING|LOWERCASE|PROPERCASE|UPPERCASE)\b/u';
 
         // Search for, and replace function names (starting from the rightmost one).
         if (preg_match_all($search, $value, $matches, PREG_OFFSET_CAPTURE)) {
@@ -2149,9 +2233,11 @@ class form extends \mod_vocab\toolform {
      * @param array $args (passed by reference) arguments for the specified $functionname
      * @param array $vars (passed by reference) values for the current row in the data file
      * @return mixed $result of the specified function using the given arguments
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function format_function(&$tableinfo, $functionname, &$args, &$vars) {
+        global $DB;
 
         // Convert aliases to non-scalar values (e.g. arrays).
         $this->get_alias_values($args);
@@ -2217,26 +2303,101 @@ class form extends \mod_vocab\toolform {
             case 'ID':
 
                 // Expected syntax is (table, field1, value1, ...).
-                $table = (isset($args[0]) ? $args[0] : '');
-                if (empty($table) || ! is_string($table)) {
-                    return '';
-                }
-
+                $table = '';
                 $params = [];
                 $emptyvalue = false;
 
-                $i = 1;
+                $i = 0;
                 while (array_key_exists($i, $args) && array_key_exists($i + 1, $args)) {
-                    $name = $value = $args[$i++];
-                    $value = $value = $args[$i++];
-                    $params[$name] = $value;
-                    if (empty($value)) {
-                        $emptyvalue = true;
+                    if ($i == 0) {
+                        $table = $args[$i++];
+                    } else {
+                        $name = $args[$i++];
+                        $value = $args[$i++];
+                        $params[$name] = $value;
+                        if (empty($value)) {
+                            $emptyvalue = true;
+                        }
                     }
                 }
-                if (empty($params) || $emptyvalue) {
+
+                if (empty($table) || empty($params) || $emptyvalue) {
                     return '';
                 }
+
+                return $this->get_record_ids($tableinfo, $table, $params);
+
+            case 'SET':
+                // This function is not used anywhere. However, it works so let it stay.
+                // It will handle the case where a new field is added to a table which
+                // already contains items that do not have the field set.
+
+                // Expected syntax is (table, newfield, newvalue, field1, value1, ...).
+                $table = '';
+                $newfield = '';
+                $newvalue = '';
+                $params = [];
+
+                $i = 0;
+                while (array_key_exists($i, $args) && array_key_exists($i + 1, $args)) {
+                    if ($i == 0) {
+                        $table = $args[$i++];
+                    } else if ($i == 1) {
+                        $newfield = $args[$i++];
+                        $newvalue = $args[$i++];
+                    } else {
+                        $name = $args[$i++];
+                        $value = $args[$i++];
+                        $params[$name] = $value;
+                    }
+                }
+
+                // Ensure we have minimum number of values to work with.
+                if (empty($table) || empty($newfield) || empty($newvalue) || empty($params)) {
+                    return '';
+                }
+
+                // Get all exisiting records that match the OLD conditions.
+                // We expect at most one, but it's possible there could be more.
+                $records = $DB->get_records($table, $params);
+
+                // Get all existing records that match the NEW conditions.
+                // We expect at most one, but it's possible there could be more.
+                $newparams = array_merge($params, [$newfield => $newvalue]);
+                $newrecords = $DB->get_records($table, $newparams);
+
+                // Check if we have a record matching the NEW value.
+                if ($newrecords) {
+
+                    if ($table == 'vocab_words') {
+                        $tables = [];
+                        // Remove all records matching the OLD conditions.
+                        // ToDo: update tables that may have used this word
+                        // vocab_word_samples, vocab_word_instances
+                        // vocab_synonyms, vocab_pronunciations,
+                        // vocab_multimedia, vocab_frequencies,
+                        // vocab_definitions, vocab_antonyms
+                        // If the newfield is "posid", we also need  to update all the
+                        // antonyms, synonyms, conjugations that point to the same lemma.
+                    }
+                    $DB->delete_records_list($table, 'id', array_keys($records));
+
+                    // Return the first record matching NEW conditions.
+                    return reset($newrecords)->id;
+                }
+
+                // Check if we have a record matching the OLD conditions.
+                if ($records) {
+
+                    // Update all OLD records.
+                    $DB->set_field($table, $newfield, $newvalue, $params);
+
+                    // Return the first OLD record.
+                    return reset($records)->id;
+                }
+
+                // Otherwise, there were no records matching either the new
+                // or the old conditions, so we proceed as normal.
                 return $this->get_record_ids($tableinfo, $table, $params);
 
             case 'VALUE':
@@ -2328,7 +2489,8 @@ class form extends \mod_vocab\toolform {
      * @param array $itemvars (passed by reference) settings and values for the current item (file, sheet or row).
      * @param string $aliastype "FILE", "SHEET" or "ROW"
      * @return void, but may update $vars and $itemvars
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_item_settings($item, &$vars, &$tableinfo, &$itemvars, $aliastype) {
         foreach ($item->settings as $name => $value) {
@@ -2343,7 +2505,8 @@ class form extends \mod_vocab\toolform {
      * @param array $vars (passed by reference) values for the current row in the data file
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @param string $aliastype "FILE", "SHEET" or "ROW"
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_item_records($item, &$vars, &$tableinfo, $aliastype) {
         foreach ($item->records as $record) {
@@ -2372,10 +2535,11 @@ class form extends \mod_vocab\toolform {
      * @param string $table name of a table in the database
      * @param array $fields of database field names (passed by reference)
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
-    public function get_record_ids(&$tableinfo, $table, &$fields) {
-        $debug = false;
+    public function get_record_ids(&$tableinfo, $table, &$fields, $setfields=[]) {
+        $debug = true;
 
         if (! array_key_exists($table, $tableinfo)) {
             throw new \moodle_exception('tableaccessnotallowed', $this->subpluginname, '', $table);
@@ -2460,7 +2624,6 @@ class form extends \mod_vocab\toolform {
         // But this fails with an error if several records are found,
         // so instead, we get all the matching records and return only
         // the first (=lowest id).
-
         if ($records = $DB->get_records($table, $fields, 'id')) {
             if (count($records) == 1) {
                 $this->update_totals($table, 'found');
@@ -2476,6 +2639,10 @@ class form extends \mod_vocab\toolform {
         if ($id === false || $id === 0 || $id === null) {
             if ($this->formstate == 'import') {
                 $id = $DB->insert_record($table, $fields);
+            } else {
+                // We only actually add records during the "import" state.
+                // However, we set the id here to signify no error.
+                $id = 'x';
             }
             $this->update_totals($table, 'added');
         }
@@ -2503,11 +2670,24 @@ class form extends \mod_vocab\toolform {
                 // E.g. vocab_pronunciations.fieldid.
                 continue;
             }
-            // We don't need to report all of these.
-            // E.g. vocab_synonyms.synonymwordid.
-            if (substr($name, -2) == 'id' && empty($fields[$name])) {
-                $msg = get_string('missingfield', 'error', $name);
-                $this->update_totals($table, 'error', $msg);
+            // Check if "id" field is missing (or empty during import).
+            if (substr($name, -2) == 'id') {
+                if (array_key_exists($name, $fields)) {
+                    if ($this->formstate == 'import') {
+                        $missing = empty($fields[$name]);
+                    } else {
+                        $missing = false;
+                    }
+                } else {
+                    $missing = false;
+                }
+                if ($missing) {
+                    $msg = $this->get_string('missingfielddata', (object)[
+                        'tablename' => $table,
+                        'fieldname' => $name,
+                    ]);
+                    $this->update_totals($table, 'error', $msg);
+                }
             }
         }
 
@@ -2568,7 +2748,8 @@ class form extends \mod_vocab\toolform {
      * (this function does not apepar to be used)
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function get_punctuation() {
         if ($this->punctuation === null) {

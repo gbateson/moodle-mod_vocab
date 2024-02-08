@@ -31,7 +31,8 @@
  * @uses $DB
  * @param xxx $oldversion
  * @return xxx
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function xmldb_vocab_upgrade($oldversion) {
     global $CFG, $DB;
@@ -132,10 +133,10 @@ function xmldb_vocab_upgrade($oldversion) {
 
     /*/////////////////////////////////////
     // Interim updates are all obviated by
-    // full structure check for 2023120640
+    // full structure check for 2024020656
     /////////////////////////////////////*/
 
-    $newversion = 2023120640;
+    $newversion = 2024020757;
     if ($oldversion < $newversion) {
         xmldb_vocab_check_structure($dbman);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');

@@ -42,7 +42,8 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
      * define_structure
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     protected function define_structure() {
 
@@ -92,37 +93,37 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
 
         // Backup antonyms.
         $antonyms = new backup_nested_element('antonyms');
-        $exclude = ['id', 'wordid']; // TODO: fix antonymwordid later.
+        $exclude = ['id', 'wordid']; // TO-DO: fix antonymwordid later.
         $include = $this->get_fieldnames('vocab_antonyms', $exclude);
         $antonym = new backup_nested_element('antonym', ['id', $include]);
 
         // Backup definitions.
         $definitions = new backup_nested_element('definitions');
-        $exclude = ['id', 'wordid']; // TODO: fix 'langid' and 'levelid'.
+        $exclude = ['id', 'wordid']; // TO-DO: fix 'langid' and 'levelid'.
         $include = $this->get_fieldnames('vocab_definitions', $exclude);
         $definition = new backup_nested_element('definition', ['id', $include]);
 
         // Backup multimedias.
         $multimedias = new backup_nested_element('multimedias');
-        $exclude = ['id', 'wordid']; // TODO: fix 'langid' and 'levelid'.
+        $exclude = ['id', 'wordid']; // TO-DO: fix 'langid' and 'levelid'.
         $include = $this->get_fieldnames('vocab_multimedias', $exclude);
         $multimedia = new backup_nested_element('multimedia', ['id', $include]);
 
         // Backup frequencies.
         $frequencies = new backup_nested_element('frequencies');
-        $exclude = ['id', 'wordid']; // TODO: fix 'corpusid'.
+        $exclude = ['id', 'wordid']; // TO-DO: fix 'corpusid'.
         $include = $this->get_fieldnames('vocab_frequencies', $exclude);
         $frequency = new backup_nested_element('frequency', ['id', $include]);
 
         // Backup pronunciations.
         $pronunciations = new backup_nested_element('pronunciations');
-        $exclude = ['id', 'wordid']; // TODO: fix 'langid'.
+        $exclude = ['id', 'wordid']; // TO-DO: fix 'langid'.
         $include = $this->get_fieldnames('vocab_pronunciations', $exclude);
         $pronunciation = new backup_nested_element('pronunciation', ['id', $include]);
 
         // Backup synonyms.
         $synonyms = new backup_nested_element('synonyms');
-        $exclude = ['id', 'wordid']; // TODO: fix synonymwordid.
+        $exclude = ['id', 'wordid']; // TO-DO: fix synonymwordid.
         $include = $this->get_fieldnames('vocab_synonyms', $exclude);
         $synonym = new backup_nested_element('synonym', ['id', $include]);
 
@@ -161,7 +162,7 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
 
             // Backup word_usage.
             $wordusages = new backup_nested_element('wordusages');
-            $exclude = ['id']; // TODO: fix 'gameattemptid', 'wordinstanceid'.
+            $exclude = ['id']; // Should we also fix 'gameattemptid', 'wordinstanceid'?
             $include = $this->get_fieldnames('vocab_word_usages', $exclude);
             $wordusage = new backup_nested_element('wordusage', ['id', $include]);
 

@@ -54,7 +54,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * header
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function header() {
         $header = parent::header();
@@ -99,7 +100,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * modedit_icon
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function modedit_icon() {
         $params = [
@@ -116,7 +118,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_page
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_page() {
         $output = '';
@@ -130,7 +133,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_page_guest
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_page_guest() {
         $output = '';
@@ -145,7 +149,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_page_notenrolled
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_page_notenrolled() {
         $output = '';
@@ -160,7 +165,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_intro
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_intro() {
         if (html_is_blank($this->vocab->intro)) {
@@ -175,7 +181,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_information
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_information() {
         $output = '';
@@ -187,7 +194,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_results_and_wordlist
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_results_and_wordlist() {
         $output = '';
@@ -205,7 +213,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param array $words
      * @param xxx $user (optional, default=null)
      * @return string of HTML to display results
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function view_results($words, $user=null) {
         global $USER;
@@ -302,7 +311,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      *
      * @param array $words
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_wordcounts($words) {
         $total = count($words);
@@ -322,7 +332,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * svg_fill_patterns
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function svg_fill_patterns() {
         $output = '';
@@ -345,7 +356,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param xxx $strokecolor
      * @param xxx $strokewidth
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function svg_fill_pattern($id, $width, $height, $fillcolor, $d, $strokecolor, $strokewidth) {
         $output = '';
@@ -555,6 +567,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $textcolors = $this->get_colors('#000000', '#ff9933', $countgames);
 
         foreach ($games as $i => $game) {
+            // Switch the bg color from black to white
+            // when half of the buttons have been generated.
             $textcolor = ($i < ($countgames / 2) ? 'black' : 'white');
             $output .= $this->game_button($game, $gamecolors[$i], $textcolor);
         }
@@ -585,7 +599,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 Each game can be hidden or shown in any Vocab activity,
                 and furthermore may have it's own settings to add into
                 the module settings page.
-                Each game can define its own icon (as an svg) of fontawesome icon.
+                Each game can define its own icon (as an svg) or fontawesome icon.
                 vocab_games table looks like this:
                     id name siteenabled
                 vocab_game_instances table looks like this:
@@ -602,7 +616,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param xxx $gamecolor (optional, default='')
      * @param xxx $textcolor (optional, default='')
      * @return string of HTML to display a game button.
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function game_button($game, $gamecolor='', $textcolor='') {
         // See "single_button" method in "lib/outputrenderers.php".

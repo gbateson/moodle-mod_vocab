@@ -30,7 +30,8 @@
  *
  * @param string $feature a FEATURE_xxx constant e.g. mod_intro
  * @return boolean TRUE if this plugin supports this $feature; otherwise FALSE.
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function vocab_supports($feature) {
     // These constants are defined in "lib/moodlelib.php".
@@ -76,7 +77,8 @@ function vocab_supports($feature) {
  * @param stdClass $data submitted from the form
  * @param moodleform $mform representing the Moodle form
  * @return xxx
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function vocab_add_instance($data, $mform) {
     global $DB;
@@ -99,7 +101,8 @@ function vocab_add_instance($data, $mform) {
  * @param stdClass $data submitted from the form
  * @param moodleform $mform representing the Moodle form
  * @return xxx
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function vocab_update_instance($data, $mform) {
     global $DB;
@@ -121,7 +124,8 @@ function vocab_update_instance($data, $mform) {
  * @uses $DB
  * @param xxx $id
  * @return xxx
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function vocab_delete_instance($id) {
     global $DB;
@@ -173,7 +177,8 @@ function vocab_extend_navigation(navigation_node $node, stdClass $course, stdCla
 function vocab_extend_settings_navigation(settings_navigation $settings, navigation_node $vocabnode) {
     global $PAGE;
 
-    //$cm = $settings->get_page()->cm;
+    // In Moodle >= 4.x we can use $cm = $settings->get_page()->cm
+    // but for compatability with Moodle 3.11, we use the line below.
     $cm = $PAGE->cm;
     $capability = 'mod/vocab:manage';
     if (has_capability($capability, $cm->context)) {

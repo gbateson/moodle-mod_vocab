@@ -82,7 +82,8 @@ class subpluginbase {
      * __construct
      *
      * @uses $USER
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function __construct() {
         global $USER;
@@ -139,7 +140,8 @@ class subpluginbase {
      * create
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public static function create() {
         $class = get_called_class();
@@ -153,7 +155,8 @@ class subpluginbase {
      * @param boolean $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function url($filepath, $escaped=null, $params=[]) {
         if ($this->vocab && $this->vocab->cm) {

@@ -69,7 +69,8 @@ class form extends \mod_vocab\toolform {
      *
      * @uses $CFG
      * @uses $USER
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition() {
         global $CFG, $USER;
@@ -115,7 +116,8 @@ class form extends \mod_vocab\toolform {
      * get_filetypes
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_filetypes() {
         return [
@@ -130,7 +132,8 @@ class form extends \mod_vocab\toolform {
      * get_actions
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_actions() {
         return [

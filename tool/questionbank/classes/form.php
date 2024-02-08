@@ -52,7 +52,8 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition() {
         global $PAGE;
@@ -114,7 +115,8 @@ class form extends \mod_vocab\toolform {
      * get_question_types
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_question_types() {
         // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
@@ -135,7 +137,8 @@ class form extends \mod_vocab\toolform {
      * get_question_levels
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_question_levels() {
         // ToDo: get these levels from the vocab_levelnames table.
@@ -153,7 +156,8 @@ class form extends \mod_vocab\toolform {
      * add_parentcategory
      *
      * @param moodleform $mform representing the Moodle form
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function add_parentcategory($mform) {
 
@@ -196,7 +200,8 @@ class form extends \mod_vocab\toolform {
      * link_to_managequestioncategories
      *
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function link_to_managequestioncategories() {
         $link = '/question/bank/managecategories/category.php';
@@ -217,7 +222,8 @@ class form extends \mod_vocab\toolform {
      * @uses $CFG
      * @uses $DB
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_question_categories() {
         global $CFG, $DB;
@@ -248,7 +254,8 @@ class form extends \mod_vocab\toolform {
      * add_subcategories
      *
      * @param moodleform $mform representing the Moodle form
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function add_subcategories($mform) {
         $name = 'subcategories';
@@ -294,7 +301,8 @@ class form extends \mod_vocab\toolform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
@@ -316,7 +324,8 @@ class form extends \mod_vocab\toolform {
      * generate_questions
      *
      * @uses $DB
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function generate_questions() {
         global $DB;

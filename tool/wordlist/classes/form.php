@@ -43,7 +43,8 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition() {
         global $PAGE, $_POST;
@@ -152,7 +153,8 @@ class form extends \mod_vocab\toolform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function validation($data, $files) {
         global $USER;
@@ -186,7 +188,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param xxx $newwords
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function addwords($mform, $newwords) {
 
@@ -239,7 +242,8 @@ class form extends \mod_vocab\toolform {
      * @param xxx $word
      * @param xxx $langcode
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function get_lemma($word, $langcode) {
         global $DB;
@@ -264,7 +268,8 @@ class form extends \mod_vocab\toolform {
      * @param moodleform $mform representing the Moodle form
      * @param xxx $count
      * @return xxx
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function selectwords($mform, $count) {
         global $DB, $OUTPUT;
@@ -334,7 +339,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param xxx $fileid
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function importfile($mform, $fileid) {
         $msg = \html_writer::tag('h4', 'importfile: '.$fileid);
@@ -346,7 +352,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $filename
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function exportfile($mform, $filename) {
         $msg = \html_writer::tag('h4', 'exportfile: '.$filename);

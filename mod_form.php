@@ -47,7 +47,8 @@ class mod_vocab_mod_form extends moodleform_mod {
      * definition
      *
      * @uses $CFG
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function definition() {
         global $CFG;
@@ -520,7 +521,8 @@ class mod_vocab_mod_form extends moodleform_mod {
     /**
      * collapse_navigation
      *
-     * @todo Finish documenting this function
+     * 
+     * TODO: Finish documenting this function
      */
     public function collapse_navigation() {
         \mod_vocab\activity::create(

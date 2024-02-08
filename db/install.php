@@ -27,7 +27,8 @@
 /**
  * xmldb_vocab_install
  *
- * @todo Finish documenting this function
+ * 
+ * TODO: Finish documenting this function
  */
 function xmldb_vocab_install() {
 }
