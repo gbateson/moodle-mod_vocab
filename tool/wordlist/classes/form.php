@@ -43,7 +43,7 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition() {
@@ -153,7 +153,7 @@ class form extends \mod_vocab\toolform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function validation($data, $files) {
@@ -188,7 +188,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param xxx $newwords
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function addwords($mform, $newwords) {
@@ -242,7 +242,7 @@ class form extends \mod_vocab\toolform {
      * @param xxx $word
      * @param xxx $langcode
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_lemma($word, $langcode) {
@@ -268,7 +268,7 @@ class form extends \mod_vocab\toolform {
      * @param moodleform $mform representing the Moodle form
      * @param xxx $count
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function selectwords($mform, $count) {
@@ -339,7 +339,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param xxx $fileid
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function importfile($mform, $fileid) {
@@ -352,7 +352,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $filename
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function exportfile($mform, $filename) {

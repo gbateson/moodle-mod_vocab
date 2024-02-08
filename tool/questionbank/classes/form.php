@@ -52,7 +52,7 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition() {
@@ -115,7 +115,7 @@ class form extends \mod_vocab\toolform {
      * get_question_types
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_question_types() {
@@ -137,7 +137,7 @@ class form extends \mod_vocab\toolform {
      * get_question_levels
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_question_levels() {
@@ -156,7 +156,7 @@ class form extends \mod_vocab\toolform {
      * add_parentcategory
      *
      * @param moodleform $mform representing the Moodle form
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function add_parentcategory($mform) {
@@ -200,7 +200,7 @@ class form extends \mod_vocab\toolform {
      * link_to_managequestioncategories
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function link_to_managequestioncategories() {
@@ -222,7 +222,7 @@ class form extends \mod_vocab\toolform {
      * @uses $CFG
      * @uses $DB
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_question_categories() {
@@ -254,7 +254,7 @@ class form extends \mod_vocab\toolform {
      * add_subcategories
      *
      * @param moodleform $mform representing the Moodle form
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function add_subcategories($mform) {
@@ -301,7 +301,7 @@ class form extends \mod_vocab\toolform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function validation($data, $files) {
@@ -324,7 +324,7 @@ class form extends \mod_vocab\toolform {
      * generate_questions
      *
      * @uses $DB
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function generate_questions() {

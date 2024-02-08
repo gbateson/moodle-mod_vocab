@@ -54,7 +54,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * header
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function header() {
@@ -100,7 +100,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * modedit_icon
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function modedit_icon() {
@@ -118,7 +118,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_page
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_page() {
@@ -133,7 +133,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_page_guest
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_page_guest() {
@@ -149,7 +149,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_page_notenrolled
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_page_notenrolled() {
@@ -165,7 +165,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_intro
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_intro() {
@@ -181,7 +181,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_information
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_information() {
@@ -194,7 +194,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * view_results_and_wordlist
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_results_and_wordlist() {
@@ -213,7 +213,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param array $words
      * @param xxx $user (optional, default=null)
      * @return string of HTML to display results
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function view_results($words, $user=null) {
@@ -311,7 +311,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      *
      * @param array $words
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_wordcounts($words) {
@@ -332,7 +332,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * svg_fill_patterns
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function svg_fill_patterns() {
@@ -356,7 +356,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param xxx $strokecolor
      * @param xxx $strokewidth
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function svg_fill_pattern($id, $width, $height, $fillcolor, $d, $strokecolor, $strokewidth) {
@@ -616,7 +616,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param xxx $gamecolor (optional, default='')
      * @param xxx $textcolor (optional, default='')
      * @return string of HTML to display a game button.
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function game_button($game, $gamecolor='', $textcolor='') {

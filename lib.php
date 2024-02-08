@@ -30,7 +30,7 @@
  *
  * @param string $feature a FEATURE_xxx constant e.g. mod_intro
  * @return boolean TRUE if this plugin supports this $feature; otherwise FALSE.
- * 
+ *
  * TODO: Finish documenting this function
  */
 function vocab_supports($feature) {
@@ -77,7 +77,7 @@ function vocab_supports($feature) {
  * @param stdClass $data submitted from the form
  * @param moodleform $mform representing the Moodle form
  * @return xxx
- * 
+ *
  * TODO: Finish documenting this function
  */
 function vocab_add_instance($data, $mform) {
@@ -101,7 +101,7 @@ function vocab_add_instance($data, $mform) {
  * @param stdClass $data submitted from the form
  * @param moodleform $mform representing the Moodle form
  * @return xxx
- * 
+ *
  * TODO: Finish documenting this function
  */
 function vocab_update_instance($data, $mform) {
@@ -124,7 +124,7 @@ function vocab_update_instance($data, $mform) {
  * @uses $DB
  * @param xxx $id
  * @return xxx
- * 
+ *
  * TODO: Finish documenting this function
  */
 function vocab_delete_instance($id) {

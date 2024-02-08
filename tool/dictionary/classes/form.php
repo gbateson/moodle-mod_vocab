@@ -39,7 +39,7 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition() {

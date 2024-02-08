@@ -82,7 +82,7 @@ class subpluginbase {
      * __construct
      *
      * @uses $USER
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function __construct() {
@@ -140,7 +140,7 @@ class subpluginbase {
      * create
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public static function create() {
@@ -155,7 +155,7 @@ class subpluginbase {
      * @param boolean $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function url($filepath, $escaped=null, $params=[]) {

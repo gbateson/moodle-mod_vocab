@@ -122,7 +122,7 @@ class form extends \mod_vocab\toolform {
      * @param string $target (optional, default='')
      * @param array $attributes (optional, default=null)
      * @param boolean $editable (optional, default=true)
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function __construct($action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
@@ -160,7 +160,7 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition() {
@@ -195,7 +195,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition_upload($mform) {
@@ -222,7 +222,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition_preview($mform) {
@@ -254,7 +254,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $value (optional, default=null)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_options_uploadaction($value=null) {
@@ -278,7 +278,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition_review($mform) {
@@ -298,7 +298,7 @@ class form extends \mod_vocab\toolform {
      * @param moodleform $mform representing the Moodle form
      * @param boolean $submit
      * @param boolean $cancel
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition_buttons($mform, $submit, $cancel) {
@@ -320,7 +320,7 @@ class form extends \mod_vocab\toolform {
      * get_state
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_state() {
@@ -332,7 +332,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param array $values numbers to be displayed as a pie-chart
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function transfer_incoming_values($mform, $values) {
@@ -353,7 +353,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $value
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function set_next_formstate($mform, $value) {
@@ -370,7 +370,7 @@ class form extends \mod_vocab\toolform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function validation($data, $files) {
@@ -389,7 +389,7 @@ class form extends \mod_vocab\toolform {
      * @uses $CFG
      * @uses $USER
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function render_data_table() {
@@ -488,7 +488,7 @@ class form extends \mod_vocab\toolform {
      * @param object $context a record form the "context" table in the Moodle database
      * @param string $paramname
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_datafileinfo($fs, $context, $paramname) {
@@ -522,7 +522,7 @@ class form extends \mod_vocab\toolform {
      * @param object $context a record form the "context" table in the Moodle database
      * @param string $paramname
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_formatfileinfo($fs, $context, $paramname) {
@@ -550,7 +550,7 @@ class form extends \mod_vocab\toolform {
      * @param string $formatfilecontent
      * @param string $xmlroot
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function parse_format_xml($formatfilecontent, $xmlroot) {
@@ -627,7 +627,7 @@ class form extends \mod_vocab\toolform {
      * @param string $xml (passed by reference)
      * @param object $format
      * @param string $name
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function parse_format_xml_initnode(&$xml, $format, $name) {
@@ -665,7 +665,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $xml (passed by reference)
      * @param object $format
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function parse_format_xml_settings(&$xml, $format) {
@@ -692,7 +692,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $xml (passed by reference)
      * @param object $format
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function parse_format_xml_records(&$xml, $format) {
@@ -741,7 +741,7 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param string $datafilename
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function create_format_xml($workbook, $datafilename) {
@@ -869,7 +869,7 @@ class form extends \mod_vocab\toolform {
      * @param string $strname
      * @param array $a additional value or values required for the language string (optional, default=null)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_comment($strname, $a=null) {
@@ -881,7 +881,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $worksheet representing a sheet from the data file
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_min_max_rows($worksheet) {
@@ -912,7 +912,7 @@ class form extends \mod_vocab\toolform {
      * @param object $worksheet representing a sheet from the data file
      * @param integer $r a row number
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_min_max_cols($worksheet, $r) {
@@ -943,7 +943,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $filename
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_format_type($filename) {
@@ -959,7 +959,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $txt
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_clean_text($txt) {
@@ -973,7 +973,7 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $format (optional, default=null)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_sheetcount_rowcount($workbook, $format=null) {
@@ -1011,7 +1011,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param xxx $num
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function number_format($num) {
@@ -1084,7 +1084,7 @@ class form extends \mod_vocab\toolform {
      * get_previewrows
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_previewrows() {
@@ -1098,7 +1098,7 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $format
      * @param string $table name of a table in the database
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function populate_preview_table($workbook, $format, $table) {
@@ -1156,7 +1156,7 @@ class form extends \mod_vocab\toolform {
      * @param object $format
      * @param string $table name of a table in the database
      * @param boolean $dryrun (optional, default=true)
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function populate_review_table($workbook, $format, $table, $dryrun=true) {
@@ -1170,7 +1170,7 @@ class form extends \mod_vocab\toolform {
      * @param object $format
      * @param string $table name of a table in the database
      * @param string $mode (optional, default=self::MODE_IMPORT)
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function populate_import_table($workbook, $format, $table, $mode=self::MODE_IMPORT) {
@@ -1495,7 +1495,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
      * @param object $format
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function setup_totals(&$tableinfo, $format) {
@@ -1532,7 +1532,7 @@ class form extends \mod_vocab\toolform {
      * @param string $table name of a table in the database
      * @param mixed $type a PARAM_xxx constant value
      * @param xxx $msg (optional, default='')
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function update_totals($table, $type, $msg='') {
@@ -1603,7 +1603,7 @@ class form extends \mod_vocab\toolform {
      * report_totals_data
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function report_totals_data() {
@@ -1679,7 +1679,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param xxx $headers (passed by reference)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function report_totals_head(&$headers) {
@@ -1732,7 +1732,7 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $sheet
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_sheet_range($workbook, $sheet) {
@@ -1747,7 +1747,7 @@ class form extends \mod_vocab\toolform {
      * @param object $worksheet representing a sheet from the data file
      * @param object $row
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_row_range($worksheet, $row) {
@@ -1764,7 +1764,7 @@ class form extends \mod_vocab\toolform {
      * @param integer $defaultmin
      * @param integer $defaultmax
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_item_range($item, $prefix, $defaultmin, $defaultmax) {
@@ -1835,7 +1835,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $row
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_cell_range($row) {
@@ -1860,7 +1860,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param string $value
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function ignore_value($value) {
@@ -1897,7 +1897,7 @@ class form extends \mod_vocab\toolform {
      * @param string $text
      * @param boolean $cellheader if TRUE, the 1st cell should be made a TH cell (optional, default=false)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $cellheader=false) {
@@ -1921,7 +1921,7 @@ class form extends \mod_vocab\toolform {
      * @param integer $c a column number
      * @param integer $r a row number
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     protected function get_singleline_value($worksheet, $c, $r) {
@@ -1936,7 +1936,7 @@ class form extends \mod_vocab\toolform {
      * @param integer $c a column number
      * @param integer $r a row number
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     protected function get_cell_value($worksheet, $c, $r) {
@@ -2256,7 +2256,7 @@ class form extends \mod_vocab\toolform {
      * @param array $args (passed by reference) arguments for the specified $functionname
      * @param array $vars (passed by reference) values for the current row in the data file
      * @return mixed $result of the specified function using the given arguments
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function format_function(&$tableinfo, $functionname, &$args, &$vars) {
@@ -2512,7 +2512,7 @@ class form extends \mod_vocab\toolform {
      * @param array $itemvars (passed by reference) settings and values for the current item (file, sheet or row).
      * @param string $aliastype "FILE", "SHEET" or "ROW"
      * @return void, but may update $vars and $itemvars
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_item_settings($item, &$vars, &$tableinfo, &$itemvars, $aliastype) {
@@ -2528,7 +2528,7 @@ class form extends \mod_vocab\toolform {
      * @param array $vars (passed by reference) values for the current row in the data file
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @param string $aliastype "FILE", "SHEET" or "ROW"
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_item_records($item, &$vars, &$tableinfo, $aliastype) {
@@ -2558,10 +2558,10 @@ class form extends \mod_vocab\toolform {
      * @param string $table name of a table in the database
      * @param array $fields of database field names (passed by reference)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
-    public function get_record_ids(&$tableinfo, $table, &$fields, $setfields=[]) {
+    public function get_record_ids(&$tableinfo, $table, &$fields) {
         $debug = true;
 
         if (! array_key_exists($table, $tableinfo)) {
@@ -2771,7 +2771,7 @@ class form extends \mod_vocab\toolform {
      * (this function does not apepar to be used)
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     protected function get_punctuation() {

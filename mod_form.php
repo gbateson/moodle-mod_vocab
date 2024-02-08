@@ -47,7 +47,7 @@ class mod_vocab_mod_form extends moodleform_mod {
      * definition
      *
      * @uses $CFG
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function definition() {
@@ -521,7 +521,7 @@ class mod_vocab_mod_form extends moodleform_mod {
     /**
      * collapse_navigation
      *
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function collapse_navigation() {

@@ -31,7 +31,7 @@
  * @uses $DB
  * @param xxx $oldversion
  * @return xxx
- * 
+ *
  * TODO: Finish documenting this function
  */
 function xmldb_vocabtool_questionbank_upgrade($oldversion) {

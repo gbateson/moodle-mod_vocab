@@ -198,7 +198,7 @@ class form extends \mod_vocab\aiform {
      * @param stdClass $data submitted from the form
      * @param array $files
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function validation($data, $files) {

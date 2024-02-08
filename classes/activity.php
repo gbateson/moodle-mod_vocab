@@ -526,7 +526,7 @@ class activity {
      *
      * @param string $capability
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function require($capability) {
@@ -538,7 +538,7 @@ class activity {
      *
      * @param string $capability
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can($capability) {
@@ -549,7 +549,7 @@ class activity {
      * can_addinstance
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_addinstance() {
@@ -560,7 +560,7 @@ class activity {
      * can_manage
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_manage() {
@@ -571,7 +571,7 @@ class activity {
      * can_viewreports
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_viewreports() {
@@ -582,7 +582,7 @@ class activity {
      * can_deleteattempts
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_deleteattempts() {
@@ -593,7 +593,7 @@ class activity {
      * can_view
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_view() {
@@ -604,7 +604,7 @@ class activity {
      * can_attempt
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_attempt() {
@@ -615,7 +615,7 @@ class activity {
      * can_reviewmyattempts
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function can_reviewmyattempts() {
@@ -632,7 +632,7 @@ class activity {
      * @param string $name
      * @param array $a additional value or values required for the language string (optional, default=null)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_string($name, $a=null) {
@@ -647,7 +647,7 @@ class activity {
      * get_groupmode
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_groupmode() {
@@ -666,7 +666,7 @@ class activity {
      * @uses $DB
      * @param integer $groupid (optional, default=0)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_userids($groupid=0) {
@@ -701,7 +701,7 @@ class activity {
      * is_demo
      *
      * @return boolean
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function is_demo() {
@@ -782,7 +782,7 @@ class activity {
      *
      * @param xxx $length
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_random_word($length) {
@@ -814,7 +814,7 @@ class activity {
      * collapse_navigation
      *
      * @uses $PAGE
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function collapse_navigation() {
@@ -967,7 +967,7 @@ class activity {
      * @uses $CFG
      * @param xxx $toponly (optional, default=false)
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     public function get_question_categories($toponly=false) {

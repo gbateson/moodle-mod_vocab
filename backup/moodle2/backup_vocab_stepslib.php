@@ -42,7 +42,7 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
      * define_structure
      *
      * @return xxx
-     * 
+     *
      * TODO: Finish documenting this function
      */
     protected function define_structure() {
