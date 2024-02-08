@@ -136,7 +136,7 @@ function xmldb_vocab_upgrade($oldversion) {
     // full structure check for 2024020656
     /////////////////////////////////////*/
 
-    $newversion = 2024020757;
+    $newversion = 2024020859;
     if ($oldversion < $newversion) {
         xmldb_vocab_check_structure($dbman);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');

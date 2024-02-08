@@ -1960,11 +1960,15 @@ class form extends \mod_vocab\toolform {
         }
 
         if ($cancalculate) {
-            // On Moodle >= 4.x, we can use the standard formatter.
+            // On Moodle >= 4.x, we can always use the standard formatter.
+            // On Moodle <= 3.11, we can use the standard formatter if the
+            // the cell doesn't contain a formula with absolute full-column
+            // references, such as "textbooks!$F:$F".
             $value = $cell->getFormattedValue();
         } else {
-            // On Moodle <= 3.11, we mimic "getFormattedValue()",
-            // but use the "old" calculated value.
+            // On Moodle <= 3.11 and formulas with absolute full-column referenes,
+            // we mimic "getFormattedValue()", but use the "old" calculated value.
+            // This avoids errors, but may use a value that is not up-to-date.
             $value = call_user_func_array([
                 '\PhpOffice\PhpSpreadsheet\Style\NumberFormat',
                 'toFormattedString',
