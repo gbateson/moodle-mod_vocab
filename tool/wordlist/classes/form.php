@@ -247,13 +247,8 @@ class form extends \mod_vocab\toolform {
         $words = $this->get_vocab()->get_wordlist_words();
         if (empty($words)) {
             $vocab = $this->get_vocab();
-            if ($vocab->can_manage()) {
-                $msg = $vocab->get_string('nowordsfound');
-                $msg = $OUTPUT->notification($msg, 'warning');
-            } else {
-                $msg = $vocab->get_string('nowordsforyou');
-                $msg = $OUTPUT->notification($msg, 'info');
-            }
+            $msg = $this->get_string('nowordsfound');
+            $msg = $OUTPUT->notification($msg, 'warning');
             $mform->addElement('html', $msg);
             return;
         }
@@ -382,24 +377,28 @@ class form extends \mod_vocab\toolform {
      */
     public function wordlist($mform, $action, $wordids) {
         global $DB, $OUTPUT;
+
         switch ($action) {
             case 'remove':
 
                 // Build SQL to select word instances with usage count.
-                $select = 'vwi.*, COUNT(vwu.id) AS usagecount';
+                $select = 'vwi.*, vw.word, COUNT(vwu.id) AS usagecount';
                 $from = '{vocab_word_instances} vwi '.
-                        'LEFT JOIN {vocab_word_usages} vwu '.
-                        'ON vwi.id = vwu.wordinstanceid';
+                        'JOIN {vocab_words} vw ON vwi.wordid = vw.id '.
+                        'LEFT JOIN {vocab_word_usages} vwu ON vwi.id = vwu.wordinstanceid';
 
                 list($where, $params) = $DB->get_in_or_equal($wordids);
                 $where = "vwi.vocabid = ? AND vwi.wordid $where";
-                array_unshift($params, $this->get_vocab()->id);
+                $params = array_merge([$this->get_vocab()->id], $params);
 
-                $group = 'vwi.id';
-                $sql = "SELECT $select FROM $from WHERE $where GROUP BY $group";
+                $sql = "SELECT $select FROM $from WHERE $where GROUP BY vwi.id";
+
+                // Initialize the array of messages to report back to user.
+                $msg = '';
 
                 // Fetch records from "vocab_word_instances" table.
                 if ($records = $DB->get_records_sql($sql, $params)) {
+                    $msg = [];
                     foreach ($records as $id => $wordinstance) {
                         if (empty($wordinstance->usagecount)) {
                             // This word instance has not been used, so we can delete it.
@@ -411,7 +410,25 @@ class form extends \mod_vocab\toolform {
                             // time prevent its use in the future, we disable it.
                             $DB->set_field('vocab_word_instances', 'enabled', 0, ['id' => $id]);
                         }
+                        $msg[] = $wordinstance->word;
                     }
+                    if (empty($msg)) {
+                        $msg = ''; // shouldn't happen !!
+                    } else {
+                        $msg = \html_writer::alist($msg);
+                        $msg = $this->get_string('wordsremovedfromlist', $msg);
+                        $msg = $OUTPUT->notification($msg, 'info');
+                    }
+                } else {
+                    // The selected words were not found in this wordlist.
+                    // This is unusual, but may happen during development.
+                    $msg = $this->get_string('selectedwordsnotfound');
+                    $msg = $OUTPUT->notification($msg, 'warning');
+                }
+
+                // Report any messages to the user.
+                if ($msg) {
+                    $mform->addElement('html', $msg);
                 }
                 break;
 
@@ -435,6 +452,7 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function addwords($mform, $newwords) {
+        global $OUTPUT;
 
         // Get list seperator for the current language,
         // e.g. "," (comma) for the "en" language pack.
@@ -452,27 +470,49 @@ class form extends \mod_vocab\toolform {
         // Cache the vocabid.
         $vocabid = $this->get_vocab()->id;
 
-        // ToDo: set lang from form, either same lang for
+        // TODO: set lang from form, either same lang for
         // all words, or even different lang for each word.
         $langcode = 'en';
 
-        $msg = [];
+        // Initialize array to store lists of added/found words.
+        $msg = (object)[
+            'added' => [],
+            'found' => [],
+        ];
+
+        // Main loop to add new words.
         foreach ($newwords as $newword) {
 
             if (in_array($newword, $words)) {
-                $msg[] = $this->get_string('wordexistsinlist', $newword);
+                $msg->found[] = $newword;
             } else {
                 $lemma = $this->get_lemma($newword, $langcode);
                 $langid = $this->get_record_id('vocab_langs', ['langcode' => $langcode]);
                 $lemmaid = $this->get_record_id('vocab_lemmas', ['langid' => $langid, 'lemma' => $lemma]);
                 $wordid = $this->get_record_id('vocab_words', ['lemmaid' => $lemmaid, 'word' => $newword]);
                 $id = $this->get_record_id('vocab_word_instances', ['vocabid' => $vocabid, 'wordid' => $wordid]);
-                $msg[] = $this->get_string('wordaddedtolist', $newword);
                 $words[$wordid] = $newword;
+                $msg->added[] = $newword;
             }
         }
-        if (count($msg)) {
-            $mform->addElement('html', \html_writer::alist($msg));
+        if (empty($msg->added)) {
+            $msg->added = ''; // Unexpected - shouldn't happen !!
+        } else {
+            $msg->added = \html_writer::alist($msg->added);
+            $msg->added = $this->get_string('wordsaddedtolist', $msg->added);
+            $msg->added = $OUTPUT->notification($msg->added, 'info');
+        }
+        if (empty($msg->found)) {
+            $msg->found = '';
+        } else {
+            // We don't expect someone to add words that are already in the list but
+            // it could happen and is allowed because it doesn't cause any problems.
+            $msg->found = \html_writer::alist($msg->found);
+            $msg->found = $this->get_string('wordsfoundinlist', $msg->found);
+            $msg->found = $OUTPUT->notification($msg->found, 'warning');
+        }
+        if ($msg = implode('', (array)$msg)) {
+            $mform->addElement('html', $msg);
         }
     }
 
@@ -555,9 +595,16 @@ class form extends \mod_vocab\toolform {
                 $order = 'RAND()';
         }
         $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
-        if ($words = $DB->get_records_sql_menu($sql, $params, 0, $count)) {
+        $words = $DB->get_records_sql_menu($sql, $params, 0, $count);
+        
+        if (empty($words)) {
+            // No words could be selected - shouldn't happen !!
+            $msg = $this->get_string('nowordsfound');
+            $msg = $OUTPUT->notification($msg, 'warning');
+            $mform->addElement('html', $msg);
+        } else {
             asort($words);
-            foreach (array_keys($words) as $wordid) {
+            foreach ($words as $wordid => $word) {
                 // Fetch/create a word instance id for this word.
                 $params = [
                     'vocabid' => $this->get_vocab()->id,
@@ -566,15 +613,10 @@ class form extends \mod_vocab\toolform {
                 $id = $this->get_record_id('vocab_word_instances', $params);
                 $DB->set_field('vocab_word_instances', 'enabled', 1, $params);
             }
-            $msg = \html_writer::tag('h5', 'The following word(s) were added:').
-                   \html_writer::alist(array_values($words), ['class' => 'my-0 py-0']);
-            $msg = \html_writer::tag('div', $msg, ['class' => 'rounded border bg-light mb-2 px-2 py-1']);
-            return $mform->addElement('html', $msg);
-        } else {
-            // No words could be selected - shouldn't happen !!
-            $msg = $this->get_vocab()->get_string('nowordsfound');
+            $msg = \html_writer::alist($words);
+            $msg = $this->get_string('wordsaddedtolist', $msg);
             $msg = $OUTPUT->notification($msg, 'info');
-            return $mform->addElement('html', $msg);
+            $mform->addElement('html', $msg);
         }
     }
 

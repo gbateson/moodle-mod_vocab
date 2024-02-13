@@ -74,3 +74,5 @@ $string['emptyquestionlevels'] = 'Select at least one level.';
 $string['emptyquestioncount'] = 'Number of questions should be greater than zero.';
 $string['emptyparentcategoryelements'] = 'Select a question category.';
 $string['emptysubcategorieselements'] = 'Select at least one type question subcategory.';
+
+$string['nowordsfound'] = 'In order to generate questions for the question bank, you must first define a word list for this vocabulary activity. You can do that using the "Edit word list" tool.';

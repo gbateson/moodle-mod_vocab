@@ -56,13 +56,21 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function definition() {
-        global $PAGE;
+        global $PAGE, $OUTPUT;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
 
         $name = 'wordlist';
         $this->add_heading($mform, $name, 'mod_vocab', true);
+
+        $words = $this->get_vocab()->get_wordlist_words();
+        if (empty($words)) {
+            $msg = $this->get_string('nowordsfound');
+            $msg = $OUTPUT->notification($msg, 'warning');
+            $mform->addElement('html', $msg);
+            return;
+        }
 
         $name = 'selectedwords';
         $label = $this->get_string($name);
@@ -76,7 +84,6 @@ class form extends \mod_vocab\toolform {
         ];
         $elements[] = $mform->createElement('checkbox', 'selectall', get_string('selectall'), '', $params);
 
-        $words = $this->get_vocab()->get_wordlist_words();
         foreach ($words as $id => $word) {
             $elements[] = $mform->createElement('checkbox', $id, $word);
         }

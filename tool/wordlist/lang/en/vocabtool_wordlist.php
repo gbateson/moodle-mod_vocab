@@ -47,8 +47,9 @@ $string['select'] = 'Select';
 $string['import'] = 'Import';
 $string['export'] = 'Export';
 
-$string['wordaddedtolist'] = 'Word "{$a}" was added to this word list.';
-$string['wordexistsinlist'] = 'Word "{$a}" is already in this word list.';
+$string['wordsaddedtolist'] = 'The following word(s) were added to this word list: {$a}';
+$string['wordsfoundinlist'] = 'The following word(s) already existed in this word list {$a}';
+$string['nowordsfound'] = 'This word list does not yet contain any words. Please use the add, select and import buttons below to add words.';
 
 $string['usagecount'] = 'Usage count';
 $string['successrate'] = 'Success rate';
@@ -59,3 +60,6 @@ $string['remove'] = 'Remove';
 $string['export'] = 'Export';
 $string['getquestions'] = 'Get questions';
 $string['getsamplesentences'] = 'Get sample sentences';
+
+$string['wordsremovedfromlist'] = 'The following words were removed from this word list: {$a}';
+$string['selectedwordsnotfound'] = 'The selected words were not found in this word list. Perhaps they have already been removed.';
