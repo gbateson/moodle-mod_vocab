@@ -36,18 +36,9 @@ if (empty($tool->vocab) || empty($tool->vocab->cm)) {
     require_capability('mod/vocab:manage', $tool->vocab->context);
 }
 
-$PAGE->set_url($tool->index_url());
-$PAGE->set_title($tool->get_string('pluginname'));
-$PAGE->set_heading($tool->get_string('pluginname'));
-if (isset($PAGE->activityheader)) {
-    $PAGE->activityheader->set_attrs([
-        'hidecompletion' => true,
-        'description' => $tool->get_string('pluginname'),
-    ]);
-}
-
-$tool->vocab->collapse_navigation();
-$tool->vocab->set_pagelayout();
+// Setup page url, title, heading and attributes,
+// collapse navigation and set page layout.
+$tool->setup_page();
 
 $mform = $tool->get_mform();
 

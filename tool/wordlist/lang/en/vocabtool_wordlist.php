@@ -49,3 +49,13 @@ $string['export'] = 'Export';
 
 $string['wordaddedtolist'] = 'Word "{$a}" was added to this word list.';
 $string['wordexistsinlist'] = 'Word "{$a}" is already in this word list.';
+
+$string['usagecount'] = 'Usage count';
+$string['successrate'] = 'Success rate';
+$string['masteryrate'] = 'Mastery rate';
+
+$string['withselected'] = 'With selected ...';
+$string['remove'] = 'Remove';
+$string['export'] = 'Export';
+$string['getquestions'] = 'Get questions';
+$string['getsamplesentences'] = 'Get sample sentences';

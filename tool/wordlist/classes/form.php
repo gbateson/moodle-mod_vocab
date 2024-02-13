@@ -47,7 +47,7 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function definition() {
-        global $PAGE, $_POST;
+        global $PAGE;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
@@ -57,6 +57,9 @@ class form extends \mod_vocab\toolform {
 
             // Map element name => type of associated value.
             $names = [
+                // Each of these buttons has a corresponding method
+                // to take the required action.
+                'wordlist' => PARAM_INT,
                 'addwords' => PARAM_TEXT,
                 'selectwords' => PARAM_INT,
                 'importfile' => PARAM_INT,
@@ -65,29 +68,61 @@ class form extends \mod_vocab\toolform {
 
             foreach ($names as $name => $type) {
 
-                $groupname = $name.'elements';
-                $buttonname = $name.'button';
+                if ($name == 'wordlist') {
+                    // We expect an "action" and a list of selected word ids.
+                    $groupname = $name;
+                    $actionname = $name.'action';
+                    $buttonname = $name.'button';
+                } else {
+                    // We expect a button and a single parameter.
+                    $groupname = $name.'elements';
+                    $actionname = '';
+                    $buttonname = $name.'button';
+                }
 
-                if (empty($data->$groupname)) {
-                    continue; // No form element - shouldn't happen !!
+                if ($groupname && empty($data->$groupname)) {
+                    continue; // Form element was expected but missing.
                 }
-                if (empty($data->{$groupname}[$buttonname])) {
-                    continue; // Button was not pressed, so ignore.
+                if ($actionname && empty($data->{$groupname}[$actionname])) {
+                    continue; // Action was expected but not selected.
                 }
-                if (empty($data->{$groupname}[$name])) {
-                    continue; // No data - shouldn't happen !!
+                if ($buttonname && empty($data->{$groupname}[$buttonname])) {
+                    continue; // Button was not pressed.
                 }
-                $value = $data->{$groupname}[$name];
-                if ($value = clean_param($value, $type)) {
-                    $this->$name($mform, $value);
+
+                if ($actionname) {
+                    // Process the "Go" button with an action and selected words.
+                    $action = $data->{$groupname}[$actionname];
+                    unset($data->{$groupname}[$actionname]);
+                    unset($data->{$groupname}[$buttonname]);
+
+                    // Clean the incoming ids of selected words.
+                    $wordids = [];
+                    foreach ($data->$groupname as $wordid => $value) {
+                        if ($wordid = clean_param($wordid, $type)) {
+                            $wordids[] = $wordid;
+                        }
+                    }
+
+                    // Taken action if everything seems OK.
+                    if (count($wordids)) {
+                        $this->$name($mform, $action, $wordids);
+                    }
+                } else {
+                    // Process the "Add", "Select", and "Export" buttons.
+                    $value = $data->{$groupname}[$name];
+                    if ($value = clean_param($value, $type)) {
+                        $this->$name($mform, $value);
+                    }
                 }
             }
+
         }
 
-        $this->add_heading($mform, 'currentlist', $this->subpluginname, true);
-
         $name = 'currentlist';
-        $mform->addElement('html', $this->get_wordlist());
+        $this->add_heading($mform, $name, $this->subpluginname, true);
+
+        $this->add_wordlist($mform);
 
         $name = 'addwords';
         $groupname = $name.'elements';
@@ -167,19 +202,227 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * validation
+     * add_wordlist
+     *
+     * @param moodleform $mform representing the Moodle form
+     *
+     * TODO: Finish documenting this function
      */
-    public function get_wordlist() {
-        global $OUTPUT;
-        $list = [];
-        $words = $this->get_vocab()->get_wordlist_words();
+    public function add_wordlist($mform) {
+        global $OUTPUT, $PAGE;
 
-        if (count($words)) {
-            $params = ['class' => 'rounded border bg-light py-2 pr-3'];
-            return \html_writer::alist(array_values($words), $params, 'ol');
-        } else {
-            $msg = $this->get_vocab()->get_string('nowordsfound');
-            return $OUTPUT->notification($msg, 'info');
+        $actions = [
+            'view' => $OUTPUT->pix_icon('t/preview', get_string('view')),
+            'edit' => $OUTPUT->pix_icon('t/edit', get_string('edit')),
+            'tags' => $OUTPUT->pix_icon('t/tags', get_string('tags')),
+            'remove' => $OUTPUT->pix_icon('t/delete', get_string('delete')),
+        ];
+        $stats = [
+            'usagecount' => 'success',
+            'successrate' => 'warning',
+            'masteryrate' => 'primary',
+        ];
+
+        $cssclass = (object)[
+            'item' => 'd-inline-block pb-1 worditem',
+
+            'index' => 'd-inline-block text-center wordindex',
+            'text' => 'd-inline-block wordtext',
+
+            'actionsheadings' => 'd-inline-block rounded mx-1 my-0 p-1 text-center wordactionsheadings',
+            'actions' => 'd-inline-block border rounded mx-1 my-0 p-1 bg-light wordactions',
+            'action' => 'd-inline-block border-light mx-0 my-0 pl-1 py-0 text-center wordaction',
+
+            'statsheadings' => 'd-inline-block rounded mx-1 my-0 p-1 wordstatsheadings',
+            'stats' => 'd-inline-block border rounded mx-1 my-0 p-1 bg-light wordstats',
+
+            'statheading' => 'd-inline-block rounded mx-1 my-0 px-0 pb-1 text-center wordstatheading',
+            'stat' => 'd-inline-block rounded mx-1 my-0 p-0 text-center wordstat',
+        ];
+
+        $name = 'wordlist';
+        $elements = [];
+        $wordindex = 0;
+
+        $words = $this->get_vocab()->get_wordlist_words();
+        if (empty($words)) {
+            $vocab = $this->get_vocab();
+            if ($vocab->can_manage()) {
+                $msg = $vocab->get_string('nowordsfound');
+                $msg = $OUTPUT->notification($msg, 'warning');
+            } else {
+                $msg = $vocab->get_string('nowordsforyou');
+                $msg = $OUTPUT->notification($msg, 'info');
+            }
+            $mform->addElement('html', $msg);
+            return;
+        }
+
+        $words = [0 => 'selectall'] + $words;
+        foreach ($words as $wordid => $word) {
+
+            $isheading = ($wordid == 0);
+
+            $worditem = '';
+
+            // Start the "worditem".
+            $params = ['class' => $cssclass->item];
+            $worditem .= \html_writer::start_tag('div', $params);
+
+            // Add the word index.
+            $text = ($wordindex == 0 ? '' : "$wordindex.");
+            $params = ['class' => $cssclass->index];
+            $worditem .= \html_writer::tag('div', $text, $params);
+
+            // Add the "wordtext".
+            if ($isheading) {
+                $text = '';
+                $params = ['class' => $cssclass->text.' font-weight-bold'];
+            } else {
+                $text = $word;
+                $params = ['class' => $cssclass->text];
+            }
+            $worditem .= \html_writer::tag('div', $text, $params);
+
+            // Start "wordactions".
+            if ($isheading) {
+                $params = ['class' => $cssclass->actionsheadings];
+            } else {
+                $params = ['class' => $cssclass->actions];
+            }
+            $worditem .= \html_writer::start_tag('div', $params);
+
+            if ($wordindex == 0) {
+                $worditem .= \html_writer::tag('b', get_string('actions'));
+            } else {
+                foreach ($actions as $action => $icon) {
+                    $url = $PAGE->url;
+                    $url->params([
+                        'wordid' => $wordid,
+                        'action' => $action,
+                        'sesskey' => sesskey(),
+                    ]);
+                    $link = \html_writer::link($url, $icon);
+                    $worditem .= \html_writer::tag('div', $link, ['class' => $cssclass->action]);
+                }
+            }
+
+            // End "wordactions".
+            $worditem .= \html_writer::end_tag('div');
+
+            // Start "wordstats".
+            if ($isheading) {
+                $params = ['class' => $cssclass->statsheadings];
+            } else {
+                $params = ['class' => $cssclass->stats];
+            }
+            $worditem .= \html_writer::start_tag('div', $params);
+
+            foreach ($stats as $stat => $bg) {
+                $israte = (substr($stat, -4) == 'rate');
+
+                // Start "wordstat".
+                $class = ($isheading ? $cssclass->statheading : $cssclass->stat);
+                $width = ($israte ? '3.0em;' : '2.6em;');
+                $params = ['class' => "$class bg-$bg text-light", 'style' => "width: $width"];
+                $worditem .= \html_writer::start_tag('div', $params);
+
+                // Add stat text.
+                if ($isheading) {
+                    $worditem .= \html_writer::tag('small', $this->get_string($stat));
+                } else {
+                    $worditem .= rand(0, 100).($israte ? '%' : '');
+                }
+                // End "wordstat".
+                $worditem .= \html_writer::end_tag('div');
+            }
+
+            // End "wordstats".
+            $worditem .= \html_writer::end_tag('div');
+
+            // End "worditem".
+            $worditem .= \html_writer::end_tag('div');
+
+            if ($isheading) {
+                $params = [
+                    'data-selectall' => get_string('selectall'),
+                    'data-deselectall' => get_string('deselectall'),
+                    'class' => '', // Will be made visible later by Javascript.
+                ];
+            } else {
+                $params = [];
+            }
+
+            $elements[] = $mform->createElement('checkbox', $wordid, $worditem, '', $params);
+            $wordindex++;
+        }
+
+        // Add "with selected" menu and "Go" button.
+        $options = [
+            '' => $this->get_string('withselected'),
+            'remove' => $this->get_string('remove'),
+            'export' => $this->get_string('export'),
+            'getquestions' => $this->get_string('getquestions'),
+            'getsamplesentences' => $this->get_string('getsamplesentences'),
+        ];
+        $elements[] = $mform->createElement('select', $name.'action', '', $options);
+        $elements[] = $mform->createElement('submit', $name.'button', get_string('go'));
+
+        $mform->addGroup($elements, $name, '', '');
+    }
+
+    /**
+     * wordlist
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $action (remove, export, getquestions, getsamplesentences)
+     * @param array $wordids
+     *
+     * TODO: Finish documenting this function
+     */
+    public function wordlist($mform, $action, $wordids) {
+        global $DB, $OUTPUT;
+        switch ($action) {
+            case 'remove':
+
+                // Build SQL to select word instances with usage count.
+                $select = 'vwi.*, COUNT(vwu.id) AS usagecount';
+                $from = '{vocab_word_instances} vwi '.
+                        'LEFT JOIN {vocab_word_usages} vwu '.
+                        'ON vwi.id = vwu.wordinstanceid';
+
+                list($where, $params) = $DB->get_in_or_equal($wordids);
+                $where = "vwi.vocabid = ? AND vwi.wordid $where";
+                array_unshift($params, $this->get_vocab()->id);
+
+                $group = 'vwi.id';
+                $sql = "SELECT $select FROM $from WHERE $where GROUP BY $group";
+
+                // Fetch records from "vocab_word_instances" table.
+                if ($records = $DB->get_records_sql($sql, $params)) {
+                    foreach ($records as $id => $wordinstance) {
+                        if (empty($wordinstance->usagecount)) {
+                            // This word instance has not been used, so we can delete it.
+                            $DB->delete_records('vocab_word_instances', ['id' => $id]);
+                        } else {
+                            // This word instance has already been used by some games in
+                            // this vocabulary activity, so we cannot simply remove it.
+                            // Therefore, in order to keep its scores but at the same
+                            // time prevent its use in the future, we disable it.
+                            $DB->set_field('vocab_word_instances', 'enabled', 0, ['id' => $id]);
+                        }
+                    }
+                }
+                break;
+
+            case 'export':
+                break;
+
+            case 'getquestions':
+                break;
+
+            case 'getsamplesentences':
+                break;
         }
     }
 
@@ -231,8 +474,6 @@ class form extends \mod_vocab\toolform {
         if (count($msg)) {
             $mform->addElement('html', \html_writer::alist($msg));
         }
-
-        $this->unset_element('addwordselements');
     }
 
     /**
@@ -322,12 +563,15 @@ class form extends \mod_vocab\toolform {
                     'vocabid' => $this->get_vocab()->id,
                     'wordid' => $wordid,
                 ];
-                $wordinstanceid = $this->get_record_id('vocab_word_instances', $params);
+                $id = $this->get_record_id('vocab_word_instances', $params);
+                $DB->set_field('vocab_word_instances', 'enabled', 1, $params);
             }
-            $params = ['class' => 'rounded border bg-light py-2 pr-3'];
-            $msg = \html_writer::alist(array_values($words), $params, 'ol');
+            $msg = \html_writer::tag('h5', 'The following word(s) were added:').
+                   \html_writer::alist(array_values($words), ['class' => 'my-0 py-0']);
+            $msg = \html_writer::tag('div', $msg, ['class' => 'rounded border bg-light mb-2 px-2 py-1']);
             return $mform->addElement('html', $msg);
         } else {
+            // No words could be selected - shouldn't happen !!
             $msg = $this->get_vocab()->get_string('nowordsfound');
             $msg = $OUTPUT->notification($msg, 'info');
             return $mform->addElement('html', $msg);

@@ -34,16 +34,14 @@ if (empty($vocab)) {
 $vocab->require_login();
 $vocab->require('view');
 
-$PAGE->set_url($vocab->view_url());
-$PAGE->set_title($vocab->name);
-$PAGE->set_heading($vocab->course->fullname);
-
-if (isset($PAGE->activityheader)) {
-    $PAGE->activityheader->set_attrs(['hidecompletion' => true]);
-}
-
-$vocab->collapse_navigation();
-$vocab->set_pagelayout();
+// Setup page url, title, heading and attributes,
+// collapse navigation and set page layout.
+$vocab->setup_page(
+    $vocab->view_url(),
+    $vocab->name,
+    $vocab->course->fullname,
+    ['hidecompletion' => true]
+);
 
 // Trigger module viewed event and completion.
 $vocab->trigger_viewed_event_and_completion();

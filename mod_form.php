@@ -452,6 +452,7 @@ class mod_vocab_mod_form extends moodleform_mod {
             }
             $rows[] = $row;
         }
+
         $table = new \html_table();
         $table->id = 'pagelayouts_table';
         $table->head = [];

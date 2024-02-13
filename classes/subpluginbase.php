@@ -149,6 +149,21 @@ class subpluginbase {
     }
 
     /**
+     * Setup page url, title, heading and attributes.
+     *
+     * @return void (but will update url, title, heading and attributes in $PAGE object)
+     */
+    public function setup_page() {
+        $pluginname = $this->get_string('pluginname');
+        $this->vocab->setup_page(
+            $this->index_url(),
+            $pluginname, // The <title> tag for the page.
+            $pluginname, // The <h1> heading for the page.
+            ['hidecompletion' => true, 'description' => '']
+        );
+    }
+
+    /**
      * Creates a url for this subplugin
      *
      * @param string $filepath

@@ -811,9 +811,40 @@ class activity {
     }
 
     /**
+     * Setup page url, title, heading and attributes.
+     *
+     * @uses $PAGE
+     * @param string $url
+     * @param string $title
+     * @param string $heading
+     * @param array $attributes
+     * @return void (but will update url, title, heading and attributes in $PAGE object)
+     */
+    public function setup_page($url, $title, $heading, $attributes=[]) {
+        global $PAGE;
+
+        $PAGE->set_url($url);
+        $PAGE->set_title($title);
+        $PAGE->set_heading($heading);
+
+        if (count($attributes)) {
+            // In Moodle >= 4.x, we can use attributes to show/hide items
+            // in the header, such as the description and completion info.
+            if (method_exists($PAGE, 'magic_get_activityheader')) {
+                $PAGE->activityheader->set_attrs($attributes);
+            }
+            // In Moodle <= 3.11, we could show/hide the description ourselves.
+        }
+
+        $this->collapse_navigation();
+        $this->set_pagelayout();
+    }
+
+    /**
      * collapse_navigation
      *
      * @uses $PAGE
+     * @return void (but may update navigation in $PAGE object)
      *
      * TODO: Finish documenting this function
      */

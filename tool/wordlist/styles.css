@@ -6,6 +6,40 @@
     max-width: 640px;
 }
 
+/**
+ * Hide the label for the wordlist words by overriding the flex-basis
+ * set by "flex: 0 0 25%" for the "col-md-3" selector of Bootstrap.
+ */
+#vocabtool_wordlist_form #fgroup_id_wordlist.femptylabel .col-form-label {
+    flex-basis: auto !important;
+}
+
+/** set the widths on the wordlist columns */
+#vocabtool_wordlist_form .wordindex {
+    width: 24px;
+}
+#vocabtool_wordlist_form .wordtext {
+    width: 120px;
+}
+#vocabtool_wordlist_form .wordactionsheadings,
+#vocabtool_wordlist_form .wordactions {
+    width: 124px;
+}
+/** The "Rate" columns need more width for the "%" sign */
+#vocabtool_wordlist_form .wordstat {
+    width: 46px;
+}
+/** The "Usage count" column can be narrower */
+#vocabtool_wordlist_form .wordstat:first-child {
+    width: 40px;
+}
+#vocabtool_wordlist_form .wordstatsheadings {
+    line-height: 0.9;
+}
+#vocabtool_wordlist_form .wordstatheading small {
+    font-size: xx-small;
+}
+
 /** the <p> just before the .form-filetypes-descriptions */
 #vocabtool_wordlist_form #fgroup_id_importfileelements .felement p {
     margin-bottom: 0px;
@@ -36,4 +70,3 @@
 #vocabtool_wordlist_form .form-filetypes-descriptions + div {
     width: 100%;
 }
-

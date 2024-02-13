@@ -133,10 +133,10 @@ function xmldb_vocab_upgrade($oldversion) {
 
     /*/////////////////////////////////////
     // Interim updates are all obviated by
-    // full structure check for 2024020656
+    // full structure check for 2024021261
     /////////////////////////////////////*/
 
-    $newversion = 2024020859;
+    $newversion = 2024021261;
     if ($oldversion < $newversion) {
         xmldb_vocab_check_structure($dbman);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
@@ -371,6 +371,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null) {
                         echo "Table $tablename was dropped<br>";
                     }
                     break;
+
                 // Moodle <= 2.7 uses "Field".
                 // Moodle >= 2.8 uses "column".
                 case preg_match('/(Field|column) (.*?) (.*)/', $message, $match):
