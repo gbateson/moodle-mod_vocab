@@ -16,7 +16,7 @@
 /**
  * mod/vocab/tool/questionbank/amd/src/form.js
  *
- * @module     block_ungraded_activities
+ * @module     vocabtool_questionbank
  * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      Moodle 3.11
@@ -25,7 +25,6 @@
 define([], function(){
 
     let JS = {};
-    window.JS = JS;
 
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {

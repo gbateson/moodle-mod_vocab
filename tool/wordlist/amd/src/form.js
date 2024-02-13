@@ -16,7 +16,7 @@
 /**
  * mod/vocab/tool/wordlist/amd/src/form.js
  *
- * @module     block_ungraded_activities
+ * @module     vocabtool_wordlist
  * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      Moodle 3.11
@@ -61,18 +61,6 @@ define([], function(){
     };
 
     /*
-     * Setup the selectall checkbox
-     */
-    JS.onclick_selectall = function() {
-        const selectall = this;
-        JS.set_selectall_wordtext(selectall);
-        document.querySelectorAll(JS.CHECKBOX_SELECTOR).forEach(function(cb){
-            cb.checked = selectall.checked;
-        });
-        JS.set_wordlistaction();
-    };
-
-    /*
      * Setup the text for the selectall checkbox.
      */
     JS.set_selectall_wordtext = function(selectall) {
@@ -83,6 +71,18 @@ define([], function(){
         if (wordtext) {
             wordtext.innerHTML = text;
         }
+    };
+
+    /*
+     * Setup the selectall checkbox
+     */
+    JS.onclick_selectall = function() {
+        const selectall = this;
+        JS.set_selectall_wordtext(selectall);
+        document.querySelectorAll(JS.CHECKBOX_SELECTOR).forEach(function(cb){
+            cb.checked = selectall.checked;
+        });
+        JS.set_wordlistaction();
     };
 
     /*
@@ -140,8 +140,6 @@ define([], function(){
             }
         }
     };
-
-
 
     return JS;
 });
