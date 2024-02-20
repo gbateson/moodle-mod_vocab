@@ -195,23 +195,17 @@ function xmldb_vocab_rename_tables($dbman, $tablenames) {
  * @uses $DB
  * @param object $dbman the database manager
  * @param array $tablenames (optional, default=null) specific tables to check
+ * @param array $tableprefix (optional, default=vocab) the prefix for DB tables belonging to this plugin
+ * @param array $pluginname (optional, default=mod_vocab) the full frakenstyle name of this plugin e.g. mod_vocab
+ * @param array $plugindir (optional, default=mod/vocab) the path (relative to $CFG->dirroot) to main folder for this plugin's directory
  * @return void (but may update database structure)
  */
-function xmldb_vocab_check_structure($dbman, $tablenames=null) {
+function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='vocab', $pluginname='mod_vocab', $plugindir='mod/vocab') {
     global $CFG, $DB;
 
     // To see what tables/fields/indexes were added/changed/dropped,
     // set the $debug flag to TRUE during development of this script.
     $debug = false;
-
-    // The path (relative to $CFG->dirroot) to the main folder for this plugin.
-    $plugindir = 'mod/vocab';
-
-    // The full frakenstyle name of this plugin.
-    $pluginname = 'mod_vocab';
-
-    // The prefix for DB tables belonging to this plugin.
-    $tableprefix = 'vocab';
 
     // Define array [$pluginname => boolean] to cache
     // whether or not we have checked all tables for this plugin.

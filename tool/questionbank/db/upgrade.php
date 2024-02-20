@@ -38,10 +38,31 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
     global $CFG, $DB;
     $result = true;
 
+    // Set the subplugin name and type.
+    $type = 'vocabtool';
+    $name = 'questionbank';
+
+    // Set the values required to check the DB structure.
+    $tableprefix = 'vocabtool_questionbank';
+    $pluginname = 'vocabtool_questionbank';
+    $plugindir = 'mod/vocab/tool/questionbank';
+
+    // Get the upgrade script for the main plugin.
+    require_once($CFG->dirroot.'/mod/vocab/db/upgrade.php');
+
+    // Get the DB manager.
+    $dbman = $DB->get_manager();
+
     $newversion = 2023080104;
     if ($oldversion < $newversion) {
         update_capabilities('vocabtool/questionbank');
-        upgrade_plugin_savepoint($result, $newversion, 'vocabtool', 'questionbank');
+        upgrade_plugin_savepoint($result, $newversion, $type, $name);
+    }
+
+    $newversion = 2024022012;
+    if ($oldversion < $newversion) {
+        xmldb_vocab_check_structure($dbman, null, $tableprefix, $pluginname, $plugindir);
+        upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
 
     return $result;

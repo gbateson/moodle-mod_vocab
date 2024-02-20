@@ -413,7 +413,7 @@ class form extends \mod_vocab\toolform {
                         $msg[] = $wordinstance->word;
                     }
                     if (empty($msg)) {
-                        $msg = ''; // shouldn't happen !!
+                        $msg = ''; // Shouldn't happen !!
                     } else {
                         $msg = \html_writer::alist($msg);
                         $msg = $this->get_string('wordsremovedfromlist', $msg);
@@ -470,7 +470,7 @@ class form extends \mod_vocab\toolform {
         // Cache the vocabid.
         $vocabid = $this->get_vocab()->id;
 
-        // TODO: set lang from form, either same lang for
+        // Note: we could set lang from form, either same lang for
         // all words, or even different lang for each word.
         $langcode = 'en';
 
@@ -596,7 +596,7 @@ class form extends \mod_vocab\toolform {
         }
         $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
         $words = $DB->get_records_sql_menu($sql, $params, 0, $count);
-        
+
         if (empty($words)) {
             // No words could be selected - shouldn't happen !!
             $msg = $this->get_string('nowordsfound');

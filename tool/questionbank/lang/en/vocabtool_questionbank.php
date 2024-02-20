@@ -76,3 +76,29 @@ $string['emptyparentcategoryelements'] = 'Select a question category.';
 $string['emptysubcategorieselements'] = 'Select at least one type question subcategory.';
 
 $string['nowordsfound'] = 'In order to generate questions for the question bank, you must first define a word list for this vocabulary activity. You can do that using the "Edit word list" tool.';
+
+$string['scheduletaskssuccess'] = 'The following tasks were successfully scheduled and will be run later by the Moodle cron. {$a}';
+$string['scheduletasksfailure'] = 'The following tasks could NOT be scheduled. Please try again later. {$a}';
+$string['taskgeneratequestions'] = 'Task to generate {$a->count} {$a->type} question(s) at level "{$a->level}" for the word "{$a->word}".';
+
+$string['error_generatequestions'] = 'Unable to generate questions; {$a}.';
+$string['error_invalidquestioncategoryid'] = 'Invalid question category ID ({$a}) sent to adhoc task to generate questions.';
+$string['error_invalidteacherid'] = 'User (id={$a->userid}) is not allowed to create questions in course (id={$a->courseid}).';
+$string['error_invaliduserid'] = 'Invalid userid ({$a}) sent to adhoc task to generate questions.';
+$string['error_invalidvocabid'] = 'Invalid vocabid ({$a}) sent to adhoc task to generate questions.';
+$string['error_invalidwordid'] = 'Invalid wordid ({$a}) sent to adhoc task to generate questions.';
+$string['error_missingcoursecategory'] = 'Could not locate or create a question category for the word "{$a}"';
+$string['error_missingwordinstance'] = 'Word "{$a->word}" is not in the word list for this Vocabulary activity.';
+$string['error_recordnotadded'] = 'Could not add record to table {$a->table}: {$a->record}';
+
+$string['catname_vocab'] = '{$a->course}: Vocabulary';
+$string['catname_vocabword'] = 'Word: {$a->word}';
+$string['catname_vocabwordtype'] = 'Word: {$a->word} ({$a->qtype})';
+$string['catname_vocabwordtypelevel'] = 'Word: {$a->word} ({$a->qtype}) {$a->level}';
+$string['catname_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
+
+$string['catinfo_vocab'] = 'Vocabulary questions in course "{$a->course}"';
+$string['catinfo_vocabword'] = 'Vocabulary questions for the word "{$a->word}"';
+$string['catinfo_vocabwordtype'] = '{$a->qtype} questions for the word "{$a->word}"';
+$string['catinfo_vocabwordtypelevel'] = '{$a->qtype} questions ({$a->level}) for the word "{$a->word}"';
+$string['catinfo_singlecategory'] = 'Vocabulary questions for "{$a->word}"';

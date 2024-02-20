@@ -82,13 +82,13 @@ class subpluginbase {
      * __construct
      *
      * @uses $USER
-     *
-     * TODO: Finish documenting this function
+     * @param $vocabinstanceorid (optional, default=null) is a vocab instance or id
+     * @return void, but will initialize this object instance
      */
-    public function __construct() {
+    public function __construct($vocabinstanceorid=null) {
         global $USER;
 
-        $this->vocab = \mod_vocab\activity::create();
+        $this->vocab = \mod_vocab\activity::create(null, null, $vocabinstanceorid);
         $this->plugin = 'vocab'.static::SUBPLUGINTYPE.'_'.static::SUBPLUGINNAME;
         $this->pluginpath = $this->vocab->pluginpath.'/'.static::SUBPLUGINTYPE.'/'.static::SUBPLUGINNAME;
 
@@ -143,9 +143,9 @@ class subpluginbase {
      *
      * TODO: Finish documenting this function
      */
-    public static function create() {
+    public static function create($vocabinstanceorid=null) {
         $class = get_called_class();
-        return new $class();
+        return new $class($vocabinstanceorid);
     }
 
     /**
@@ -278,10 +278,17 @@ class subpluginbase {
      * @uses $USER
      * @param array $contexts of context ids that are relevant to the current vocab activity
      * @param integer $configid (optional, default = 0) a specific configid
+     * @param object $configid (optional, default = 0) a specific configid
      * @return mixed array of records from "vocab_config_settings", or FALSE if there are none.
      */
-    public function get_config_settings($contexts, $configid=0) {
+    public function get_config_settings($contexts, $configid=0, $user=null) {
         global $DB, $USER;
+
+        if ($user === null) {
+            $user = $USER;
+        } else if (is_scalar($user)) {
+            $user = $DB->get_record('user', ['id' => $user]);
+        }
 
         $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, '.
                   'vc.owneruserid, vc.contextid, '.
@@ -297,7 +304,7 @@ class subpluginbase {
         // that are shared in this context or any parent context.
         // We also want other config settings owned by the current user.
         $where = "vc.subplugin = ? AND (vc.owneruserid = ? OR vc.contextid $where)";
-        $params = array_merge([$this->plugin, $USER->id], $params);
+        $params = array_merge([$this->plugin, $user->id], $params);
 
         // Limit results to a specific configid.
         if ($configid) {
@@ -458,7 +465,7 @@ class subpluginbase {
             return $configs[$configid];
         }
 
-        // Required could not be found - unexpected!
+        // Required $configid could not be found - unexpected!
         return null;
     }
 

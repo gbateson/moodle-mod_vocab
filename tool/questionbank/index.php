@@ -39,9 +39,6 @@ require_capability('mod/vocab:manage', $tool->vocab->context);
 // collapse navigation and set page layout.
 $tool->setup_page();
 
-$tool->vocab->collapse_navigation();
-$tool->vocab->set_pagelayout();
-
 $mform = $tool->get_mform();
 
 if ($mform->is_cancelled()) {
@@ -49,13 +46,5 @@ if ($mform->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-
-if ($mform->is_submitted() && $mform->is_validated()) {
-    echo $OUTPUT->box_start();
-    echo $mform->generate_questions();
-    echo $OUTPUT->box_end();
-}
-
 $mform->display();
-
 echo $OUTPUT->footer();

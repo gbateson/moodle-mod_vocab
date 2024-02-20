@@ -537,89 +537,81 @@ class activity {
      * can
      *
      * @param string $capability
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user has the specified capability in the current context. Otherwise, FALSE.
      */
-    public function can($capability) {
-        return has_capability("{$this->pluginpath}:$capability", $this->context);
+    public function can($capability, $user=null) {
+        return has_capability("{$this->pluginpath}:$capability", $this->context, $user);
     }
 
     /**
-     * can_addinstance
+     * Return TRUE is user has capability "mod/vocab:addinstance". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can add instance in the current context. Otherwise, FALSE.
      */
-    public function can_addinstance() {
-        return $this->can('addinstance');
+    public function can_addinstance($user=null) {
+        return $this->can('addinstance', $user);
     }
 
     /**
-     * can_manage
+     * Return TRUE is user has capability "mod/vocab:manage". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can manage the current context. Otherwise, FALSE.
      */
-    public function can_manage() {
-        return $this->can('manage');
+    public function can_manage($user=null) {
+        return $this->can('manage', $user);
     }
 
     /**
-     * can_viewreports
+     * Return TRUE is user has capability "mod/vocab:viewreports". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can view reports in the current context. Otherwise, FALSE.
      */
-    public function can_viewreports() {
-        return $this->can('viewreports');
+    public function can_viewreports($user=null) {
+        return $this->can('viewreports', $user);
     }
 
     /**
-     * can_deleteattempts
+     * Return TRUE is user has capability "mod/vocab:deleteattempts". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can delete attempts in the current context. Otherwise, FALSE.
      */
-    public function can_deleteattempts() {
-        return $this->can('deleteattempts');
+    public function can_deleteattempts($user=null) {
+        return $this->can('deleteattempts', $user);
     }
 
     /**
-     * can_view
+     * Return TRUE is user has capability "mod/vocab:view". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can view Vocab activities in the current context. Otherwise, FALSE.
      */
-    public function can_view() {
-        return $this->can('view');
+    public function can_view($user=null) {
+        return $this->can('view', $user);
     }
 
     /**
-     * can_attempt
+     * Return TRUE is user has capability "mod/vocab:attempt". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can view attempt games in the current context. Otherwise, FALSE.
      */
-    public function can_attempt() {
-        return $this->can('attempt');
+    public function can_attempt($user=null) {
+        return $this->can('attempt', $user);
     }
 
     /**
-     * can_reviewmyattempts
+     * Return TRUE is user has capability "mod/vocab:reviewmyattempts". Otherwise, FALSE.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
+     * @return boolean TRUE if $user can review their own game attempts in the current context. Otherwise, FALSE.
      */
-    public function can_reviewmyattempts() {
-        return $this->can('reviewmyattempts');
+    public function can_reviewmyattempts($user=null) {
+        return $this->can('reviewmyattempts', $user);
     }
 
     /*////////////////////////////////////////
@@ -925,15 +917,24 @@ class activity {
      * Get readable contexts relevant to this vocab activity.
      *
      * @param string $keyfield (optional, default = '') the name of the field to
-     *                use askeys in the return array. If blank, keys will be numeric.
+     *                use as keys in the return array. If blank, keys will be numeric.
      * @param string $valuefield (optional, default = '') the name of the field to
      *                use as values in the return array.
      *                If blank, complete context records will be returned.
      * @return array
      */
-    public function get_readable_contexts($keyfield='', $valuefield='') {
+    public function get_readable_contexts($keyfield='', $valuefield='', $user=null) {
+        global $DB, $USER;
+
+        if ($user === null) {
+            $user = $USER;
+        } else if (is_scalar($user)) {
+            $user = $DB->get_record('user', ['id' => $user]);
+        }
+
         $readable = [];
         foreach ($this->get_contexts() as $context) {
+            // We should check is this $user has some capability in this $context.
             $key = ($keyfield ? $context->$keyfield : count($readable));
             $value = ($valuefield ? $context->$valuefield : $context);
             $readable[$key] = $value;
@@ -951,7 +952,14 @@ class activity {
      *               will be returned.
      * @return array
      */
-    public function get_writeable_contexts($keyfield='', $valuefield='') {
+    public function get_writeable_contexts($keyfield='', $valuefield='', $user=null) {
+        global $DB, $USER;
+
+        if ($user === null) {
+            $user = $USER;
+        } else if (is_scalar($user)) {
+            $user = $DB->get_record('user', ['id' => $user]);
+        }
 
         // Get array of contexts indexed by contextlevel (low to high).
         $contexts = $this->get_contexts();
@@ -977,7 +985,7 @@ class activity {
                     // Unrecognized context - shouldn't happen !!
                     $capability = '';
             }
-            if ($capability && has_capability($capability, $context)) {
+            if ($capability && has_capability($capability, $context, $user)) {
                 $key = ($keyfield ? $context->$keyfield : count($writeable));
                 $value = ($valuefield ? $context->$valuefield : $context);
                 // Prepend key/value so that they are returned

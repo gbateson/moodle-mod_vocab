@@ -61,6 +61,10 @@ class form extends \mod_vocab\toolform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
+        if (($data = data_submitted()) && confirm_sesskey()) {
+            $this->generate_questions($mform, $data);
+        }
+
         $name = 'wordlist';
         $this->add_heading($mform, $name, 'mod_vocab', true);
 
@@ -95,11 +99,11 @@ class form extends \mod_vocab\toolform {
         $this->add_heading($mform, 'questionsettings', $this->subpluginname, true);
 
         $name = 'questiontypes';
-        $options = $this->get_question_types();
+        $options = self::get_question_types();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'multichoice', 'multiple');
 
         $name = 'questionlevels';
-        $options = $this->get_question_levels();
+        $options = self::get_question_levels();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'A2', 'multiple');
 
         $name = 'questioncount';
@@ -121,11 +125,11 @@ class form extends \mod_vocab\toolform {
     /**
      * get_question_types
      *
-     * @return xxx
+     * @return array $types of question types for which we can generate questions.
      *
      * TODO: Finish documenting this function
      */
-    public function get_question_types() {
+    public static function get_question_types() {
         // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
         $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
         $types = \core_component::get_plugin_list('qtype');
@@ -141,22 +145,55 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
+     * get_question_type_text
+     *
+     * @param string $qtype a question type e.g. "multichoice", "truefalse"
+     * @return string human readable text version of the given $qtype
+     */
+    public static function get_question_type_text($qtype) {
+        $qtypes = self::get_question_types();
+        if (array_key_exists($qtype, $qtypes)) {
+            return $qtypes[$qtype];
+        } else {
+            // Illegal value - shouldn't happen !!
+            return $qtype;
+        }
+    }
+
+    /**
      * get_question_levels
      *
      * @return xxx
      *
      * TODO: Finish documenting this function
      */
-    public function get_question_levels() {
+    public static function get_question_levels() {
         // ToDo: get these levels from the vocab_levelnames table.
+        $plugin = 'vocabtool_questionbank';
         return [
-            'A1' => $this->get_string('cefr_a1_description'),
-            'A2' => $this->get_string('cefr_a2_description'),
-            'B1' => $this->get_string('cefr_b1_description'),
-            'B2' => $this->get_string('cefr_b2_description'),
-            'C1' => $this->get_string('cefr_c1_description'),
-            'C2' => $this->get_string('cefr_c2_description'),
+            'A1' => get_string('cefr_a1_description', $plugin),
+            'A2' => get_string('cefr_a2_description', $plugin),
+            'B1' => get_string('cefr_b1_description', $plugin),
+            'B2' => get_string('cefr_b2_description', $plugin),
+            'C1' => get_string('cefr_c1_description', $plugin),
+            'C2' => get_string('cefr_c2_description', $plugin),
         ];
+    }
+
+    /**
+     * get_question_level_text
+     *
+     * @param string $qlevel a question level e.g. "multichoice", "truefalse"
+     * @return string human readable text version of the given $qlevel
+     */
+    public static function get_question_level_text($qlevel) {
+        $qlevels = self::get_question_levels();
+        if (array_key_exists($qlevel, $qlevels)) {
+            return $qlevels[$qlevel];
+        } else {
+            // Illegal value - shouldn't happen !!
+            return $qlevel;
+        }
     }
 
     /**
@@ -331,125 +368,241 @@ class form extends \mod_vocab\toolform {
      * generate_questions
      *
      * @uses $DB
+     * @uses $OUTPUT
+     * @uses $USER
+     * @param moodleform $mform representing the Moodle form
+     * @param object $data submitted from the Moodle form
+     * @return void, but may add records to the "task_adhoc" table in the Moodle database.
      *
      * TODO: Finish documenting this function
      */
-    public function generate_questions() {
-        global $DB;
+    public function generate_questions($mform, $data) {
+        global $DB, $OUTPUT, $USER;
 
-        // Get form data, if any.
-        if (($data = data_submitted()) && confirm_sesskey()) {
+        // Intialize arrays for messages to report success or failure
+        // when setting up adhoc tasks to generate questions.
+        $success = [];
+        $failure = [];
 
-            $words = false;
-            $qtypes = false;
-            $qlevels = false;
-            $qcount = $data->questioncount;
+        $words = false;
+        $qtypes = false;
+        $qlevels = false;
+        $qcount = $data->questioncount;
 
-            $parentcatid = 0;
-            $parentcatname = '';
+        $parentcatid = 0;
+        $parentcatname = '';
 
-            $subcattype = 0;
-            $subcatname = '';
+        $subcattype = 0;
+        $subcatname = '';
 
-            if (property_exists($data, 'selectedwords')) {
-                unset($data->selectedwords['selectall']);
+        // Cache the vocabid.
+        $vocabid = $this->get_vocab()->id;
 
-                $select = 'vwi.wordid, vw.word';
-                $from = '{vocab_word_instances} vwi, {vocab_words} vw';
-                list($where, $params) = $DB->get_in_or_equal(array_keys($data->selectedwords));
-                $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where;
-                $params = array_merge([$this->get_vocab()->id], $params);
-                $order = 'vwi.sortorder, vw.word';
+        // Get sensible value for number of tries.
+        $mintries = 1;
+        $maxtries = 10;
+        $name = 'maxtries';
+        if (isset($data->$name) && is_numeric($data->$name)) {
+            $maxtries = min($maxtries, max($mintries, $data->$name));
+        }
 
-                $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
-                $words = $DB->get_records_sql_menu($sql, $params);
+        // Get question format (GIFT or XML)
+        $name = 'qformat';
+        $qformat = (empty($data->$name) ? 'gift' : $data->$name);
 
-                unset($data->selectedwords);
-            }
+        // Get config id of AI assistant.
+        $name = 'aiid';
+        $aiid = (empty($data->$name) ? 0 : $data->$name);
 
-            if (property_exists($data, 'questiontypes')) {
-                $qtypes = $this->get_question_types();
-                foreach ($qtypes as $name => $text) {
-                    if (! in_array($name, $data->questiontypes)) {
-                        unset($qtypes[$name]);
-                    }
+        // Get config id of prompt.
+        $name = 'promptid';
+        $promptid = (empty($data->$name) ? 0 : $data->$name);
+
+        if (property_exists($data, 'selectedwords')) {
+            unset($data->selectedwords['selectall']);
+
+            $select = 'vwi.wordid, vw.word';
+            $from = '{vocab_word_instances} vwi, {vocab_words} vw';
+            list($where, $params) = $DB->get_in_or_equal(array_keys($data->selectedwords));
+            $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where;
+            $params = array_merge([$vocabid], $params);
+            $order = 'vwi.sortorder, vw.word';
+
+            $sql = "SELECT $select FROM $from WHERE $where ORDER BY $order";
+            $words = $DB->get_records_sql_menu($sql, $params);
+
+            unset($data->selectedwords);
+        }
+
+        if (property_exists($data, 'questiontypes')) {
+            $qtypes = self::get_question_types();
+            foreach ($qtypes as $name => $text) {
+                if (! in_array($name, $data->questiontypes)) {
+                    unset($qtypes[$name]);
                 }
-                unset($data->questiontypes);
             }
+            unset($data->questiontypes);
+        }
 
-            if (property_exists($data, 'questionlevels') && is_array($data->questionlevels)) {
-                $qlevels = $this->get_question_levels();
-                foreach ($qlevels as $name => $text) {
-                    if (! in_array($name, $data->questionlevels)) {
-                        unset($qlevels[$name]);
-                    }
+        if (property_exists($data, 'questionlevels') && is_array($data->questionlevels)) {
+            $qlevels = self::get_question_levels();
+            foreach ($qlevels as $name => $text) {
+                if (! in_array($name, $data->questionlevels)) {
+                    unset($qlevels[$name]);
                 }
-                unset($data->questionlevels);
             }
+            unset($data->questionlevels);
+        }
 
-            $name = 'parentcategory';
-            $groupname = $name.'elements';
-            if (property_exists($data, $groupname)) {
-                if (array_key_exists($name, $data->$groupname)) {
-                    $parentcatid = $data->{$groupname}[$name];
-                    $categories = $this->get_question_categories();
-                    if (array_key_exists($parentcatid, $categories)) {
-                        $parentcatname = $categories[$parentcatid];
-                    } else {
-                        // We've been given an invalid $parentcatid !!
-                        $parentcatid = key($categories);
-                        $parentcatname = reset($categories);
-                    }
+        if (empty($words) || empty($qtypes) || empty($qlevels)) {
+            return;
+        }
+
+        $name = 'parentcategory';
+        $groupname = $name.'elements';
+        if (property_exists($data, $groupname)) {
+            if (array_key_exists($name, $data->$groupname)) {
+                $parentcatid = $data->{$groupname}[$name];
+                $categories = $this->get_question_categories();
+                if (! array_key_exists($parentcatid, $categories)) {
+                    $parentcatid = key($categories);
                 }
-                unset($data->$groupname);
+                unset($categories);
             }
+            unset($data->$groupname);
+        }
 
+        $groupname = 'subcategorieselements';
+        if (property_exists($data, $groupname)) {
             $name = 'cattype';
-            $groupname = 'subcategorieselements';
-            if (property_exists($data, $groupname)) {
-                if (array_key_exists($name, $data->$groupname)) {
-                    $type = $data->{$groupname}[$name];
-                    $types = $this->get_subcategory_types();
-                    if (array_key_exists($type, $types)) {
-                        $subcattype = $type;
-                        $subcatname = $types[$type];
-                    }
-                    unset($type, $types);
+            if (array_key_exists($name, $data->$groupname)) {
+                $subcattype = $data->{$groupname}[$name];
+                $types = $this->get_subcategory_types();
+                if (! array_key_exists($subcattype, $types)) {
+                    $subcattype = self::SUBCAT_AUTOMATIC;
                 }
-                unset($data->$groupname);
+                unset($types);
             }
+            $name = 'catname';
+            if (array_key_exists($name, $data->$groupname)) {
+                $subcatname = $data->{$groupname}[$name];
+            }
+            // Sanity check on subcat type and name.
+            if ($subcattype == self::SUBCAT_SINGLE && $subcatname == '') {
+                // Name is missing, so switch type to automatic.
+                $subcattype = self::SUBCAT_AUTOMATIC;
+            } else if ($subcatname) {
+                // Name given but not needed, so remove it.
+                $subcatname = '';
+            }
+            unset($data->$groupname);
+        }
 
-            if ($words || $qtypes || $qlevels) {
+        // Initialize arguments for "get_string()" used to report
+        // the success or failure of setting up the adhoc task.
+        $a = (object)[
+            'word' => '',
+            'type' => '',
+            'level' => '',
+            'count' => $qcount,
+        ];
 
-                $dl = ['class' => 'row', 'style' => 'max-width: 720px;'];
-                $dt = ['class' => 'col-3 text-right'];
-                $dd = ['class' => 'col-9'];
-                $br = \html_writer::empty_tag('br');
+        // Set up one task for each level of
+        // each question type for each word.
+        foreach ($words as $wordid => $word) {
+            $a->word = $word;
 
-                echo \html_writer::start_tag('dl', $dl);
-                if ($words) {
-                    echo \html_writer::tag('dt', 'Words: ', $dt).
-                         \html_writer::tag('dd', implode(', ', $words), $dd);
+            foreach ($qtypes as $qtype => $qtypetext) {
+                $a->type = $qtypes[$qtype];
+
+                foreach ($qlevels as $qlevel => $qlevelname) {
+                    $a->level = $qlevels[$qlevel];
+
+                    // Create the adhoc task.
+                    if ($task = new \vocabtool_questionbank\task\questions()) {
+                        $task->set_userid($USER->id);
+                        $task->set_custom_data([
+                            'uniqid' => uniqid($USER->id, true),
+                            'vocabid' => $vocabid,
+                            'wordid' => $wordid,
+                            'qtype' => $qtype,
+                            'qlevel' => $qlevel,
+                            'qcount' => $qcount,
+                            'qformat' => $qformat,
+                            'maxtries' => $maxtries,
+                            'parentcatid' => $parentcatid,
+                            'subcattype' => $subcattype,
+                            'subcatname' => $subcatname,
+                            'promptid' => $promptid,
+                            'aiid' => $aiid,
+                        ]);
+                        // If successful, the "queue_adhoc_task()" method
+                        // returns a record id from the "task_adhoc" table.
+                        if (\core\task\manager::queue_adhoc_task($task)) {
+                            $success[] = $this->get_string('taskgeneratequestions', $a);
+                        } else {
+                            $failure[] = $this->get_string('taskgeneratequestions', $a);
+                        }
+                    } else {
+                        // Task object could not be created. - shouldn't happen !!
+                        $failure[] = $this->get_string('taskgeneratequestions', $a);
+                    }
                 }
-                if ($qtypes) {
-                    echo \html_writer::tag('dt', 'Question types:', $dt).
-                         \html_writer::tag('dd', implode($br, $qtypes), $dd);
-                }
-                if ($qlevels) {
-                    echo \html_writer::tag('dt', 'Question levels:', $dt).
-                         \html_writer::tag('dd', implode($br, $qlevels), $dd);
-                }
-                echo \html_writer::tag('dt', 'Question count:', $dt).
-                     \html_writer::tag('dd', $qcount, $dd);
-
-                echo \html_writer::tag('dt', 'Parent category:', $dt).
-                     \html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
-
-                echo \html_writer::tag('dt', 'Subcategory type:', $dt).
-                     \html_writer::tag('dd', "$subcatname (type=$subcattype)", $dd);
-
-                echo \html_writer::end_tag('dl');
             }
         }
+
+        // Report back on the success or failure of setting up the adhoc tasks.
+        if (count($success)) {
+            $success = \html_writer::alist($success);
+            $success = $this->get_string('scheduletaskssuccess', $success);
+            $strsuccess = get_string('success').get_string('labelsep', 'langconfig');
+            $strsuccess = \html_writer::tag('b', $strsuccess, ['class' => 'text-success']);
+            $success = $OUTPUT->notification($strsuccess.$success, 'success');
+            $mform->addElement('html', $success);
+        }
+        if (count($failure)) {
+            $failure = \html_writer::alist($failure);
+            $failure = $this->get_string('scheduletasksfailure', $failure);
+            $strfailure = get_string('error').get_string('labelsep', 'langconfig');
+            $strfailure = \html_writer::tag('b', $strfailure, ['class' => 'text-danger']);
+            $failure = $OUTPUT->notification($strfailure.$failure, 'warning');
+            $mform->addElement('html', $failure);
+        }
+    }
+
+    /**
+     * generate_questions_save
+     *
+     * TODO: Finish documenting this function
+     */
+    public function generate_questions_save() {
+        $dl = ['class' => 'row', 'style' => 'max-width: 720px;'];
+        $dt = ['class' => 'col-3 text-right'];
+        $dd = ['class' => 'col-9'];
+        $br = \html_writer::empty_tag('br');
+
+        echo \html_writer::start_tag('dl', $dl);
+        if ($words) {
+            echo \html_writer::tag('dt', 'Words: ', $dt).
+                 \html_writer::tag('dd', implode(', ', $words), $dd);
+        }
+        if ($qtypes) {
+            echo \html_writer::tag('dt', 'Question types:', $dt).
+                 \html_writer::tag('dd', implode($br, $qtypes), $dd);
+        }
+        if ($qlevels) {
+            echo \html_writer::tag('dt', 'Question levels:', $dt).
+                 \html_writer::tag('dd', implode($br, $qlevels), $dd);
+        }
+        echo \html_writer::tag('dt', 'Question count:', $dt).
+             \html_writer::tag('dd', $qcount, $dd);
+
+        echo \html_writer::tag('dt', 'Parent category:', $dt).
+             \html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
+
+        echo \html_writer::tag('dt', 'Subcategory type:', $dt).
+             \html_writer::tag('dd', "$subcatname (type=$subcattype)", $dd);
+
+        echo \html_writer::end_tag('dl');
     }
 }
