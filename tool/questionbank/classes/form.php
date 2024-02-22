@@ -428,17 +428,17 @@ class form extends \mod_vocab\toolform {
         $name = 'qformat';
         $qformat = (empty($data->$name) ? 'gift' : $data->$name);
 
-        // Get config id of AI engine.
-        $name = 'engineid';
-        $engineid = (empty($data->$name) ? 0 : $data->$name);
+        // Get config id of an AI access.
+        $name = 'accessid';
+        $accessid = (empty($data->$name) ? 0 : $data->$name);
 
-        // Get config id of AI prompt.
+        // Get config id of an AI prompt.
         $name = 'promptid';
         $promptid = (empty($data->$name) ? 0 : $data->$name);
 
-        // Get config id of AI template.
-        $name = 'templateid';
-        $templateid = (empty($data->$name) ? 0 : $data->$name);
+        // Get config id of an AI output format.
+        $name = 'formatid';
+        $formatid = (empty($data->$name) ? 0 : $data->$name);
 
         if (property_exists($data, 'selectedwords')) {
             unset($data->selectedwords['selectall']);
@@ -496,6 +496,7 @@ class form extends \mod_vocab\toolform {
 
         $groupname = 'subcategorieselements';
         if (property_exists($data, $groupname)) {
+
             $name = 'cattype';
             if (array_key_exists($name, $data->$groupname)) {
                 $subcattype = $data->{$groupname}[$name];
@@ -505,10 +506,12 @@ class form extends \mod_vocab\toolform {
                 }
                 unset($types);
             }
+
             $name = 'catname';
             if (array_key_exists($name, $data->$groupname)) {
                 $subcatname = $data->{$groupname}[$name];
             }
+
             // Sanity check on subcat type and name.
             if ($subcattype == self::SUBCAT_SINGLE && $subcatname == '') {
                 // Name is missing, so switch type to automatic.
@@ -517,6 +520,7 @@ class form extends \mod_vocab\toolform {
                 // Name given but not needed, so remove it.
                 $subcatname = '';
             }
+
             unset($data->$groupname);
         }
 
@@ -556,9 +560,9 @@ class form extends \mod_vocab\toolform {
                         'parentcatid' => $parentcatid,
                         'subcattype' => $subcattype,
                         'subcatname' => $subcatname,
-                        'engineid' => $engineid,
+                        'accessid' => $accessid,
                         'promptid' => $promptid,
-                        'templateid' => $templateid,
+                        'formatid' => $formatid,
                         'status' => $task::TASKSTATUS_NOTSET,
                     ]);
 
@@ -600,41 +604,5 @@ class form extends \mod_vocab\toolform {
             $failure = $OUTPUT->notification($strfailure.$failure, 'warning');
             $mform->addElement('html', $failure);
         }
-    }
-
-    /**
-     * generate_questions_save
-     *
-     * TODO: Finish documenting this function
-     */
-    public function generate_questions_save() {
-        $dl = ['class' => 'row', 'style' => 'max-width: 720px;'];
-        $dt = ['class' => 'col-3 text-right'];
-        $dd = ['class' => 'col-9'];
-        $br = \html_writer::empty_tag('br');
-
-        echo \html_writer::start_tag('dl', $dl);
-        if ($words) {
-            echo \html_writer::tag('dt', 'Words: ', $dt).
-                 \html_writer::tag('dd', implode(', ', $words), $dd);
-        }
-        if ($qtypes) {
-            echo \html_writer::tag('dt', 'Question types:', $dt).
-                 \html_writer::tag('dd', implode($br, $qtypes), $dd);
-        }
-        if ($qlevels) {
-            echo \html_writer::tag('dt', 'Question levels:', $dt).
-                 \html_writer::tag('dd', implode($br, $qlevels), $dd);
-        }
-        echo \html_writer::tag('dt', 'Question count:', $dt).
-             \html_writer::tag('dd', $qcount, $dd);
-
-        echo \html_writer::tag('dt', 'Parent category:', $dt).
-             \html_writer::tag('dd', "$parentcatname (id=$parentcatid)", $dd);
-
-        echo \html_writer::tag('dt', 'Subcategory type:', $dt).
-             \html_writer::tag('dd', "$subcatname (type=$subcattype)", $dd);
-
-        echo \html_writer::end_tag('dl');
     }
 }

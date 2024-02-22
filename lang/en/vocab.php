@@ -158,3 +158,7 @@ $string['noactivityheader'] = 'No activity header ';
 $string['notitle'] = 'No title';
 $string['nocompletion'] = 'No completion information';
 $string['nodescription'] = 'No description';
+
+$string['redoupgrade'] = 'Redo upgrade: {$a}';
+$string['redoversiondate'] = '"Vocab activity module version set to just before {$a->version} - {$a->datetext}"';
+$string['clicktocontinue'] = 'Click here to continue';

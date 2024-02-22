@@ -680,4 +680,107 @@ class mod_vocab_renderer extends plugin_renderer_base {
         }
         return $colors;
     }
+
+    /**
+     * Redo the upgrade for main module or a subplugin.
+     *
+     * @param string plugin frankenstyle plugin name
+     * @param string basedir path to main folder of this plugin
+     * @param string dateformat (optional, default='jS M Y') format string for "date()"
+     * @return void, but may modify settings in the config_plugins DB table
+     */
+    public function redo_upgrade($plugin, $basedir, $dateformat='jS M Y') {
+        global $CFG, $FULLME, $DB;
+
+        // Set up the heading e.g. Redo upgrade: Vocabulary activity
+        $heading = get_string('pluginname', $plugin)." ($plugin)";
+        $heading = $this->vocab->get_string('redoupgrade', $heading);
+
+        $output = '';
+        $output .= $this->header();
+        $output .= $this->heading($heading);
+        $output .= $this->box_start();
+
+        if ($version = optional_param('version', 0, PARAM_INT)) {
+
+            // Format the plugin version.
+            if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})/', "$version", $match)) {
+                $yy = $match[1];
+                $mm = $match[2];
+                $dd = $match[3];
+                $vv = intval($match[4]);
+                $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).($vv == 0 ? '' : " ($vv)");
+            } else {
+                $text = ''; // Shouldn't happen !!
+            }
+
+            // Reset the plugin version.
+            $dbman = $DB->get_manager();
+            if ($dbman->table_exists('config_plugins')) {
+                // This table is available in Moodle >= 2.6.
+                $params = ['plugin' => $plugin, 'name' => 'version'];
+                $DB->set_field('config_plugins', 'value', $version - 1, $params);
+                // Force Moodle to refetch versions.
+                if (isset($CFG->allversionshash)) {
+                    unset_config('allversionshash');
+                }
+            }
+
+            // Inform user that module version has been reset.
+            $a = (object)['version' => $version, 'datetext' => $text];
+            $str = $this->vocab->get_string('redoversiondate', $a);
+            $output .= html_writer::tag('p', $str);
+
+            // Add a link to the upgrade page.
+            $href = new moodle_url('/admin/index.php', ['confirmplugincheck' => 1, 'cache' => 0]);
+            $str = $this->vocab->get_string('clicktocontinue');
+            $str = html_writer::tag('a', $str, ['href' => $href]);
+            $output .= html_writer::tag('p', $str);
+
+        } else { // No $version given, so offer a form to select $version.
+
+            // Start the form.
+            $output .= html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
+            $output .= html_writer::start_tag('div');
+
+            $versions = [];
+
+            // Extract and format the current version.
+            $contents = file_get_contents($CFG->dirroot."/$basedir/version.php");
+            if (preg_match('/^\$plugin->version *= *(\d{4})(\d{2})(\d{2})(\d{2});/m', $contents, $matches)) {
+                $yy = $matches[1];
+                $mm = $matches[2];
+                $dd = $matches[3];
+                $vv = $matches[4];
+                $version = "$yy$mm$dd$vv";
+                $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
+            }
+
+            // Extract and format versions from the upgrade script.
+            $contents = file_get_contents($CFG->dirroot."/$basedir/db/upgrade.php");
+            preg_match_all('/(?<=\$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
+            $imax = count($matches[0]);
+            for ($i = 0; $i < $imax; $i++) {
+                $version = $matches[0][$i];
+                $yy = $matches[1][$i];
+                $mm = $matches[2][$i];
+                $dd = $matches[3][$i];
+                $vv = $matches[4][$i];
+                $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
+            }
+            krsort($versions);
+
+            // Add the form elements.
+            $output .= get_string('version').' '.html_writer::select($versions, 'version').' ';
+            $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
+
+            // Finish the form.
+            $output .= html_writer::end_tag('div');
+            $output .= html_writer::end_tag('form');
+        }
+
+        $output .= $this->box_end();
+        $output .= $this->footer();
+        return $output;
+    }
 }

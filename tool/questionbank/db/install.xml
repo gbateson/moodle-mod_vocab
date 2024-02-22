@@ -15,9 +15,9 @@
         <FIELD NAME="qlevel" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="qcount" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="qformat" TYPE="char" LENGTH="8" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="engineid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="accessid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="promptid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="templateid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="formatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="parentcatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="subcattype" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="subcatname" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false"/>
@@ -35,9 +35,9 @@
         <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
         <KEY NAME="vocabid" TYPE="foreign" FIELDS="vocabid" REFTABLE="vocab" REFFIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
-        <KEY NAME="engineid" TYPE="foreign" FIELDS="engineid" REFTABLE="vocab_config" REFFIELDS="id"/>
+        <KEY NAME="accessid" TYPE="foreign" FIELDS="accessid" REFTABLE="vocab_config" REFFIELDS="id"/>
         <KEY NAME="promptid" TYPE="foreign" FIELDS="promptid" REFTABLE="vocab_config" REFFIELDS="id"/>
-        <KEY NAME="templateid" TYPE="foreign" FIELDS="templateid" REFTABLE="vocab_config" REFFIELDS="id"/>
+        <KEY NAME="formatid" TYPE="foreign" FIELDS="formatid" REFTABLE="vocab_config" REFFIELDS="id"/>
         <KEY NAME="parentcatid" TYPE="foreign" FIELDS="parentcatid" REFTABLE="question_categories" REFFIELDS="id"/>
       </KEYS>
     </TABLE>

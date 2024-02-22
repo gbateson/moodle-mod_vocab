@@ -85,9 +85,9 @@ class questions extends \core\task\adhoc_task {
         $qcount = $log->qcount;
         $qformat = $log->qformat;
 
-        $engineid = $log->engineid;
+        $accessid = $log->accessid;
         $promptid = $log->promptid;
-        $templateid = $log->templateid;
+        $formatid = $log->formatid;
 
         $parentcatid = $log->parentcatid;
         $subcattype = $log->subcattype;
@@ -163,9 +163,9 @@ class questions extends \core\task\adhoc_task {
             'status' => $toolclass::TASKSTATUS_FETCHING_RESULTS,
         ]);
 
-        $engineconfig = $this->get_config($engineid);
+        $accessconfig = $this->get_config($accessid);
         $promptconfig = $this->get_config($promptid);
-        $templateconfig = $this->get_config($templateid);
+        $formatconfig = $this->get_config($formatid);
 
         $prompt = $this->get_prompt($promptconfig, $word, $qtype, $qlevel, $qcount, $qformat);
 
@@ -275,7 +275,7 @@ class questions extends \core\task\adhoc_task {
         } else {
             $prompt = $this->get_prompt_default();
         }
-        $template = $this->get_template($qformat, $qtype);
+        $format = $this->get_format($qformat, $qtype);
 
         // Replace all place holders with their respective values.
         $prompt = strtr($prompt, [
@@ -287,7 +287,7 @@ class questions extends \core\task\adhoc_task {
             '{{level-of-questions}}' => $qlevel,
             '{{number-of-questions}}' => $qcount,
             '{{question-format}}' => $qformat,
-            '{{question-template}}' => $template,
+            '{{output-format}}' => $format,
         ]);
 
         // Standardize all whitespace in the prompt.
@@ -297,9 +297,9 @@ class questions extends \core\task\adhoc_task {
     }
 
     /**
-     * get_gift_template_multichoice
+     * get_prompt_default
      *
-     * @return string a prompt suitable for generating questions in GIFT format.
+     * @return string a prompt suitable for generating questions.
      */
     protected function get_prompt_default() {
         return <<<'EOD'
@@ -311,31 +311,31 @@ Create {{number-of-questions}} {{type-of-questions}} questions
 to check students understanding of the vocabulary item "{{vocabulary-item}}".
 Use only CEFR level {{level-of-questions}} {{target-language}}.
 Format the questions in {{question-format}} format
-using the following template: {{question-template}}
+using the following output format template: {{output-format}}
 EOD;
     }
 
     /**
-     * Get a template for the required question format and type.
+     * Get a format for the required question format and type.
      *
      * @param string $qformat the question format e.g. "gift" or "xml".
      * @param string $qtype the question type e.g. "multichoice" or "truefalse".
-     * @return string the GIFT template, including place holders marked with {{...}}
+     * @return string the GIFT format, including place holders marked with {{...}}
      */
-    protected function get_template($qformat, $qtype) {
-        $method = "get_{$qformat}_template_{$qtype}";
+    protected function get_format($qformat, $qtype) {
+        $method = "get_{$qformat}_format_{$qtype}";
         if (method_exists($this, $method)) {
             return $this->$method();
         }
-        return "No $qformat template found for $qtype questions.";
+        return "No $qformat format found for $qtype questions.";
     }
 
     /**
-     * get_gift_template_multichoice
+     * get_gift_format_multichoice
      *
-     * @return string a GIFT template for a multichoice question
+     * @return string a GIFT format for a multichoice question
      */
-    protected function get_gift_template_multichoice() {
+    protected function get_gift_format_multichoice() {
         return <<<'EOD'
 ::question-name::question-text {
     =correct-answer #Explanation of why the answer is correct.
@@ -347,11 +347,11 @@ EOD;
     }
 
     /**
-     * get_gift_template_truefalse
+     * get_gift_format_truefalse
      *
-     * @return string a GIFT template for a truefalse question
+     * @return string a GIFT format for a truefalse question
      */
-    protected function get_gift_template_truefalse() {
+    protected function get_gift_format_truefalse() {
         return <<<'EOD'
 ::question-name::statement-that-is-true{TRUE #Explanation of why this answer is TRUE}
 ::question-name::statement-that-is-false{FALSE #Explanation of why this answer is FALSE}
@@ -359,11 +359,11 @@ EOD;
     }
 
     /**
-     * get_gift_template_match
+     * get_gift_format_match
      *
-     * @return string a GIFT template for a match question
+     * @return string a GIFT format for a match question
      */
-    protected function get_gift_template_match() {
+    protected function get_gift_format_match() {
         return <<<'EOD'
 Match the following words with their corresponding meanings. {
    =target-word -> definition-of-target-word
