@@ -28,5 +28,5 @@
  * Define the icon for this vocab ai
  */
 function vocabai_prompts_get_fontawesome_icon_map() {
-    return ['vocabai_prompts:prompts' => 'fa-globe'];
+    return ['vocabai_prompts:prompts' => 'fa-star'];
 }

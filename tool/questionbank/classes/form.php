@@ -98,6 +98,10 @@ class form extends \mod_vocab\toolform {
 
         $this->add_heading($mform, 'questionsettings', $this->subpluginname, true);
 
+        $name = 'assistant';
+        $options = self::get_assistant_options();
+        $this->add_field_select($mform, $name, $options, PARAM_INT);
+
         $name = 'questiontypes';
         $options = self::get_question_types();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'multichoice', 'multiple');
@@ -120,6 +124,20 @@ class form extends \mod_vocab\toolform {
         $this->add_action_buttons(true, $label);
 
         $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
+    }
+
+    /**
+     * Get a list of AI assistants that are available to the current user and context.
+     *
+     * @return array of AI assistants [config name => localized name]
+     */
+    public function get_assistant_options() {
+        $options = \core_component::get_plugin_list('vocabai');
+        unset($options['formats'], $options['prompts']);
+        foreach ($options as $name => $dir) {
+            $options[$name] = get_string($name, "vocabai_$name");
+        }
+        return $options;
     }
 
     /**
@@ -406,17 +424,21 @@ class form extends \mod_vocab\toolform {
             $maxtries = min($maxtries, max($mintries, $data->$name));
         }
 
-        // Get question format (GIFT or XML)
+        // Get question format (GIFT or XML).
         $name = 'qformat';
         $qformat = (empty($data->$name) ? 'gift' : $data->$name);
 
-        // Get config id of AI assistant.
-        $name = 'aiid';
-        $aiid = (empty($data->$name) ? 0 : $data->$name);
+        // Get config id of AI engine.
+        $name = 'engineid';
+        $engineid = (empty($data->$name) ? 0 : $data->$name);
 
-        // Get config id of prompt.
+        // Get config id of AI prompt.
         $name = 'promptid';
         $promptid = (empty($data->$name) ? 0 : $data->$name);
+
+        // Get config id of AI template.
+        $name = 'templateid';
+        $templateid = (empty($data->$name) ? 0 : $data->$name);
 
         if (property_exists($data, 'selectedwords')) {
             unset($data->selectedwords['selectall']);
@@ -498,6 +520,10 @@ class form extends \mod_vocab\toolform {
             unset($data->$groupname);
         }
 
+        // Cache reference to this questionbank tool object.
+        // This allows easy access to the log functions.
+        $tool = $this->get_subplugin();
+
         // Initialize arguments for "get_string()" used to report
         // the success or failure of setting up the adhoc task.
         $a = (object)[
@@ -518,33 +544,39 @@ class form extends \mod_vocab\toolform {
                 foreach ($qlevels as $qlevel => $qlevelname) {
                     $a->level = $qlevels[$qlevel];
 
-                    // Create the adhoc task.
-                    if ($task = new \vocabtool_questionbank\task\questions()) {
-                        $task->set_userid($USER->id);
-                        $task->set_custom_data([
-                            'uniqid' => uniqid($USER->id, true),
-                            'vocabid' => $vocabid,
-                            'wordid' => $wordid,
-                            'qtype' => $qtype,
-                            'qlevel' => $qlevel,
-                            'qcount' => $qcount,
-                            'qformat' => $qformat,
-                            'maxtries' => $maxtries,
-                            'parentcatid' => $parentcatid,
-                            'subcattype' => $subcattype,
-                            'subcatname' => $subcatname,
-                            'promptid' => $promptid,
-                            'aiid' => $aiid,
+                    $logid = $tool->insert_log([
+                        'userid' => $USER->id,
+                        'vocabid' => $vocabid,
+                        'wordid' => $wordid,
+                        'qtype' => $qtype,
+                        'qlevel' => $qlevel,
+                        'qcount' => $qcount,
+                        'qformat' => $qformat,
+                        'maxtries' => $maxtries,
+                        'parentcatid' => $parentcatid,
+                        'subcattype' => $subcattype,
+                        'subcatname' => $subcatname,
+                        'engineid' => $engineid,
+                        'promptid' => $promptid,
+                        'templateid' => $templateid,
+                        'status' => $task::TASKSTATUS_NOTSET,
+                    ]);
+
+                    // Create the adhoc task object, see
+                    // "/lib/classes/task/task_base.php".
+                    $task = new \vocabtool_questionbank\task\questions();
+                    $task->set_userid($USER->id);
+                    $task->set_custom_data(['logid' => $logid]);
+
+                    // If successful, the "queue_adhoc_task()" method
+                    // returns a record id from the "task_adhoc" table.
+                    if ($taskid = \core\task\manager::queue_adhoc_task($task)) {
+                        $tool->update_log($logid, [
+                            'taskid' => $taskid,
+                            'status' => $task::TASKSTATUS_QUEUED,
                         ]);
-                        // If successful, the "queue_adhoc_task()" method
-                        // returns a record id from the "task_adhoc" table.
-                        if (\core\task\manager::queue_adhoc_task($task)) {
-                            $success[] = $this->get_string('taskgeneratequestions', $a);
-                        } else {
-                            $failure[] = $this->get_string('taskgeneratequestions', $a);
-                        }
+                        $success[] = $this->get_string('taskgeneratequestions', $a);
                     } else {
-                        // Task object could not be created. - shouldn't happen !!
                         $failure[] = $this->get_string('taskgeneratequestions', $a);
                     }
                 }

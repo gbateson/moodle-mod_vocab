@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/vocab/tool/questionbank/db" VERSION="20240216" COMMENT="XMLDB file for Moodle mod/vocab/tool/questionbank"
+<XMLDB PATH="mod/vocab/tool/questionbank/db" VERSION="20240221" COMMENT="XMLDB file for Moodle mod/vocab/tool/questionbank"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
 >
@@ -7,7 +7,7 @@
     <TABLE NAME="vocabtool_questionbank_log" COMMENT="Log attempts to create questions using this tool">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="uniqid" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="taskid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="vocabid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -15,19 +15,30 @@
         <FIELD NAME="qlevel" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="qcount" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="qformat" TYPE="char" LENGTH="8" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="maxtries" TYPE="number" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" DECIMALS="0"/>
+        <FIELD NAME="engineid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="promptid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="templateid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="parentcatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="subcattype" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="subcatname" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="maxtries" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="tries" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="status" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="msg" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="gift" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-\        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="error" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="results" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="taskid" TYPE="foreign" FIELDS="taskid" REFTABLE="task_adhoc" REFFIELDS="id"/>
         <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
         <KEY NAME="vocabid" TYPE="foreign" FIELDS="vocabid" REFTABLE="vocab" REFFIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="engineid" TYPE="foreign" FIELDS="engineid" REFTABLE="vocab_config" REFFIELDS="id"/>
+        <KEY NAME="promptid" TYPE="foreign" FIELDS="promptid" REFTABLE="vocab_config" REFFIELDS="id"/>
+        <KEY NAME="templateid" TYPE="foreign" FIELDS="templateid" REFTABLE="vocab_config" REFFIELDS="id"/>
+        <KEY NAME="parentcatid" TYPE="foreign" FIELDS="parentcatid" REFTABLE="question_categories" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

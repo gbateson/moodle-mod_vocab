@@ -41,7 +41,7 @@ class form extends \mod_vocab\aiform {
      * Add fields to the main form for this subplugin.
      */
     public function definition() {
-        global $DB, $USER;
+        global $DB, $PAGE, $USER;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
@@ -80,7 +80,6 @@ class form extends \mod_vocab\aiform {
                 'id' => 0,
                 'promptname' => '',
                 'prompttext' => '',
-                'promptai' => 'chatgpt',
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
                 'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
@@ -177,10 +176,6 @@ class form extends \mod_vocab\aiform {
         $this->add_field_textarea($mform, $name, PARAM_TEXT, $default->$name, ['rows' => '5', 'cols' => 40]);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
-        $name = 'promptai';
-        $options = $this->get_targetai_options();
-        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, $default->$name);
-
         $name = 'sharingcontext';
         $options = $this->get_sharingcontext_options();
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);
@@ -199,6 +194,8 @@ class form extends \mod_vocab\aiform {
         $this->add_field_datetime($mform, $name, $params);
 
         $this->add_action_buttons(true, $submitlabel);
+
+        $PAGE->requires->js_call_amd('vocabai_prompts/form', 'init');
     }
 
     /**
@@ -389,20 +386,6 @@ class form extends \mod_vocab\aiform {
         }
 
         return $html;
-    }
-
-    /**
-     * Get a list of AI assistant plugins.
-     *
-     * @return array of AI assistants [folder name => localized name]
-     */
-    public function get_targetai_options() {
-        $options = \core_component::get_plugin_list('vocabai');
-        unset($options['prompts']);
-        foreach ($options as $name => $dir) {
-            $options[$name] = get_string($name, "vocabai_$name");
-        }
-        return $options;
     }
 
     /**

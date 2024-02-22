@@ -36,7 +36,7 @@ namespace mod_vocab;
 abstract class toolform extends \mod_vocab\subpluginform {
     /**
      * Get the id of the record that is uniquely identified by an array of
-     * field names of values. If no such record exists it will be created.
+     * field names of values. If no such record exists, it will be created.
      *
      * @uses $DB
      * @param string $table name of a table in the database

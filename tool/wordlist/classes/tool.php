@@ -15,10 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Internal library of functions for module English Central
- *
- * All the vocab specific functions, needed to implement the module
- * logic, should go here. Never include this file from your lib.php!
+ * Vocabulary tool to display and edit the word list for a Vocabulary activity.
  *
  * @package    vocabtool_wordlist
  * @copyright  2018 Gordon Bateson

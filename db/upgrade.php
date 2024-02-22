@@ -197,10 +197,11 @@ function xmldb_vocab_rename_tables($dbman, $tablenames) {
  * @param array $tablenames (optional, default=null) specific tables to check
  * @param array $tableprefix (optional, default=vocab) the prefix for DB tables belonging to this plugin
  * @param array $pluginname (optional, default=mod_vocab) the full frakenstyle name of this plugin e.g. mod_vocab
- * @param array $plugindir (optional, default=mod/vocab) the path (relative to $CFG->dirroot) to main folder for this plugin's directory
+ * @param array $plugindir (optional, default=mod/vocab) the relative path to main folder for this plugin's directory
  * @return void (but may update database structure)
  */
-function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='vocab', $pluginname='mod_vocab', $plugindir='mod/vocab') {
+function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='vocab',
+                                    $pluginname='mod_vocab', $plugindir='mod/vocab') {
     global $CFG, $DB;
 
     // To see what tables/fields/indexes were added/changed/dropped,
@@ -306,8 +307,8 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
 
         // If we try to change any fields that are indexed, the $dbman will abort with an error.
         // As a workaround, we make a note of which fields are used in the keys/indexes,
-        // and then if any of them is to be changed, we first remove the keys/indexes,
-        // then change the field and finally add the keys/index back to the table.
+        // and then, if any of them are to be changed, we first remove the key/index,
+        // then change the field and finally add the key/index back to the table.
 
         $special = (object)[
             'keyfields' => [],
@@ -446,7 +447,9 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
                     if (array_key_exists($name, $indexes)) {
                         $index = new xmldb_index($name);
                         $index->setFromADOIndex($indexes[$name]);
-                        $dbman->drop_index($table, $index);
+                        if ($dbman->index_exists($table, $index)) {
+                            $dbman->drop_index($table, $index);
+                        }
                         unset($indexes[$name]);
                         if ($debug) {
                             echo 'Index '.$match[1].' was dropped<br>';

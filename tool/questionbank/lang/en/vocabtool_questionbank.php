@@ -28,6 +28,9 @@ $string['pluginname'] = 'Generate questions for a Vocabulary activity.';
 $string['privacy:metadata'] = 'The vocabtool_questionbank plugin does not store any personal data.';
 $string['questionbank'] = 'Question bank';
 
+$string['assistant'] = 'AI assistant';
+$string['assistant_help'] = 'Select an AI assistant to generate the questions.';
+
 $string['questioncategory_help'] = 'The category to which the new questions should be added.';
 $string['questioncategory'] = 'Question category';
 $string['questioncount_help'] = 'The number of new questions to generate at each level.';
@@ -102,3 +105,10 @@ $string['catinfo_vocabword'] = 'Vocabulary questions for the word "{$a->word}"';
 $string['catinfo_vocabwordtype'] = '{$a->qtype} questions for the word "{$a->word}"';
 $string['catinfo_vocabwordtypelevel'] = '{$a->qtype} questions ({$a->level}) for the word "{$a->word}"';
 $string['catinfo_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
+
+$string['statusqueued'] = 'Queued';
+$string['statusfetchingresults'] = 'Fecthing results';
+$string['statusawaitinginspection'] = 'Awaiting inspection';
+$string['statusprocessingresults'] = 'Processing results';
+$string['statuscompleted'] = 'Completed successfully';
+$string['statusfailed'] = 'Failed with error';

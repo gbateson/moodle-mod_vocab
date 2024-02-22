@@ -45,7 +45,7 @@ abstract class subpluginform extends \moodleform {
 
     /**
      * @var public string $subpluginname the name of the subplugin that is
-     *      creating this form. This value that can be used in get_string().
+     *      creating this form. This value can be used in get_string().
      */
     public $subpluginname = '';
 
@@ -198,11 +198,11 @@ abstract class subpluginform extends \moodleform {
      * @param string $name the name of this select element
      * @param array $options to display in the drop menu
      * @param mixed $type a PARAM_xxx constant value
-     * @param mixed $default
+     * @param mixed $default (optional, default=null)
      * @param array $attributes (optional, default=null)
      * @return void (but will update $mform)
      */
-    public function add_field_select($mform, $name, $options, $type, $default, $attributes=null) {
+    public function add_field_select($mform, $name, $options, $type, $default=null, $attributes=null) {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 // An on/off attribute e.g. 'disabled' or 'multiple'.
@@ -216,7 +216,9 @@ abstract class subpluginform extends \moodleform {
         $mform->addElement('select', $name, $label, $options, $attributes);
         $mform->addHelpButton($name, $name, $this->subpluginname);
         $mform->setType($name, $type);
-        $mform->setDefault($name, $default);
+        if ($default) {
+            $mform->setDefault($name, $default);
+        }
     }
 
     /**

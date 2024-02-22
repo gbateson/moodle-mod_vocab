@@ -43,8 +43,13 @@ class ai extends \mod_vocab\aibase {
      * @var array the names of config settings that this subplugin maintains.
      */
     const SETTINGNAMES = [
-        'promptname', 'prompttext', 'promptai',
+        'promptname', 'prompttext',
         'sharedfrom', 'shareduntil',
     ];
 
+    /**
+     * @var boolean to signify whether or not duplicate records,
+     * i.e. records with the same owner and context, are allowed.
+     */
+    const ALLOW_DUPLICATES = true;
 }

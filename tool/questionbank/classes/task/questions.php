@@ -27,18 +27,17 @@
 namespace vocabtool_questionbank\task;
 
 /**
- * This class handles an adhoc task to generate questions by
- * sending the specfied AI prompt the specified AI assistant.
+ * This class handles an adhoc task to generate questions.
  *
  * @package     vocabtool_questionbank
  * @category    admin
  */
 class questions extends \core\task\adhoc_task {
 
-    /** var object to represent the vocabtool_questionbank object */
+    /** @var object to represent the vocabtool_questionbank object */
     protected $tool = null;
 
-    /** var object to represent a curl object */
+    /** @var object to represent a curl object */
     protected $curl = null;
 
     /**
@@ -49,10 +48,9 @@ class questions extends \core\task\adhoc_task {
     public function execute() {
         global $CFG, $DB, $USER;
 
-        // "/lib/questionlib.php" is required to check question category info.
+        // Fetch "/lib/questionlib.php" which is required to check question category info.
         // See "question_categorylist" below.
         require_once("$CFG->dirroot/lib/questionlib.php");
-
 
         // Get the id of the user who setup this task.
         // This user has also been set to be the "current" user (i.e. $USER)
@@ -61,28 +59,51 @@ class questions extends \core\task\adhoc_task {
             $userid = $USER->id;
         }
 
+        // Cache the tool class name (it's rather long).
+        $toolclass = '\\vocabtool_questionbank\\tool';
+
         // Get the custom data and extract values.
         $data = $this->get_custom_data();
 
-        $uniqid = ($data->uniqid ?? '');
-        $vocabid = ($data->vocabid ?? 0);
-        $wordid = ($data->wordid ?? 0);
-        $qtype = ($data->qtype ?? 'multichoice');
-        $qlevel = ($data->qlevel ?? 'A2');
-        $qcount = ($data->qcount ?? 5);
-        $qformat = ($data->qformat ?? 'gift');
-        $maxtries = ($data->maxtries ?? 5);
+        // Locate the log record.
+        if (isset($data->logid) && is_numeric($data->logid)) {
+            $log = $toolclass::get_log($data->logid);
+        } else {
+            $log = null; // Shouldn't happen !!
+        }
 
-        $parentcatid = ($data->parentcatid ?? 0);
-        $subcattype = ($data->subcattype ?? '');
-        $subcatname = ($data->subcatname ?? '');
-        $promptid = ($data->promptid ?? 0);
-        $aiid = ($data->aiid ?? 0);
+        if (empty($log)) {
+            return; // Cannot continue.
+        }
 
-        // Intialize the vocab activity.
-        $this->tool = \vocabtool_questionbank\tool::create($vocabid);
+        // Extract settings from log.
+        $vocabid = $log->vocabid;
+        $wordid = $log->wordid;
 
-        // Check incoming data is valid.
+        $qtype = $log->qtype;
+        $qlevel = $log->qlevel;
+        $qcount = $log->qcount;
+        $qformat = $log->qformat;
+
+        $engineid = $log->engineid;
+        $promptid = $log->promptid;
+        $templateid = $log->templateid;
+
+        $parentcatid = $log->parentcatid;
+        $subcattype = $log->subcattype;
+        $subcatname = $log->subcatname;
+
+        $maxtries = $log->maxtries;
+        $tries = $log->tries;
+
+        $status = $log->status;
+        $error = $log->error;
+        $results = $log->results;
+
+        // Intialize the vocab activity tool.
+        $this->tool = $toolclass::create($vocabid);
+
+        // Check log data is valid and consistent.
         if (! $this->tool->vocab->cm) {
             return $this->report_error('invalidvocabid', $vocabid);
         }
@@ -130,7 +151,7 @@ class questions extends \core\task\adhoc_task {
             'course' => $this->tool->vocab->course->shortname,
             'word' => $word,
             'qtype' => $qtypetext,
-            'level' => $qlevel, // Just the code is enough e.g. "A2"
+            'level' => $qlevel, // Just the code is enough e.g. "A2".
         ];
 
         // Ensure that we can get or create a suitable question category.
@@ -138,70 +159,14 @@ class questions extends \core\task\adhoc_task {
             return $this->report_error('missingquestioncategory', $word);
         }
 
-        // Cache the current time.
-        $time = time();
+        $tool->update_log($log->id, [
+            'status' => $toolclass::TASKSTATUS_FETCHING_RESULTS,
+        ]);
 
-        // Create/get the log entry for this generation.
-        $table = 'vocabtool_questionbank_log';
-        $log = (object)[
-            'uniqid' => $uniqid,
-            'userid' => $userid,
-            'vocabid' => $vocabid,
-            'wordid' => $wordid,
-            'qtype' => $qtype,
-            'qlevel' => $qlevel,
-            'qcount' => $qcount,
-            'maxtries' => $maxtries,
-            // 0 means "in progress".
-            // 1 means "completed".
-            // -1 means "failed".
-            'tries' => 1,
-            'status' => 0,
-            'msg' => '',
-            'gift' => '',
-            'timecreated' => $time,
-            'timemodified' => $time,
-        ];
-
-        // Normally we do NOT expect to find any old logs, but
-        // during development, an error in this script may leave
-        // some. We can fetch and delete them using the "uniqid".
-        if ($old = $DB->get_records($table, ['uniqid' => $uniqid])) {
-
-            // Remove any duplicates (there shouldn't be any).
-            $params = array_keys($old);
-            $params = array_slice($params, 1);
-            if (count($params)) {
-                list($select, $params) = $DB->get_in_or_equal($params);
-                $DB->delete_records_select($table, "id $select", $params);
-            }
-
-            // We are only interested in the first log (we expect no more than one).
-            $old = reset($old);
-
-            // Copy updateable fields across from $old log to the new one.
-            $names = ['id', 'tries', 'status', 'msg', 'gift', 'timecreated'];
-            foreach ($names as $name) {
-                $log->$name= $old->$name;
-            }
-            // Update the old log (no change to id).
-            $DB->update_record($table, $log);
-        } else {
-            // Create a new log for this task.
-            $log->id = $DB->insert_record($table, $log);
-        }
-
-        // If we could not create/update the log record, abort now.
-        if (empty($log->id)) {
-            $log = print_r($log, true);
-            $a = ['table' => $table, 'record' => $log];
-            return $this->report_error('recordnotadded', $a);
-        }
-
-        $aiconfig = $this->get_config($aiid);
-        $ai = $this->get_ai($aiconfig);
-
+        $engineconfig = $this->get_config($engineid);
         $promptconfig = $this->get_config($promptid);
+        $templateconfig = $this->get_config($templateid);
+
         $prompt = $this->get_prompt($promptconfig, $word, $qtype, $qlevel, $qcount, $qformat);
 
         // Initialize the curl connection.
@@ -351,10 +316,10 @@ EOD;
     }
 
     /**
-     * get_template
+     * Get a template for the required question format and type.
      *
-     * @param string $ttype the question type.
-     * @param string $qtype the question type.
+     * @param string $qformat the question format e.g. "gift" or "xml".
+     * @param string $qtype the question type e.g. "multichoice" or "truefalse".
      * @return string the GIFT template, including place holders marked with {{...}}
      */
     protected function get_template($qformat, $qtype) {
@@ -393,7 +358,6 @@ EOD;
 EOD;
     }
 
-
     /**
      * get_gift_template_match
      *
@@ -415,7 +379,7 @@ EOD;
      *
      * @param array $config values from vocab_config_settings.
      * @param string $prompt the prompt to send to the AI assistant.
-     * @param float $temperature to regulate "randomness" in the AI assistant 
+     * @param float $temperature to regulate "randomness" in the AI assistant
      * @return object of questions
      */
     protected function init_curl($config, $prompt, $temperature = 0.7) {
@@ -425,20 +389,20 @@ EOD;
             $model = $config['chatgptmodel'];
         } else {
             $url = 'https://api.openai.com/v1/chat/completions';
-            $key = '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';
+            $key = ''; // Put your key here.
             $model = 'gpt-4';
         }
 
         // Set the maximum number of tokens.
         switch ($model) {
             case 'gpt-4':
-                $max_tokens = 8192;
+                $maxtokens = 8192;
                 break;
             case 'gpt-3.5-turbo':
-                $max_tokens = 4097;
+                $maxtokens = 4097;
                 break;
             default:
-                $max_tokens = 1000;
+                $maxtokens = 1000;
         }
 
         if ($this->curl === null) {
@@ -450,22 +414,23 @@ EOD;
 
             curl_setopt($this->curl, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'Authorization: Bearer '.$key
+                'Authorization: Bearer '.$key,
             ]);
 
             // Define the role of the AI assistant.
             $systemrole = 'Act as an expert producer of online language-learning materials.';
 
-            // Set the post fields
-            curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode(array(
+            // Set the POST fields.
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode([
                 'model' => $model,
                 'messages' => [
-                    (object)['role' => 'system','content' => $systemrole],
-                    (object)['role' => 'user', 'content' => $prompt]
+                    (object)['role' => 'system', 'content' => $systemrole],
+                    (object)['role' => 'user', 'content' => $prompt],
                 ],
-                //'max_tokens' => $max_tokens,
+                // We could also set ...
+                // 'max_tokens' => $maxtokens.
                 'temperature' => $temperature,
-            )));
+            ]));
         }
     }
 
@@ -488,7 +453,7 @@ EOD;
         // When the cattype is "none", all the questions
         // go into the given parent category.
         if ($subcattype == \vocabtool_questionbank\form::SUBCAT_NONE) {
-            return $category; 
+            return $category;
         }
 
         // When the cattype is "single", all the questions
@@ -511,12 +476,13 @@ EOD;
     /**
      * get_question_subcategory
      *
+     * @param string $table the table to be search in the Moodle $DB
      * @param string $strname string name used to create the subcategory name/info
      * @param object $a arguments to use to make the subcategory name/info
      * @param object $parentcategory the parent category
      * @param string $catname (optional, default="") the name of the subcategory
      * @param string $catinfo (optional, default="") the info of the subcategory
-     @return object $subcategory
+     * @return object $subcategory record from the $table in the Moodle DB.
      */
     protected function get_question_subcategory($table, $strname, $a, $parentcategory, $catname='', $catinfo='') {
         global $DB;
@@ -568,7 +534,7 @@ EOD;
      * @param string $text
      * @param string $qformat
      * @param string $categoryid
-     * @return object to represent the 
+     * @return object to represent the
      */
     protected function parse_questions($text, $qformat, $categoryid) {
         global $CFG, $USER;
@@ -627,6 +593,8 @@ EOD;
                     $qtype = \question_bank::get_qtype($question->qtype);
                     $qtype->save_question($question, $question);
                     // We should also add tags for this question.
+
+                    // Set tags for word, level, language.
                     $questions[] = $question;
                 }
             }
@@ -652,7 +620,7 @@ EOD;
         $label = '['.$this->tool->plugin.'] '.get_string('error');
         $label .= get_string('labelsep', 'langconfig');
 
-        // Print the label with the error
+        // Print the label with the error.
         mtrace($label.$error);
 
         // Mark this task as having failed.

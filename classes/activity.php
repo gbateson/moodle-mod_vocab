@@ -921,6 +921,7 @@ class activity {
      * @param string $valuefield (optional, default = '') the name of the field to
      *                use as values in the return array.
      *                If blank, complete context records will be returned.
+     * @param mixed $user (optional, default=null) a user id or object
      * @return array
      */
     public function get_readable_contexts($keyfield='', $valuefield='', $user=null) {
@@ -950,6 +951,7 @@ class activity {
      * @param string $valuefield (optional, default = '') the name of the field to use
      *               as values in the return array. If blank, complete context records
      *               will be returned.
+     * @param mixed $user (optional, default=null) a user id or object
      * @return array
      */
     public function get_writeable_contexts($keyfield='', $valuefield='', $user=null) {
