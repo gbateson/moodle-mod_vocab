@@ -66,7 +66,7 @@ class tool extends \mod_vocab\toolbase {
      *
      * @return object the default log record.
      */
-    public function get_default_log() {
+    public static function get_default_log() {
         $time = time();
         return (object)[
             'taskid' => 0,
@@ -87,6 +87,7 @@ class tool extends \mod_vocab\toolbase {
             'tries' => 0,
             'status' => 0,
             'error' => '',
+            'prompt' => '',
             'results' => '',
             'timecreated' => $time,
             'timemodified' => $time,
@@ -103,7 +104,7 @@ class tool extends \mod_vocab\toolbase {
     public static function add_log_params($log, $params) {
         $update = false;
         foreach ($params as $name => $value) {
-            if (property_exists($name, $log) && $log->$name != $value) {
+            if (property_exists($log, $name) && $log->$name != $value) {
                 $log->$name = $value;
                 $update = true;
             }

@@ -85,7 +85,9 @@ $string['scheduletasksfailure'] = 'The following tasks could NOT be scheduled. P
 $string['taskgeneratequestions'] = 'Task to generate {$a->count} {$a->type} question(s) at level "{$a->level}" for the word "{$a->word}".';
 
 $string['error_generatequestions'] = 'Unable to generate questions; {$a}.';
+$string['error_invalidlogid'] = 'Invliad log ({$a}) received from adhoc task';
 $string['error_invalidquestioncategoryid'] = 'Invalid question category ID ({$a}) sent to adhoc task to generate questions.';
+$string['error_invalidtaskparameters'] = 'Invalid parameter(s) in adhoc task log: {$a}';
 $string['error_invalidteacherid'] = 'User (id={$a->userid}) is not allowed to create questions in course (id={$a->courseid}).';
 $string['error_invaliduserid'] = 'Invalid userid ({$a}) sent to adhoc task to generate questions.';
 $string['error_invalidvocabid'] = 'Invalid vocabid ({$a}) sent to adhoc task to generate questions.';
@@ -121,3 +123,6 @@ $string['noassistantsfound'] = 'Access details to an AI assistant';
 $string['nopromptsfound'] = 'Prompts for the AI assistants';
 $string['noformatsfound'] = 'Output formats for the prompts';
 $string['addaidetails'] = 'Please use the links on the "AI assistants" menu to add the missing details.';
+
+$string['qformat'] = 'Question file format';
+$string['qformat_help'] = 'Choose the file format used to import the AI output into the question bank.';

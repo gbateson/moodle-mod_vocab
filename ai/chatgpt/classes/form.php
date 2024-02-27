@@ -167,7 +167,7 @@ class form extends \mod_vocab\aiform {
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'chatgptmodel';
-        $options = ['gpt-3-turbo' => 'gpt-3-turbo', 'gpt-4' => 'gpt-4'];
+        $options = ['gpt-3.5-turbo' => 'gpt-3.5-turbo', 'gpt-4' => 'gpt-4'];
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 

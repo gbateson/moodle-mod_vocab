@@ -132,19 +132,32 @@ class form extends \mod_vocab\toolform {
         $promptlabel = get_string('promptname', 'vocabai_prompts');
         $formatlabel = get_string('formatname', 'vocabai_formats');
 
+        $name = 'qformat';
+        $options = self::get_question_formats();
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'gift');
+
         $qtypes = self::get_question_types();
         foreach ($qtypes as $qtype => $label) {
+
+            // Add the checkbox, prompt menu and format menu for this question type. 
             $elements = [];
             $elements[] = $mform->createElement('checkbox', 'enable', $enablelabel);
             $elements[] = $mform->createElement('select', 'prompt', $promptlabel, $prompts);
             $elements[] = $mform->createElement('select', 'format', $formatlabel, $formats);
             $mform->addGroup($elements, $qtype, $label, ' ');
+
+            // Set the default prompt to be the first of any that contain
+            // the question type in their name.
             if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $prompts)) {
                 $mform->setDefault($qtype.'[prompt]', key($defaults));
             }
+
+            // Set the default format in a similar way to how the default prompt was set.
             if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $formats)) {
                 $mform->setDefault($qtype.'[format]', key($defaults));
             }
+
+            // Hide the prompt and format menus until the question type becomes checked.
             $mform->hideIf($qtype.'[prompt]', $qtype.'[enable]', 'notchecked');
             $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
             $mform->disabledIf($qtype.'[format]', $qtype.'[prompt]', 'eq', '0');
@@ -241,43 +254,71 @@ class form extends \mod_vocab\toolform {
         if ($options = $DB->get_records_sql_menu($sql, $params)) {
             if (count($options) > 1) {
                 $selectstring = $this->get_string($selectstring);
-                $options = array_merge([0 => $selectstring], $options);
+                $options = ([0 => $selectstring] + $options);
             }
         }
         return $options;
     }
 
     /**
+     * get_question_formats
+     *
+     * @return array $formats of question formats for which we can generate questions.
+     */
+    public static function get_question_formats() {
+        // ToDo: Could include aiken, hotpot, missingword, multianswer.
+        return self::get_question_plugins('qformat', ['gift', 'xml']);
+    }
+
+    /**
      * get_question_types
      *
      * @return array $types of question types for which we can generate questions.
-     *
-     * TODO: Finish documenting this function
      */
     public static function get_question_types() {
         // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
         $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
-        $types = \core_component::get_plugin_list('qtype');
-        foreach ($types as $name => $dir) {
-            if (in_array($name, $include)) {
-                $types[$name] = get_string('pluginname', "qtype_$name");
+        $order = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
+        return self::get_question_plugins('qtype', $include, $order);
+    }
+
+    /**
+     * Get question plugins ("qtype" or "qformat")
+     *
+     * @param string plugintype
+     * @param array $include (optional, default=null)
+     * @param array $order (optional, default=[])
+     * @return array $plugins of question formats for which we can generate questions.
+     */
+    public static function get_question_plugins($plugintype, $include=null, $order=[]) {
+
+        // Get the full list of plugins of the required type.
+        $plugins = \core_component::get_plugin_list($plugintype);
+
+        // Remove items that are not in the $include array.
+        foreach (array_keys($plugins) as $name) {
+            if ($include === null || in_array($name, $include)) {
+                $plugins[$name] = get_string('pluginname', $plugintype.'_'.$name);
             } else {
-                unset($types[$name]);
+                unset($plugins[$name]);
             }
         }
-        asort($types); // Sort alphabetically (maintain key association).
 
-        $order = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
+        // Sort items alphabetically (maintain key association).
+        asort($plugins);
+
+        // Ensure first few items are the common ones.
         $order = array_flip($order);
         foreach (array_keys($order) as $name) {
-            if (array_key_exists($name, $types)) {
-                $order[$name] = $types[$name];
+            if (array_key_exists($name, $plugins)) {
+                $order[$name] = $plugins[$name];
             } else {
                 unset($order[$name]);
             }
         }
-        $types = $order + $types;
-        return $types;
+        $plugins = $order + $plugins;
+
+        return $plugins;
     }
 
     /**
@@ -534,29 +575,13 @@ class form extends \mod_vocab\toolform {
         // Cache the vocabid.
         $vocabid = $this->get_vocab()->id;
 
-        // Get sensible value for number of tries.
-        $mintries = 1;
-        $maxtries = 10;
-        $name = 'maxtries';
-        if (isset($data->$name) && is_numeric($data->$name)) {
-            $maxtries = min($maxtries, max($mintries, $data->$name));
-        }
+        // Get config id of an AI access.
+        $name = 'assistant';
+        $accessid = (empty($data->$name) ? 0 : $data->$name);
 
         // Get question format (GIFT or XML).
         $name = 'qformat';
-        $qformat = (empty($data->$name) ? 'gift' : $data->$name);
-
-        // Get config id of an AI access.
-        $name = 'accessid';
-        $accessid = (empty($data->$name) ? 0 : $data->$name);
-
-        // Get config id of an AI prompt.
-        $name = 'promptid';
-        $promptid = (empty($data->$name) ? 0 : $data->$name);
-
-        // Get config id of an AI output format.
-        $name = 'formatid';
-        $formatid = (empty($data->$name) ? 0 : $data->$name);
+        $qformat = (empty($data->$name) ? '' : $data->$name);
 
         if (property_exists($data, 'selectedwords')) {
             unset($data->selectedwords['selectall']);
@@ -574,14 +599,23 @@ class form extends \mod_vocab\toolform {
             unset($data->selectedwords);
         }
 
-        if (property_exists($data, 'questiontypes')) {
-            $qtypes = self::get_question_types();
-            foreach ($qtypes as $name => $text) {
-                if (! in_array($name, $data->questiontypes)) {
-                    unset($qtypes[$name]);
-                }
+        $qtypes = self::get_question_types();
+        foreach ($qtypes as $name => $text) {
+            if (empty($data->$name) ||
+                empty($data->$name['enable']) ||
+                empty($data->$name['prompt']) ||
+                empty($data->$name['format'])) {
+                unset($qtypes[$name]);
+            } else {
+                // TODO: validate promptid and formatid.
+                $promptid = $data->$name['prompt'];
+                $formatid = $data->$name['format'];
+                $qtypes[$name] = (object)[
+                    'text' => $text,
+                    'promptid' => $promptid,
+                    'formatid' => $formatid,
+                ];
             }
-            unset($data->questiontypes);
         }
 
         if (property_exists($data, 'questionlevels') && is_array($data->questionlevels)) {
@@ -592,6 +626,14 @@ class form extends \mod_vocab\toolform {
                 }
             }
             unset($data->questionlevels);
+        }
+
+        // Get sensible value for number of tries.
+        $mintries = 1;
+        $maxtries = 10;
+        $name = 'maxtries';
+        if (isset($data->$name) && is_numeric($data->$name)) {
+            $maxtries = min($maxtries, max($mintries, $data->$name));
         }
 
         if (empty($words) || empty($qtypes) || empty($qlevels)) {
@@ -660,13 +702,13 @@ class form extends \mod_vocab\toolform {
         foreach ($words as $wordid => $word) {
             $a->word = $word;
 
-            foreach ($qtypes as $qtype => $qtypetext) {
-                $a->type = $qtypes[$qtype];
+            foreach ($qtypes as $qtype => $qtypesettings) {
+                $a->type = $qtypesettings->text;
 
                 foreach ($qlevels as $qlevel => $qlevelname) {
                     $a->level = $qlevels[$qlevel];
 
-                    $logid = $tool->insert_log([
+                    $logid = $tool::insert_log([
                         'userid' => $USER->id,
                         'vocabid' => $vocabid,
                         'wordid' => $wordid,
@@ -679,9 +721,9 @@ class form extends \mod_vocab\toolform {
                         'subcattype' => $subcattype,
                         'subcatname' => $subcatname,
                         'accessid' => $accessid,
-                        'promptid' => $promptid,
-                        'formatid' => $formatid,
-                        'status' => $task::TASKSTATUS_NOTSET,
+                        'promptid' => $qtypesettings->promptid,
+                        'formatid' => $qtypesettings->formatid,
+                        'status' => $tool::TASKSTATUS_NOTSET,
                     ]);
 
                     // Create the adhoc task object, see
@@ -693,9 +735,9 @@ class form extends \mod_vocab\toolform {
                     // If successful, the "queue_adhoc_task()" method
                     // returns a record id from the "task_adhoc" table.
                     if ($taskid = \core\task\manager::queue_adhoc_task($task)) {
-                        $tool->update_log($logid, [
+                        $tool::update_log($logid, [
                             'taskid' => $taskid,
-                            'status' => $task::TASKSTATUS_QUEUED,
+                            'status' => $tool::TASKSTATUS_QUEUED,
                         ]);
                         $success[] = $this->get_string('taskgeneratequestions', $a);
                     } else {
@@ -711,7 +753,7 @@ class form extends \mod_vocab\toolform {
             $success = $this->get_string('scheduletaskssuccess', $success);
             $strsuccess = get_string('success').get_string('labelsep', 'langconfig');
             $strsuccess = \html_writer::tag('b', $strsuccess, ['class' => 'text-success']);
-            $success = $OUTPUT->notification($strsuccess.$success, 'success');
+            $success = $OUTPUT->notification($strsuccess.$success, 'success', false);
             $mform->addElement('html', $success);
         }
         if (count($failure)) {
@@ -719,7 +761,7 @@ class form extends \mod_vocab\toolform {
             $failure = $this->get_string('scheduletasksfailure', $failure);
             $strfailure = get_string('error').get_string('labelsep', 'langconfig');
             $strfailure = \html_writer::tag('b', $strfailure, ['class' => 'text-danger']);
-            $failure = $OUTPUT->notification($strfailure.$failure, 'warning');
+            $failure = $OUTPUT->notification($strfailure.$failure, 'warning', false);
             $mform->addElement('html', $failure);
         }
     }

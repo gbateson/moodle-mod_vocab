@@ -73,7 +73,8 @@ class questions extends \core\task\adhoc_task {
         }
 
         if (empty($log)) {
-            return; // Cannot continue.
+            $logid = (isset($data->logid) ? $log->id : 'missing');
+            return $this->report_error($log, 'invalidlogid', $logid);
         }
 
         // Extract settings from log.
@@ -105,17 +106,17 @@ class questions extends \core\task\adhoc_task {
 
         // Check log data is valid and consistent.
         if (! $this->tool->vocab->cm) {
-            return $this->report_error('invalidvocabid', $vocabid);
+            return $this->report_error($log, 'invalidvocabid', $vocabid);
         }
         if (! $this->tool->vocab->can_manage()) {
-            return $this->report_error('invaliduserid', $userid);
+            return $this->report_error($log, 'invaliduserid', $userid);
         }
         if (! $word = $DB->get_field('vocab_words', 'word', ['id' => $wordid])) {
-            return $this->report_error('invalidwordid', $wordid);
+            return $this->report_error($log, 'invalidwordid', $wordid);
         }
         $params = ['vocabid' => $vocabid, 'wordid' => $wordid];
         if (! $DB->record_exists('vocab_word_instances', $params)) {
-            return $this->report_error('missingwordinstance', $word);
+            return $this->report_error($log, 'missingwordinstance', $word);
         }
 
         // Cache the course id and context.
@@ -125,7 +126,7 @@ class questions extends \core\task\adhoc_task {
         // Ensure that this user can add questions in the target course.
         if (! has_capability('moodle/question:add', $coursecontext)) {
             $a = ['userid' => $userid, 'courseid' => $courseid];
-            return $this->report_error('invalidteacherid', $a);
+            return $this->report_error($log, 'invalidteacherid', $a);
         }
 
         // Get all question categories in the current course.
@@ -134,7 +135,7 @@ class questions extends \core\task\adhoc_task {
 
         // Ensure that the target question category is in the target course.
         if (! in_array($parentcatid, $categories)) {
-            return $this->report_error('invalidquestioncategoryid', $parentcatid);
+            return $this->report_error($log, 'invalidquestioncategoryid', $parentcatid);
         }
 
         // Cache the parent category.
@@ -156,21 +157,33 @@ class questions extends \core\task\adhoc_task {
 
         // Ensure that we can get or create a suitable question category.
         if (! $category = $this->get_question_category($parentcategory, $subcattype, $subcatname, $word, $a)) {
-            return $this->report_error('missingquestioncategory', $word);
+            return $this->report_error($log, 'missingquestioncategory', $word);
         }
 
-        $tool->update_log($log->id, [
+        $a = [];
+        if (! $accessconfig = $this->get_config($accessid)) {
+            $a[] = "accessid ($accessid)";
+        }
+        if (! $promptconfig = $this->get_config($promptid)) {
+            $a[] = "promptid ($promptid)";
+        }
+        if (! $formatconfig = $this->get_config($formatid)) {
+            $a[] = "formatid ($formatid)";
+        }
+        if ($a = implode(", ", $a)) {
+            return $this->report_error($log, 'invalidtaskparameters', $a);
+        }
+
+        $prompt = $this->get_prompt($promptconfig, $formatconfig, $word, $qtype, $qlevel, $qcount, $qformat);
+
+        // Set log status to "Fecthing results"
+        $this->tool->update_log($log->id, [
+            'prompt' => $prompt,
             'status' => $toolclass::TASKSTATUS_FETCHING_RESULTS,
         ]);
 
-        $accessconfig = $this->get_config($accessid);
-        $promptconfig = $this->get_config($promptid);
-        $formatconfig = $this->get_config($formatid);
-
-        $prompt = $this->get_prompt($promptconfig, $word, $qtype, $qlevel, $qcount, $qformat);
-
         // Initialize the curl connection.
-        $this->init_curl($ai, $prompt);
+        $this->init_curl($accessconfig, $prompt);
 
         // Initialize the error message.
         $error = '';
@@ -180,15 +193,15 @@ class questions extends \core\task\adhoc_task {
 
         // Prompt the AI assistant until either we succeed
         // or we have tried the allowed number of times.
-        for ($i = $log->tries; $i <= $maxtries; $i++) {
+        for ($i = ($log->tries + 1); $i <= $maxtries; $i++) {
 
             // Loop may finish before $maxtries
             // if results are received from AI.
 
             // Update tries value in the database.
-            $log->tries = $i;
-            $log->timemodified = time();
-            $DB->update_record($table, $log);
+            $this->tool->update_log($log->id, [
+                'tries' =>$i,
+            ]);
 
             // Send the prompt to the AI assistant and receive the response.
             $response = curl_exec($this->curl);
@@ -200,14 +213,22 @@ class questions extends \core\task\adhoc_task {
 
             if ($response->text) {
 
-                $log->datemodified = time();
-                $log->gift = $response->text;
-                $DB->update_record($table, $log);
+                // Set log status to "Processing results"
+                $this->tool->update_log($log->id, [
+                    'results' =>$response->text,
+                    'status' => $toolclass::TASKSTATUS_PROCESSING_RESULTS,
+                ]);
 
                 // Parse the questions text.
                 if ($questions = $this->parse_questions($response->text, $qformat, $category->id)) {
-                    // Ignore any provious errors and leave this loop.
+                    // Update the log and leave this loop.
+                    // By unsetting $error, we ignore any previous errors. 
                     $error = '';
+                    $this->tool->update_log($log->id, [
+                        'error' => $error,
+                        'results' =>$response->text,
+                        'status' => $toolclass::TASKSTATUS_COMPLETED,
+                    ]);
                 } else {
                     $error = "Questions for {$word} could not be parsed.";
                 }
@@ -225,7 +246,7 @@ class questions extends \core\task\adhoc_task {
         }
 
         if ($error) {
-            return $this->report_error('generatequestions', $error);
+            return $this->report_error($log, 'generatequestions', $error);
         } else {
             return \core\task\manager::adhoc_task_complete($this);
         }
@@ -238,8 +259,25 @@ class questions extends \core\task\adhoc_task {
      * @return object record from the vocab_config table
      */
     protected function get_config($configid) {
+        global $DB;
+
+        // Get all relevant contexts (activity, course, coursecat, site).
         $contexts = $this->tool->vocab->get_readable_contexts('', 'id');
-        return $this->tool->get_config_settings($contexts, $configid);
+        list($where, $params) = $DB->get_in_or_equal($contexts);
+
+        // Retrieve all field names and values in the required config record.
+        $select = 'vcs.name, vcs.value';
+        $from = '{vocab_config_settings} vcs '.
+                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
+        $where = "vcs.configid = ? AND vc.contextid $where";
+        $params = array_merge([$configid], $params);
+
+        $sql = "SELECT $select FROM $from WHERE $where";
+        if ($config =  $DB->get_records_sql_menu($sql, $params)) {
+            return (object)$config;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -269,13 +307,17 @@ class questions extends \core\task\adhoc_task {
      * @param string $qformat
      * @return string a prompt to send to an AI assistant, such as ChatGPT.
      */
-    protected function get_prompt($config, $word, $qtype, $qlevel, $qcount, $qformat) {
-        if (is_array($config) && array_key_exists('prompttext', $config)) {
-            $prompt = $config['prompttext'];
-        } else {
+    protected function get_prompt($promptconfig, $formatconfig, $word, $qtype, $qlevel, $qcount, $qformat) {
+        if (empty($promptconfig->prompttext)) {
             $prompt = $this->get_prompt_default();
+        } else {
+            $prompt = $promptconfig->prompttext;
         }
-        $format = $this->get_format($qformat, $qtype);
+        if (empty($formatconfig->formattext)) {
+            $format = $this->get_format_default($qformat, $qtype);
+        } else {
+            $format = $formatconfig->formattext;
+        }
 
         // Replace all place holders with their respective values.
         $prompt = strtr($prompt, [
@@ -382,15 +424,15 @@ EOD;
      * @param float $temperature to regulate "randomness" in the AI assistant
      * @return object of questions
      */
-    protected function init_curl($config, $prompt, $temperature = 0.7) {
-        if (is_array($config) && array_key_exists('chatgptkey', $config)) {
-            $url = $config['chatgpturl'];
-            $key = $config['chatgptkey'];
-            $model = $config['chatgptmodel'];
-        } else {
+    protected function init_curl($accessconfig, $prompt, $temperature = 0.7) {
+        if (empty($accessconfig->chatgptkey)) {
             $url = 'https://api.openai.com/v1/chat/completions';
             $key = ''; // Put your key here.
             $model = 'gpt-4';
+        } else {
+            $url = $accessconfig->chatgpturl;
+            $key = $accessconfig->chatgptkey;
+            $model = $accessconfig->chatgptmodel;
         }
 
         // here we should create an "ai" connection using the $configid
@@ -609,11 +651,12 @@ EOD;
     /**
      * report_error
      *
+     * @param object $log the log record associated with this adhoc task
      * @param string $error message name (in lang pack)
      * @param string $a arguments required (if any) by $error string
      * @return boolean false
      */
-    public function report_error($error, $a=null) {
+    public function report_error($log, $error, $a=null) {
 
         // Fetch the full error message.
         $error = $this->tool->get_string("error_$error", $a);
@@ -628,6 +671,14 @@ EOD;
         // Mark this task as having failed.
         $this->set_fail_delay(1);
         \core\task\manager::adhoc_task_failed($this);
+
+        // Set log status to "Failed"
+        if ($log) {
+            $toolclass = get_class($this->tool);
+            $this->tool->update_log($log->id, [
+                'status' => $toolclass::TASKSTATUS_FAILED,
+            ]);
+        }
 
         return false;
     }
