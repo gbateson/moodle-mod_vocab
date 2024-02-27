@@ -265,14 +265,24 @@ class aibase extends \mod_vocab\subpluginbase {
             ];
         }
 
-        $configs = $this->configs;
-        if ($returnuser && $returncontext) {
-            // Return configs for a specific user and context.
-            $configs = $configs->$returnuser->$returncontext;
-            if ($removeconfigid && $this->config) {
-                unset($configs[$this->config->id]);
+        // Prepare configs to return
+        $configs = clone($this->configs);
+
+        // Return configs for a specific user.
+        if ($returnuser) {
+            $configs = $configs->$returnuser;
+
+            // Return configs for a specific context.
+            if ($returncontext) {
+                $configs = $configs->$returncontext;
+
+                // Remove current config, if there is one.
+                if ($removeconfigid && $this->config) {
+                    unset($configs[$this->config->id]);
+                }
             }
         }
+
         return $configs;
     }
 

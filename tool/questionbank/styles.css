@@ -1,11 +1,57 @@
 /** restrict the width of the main form */ 
 #vocabtool_questionbank_form {
-    max-width: 640px;
+    max-width: 900px;
 }
 
-@media (max-width: 575px) {
-    #vocabtool_questionbank_form #id_wordlistcontainer label {
-        margin-bottom: 0.2rem;
-    }
+/**
+ * In order to right align the labels on the question types,
+ * we must switch the flex direction from the "row" (the default)
+ * to "column" and then set "align-self" to "flex-end" i.e. right.
+ */
+#vocabtool_questionbank_form #id_questionsettingscontainer 
+    > .fitem[id^='fgroup_id'] > .col-form-label {
+    flex-direction: column;
+}
+#vocabtool_questionbank_form #id_questionsettingscontainer 
+    > .fitem[id^='fgroup_id'] > .col-form-label > p {
+    align-self: flex-end;
 }
 
+/**
+ * Add zebra stripes to the question types.
+ */
+#vocabtool_questionbank_form #id_questionsettingscontainer 
+    > .form-group:not([id^='fitem_id']):nth-child(odd) {
+    background-color: #396;
+    color: #fff;
+}
+#vocabtool_questionbank_form #id_questionsettingscontainer 
+    > .form-group:not([id^='fitem_id']):nth-child(even) {
+    background-color: #ded;
+}
+
+/**
+ * Remove the bottom margin on question items so that they appear more bunched together.
+ * As compensation, we also need to add a top margin to the "questionlevels" element
+ * which is the element that follows the last question type.
+ */
+#vocabtool_questionbank_form #id_questionsettingscontainer 
+    > .form-group:not([id^='fitem_id']) {
+    margin-bottom: 0; /** override default of 1rem */
+}
+#vocabtool_questionbank_form #id_questionsettingscontainer > #fitem_id_questionlevels {
+    margin-top: 1rem;
+}
+
+/**
+ * To avoid visual overload, the drop-down menus for prompts and formats
+ * are initially hidden using "hideIf" on the Moodle form. However, this
+ * causes the height to change which in turn causes the vertically centered
+ * checkbox to jump to a new position. To prevent this, we fix the height
+ * of the DIV containing the LABEL containing the CHECKBOX.
+ */
+#vocabtool_questionbank_form #id_questionsettingscontainer 
+    > .form-group:not([id^='fitem_id']) 
+    > .felement > fieldset > div {
+    min-height: 40px;
+}

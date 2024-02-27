@@ -139,7 +139,7 @@ class subpluginbase {
             $this->index_url(),
             $pluginname, // The <title> tag for the page.
             $pluginname, // The <h1> heading for the page.
-            ['hidecompletion' => true, 'description' => '']
+            ['hidecompletion' => true, 'description' => $pluginname]
         );
     }
 

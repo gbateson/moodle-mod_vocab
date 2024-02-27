@@ -40,13 +40,13 @@ class form extends \mod_vocab\toolform {
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_questionbank';
 
-    /** @var string internal value to represent creating no question subcategories */
+    /** @var string database value to represent creating no question subcategories */
     const SUBCAT_NONE = 'none';
 
-    /** @var string internal value to represent the creation of a "single" question subcategory */
+    /** @var string database value to represent the creation of a "single" question subcategory */
     const SUBCAT_SINGLE = 'single';
 
-    /** @var string internal value to represent the "automatic" creation of question subcategories */
+    /** @var string database value to represent the "automatic" creation of question subcategories */
     const SUBCAT_AUTOMATIC = 'automatic';
 
     /**
@@ -65,9 +65,6 @@ class form extends \mod_vocab\toolform {
             $this->generate_questions($mform, $data);
         }
 
-        $name = 'wordlist';
-        $this->add_heading($mform, $name, 'mod_vocab', true);
-
         $words = $this->get_vocab()->get_wordlist_words();
         if (empty($words)) {
             $msg = $this->get_string('nowordsfound');
@@ -75,6 +72,32 @@ class form extends \mod_vocab\toolform {
             $mform->addElement('html', $msg);
             return;
         }
+
+        // Ensure that we have access details, prompts and formats for AI assistants.
+        $a = [];
+        if (! $assistants = self::get_assistant_options()) {
+            $a[] = $this->get_string('noassistantsfound');
+        }
+        if (! $prompts = $this->get_config_options('prompts', 'promptname', 'selectprompt')) {
+            $a[] = $this->get_string('nopromptsfound');
+        }
+        if (! $formats = $this->get_config_options('formats', 'formatname', 'selectformat')) {
+            $a[] = $this->get_string('nopromptsfound');
+        }
+        if (count($a)) {
+            $a = \html_writer::alist($a);
+            $msg = $this->get_string('missingaidetails', $a).
+                   $this->get_string('addaidetails');
+            $msg = $OUTPUT->notification($msg, 'warning', false);
+            $mform->addElement('html', $msg);
+            return;
+        }
+
+        // Cache line break for flex context.
+        $br = \html_writer::tag('span', '', ['class' => 'w-100']);
+
+        $name = 'wordlist';
+        $this->add_heading($mform, $name, 'mod_vocab', true);
 
         $name = 'selectedwords';
         $label = $this->get_string($name);
@@ -91,20 +114,41 @@ class form extends \mod_vocab\toolform {
         foreach ($words as $id => $word) {
             $elements[] = $mform->createElement('checkbox', $id, $word);
         }
-        $br = \html_writer::tag('span', '', ['style' => 'width: 100%!important']);
-        $spacer = \html_writer::tag('span', '', ['style' => 'width: 24px!important']);
         $mform->addGroup($elements, $name, $label, $br);
         $mform->addHelpButton($name, $name, $this->subpluginname);
 
         $this->add_heading($mform, 'questionsettings', $this->subpluginname, true);
 
         $name = 'assistant';
-        $options = self::get_assistant_options();
-        $this->add_field_select($mform, $name, $options, PARAM_INT);
+        $this->add_field_select($mform, $name, $assistants, PARAM_INT);
 
         $name = 'questiontypes';
-        $options = self::get_question_types();
-        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'multichoice', 'multiple');
+        $label = $this->get_string($name);
+
+        // Cache some field labels.
+        // If we omit the enable label completely, the vertical spacing gets messed up,
+        // so to compensate, we use a non-blank space. Could also use get_string('enable').
+        $enablelabel = '&nbsp;';
+        $promptlabel = get_string('promptname', 'vocabai_prompts');
+        $formatlabel = get_string('formatname', 'vocabai_formats');
+
+        $qtypes = self::get_question_types();
+        foreach ($qtypes as $qtype => $label) {
+            $elements = [];
+            $elements[] = $mform->createElement('checkbox', 'enable', $enablelabel);
+            $elements[] = $mform->createElement('select', 'prompt', $promptlabel, $prompts);
+            $elements[] = $mform->createElement('select', 'format', $formatlabel, $formats);
+            $mform->addGroup($elements, $qtype, $label, ' ');
+            if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $prompts)) {
+                $mform->setDefault($qtype.'[prompt]', key($defaults));
+            }
+            if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $formats)) {
+                $mform->setDefault($qtype.'[format]', key($defaults));
+            }
+            $mform->hideIf($qtype.'[prompt]', $qtype.'[enable]', 'notchecked');
+            $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
+            $mform->disabledIf($qtype.'[format]', $qtype.'[prompt]', 'eq', '0');
+        }
 
         $name = 'questionlevels';
         $options = self::get_question_levels();
@@ -132,10 +176,73 @@ class form extends \mod_vocab\toolform {
      * @return array of AI assistants [config name => localized name]
      */
     public function get_assistant_options() {
-        $options = \core_component::get_plugin_list('vocabai');
-        unset($options['formats'], $options['prompts']);
-        foreach ($options as $name => $dir) {
-            $options[$name] = get_string($name, "vocabai_$name");
+        global $DB;
+        $options = [];
+
+        // Get all relevant contexts (activity, course, coursecat, site).
+        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
+        list($ctxselect, $ctxparams) = $DB->get_in_or_equal($contexts);
+
+        // Get all available AI assistants.
+        $plugintype = 'vocabai';
+        $plugins = \core_component::get_plugin_list($plugintype);
+        unset($plugins['formats'], $plugins['prompts']);
+
+        $prefix = $plugintype.'_';
+        $prefixlen = strlen($prefix);
+
+        // Prefix all the plugin names with the $prefix string
+        // and get create the sql conditions.
+        $plugins = array_keys($plugins);
+        $plugins = substr_replace($plugins, $prefix, 0, 0);
+        list($select, $params) = $DB->get_in_or_equal($plugins);
+
+        $select = "contextid $ctxselect AND subplugin $select";
+        $params = array_merge($ctxparams, $params);
+
+        if ($options = $DB->get_records_select_menu('vocab_config', $select, $params, 'id', 'id, subplugin')) {
+            $options = array_unique($options); // Remove duplicates.
+            foreach ($options as $id => $subplugin) {
+                $name = substr($subplugin, $prefixlen);
+                $options[$id] = get_string($name, $subplugin);
+            }
+            $options = array_filter($options);
+        }
+
+        return $options;
+    }
+
+    /**
+     * Get a list of AI assistants that are available to the current user and context.
+     *
+     * @param string $type of config ("prompts" or "formats")
+     * @param string $namefield name of setting that holds the name of this config
+     * @param string $selectstring name of string to display as first option
+     * @return array of AI assistants [config id => config name]
+     */
+    public function get_config_options($type, $namefield, $selectstring) {
+        global $DB;
+        $options = [];
+
+        // Get all relevant contexts (activity, course, coursecat, site).
+        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
+        list($where, $params) = $DB->get_in_or_equal($contexts);
+
+        // Although the "get_records_sql_menu" method is clean and quick,
+        // it may be slightly risky because if the settings get messed up,
+        // there's a chance that configid + $namefield may not be unique.
+        $select = 'vcs.configid, vcs.value';
+        $from = '{vocab_config_settings} vcs '.
+                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
+        $where = "vc.contextid $where AND vc.subplugin = ? AND vcs.name = ?";
+        $params = array_merge($params, ["vocabai_$type", $namefield]);
+
+        $sql = "SELECT $select FROM $from WHERE $where";
+        if ($options = $DB->get_records_sql_menu($sql, $params)) {
+            if (count($options) > 1) {
+                $selectstring = $this->get_string($selectstring);
+                $options = array_merge([0 => $selectstring], $options);
+            }
         }
         return $options;
     }
@@ -159,6 +266,17 @@ class form extends \mod_vocab\toolform {
             }
         }
         asort($types); // Sort alphabetically (maintain key association).
+
+        $order = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
+        $order = array_flip($order);
+        foreach (array_keys($order) as $name) {
+            if (array_key_exists($name, $types)) {
+                $order[$name] = $types[$name];
+            } else {
+                unset($order[$name]);
+            }
+        }
+        $types = $order + $types;
         return $types;
     }
 

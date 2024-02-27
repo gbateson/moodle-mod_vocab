@@ -140,10 +140,10 @@ class questions extends \core\task\adhoc_task {
         // Cache the parent category.
         $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
 
-        // Determine the human readable text for $qtype.
+        // Determine the human readable text for $qtype e.g. "Multiple choice"
         $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
 
-        // Determine the human readable text for $qlevel.
+        // Determine the human readable text for $qlevel e.g. "A2: Elementary".
         $qleveltext = \vocabtool_questionbank\form::get_question_level_text($qlevel);
 
         // Setup arguments for the strings used to create question category names.
@@ -392,6 +392,8 @@ EOD;
             $key = ''; // Put your key here.
             $model = 'gpt-4';
         }
+
+        // here we should create an "ai" connection using the $configid
 
         // Set the maximum number of tokens.
         switch ($model) {

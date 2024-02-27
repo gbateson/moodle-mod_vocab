@@ -112,3 +112,12 @@ $string['statusawaitinginspection'] = 'Awaiting inspection';
 $string['statusprocessingresults'] = 'Processing results';
 $string['statuscompleted'] = 'Completed successfully';
 $string['statusfailed'] = 'Failed with error';
+
+$string['selectprompt'] = 'Select prompt ...';
+$string['selectformat'] = 'Select format ...';
+
+$string['missingaidetails'] = 'Questions cannot be generated yet because the following settings have not been defined: {$a}';
+$string['noassistantsfound'] = 'Access details to an AI assistant';
+$string['nopromptsfound'] = 'Prompts for the AI assistants';
+$string['noformatsfound'] = 'Output formats for the prompts';
+$string['addaidetails'] = 'Please use the links on the "AI assistants" menu to add the missing details.';
