@@ -86,6 +86,7 @@ class tool extends \mod_vocab\toolbase {
             'maxtries' => 0,
             'tries' => 0,
             'status' => 0,
+            'review' => 0,
             'error' => '',
             'prompt' => '',
             'results' => '',

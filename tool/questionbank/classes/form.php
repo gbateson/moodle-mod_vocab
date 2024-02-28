@@ -174,6 +174,10 @@ class form extends \mod_vocab\toolform {
         $name = 'questioncount';
         $this->add_field_text($mform, $name, PARAM_INT, 5, 2);
 
+        $name = 'questionreview';
+        $options = [get_string('no'), get_string('yes')];
+        $this->add_field_select($mform, $name, $options, PARAM_INT, 1);
+
         // Heading for the "Category settings".
         $name = 'categorysettings';
         $this->add_heading($mform, $name, $this->subpluginname, true);
@@ -610,17 +614,23 @@ class form extends \mod_vocab\toolform {
 
         $qtypes = self::get_question_types();
         foreach ($qtypes as $name => $text) {
-            if (empty($data->$name) ||
-                empty($data->$name{['enable']}) ||
-                empty($data->$name{['format']})) {
+            if (isset($data->$name) && is_array($data->$name)) {
+                $values = $data->$name;
+                if (empty($values['enable']) || empty($values['format'])) {
+                    $values = null;
+                } else {
+                    $values = (object)[
+                        'text' => $text,
+                        'formatid' => $values['format'],
+                    ];
+                }
+            } else {
+                $values = null;
+            }
+            if ($values === null) {
                 unset($qtypes[$name]);
             } else {
-                // We should validate formatid.
-                $formatid = $data->$name['format'];
-                $qtypes[$name] = (object)[
-                    'text' => $text,
-                    'formatid' => $formatid,
-                ];
+                $qtypes[$name] = $values;
             }
         }
 
@@ -634,6 +644,10 @@ class form extends \mod_vocab\toolform {
             unset($data->questionlevels);
         }
 
+        if (empty($words) || empty($qtypes) || empty($qlevels)) {
+            return;
+        }
+
         // Get sensible value for number of tries.
         $mintries = 1;
         $maxtries = 10;
@@ -642,9 +656,9 @@ class form extends \mod_vocab\toolform {
             $maxtries = min($maxtries, max($mintries, $data->$name));
         }
 
-        if (empty($words) || empty($qtypes) || empty($qlevels)) {
-            return;
-        }
+        // Get teacher review flag.
+        $name = 'questionreview';
+        $review = (empty($data->$name) ? 0 : $data->$name);
 
         $name = 'parentcategory';
         $groupname = $name.'elements';
@@ -730,6 +744,7 @@ class form extends \mod_vocab\toolform {
                         'promptid' => $promptid,
                         'formatid' => $qtypesettings->formatid,
                         'status' => $tool::TASKSTATUS_NOTSET,
+                        'review' => $review,
                     ]);
 
                     // Create the adhoc task object, see

@@ -56,7 +56,7 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
 
-    $newversion = 2024022717;
+    $newversion = 2024022818;
     if ($oldversion < $newversion) {
         xmldb_vocab_check_structure($dbman, null, $plugin, $plugin, $dir);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);

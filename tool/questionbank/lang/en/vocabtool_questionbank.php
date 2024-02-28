@@ -134,3 +134,6 @@ $string['qformat_help'] = 'Choose a format for the AI output that will it to be 
 
 $string['prompt'] = 'AI prompt';
 $string['prompt_help'] = 'Select the AI prompt that will be sent to the selected AI assistant.';
+
+$string['questionreview_help'] = 'If this setting is enabled, the AI results will not be imported into the question bank until they have been reviewed by the teacher.';
+$string['questionreview'] = 'Question review';
