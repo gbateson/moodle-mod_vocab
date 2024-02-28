@@ -611,8 +611,8 @@ class form extends \mod_vocab\toolform {
         $qtypes = self::get_question_types();
         foreach ($qtypes as $name => $text) {
             if (empty($data->$name) ||
-                empty({$data->$name}['enable']) ||
-                empty({$data->$name}['format'])) {
+                empty($data->$name{['enable']}) ||
+                empty($data->$name{['format']})) {
                 unset($qtypes[$name]);
             } else {
                 // We should validate formatid.
