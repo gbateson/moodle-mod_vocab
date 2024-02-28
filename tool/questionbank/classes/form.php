@@ -96,6 +96,7 @@ class form extends \mod_vocab\toolform {
         // Cache line break for flex context.
         $br = \html_writer::tag('span', '', ['class' => 'w-100']);
 
+        // Heading for the "Word list".
         $name = 'wordlist';
         $this->add_heading($mform, $name, 'mod_vocab', true);
 
@@ -117,13 +118,12 @@ class form extends \mod_vocab\toolform {
         $mform->addGroup($elements, $name, $label, $br);
         $mform->addHelpButton($name, $name, $this->subpluginname);
 
-        $this->add_heading($mform, 'questionsettings', $this->subpluginname, true);
+        // Heading for the "AI settings".
+        $name = 'aisettings';
+        $this->add_heading($mform, $name, $this->subpluginname, true);
 
         $name = 'assistant';
         $this->add_field_select($mform, $name, $assistants, PARAM_INT);
-
-        $name = 'questiontypes';
-        $label = $this->get_string($name);
 
         // Cache some field labels.
         // If we omit the enable label completely, the vertical spacing gets messed up,
@@ -132,36 +132,40 @@ class form extends \mod_vocab\toolform {
         $promptlabel = get_string('promptname', 'vocabai_prompts');
         $formatlabel = get_string('formatname', 'vocabai_formats');
 
+        $name = 'prompt';
+        $this->add_field_select($mform, $name, $prompts, PARAM_ALPHANUM);
+
         $name = 'qformat';
         $options = self::get_question_formats();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'gift');
 
+        // Heading for the "Question types".
+        $name = 'questiontypes';
+        $this->add_heading($mform, $name, $this->subpluginname, true);
+
         $qtypes = self::get_question_types();
         foreach ($qtypes as $qtype => $label) {
 
-            // Add the checkbox, prompt menu and format menu for this question type. 
+            // Add the checkbox, prompt menu and format menu for this question type.
             $elements = [];
             $elements[] = $mform->createElement('checkbox', 'enable', $enablelabel);
-            $elements[] = $mform->createElement('select', 'prompt', $promptlabel, $prompts);
             $elements[] = $mform->createElement('select', 'format', $formatlabel, $formats);
-            $mform->addGroup($elements, $qtype, $label, ' ');
+            $mform->addGroup($elements, $qtype, $label);
+            $mform->addHelpButton($qtype, 'pluginname', "qtype_$qtype");
 
-            // Set the default prompt to be the first of any that contain
+            // Set the default format to be the first of any that contain
             // the question type in their name.
-            if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $prompts)) {
-                $mform->setDefault($qtype.'[prompt]', key($defaults));
-            }
-
-            // Set the default format in a similar way to how the default prompt was set.
             if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $formats)) {
                 $mform->setDefault($qtype.'[format]', key($defaults));
             }
 
-            // Hide the prompt and format menus until the question type becomes checked.
-            $mform->hideIf($qtype.'[prompt]', $qtype.'[enable]', 'notchecked');
+            // Disable the format menu until the question type becomes checked.
             $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
-            $mform->disabledIf($qtype.'[format]', $qtype.'[prompt]', 'eq', '0');
         }
+
+        // Heading for the "Question settings".
+        $name = 'questionsettings';
+        $this->add_heading($mform, $name, $this->subpluginname, true);
 
         $name = 'questionlevels';
         $options = self::get_question_levels();
@@ -170,6 +174,7 @@ class form extends \mod_vocab\toolform {
         $name = 'questioncount';
         $this->add_field_text($mform, $name, PARAM_INT, 5, 2);
 
+        // Heading for the "Category settings".
         $name = 'categorysettings';
         $this->add_heading($mform, $name, $this->subpluginname, true);
 
@@ -579,6 +584,10 @@ class form extends \mod_vocab\toolform {
         $name = 'assistant';
         $accessid = (empty($data->$name) ? 0 : $data->$name);
 
+        // Get config id of an AI prompt.
+        $name = 'prompt';
+        $promptid = (empty($data->$name) ? 0 : $data->$name);
+
         // Get question format (GIFT or XML).
         $name = 'qformat';
         $qformat = (empty($data->$name) ? '' : $data->$name);
@@ -602,17 +611,14 @@ class form extends \mod_vocab\toolform {
         $qtypes = self::get_question_types();
         foreach ($qtypes as $name => $text) {
             if (empty($data->$name) ||
-                empty($data->$name['enable']) ||
-                empty($data->$name['prompt']) ||
-                empty($data->$name['format'])) {
+                empty({$data->$name}['enable']) ||
+                empty({$data->$name}['format'])) {
                 unset($qtypes[$name]);
             } else {
-                // TODO: validate promptid and formatid.
-                $promptid = $data->$name['prompt'];
+                // We should validate formatid.
                 $formatid = $data->$name['format'];
                 $qtypes[$name] = (object)[
                     'text' => $text,
-                    'promptid' => $promptid,
                     'formatid' => $formatid,
                 ];
             }
@@ -721,7 +727,7 @@ class form extends \mod_vocab\toolform {
                         'subcattype' => $subcattype,
                         'subcatname' => $subcatname,
                         'accessid' => $accessid,
-                        'promptid' => $qtypesettings->promptid,
+                        'promptid' => $promptid,
                         'formatid' => $qtypesettings->formatid,
                         'status' => $tool::TASKSTATUS_NOTSET,
                     ]);

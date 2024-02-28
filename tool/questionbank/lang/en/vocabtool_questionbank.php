@@ -55,8 +55,9 @@ $string['subcategories'] = 'Subcategories';
 
 $string['generatequestions'] = 'Generate questions';
 $string['managequestioncategories'] = 'Click here to manage question categories';
+$string['aisettings'] = 'AI settings';
 $string['questionsettings'] = 'Question settings';
-$string['categorysettings'] = 'Category settings';
+$string['categorysettings'] = 'Question category settings';
 
 $string['singlesubcategory'] = 'Single subcategory';
 $string['automaticsubcategories'] = 'Automatic subcategories';
@@ -96,16 +97,20 @@ $string['error_missingcoursecategory'] = 'Could not locate or create a question 
 $string['error_missingwordinstance'] = 'Word "{$a->word}" is not in the word list for this Vocabulary activity.';
 $string['error_recordnotadded'] = 'Could not add record to table {$a->table}: {$a->record}';
 
-$string['catname_vocab'] = '{$a->course}: Vocabulary';
-$string['catname_vocabword'] = 'Word: {$a->word}';
-$string['catname_vocabwordtype'] = 'Word: {$a->word} ({$a->qtype})';
-$string['catname_vocabwordtypelevel'] = 'Word: {$a->word} ({$a->qtype}) {$a->level}';
+$string['catname_course'] = 'Vocabulary: {$a->coursename}';
+$string['catname_section'] = '{$a->sectiontype}: {$a->sectionname}';
+$string['catname_vocab'] = '{$a->vocabname}';
+$string['catname_word'] = 'Word: {$a->word}';
+$string['catname_wordtype'] = 'Word: {$a->word} ({$a->qtype})';
+$string['catname_wordtypelevel'] = 'Word: {$a->word} ({$a->qtype}) {$a->level}';
 $string['catname_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
 
-$string['catinfo_vocab'] = 'Vocabulary questions in course "{$a->course}"';
-$string['catinfo_vocabword'] = 'Vocabulary questions for the word "{$a->word}"';
-$string['catinfo_vocabwordtype'] = '{$a->qtype} questions for the word "{$a->word}"';
-$string['catinfo_vocabwordtypelevel'] = '{$a->qtype} questions ({$a->level}) for the word "{$a->word}"';
+$string['catinfo_course'] = 'Vocabulary questions in course "{$a->coursename}"';
+$string['catinfo_section'] = 'Vocabulary questions in section "{$a->sectionname}" of course "{$a->coursename}"';
+$string['catinfo_vocab'] = 'Vocabulary questions in activity "{$a->vocabname}"';
+$string['catinfo_word'] = 'Vocabulary questions for the word "{$a->word}"';
+$string['catinfo_wordtype'] = '{$a->qtype} questions for the word "{$a->word}"';
+$string['catinfo_wordtypelevel'] = '{$a->qtype} questions ({$a->level}) for the word "{$a->word}"';
 $string['catinfo_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
 
 $string['statusqueued'] = 'Queued';
@@ -124,5 +129,8 @@ $string['nopromptsfound'] = 'Prompts for the AI assistants';
 $string['noformatsfound'] = 'Output formats for the prompts';
 $string['addaidetails'] = 'Please use the links on the "AI assistants" menu to add the missing details.';
 
-$string['qformat'] = 'Question file format';
-$string['qformat_help'] = 'Choose the file format used to import the AI output into the question bank.';
+$string['qformat'] = 'AI output format';
+$string['qformat_help'] = 'Choose a format for the AI output that will it to be imported into the question bank.';
+
+$string['prompt'] = 'AI prompt';
+$string['prompt_help'] = 'Select the AI prompt that will be sent to the selected AI assistant.';

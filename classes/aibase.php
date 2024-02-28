@@ -265,7 +265,7 @@ class aibase extends \mod_vocab\subpluginbase {
             ];
         }
 
-        // Prepare configs to return
+        // Prepare configs to return.
         $configs = clone($this->configs);
 
         // Return configs for a specific user.

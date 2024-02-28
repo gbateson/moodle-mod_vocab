@@ -141,15 +141,50 @@ class questions extends \core\task\adhoc_task {
         // Cache the parent category.
         $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
 
-        // Determine the human readable text for $qtype e.g. "Multiple choice"
+        // Determine the human readable text for $qtype e.g. "Multiple choice".
         $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
 
         // Determine the human readable text for $qlevel e.g. "A2: Elementary".
         $qleveltext = \vocabtool_questionbank\form::get_question_level_text($qlevel);
 
+        // Format course name.
+        $coursename = $this->tool->vocab->course->shortname;
+        $coursename = format_string($coursename, true, ['context' => $coursecontext]);
+
+        // Format section type e.g. "Topic" or "Week".
+        $sectiontype = 'format_'.$this->tool->vocab->course->format;
+        $sectiontype = get_string('sectionname', $sectiontype);
+
+        // Format section name.
+        $sectionid = $this->tool->vocab->cm->section;
+        if ($modinfo = get_fast_modinfo($this->tool->vocab->course)) {
+            $sectionname = $modinfo->get_section_info_by_id($sectionid)->name;
+        } else {
+            // Shouldn't happen - but we can get the section name directly from the $DB.
+            $sectionname = $DB->get_field('course_sections', 'name', ['id' => $sectionid]);
+        }
+        if ($sectionname) {
+            $sectionname = format_string($sectionname, true, ['context' => $coursecontext]);
+            $sectionname = trim($sectionname);
+        } else {
+            $sectionname = '';
+        }
+        if ($sectionname == '') {
+            // Create a default name for this section e.g. "Topic 1" or "Week 2".
+            $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
+            $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
+        }
+
+        // Format vocab name.
+        $vocabname = $this->tool->vocab->name;
+        $vocabname = format_string($vocabname, true, ['context' => $this->tool->vocab->context]);
+
         // Setup arguments for the strings used to create question category names.
         $a = (object)[
-            'course' => $this->tool->vocab->course->shortname,
+            'coursename' => $coursename,
+            'sectiontype' => $sectiontype,
+            'sectionname' => $sectionname,
+            'vocabname' => $vocabname,
             'word' => $word,
             'qtype' => $qtypetext,
             'level' => $qlevel, // Just the code is enough e.g. "A2".
@@ -170,13 +205,13 @@ class questions extends \core\task\adhoc_task {
         if (! $formatconfig = $this->get_config($formatid)) {
             $a[] = "formatid ($formatid)";
         }
-        if ($a = implode(", ", $a)) {
+        if ($a = implode(', ', $a)) {
             return $this->report_error($log, 'invalidtaskparameters', $a);
         }
 
         $prompt = $this->get_prompt($promptconfig, $formatconfig, $word, $qtype, $qlevel, $qcount, $qformat);
 
-        // Set log status to "Fecthing results"
+        // Set log status to "Fetching results".
         $this->tool->update_log($log->id, [
             'prompt' => $prompt,
             'status' => $toolclass::TASKSTATUS_FETCHING_RESULTS,
@@ -188,19 +223,20 @@ class questions extends \core\task\adhoc_task {
         // Initialize the error message.
         $error = '';
 
-        // Only only one try.
-        $maxtries = 1;
+        // Ensure sensible values for min/max tries.
+        $maxtries = max(1, min(10, $maxtries));
+        $mintries = max(0, min($maxtries, $log->tries));
 
         // Prompt the AI assistant until either we succeed
         // or we have tried the allowed number of times.
-        for ($i = ($log->tries + 1); $i <= $maxtries; $i++) {
+        for ($i = $mintries; $i < $maxtries; $i++) {
 
             // Loop may finish before $maxtries
             // if results are received from AI.
 
             // Update tries value in the database.
             $this->tool->update_log($log->id, [
-                'tries' =>$i,
+                'tries' => ($i + 1),
             ]);
 
             // Send the prompt to the AI assistant and receive the response.
@@ -213,25 +249,28 @@ class questions extends \core\task\adhoc_task {
 
             if ($response->text) {
 
-                // Set log status to "Processing results"
+                // Set log status to "Processing results".
                 $this->tool->update_log($log->id, [
-                    'results' =>$response->text,
+                    'results' => $response->text,
                     'status' => $toolclass::TASKSTATUS_PROCESSING_RESULTS,
                 ]);
 
                 // Parse the questions text.
                 if ($questions = $this->parse_questions($response->text, $qformat, $category->id)) {
-                    // Update the log and leave this loop.
-                    // By unsetting $error, we ignore any previous errors. 
+                    // Unset $error, thus ignoring any previous errors.
                     $error = '';
+                    // Update the log.
                     $this->tool->update_log($log->id, [
                         'error' => $error,
-                        'results' =>$response->text,
+                        'results' => $response->text,
                         'status' => $toolclass::TASKSTATUS_COMPLETED,
                     ]);
                 } else {
                     $error = "Questions for {$word} could not be parsed.";
                 }
+
+                // We have receieved a message from the AI assistant
+                // so we can leave the FOR loop now.
                 break;
             }
 
@@ -273,7 +312,7 @@ class questions extends \core\task\adhoc_task {
         $params = array_merge([$configid], $params);
 
         $sql = "SELECT $select FROM $from WHERE $where";
-        if ($config =  $DB->get_records_sql_menu($sql, $params)) {
+        if ($config = $DB->get_records_sql_menu($sql, $params)) {
             return (object)$config;
         } else {
             return null;
@@ -435,8 +474,6 @@ EOD;
             $model = $accessconfig->chatgptmodel;
         }
 
-        // here we should create an "ai" connection using the $configid
-
         // Set the maximum number of tokens.
         switch ($model) {
             case 'gpt-4':
@@ -509,8 +546,9 @@ EOD;
 
         // Otherwise, we treat everything else as SUBCAT_AUTOMATIC.
         // This means creating a hierarchy of question categories:
-        // course -> "Vocabulary" -> word -> qtype -> qlevel.
-        $strnames = ['vocab', 'vocabword', 'vocabwordtype', 'vocabwordtypelevel'];
+        // course -> vocab -> word -> qtype -> qlevel.
+        // 2024-Feb-28 removed 'section' because it usually duplicates 'vocab'.
+        $strnames = ['course', 'vocab', 'word', 'wordtype', 'wordtypelevel'];
         foreach ($strnames as $strname) {
             $category = $this->get_question_subcategory($table, $strname, $a, $category);
         }
@@ -652,7 +690,7 @@ EOD;
      * report_error
      *
      * @param object $log the log record associated with this adhoc task
-     * @param string $error message name (in lang pack)
+     * @param string $error name of an error in the in lang pack
      * @param string $a arguments required (if any) by $error string
      * @return boolean false
      */
@@ -669,13 +707,13 @@ EOD;
         mtrace($label.$error);
 
         // Mark this task as having failed.
-        $this->set_fail_delay(1);
         \core\task\manager::adhoc_task_failed($this);
 
-        // Set log status to "Failed"
+        // Set log status to "Failed" and report $error.
         if ($log) {
             $toolclass = get_class($this->tool);
             $this->tool->update_log($log->id, [
+                'error' => $error,
                 'status' => $toolclass::TASKSTATUS_FAILED,
             ]);
         }

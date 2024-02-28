@@ -692,7 +692,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function redo_upgrade($plugin, $basedir, $dateformat='jS M Y') {
         global $CFG, $FULLME, $DB;
 
-        // Set up the heading e.g. Redo upgrade: Vocabulary activity
+        // Set up the heading e.g. Redo upgrade: Vocabulary activity.
         $heading = get_string('pluginname', $plugin)." ($plugin)";
         $heading = $this->vocab->get_string('redoupgrade', $heading);
 
