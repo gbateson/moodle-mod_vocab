@@ -416,10 +416,41 @@ class aibase extends \mod_vocab\subpluginbase {
      */
     public function save_config($data) {
 
+        // Cache the calendar factory.
+        $calendar = \core_calendar\type_factory::get_calendar_instance();
+
+        // Convert dates to a single timestamp.
+        $names = ['sharedfrom', 'shareduntil'];
+        foreach ($names as $name) {
+            if (isset($data->$name) && is_array($data->$name)) {
+                $date = $data->$name;
+                if (empty($date['enabled'])) {
+                    $date = 0;
+                } else {
+                    $date = $calendar->convert_to_gregorian(
+                        $date['year'],
+                        $date['month'],
+                        $date['day'],
+                        $date['hour'],
+                        $date['minute']
+                    );
+                    $date = make_timestamp(
+                        $date['year'],
+                        $date['month'],
+                        $date['day'],
+                        $date['hour'],
+                        $date['minute']
+                    );
+                }
+                $data->$name = $date;
+            }
+        }
+
         // Make sure we have a at least a primary field (e.g. "chatgptkey" or "prompt").
         $name = static::SETTINGNAMES[0];
         if (isset($data->$name) && $data->$name) {
 
+            // Ensure valid context id and level.
             $contexts = $this->vocab->get_writeable_contexts('contextlevel', 'id');
 
             $name = 'sharingcontext';
