@@ -67,10 +67,12 @@ class form extends \mod_vocab\toolform {
             $mform->addElement('html', $table);
         }
 
+        // If data was submitted, generate the questions.
         if (($data = data_submitted()) && confirm_sesskey()) {
             $this->generate_questions($mform, $data);
         }
 
+        // Make sure we have some words to generate questions for.
         $words = $this->get_vocab()->get_wordlist_words();
         if (empty($words)) {
             $msg = $this->get_string('nowordsfound');
@@ -88,7 +90,7 @@ class form extends \mod_vocab\toolform {
             $a[] = $this->get_string('nopromptsfound');
         }
         if (! $formats = $this->get_config_options('formats', 'formatname', 'selectformat')) {
-            $a[] = $this->get_string('nopromptsfound');
+            $a[] = $this->get_string('noformatsfound');
         }
         if (count($a)) {
             $a = \html_writer::alist($a);
@@ -109,8 +111,10 @@ class form extends \mod_vocab\toolform {
         $name = 'selectedwords';
         $label = $this->get_string($name);
 
+        // Initialize the array of word elements.
         $elements = [];
 
+        // Add the "Select all" line - not a real word ;-).
         $params = [
             'data-selectall' => get_string('selectall'),
             'data-deselectall' => get_string('deselectall'),
@@ -118,6 +122,7 @@ class form extends \mod_vocab\toolform {
         ];
         $elements[] = $mform->createElement('checkbox', 'selectall', get_string('selectall'), '', $params);
 
+        // Add individual word elements.
         foreach ($words as $id => $word) {
             $elements[] = $mform->createElement('checkbox', $id, $word);
         }
@@ -815,15 +820,30 @@ class form extends \mod_vocab\toolform {
         $tool = $this->get_subplugin();
 
         $users = [];
+        $qformats = [];
         $accessnames = [];
         $promptnames = [];
         $formatnames = [];
         $categorynames = [];
         $subcattypes = $this->get_subcategory_types();
 
+        // Cache the DB table names.
         $configtable = 'vocab_config';
         $settingstable = 'vocab_config_settings';
         $categoriestable = 'question_categories';
+
+        // Cache status strings.
+        $status = [
+            $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
+            $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
+            $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
+            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awatingresults'),
+            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
+            $tool::TASKSTATUS_RESUMED => $this->get_string('taskstatus_resumed'),
+            $tool::TASKSTATUS_PROCESSING_RESULTS => $this->get_string('taskstatus_processingresults'),
+            $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
+            $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
+        ];                    
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
@@ -873,14 +893,25 @@ class form extends \mod_vocab\toolform {
                     $categorynames[$log->parentcatid] = $name;
                 }
 
-                if ($log->prompt) {
-                    $log->prompt = substr($log->prompt, 0, 10);
-                    $log->prompt = \html_writer::tag('span', $log->prompt, ['class' => 'text-nowrap']);
+                if (empty($qformats[$log->qformat])) {
+                    $name = get_string('pluginname', 'qformat_'.$log->qformat);
+                    $qformats[$log->qformat] = $name;
                 }
 
-                if ($log->results) {
-                    $log->results = substr($log->results, 0, 10);
-                    $log->results = \html_writer::tag('span', $log->results, ['class' => 'text-nowrap']);
+                if ($log->subcattype && array_key_exists($log->subcattype, $subcattypes)) {
+                    $log->subcattype = $subcattypes[$log->subcattype];
+                }
+
+                if (array_key_exists($log->status, $status)) {
+                    $log->status = $status[$log->status];
+                }
+
+                $names = ['error', 'prompt', 'results'];
+                foreach ($names as $name) {
+                    if ($log->$name) {
+                        $log->$name = substr($log->$name, 0, 10);
+                        $log->$name = \html_writer::tag('span', $log->$name, ['class' => 'text-nowrap']);
+                    }
                 }
 
                 if ($log->timecreated) {
@@ -899,44 +930,6 @@ class form extends \mod_vocab\toolform {
                     }
                 }
 
-                if ($log->subcattype && array_key_exists($log->subcattype, $subcattypes)) {
-                    $log->subcattype = $subcattypes[$log->subcattype];
-                }
-
-                switch ($log->status) {
-                    case $tool::TASKSTATUS_NOTSET:
-                        $log->status = $this->get_string('taskstatus_notset');
-                        break;
-                    case $tool::TASKSTATUS_QUEUED:
-                        $log->status = $this->get_string('taskstatus_queued');
-                        break;
-                    case $tool::TASKSTATUS_FETCHING_RESULTS:
-                        $log->status = $this->get_string('taskstatus_fetchingresults');
-                        break;
-                    case $tool::TASKSTATUS_AWAITING_REVIEW:
-                        $log->status = $this->get_string('taskstatus_awatingresults');
-                        break;
-                    case $tool::TASKSTATUS_CANCELLED:
-                        $log->status = $this->get_string('taskstatus_cancelled');
-                        break;
-                    case $tool::TASKSTATUS_RESUMED:
-                        $log->status = $this->get_string('taskstatus_resumed');
-                        break;
-                    case $tool::TASKSTATUS_PROCESSING_RESULTS:
-                        $log->status = $this->get_string('taskstatus_processingresults');
-                        break;
-                    case $tool::TASKSTATUS_COMPLETED:
-                        $log->status = $this->get_string('taskstatus_completed');
-                        break;
-                    case $tool::TASKSTATUS_FAILED:
-                        $log->status = $this->get_string('taskstatus_failed');
-                        break;
-                }
-
-                if ($log->qformat) {
-                    $log->qformat = get_string('pluginname', 'qformat_'.$log->qformat);
-                }
-
                 $row = [];
                 $row[] = '[ ]';
                 $row[] = $log->nextruntime;
@@ -945,7 +938,7 @@ class form extends \mod_vocab\toolform {
                 $row[] = self::get_question_type_text($log->qtype);
                 $row[] = $log->qcount;
                 $row[] = $log->qlevel;
-                $row[] = $log->qformat;
+                $row[] = $qformats[$log->qformat];
                 $row[] = $accessnames[$log->accessid];
                 $row[] = $promptnames[$log->promptid];
                 $row[] = $formatnames[$log->formatid];

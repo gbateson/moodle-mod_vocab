@@ -2701,6 +2701,10 @@ class form extends \mod_vocab\toolform {
             $id = false;
         }
 
+        if ($id === 0) {
+            // This happens sometimes during development.
+            $DB->delete_records($table, ['id' => $id]);
+        }
         if ($id === false || $id === 0 || $id === null) {
             if ($this->formstate == 'import') {
                 $id = $DB->insert_record($table, $fields);
