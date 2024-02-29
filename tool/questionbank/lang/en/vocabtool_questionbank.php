@@ -137,3 +137,31 @@ $string['prompt_help'] = 'Select the AI prompt that will be sent to the selected
 
 $string['questionreview_help'] = 'If this setting is enabled, the AI results will not be imported into the question bank until they have been reviewed by the teacher.';
 $string['questionreview'] = 'Question review';
+
+$string['taskowner'] = 'Task owner';
+$string['word'] = 'Word';
+$string['questiontype'] = 'Question type';
+$string['questionlevel'] = 'Question level';
+$string['promptname'] = 'AI prompt name';
+$string['formatname'] = 'AI format name';
+$string['subcattype'] = 'Subcategory type';
+$string['subcatname'] = 'Subcategory name';
+$string['maxtries'] = 'Maximum tries';
+$string['tries'] = 'Number of tries';
+$string['prompttext'] = 'Prompt text';
+$string['resultstext'] = 'Results text';
+$string['timecreated'] = 'Time created';
+$string['timemodified'] = 'Time modified';
+$string['missingconfigname'] = 'Config missing (id={$a->configid}, type={$a->type})';
+$string['invalidquestioncategory'] = 'Invalid question category (id={$a})';
+$string['questionbanklog'] = 'Question bank log';
+
+$string['taskstatus_notset'] = 'Not set';
+$string['taskstatus_queued'] = 'Task queued';
+$string['taskstatus_fetchingresults'] = 'Fetching results';
+$string['taskstatus_awatingresults'] = 'Awaiting review';
+$string['taskstatus_cancelled'] = 'Task cancelled';
+$string['taskstatus_resumed'] = 'Task resumed';
+$string['taskstatus_processingresults'] = 'Processing results';
+$string['taskstatus_completed'] = 'Task completed';
+$string['taskstatus_failed'] = 'Task failed';

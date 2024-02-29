@@ -90,6 +90,8 @@ class questions extends \core\task\adhoc_task {
         $promptid = $log->promptid;
         $formatid = $log->formatid;
 
+        $review = $log->review;
+
         $parentcatid = $log->parentcatid;
         $subcattype = $log->subcattype;
         $subcatname = $log->subcatname;
@@ -249,24 +251,33 @@ class questions extends \core\task\adhoc_task {
 
             if ($response->text) {
 
-                // Set log status to "Processing results".
+                // Store results.
                 $this->tool->update_log($log->id, [
                     'results' => $response->text,
-                    'status' => $toolclass::TASKSTATUS_PROCESSING_RESULTS,
                 ]);
 
-                // Parse the questions text.
-                if ($questions = $this->parse_questions($response->text, $qformat, $category->id)) {
-                    // Unset $error, thus ignoring any previous errors.
-                    $error = '';
-                    // Update the log.
+                // Unset $error, thus ignoring any previous errors.
+                $error = '';
+
+                if ($log->review) {
                     $this->tool->update_log($log->id, [
-                        'error' => $error,
-                        'results' => $response->text,
-                        'status' => $toolclass::TASKSTATUS_COMPLETED,
+                        'status' => $toolclass::TASKSTATUS_AWAITING_REVIEW,
                     ]);
                 } else {
-                    $error = "Questions for {$word} could not be parsed.";
+                    $this->tool->update_log($log->id, [
+                        'status' => $toolclass::TASKSTATUS_PROCESSING_RESULTS,
+                    ]);
+                    // Parse the questions text.
+                    if ($questions = $this->parse_questions($response->text, $qformat, $category->id)) {
+                        // Update the log.
+                        $this->tool->update_log($log->id, [
+                            'error' => $error,
+                            'results' => $response->text,
+                            'status' => $toolclass::TASKSTATUS_COMPLETED,
+                        ]);
+                    } else {
+                        $error = "Questions for {$word} could not be parsed.";
+                    }
                 }
 
                 // We have receieved a message from the AI assistant
@@ -317,22 +328,6 @@ class questions extends \core\task\adhoc_task {
         } else {
             return null;
         }
-    }
-
-    /**
-     * get AI assistant
-     *
-     * @param object $config
-     * @return an object representing the AI assistant.
-     */
-    protected function get_ai($config) {
-        if (empty($config)) {
-            $chatgpt = new \vocabai_chatgpt\ai(null, null, $this->tool->vocab->id);
-            $contexts = $this->tool->vocab->get_readable_contexts('', 'id');
-            $settings = $chatgpt->get_config_settings($contexts);
-            return (empty($settings) ? null : reset($settings));
-        }
-        return $ai;
     }
 
     /**

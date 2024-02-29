@@ -61,6 +61,12 @@ class form extends \mod_vocab\toolform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
+        // Display table of adhoc tasks to generate jobs.
+        if ($table = $this->get_log_records()) {
+            $this->add_heading($mform, 'questionbanklog', $this->subpluginname, false);
+            $mform->addElement('html', $table);
+        }
+
         if (($data = data_submitted()) && confirm_sesskey()) {
             $this->generate_questions($mform, $data);
         }
@@ -784,6 +790,208 @@ class form extends \mod_vocab\toolform {
             $strfailure = \html_writer::tag('b', $strfailure, ['class' => 'text-danger']);
             $failure = $OUTPUT->notification($strfailure.$failure, 'warning', false);
             $mform->addElement('html', $failure);
+        }
+    }
+
+    /**
+     * get_log_records
+     *
+     * @return array $logs of records vocabtool_questionbank_log table.
+     */
+    public function get_log_records() {
+        global $DB;
+
+        $datefmt = get_string('strftimerecent', 'langconfig');
+        $datefmt = get_string('strftimedatetimeshort', 'langconfig');
+
+        $table = new \html_table();
+        $table->id = 'questionbanklog_table';
+        $table->head = [];
+        $table->data = [];
+        $table->align = [];
+
+        // Cache reference to this questionbank tool object.
+        // This allows easy access to the log functions.
+        $tool = $this->get_subplugin();
+
+        $users = [];
+        $accessnames = [];
+        $promptnames = [];
+        $formatnames = [];
+        $categorynames = [];
+        $subcattypes = $this->get_subcategory_types();
+
+        $configtable = 'vocab_config';
+        $settingstable = 'vocab_config_settings';
+        $categoriestable = 'question_categories';
+
+        // Fetch all logs pertaining to the current vocab activity.
+        if ($logs = $tool::get_logs($tool->vocab->id)) {
+
+            foreach ($logs as $log) {
+
+                if (empty($users[$log->userid])) {
+                    $users[$log->userid] = $DB->get_record('user', ['id' => $log->userid]);
+                }
+
+                if (empty($accessnames[$log->accessid])) {
+                    $params = ['id' => $log->accessid];
+                    if ($name = $DB->get_field($configtable, 'subplugin', $params)) {
+                        // The $name value is something like "vocabai_chatgpt".
+                        // We want to the get_string('chatgpt', 'vocabai_chatgpt').
+                        $name = get_string(substr($name, strpos($name, '_') + 1), $name);
+                    } else {
+                        $a = ['configid' => $log->accessid, 'type' => 'subplugin'];
+                        $name = $this->get_string('missingconfigname', $a);
+                    }
+                    $accessnames[$log->accessid] = $name;
+                }
+
+                if (empty($promptnames[$log->promptid])) {
+                    $params = ['configid' => $log->promptid, 'name' => 'promptname'];
+                    if (! $name = $DB->get_field($settingstable, 'value', $params)) {
+                        $a = ['configid' => $log->promptid, 'type' => 'promptname'];
+                        $name = $this->get_string('missingconfigname', $a);
+                    }
+                    $promptnames[$log->promptid] = $name;
+                }
+
+                if (empty($formatnames[$log->formatid])) {
+                    $params = ['configid' => $log->formatid, 'name' => 'formatname'];
+                    if (! $name = $DB->get_field($settingstable, 'value', $params)) {
+                        $a = ['configid' => $log->formatid, 'type' => 'formatname'];
+                        $name = $this->get_string('missingconfigname', $a);
+                    }
+                    $formatnames[$log->formatid] = $name;
+                }
+
+                if (empty($categorynames[$log->parentcatid])) {
+                    $params = ['id' => $log->parentcatid];
+                    if (! $name = $DB->get_field($categoriestable, 'name', $params)) {
+                        $name = $this->get_string('invalidquestioncategory', $log->parentcatid);
+                    }
+                    $categorynames[$log->parentcatid] = $name;
+                }
+
+                if ($log->prompt) {
+                    $log->prompt = substr($log->prompt, 0, 10);
+                    $log->prompt = \html_writer::tag('span', $log->prompt, ['class' => 'text-nowrap']);
+                }
+
+                if ($log->results) {
+                    $log->results = substr($log->results, 0, 10);
+                    $log->results = \html_writer::tag('span', $log->results, ['class' => 'text-nowrap']);
+                }
+
+                if ($log->timecreated) {
+                    $log->timecreated = userdate($log->timecreated, $datefmt);
+                }
+                if ($log->timemodified) {
+                    $log->timemodified = userdate($log->timemodified, $datefmt);
+                }
+                if ($log->nextruntime) {
+                    $log->nextruntime = userdate($log->nextruntime, $datefmt);
+                } else {
+                    $log->nextruntime = get_string('completed');
+                    if ($log->timemodified) {
+                        $log->nextruntime .= get_string('labelsep', 'langconfig');
+                        $log->nextruntime .= $log->timemodified;
+                    }
+                }
+
+                if ($log->subcattype && array_key_exists($log->subcattype, $subcattypes)) {
+                    $log->subcattype = $subcattypes[$log->subcattype];
+                }
+
+                switch ($log->status) {
+                    case $tool::TASKSTATUS_NOTSET:
+                        $log->status = $this->get_string('taskstatus_notset');
+                        break;
+                    case $tool::TASKSTATUS_QUEUED:
+                        $log->status = $this->get_string('taskstatus_queued');
+                        break;
+                    case $tool::TASKSTATUS_FETCHING_RESULTS:
+                        $log->status = $this->get_string('taskstatus_fetchingresults');
+                        break;
+                    case $tool::TASKSTATUS_AWAITING_REVIEW:
+                        $log->status = $this->get_string('taskstatus_awatingresults');
+                        break;
+                    case $tool::TASKSTATUS_CANCELLED:
+                        $log->status = $this->get_string('taskstatus_cancelled');
+                        break;
+                    case $tool::TASKSTATUS_RESUMED:
+                        $log->status = $this->get_string('taskstatus_resumed');
+                        break;
+                    case $tool::TASKSTATUS_PROCESSING_RESULTS:
+                        $log->status = $this->get_string('taskstatus_processingresults');
+                        break;
+                    case $tool::TASKSTATUS_COMPLETED:
+                        $log->status = $this->get_string('taskstatus_completed');
+                        break;
+                    case $tool::TASKSTATUS_FAILED:
+                        $log->status = $this->get_string('taskstatus_failed');
+                        break;
+                }
+
+                if ($log->qformat) {
+                    $log->qformat = get_string('pluginname', 'qformat_'.$log->qformat);
+                }
+
+                $row = [];
+                $row[] = '[ ]';
+                $row[] = $log->nextruntime;
+                $row[] = fullname($users[$log->userid]);
+                $row[] = $log->word;
+                $row[] = self::get_question_type_text($log->qtype);
+                $row[] = $log->qcount;
+                $row[] = $log->qlevel;
+                $row[] = $log->qformat;
+                $row[] = $accessnames[$log->accessid];
+                $row[] = $promptnames[$log->promptid];
+                $row[] = $formatnames[$log->formatid];
+                $row[] = $categorynames[$log->parentcatid];
+                $row[] = $log->subcattype;
+                $row[] = $log->subcatname;
+                $row[] = $log->maxtries;
+                $row[] = $log->tries;
+                $row[] = $log->status;
+                $row[] = $log->error;
+                $row[] = $log->prompt;
+                $row[] = $log->results;
+                $row[] = $log->timecreated;
+                $row[] = $log->timemodified;
+                $table->data[] = $row;
+            }
+        }
+
+        if (empty($table->data)) {
+            return false;
+        } else {
+            $table->head = [
+                get_string('select'),
+                get_string('nextruntime', 'tool_task'),
+                $this->get_string('taskowner'),
+                $this->get_string('word'),
+                $this->get_string('questiontype'),
+                $this->get_string('questioncount'),
+                $this->get_string('questionlevel'),
+                $this->get_string('qformat'),
+                $this->get_string('assistant'),
+                $this->get_string('promptname'),
+                $this->get_string('formatname'),
+                $this->get_string('parentcategory'),
+                $this->get_string('subcattype'),
+                $this->get_string('subcatname'),
+                $this->get_string('maxtries'),
+                $this->get_string('tries'),
+                get_string('status'),
+                get_string('error'),
+                $this->get_string('prompttext'),
+                $this->get_string('resultstext'),
+                $this->get_string('timecreated'),
+                $this->get_string('timemodified'),
+            ];
+            return \html_writer::table($table);
         }
     }
 }

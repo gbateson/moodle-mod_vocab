@@ -49,17 +49,23 @@ class tool extends \mod_vocab\toolbase {
     /** @var integer database value signifying the task results are being fetched */
     const TASKSTATUS_FETCHING_RESULTS = 2;
 
-    /** @var integer database value signifying the task results are awaiting inspection */
-    const TASKSTATUS_AWAITING_INSPECTION = 3;
+    /** @var integer database value signifying the task results are awaiting review by teacher */
+    const TASKSTATUS_AWAITING_REVIEW = 3;
+
+    /** @var integer database value signifying the task has been cancelled after inspection */
+    const TASKSTATUS_CANCELLED = 4;
+
+    /** @var integer database value signifying the task has been resumed after inspection */
+    const TASKSTATUS_RESUMED = 5;
 
     /** @var integer database value signifying the task results are being processed */
-    const TASKSTATUS_PROCESSING_RESULTS = 4;
+    const TASKSTATUS_PROCESSING_RESULTS = 6;
 
     /** @var integer database value signifying the task has been completed */
-    const TASKSTATUS_COMPLETED = 5;
+    const TASKSTATUS_COMPLETED = 7;
 
     /** @var integer database value signifying the task was aborted */
-    const TASKSTATUS_FAILED = 15;
+    const TASKSTATUS_FAILED = 8;
 
     /**
      * Return a default log record with values initialized to 0 or "".
@@ -167,5 +173,22 @@ class tool extends \mod_vocab\toolbase {
     public static function delete_logs($params) {
         global $DB;
         return $DB->delete_records(self::LOGTABLE, $params);
+    }
+
+    /**
+     * Get a record from the log table using the given $id.
+     *
+     * @param integer $id
+     * @return object the record form the log table
+     */
+    public static function get_logs($vocabid) {
+        global $DB;
+        $select = 'qbl.*, ta.nextruntime, vw.word';
+        $from = '{'.self::LOGTABLE.'} qbl '.
+                'LEFT JOIN {task_adhoc} ta ON qbl.taskid = ta.id '.
+                'LEFT JOIN {vocab_words} vw ON qbl.wordid = vw.id';
+        $where = 'qbl.vocabid = ?';
+        $params = [$vocabid];
+        return $DB->get_records_sql("SELECT $select FROM $from WHERE $where", $params);
     }
 }

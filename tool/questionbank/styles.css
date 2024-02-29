@@ -1,6 +1,21 @@
-/** restrict the width of the main form */ 
-#vocabtool_questionbank_form {
+/** restrict the width of the sections in the main form */ 
+#vocabtool_questionbank_form fieldset.collapsible {
     max-width: 760px;
+}
+#vocabtool_questionbank_form fieldset#id_questionbanklog:not(.collapsed) {
+    max-width: 1140px;
+}
+
+#vocabtool_questionbank_form #questionbanklog_table thead {    
+    background-color: #365;
+    color: #f8f9fa; /* text-light */
+}
+#vocabtool_questionbank_form #questionbanklog_table th + th {
+    border-left: solid ivory 2px;
+}
+#vocabtool_questionbank_form #questionbanklog_table th + td,
+#vocabtool_questionbank_form #questionbanklog_table td + td {
+    border-left: solid darkgrey 2px;
 }
 
 /**
