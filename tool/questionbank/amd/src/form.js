@@ -26,6 +26,9 @@ define([], function(){
 
     let JS = {};
 
+    /*
+     * Add/Attach event listener (cross-browser version).
+     */
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {
             obj.addEventListener(evt, fn, (useCapture || false));
@@ -35,14 +38,26 @@ define([], function(){
     };
 
     /*
-     * initialize this AMD module
+     * Initialize this AMD module;
      */
     JS.init = function() {
-        this.init_selectall();
-        this.init_checkboxes();
+        this.init_selectall_logs();
+        this.init_selectall_words();
+        this.init_checkboxes_words();
     };
 
-    JS.init_selectall = function(){
+    JS.init_selectall_logs = function(){
+        const s = 'input[type="checkbox"][name="logids[selectall]"]';
+        const selectall = document.querySelector(s);
+        if (selectall) {
+            JS.add_event_listener(selectall, 'click', JS.onclick_selectall);
+            if (selectall.classList.contains("d-none")) {
+                selectall.classList.remove("d-none");
+            }
+        }
+    };
+
+    JS.init_selectall_words = function(){
         const s = 'input[type="checkbox"][name="selectedwords[selectall]"]';
         const selectall = document.querySelector(s);
         if (selectall) {
@@ -101,7 +116,7 @@ define([], function(){
         return true;
     };
 
-    JS.init_checkboxes = function(){
+    JS.init_checkboxes_words = function(){
         const s = 'input[type="checkbox"][name^="selectedwords"]';
         document.querySelectorAll(s).forEach(function(cb){
             JS.add_event_listener(cb, 'click', JS.onclick_checkbox);

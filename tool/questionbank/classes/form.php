@@ -61,16 +61,7 @@ class form extends \mod_vocab\toolform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        // Display table of adhoc tasks to generate jobs.
-        if ($table = $this->get_log_records()) {
-            $this->add_heading($mform, 'questionbanklog', $this->subpluginname, false);
-            $mform->addElement('html', $table);
-        }
-
-        // If data was submitted, generate the questions.
-        if (($data = data_submitted()) && confirm_sesskey()) {
-            $this->generate_questions($mform, $data);
-        }
+        $this->display_log_records($mform);
 
         // Make sure we have some words to generate questions for.
         $words = $this->get_vocab()->get_wordlist_words();
@@ -799,12 +790,222 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_log_records
+     * display_log_records
      *
+     * @param moodleform $mform representing the Moodle form
      * @return array $logs of records vocabtool_questionbank_log table.
      */
-    public function get_log_records() {
-        global $DB;
+    public function display_log_records($mform) {
+        global $OUTPUT;
+
+        $logids = [];
+        $logaction = '';
+        $logmessage = '';
+
+        if ($logaction = optional_param_array('logactionelements', '', PARAM_ALPHA)) {
+            if (empty($logaction['logaction'])) {
+                $logaction = ''; // Shouldn't happen !!
+            } else {
+                $logaction = $logaction['logaction'];
+            }
+        }
+        if ($logaction == '') {
+            $logaction = optional_param('logaction', '', PARAM_ALPHA);
+        }
+        if ($logaction) {
+            if ($logids = optional_param('logid', 0, PARAM_INT)) {
+                $logids = [$logids => $logids];
+            } else {
+                $logids = optional_param_array('logids', [], PARAM_INT);
+            }
+            if (count($logids) && confirm_sesskey()) {
+                $logmessage = $this->process_log_records($logaction, $logids);
+            }
+        }
+
+        // Clean and process incoming form data.
+        if (($data = data_submitted()) && confirm_sesskey()) {
+            $this->generate_questions($mform, $data);
+        }
+
+        // Display table of adhoc tasks to generate jobs.
+        if ($table = $this->get_log_records($logaction, $logids)) {
+            $this->add_heading($mform, 'questionbanklog', $this->subpluginname, false);
+            if ($logmessage) {
+                $logmessage = $OUTPUT->notification($logmessage, 'info', false);
+                $mform->addElement('html', $logmessage);
+            }
+            $mform->addElement('html', $table);
+
+            // Add "with selected" menu and "Go" button.
+            $elements = [];
+            $options = [
+                '' => $this->get_string('withselected'),
+                'resettask' => $this->get_string('resettask'),
+                'resumetask' => $this->get_string('resumetask'),
+                'deletelog' => $this->get_string('deletelog'),
+            ];
+            $elements[] = $mform->createElement('select', 'logaction', '', $options);
+            $elements[] = $mform->createElement('submit', 'logbutton', get_string('go'));
+
+            $mform->addGroup($elements, 'logactionelements', get_string('action'), '');
+        }
+    }
+
+    /**
+     * process_log_records
+     *
+     * @param string $logaction
+     * @param array $logids
+     * @return void, but may update vocabtool_questionbank_log table in DB.
+     */
+    public function process_log_records($logaction, $logids) {
+        global $DB, $USER;
+
+        // Cache reference to this questionbank tool object.
+        // This allows easy access to the log functions.
+        $tool = $this->get_subplugin();
+
+        // Cache the siteadmin flag.
+        $siteadmin = is_siteadmin();
+
+        // Cache the vocabid.
+        $vocabid = $tool->vocab->id;
+
+        $ids = [];
+        foreach ($logids as $logid => $value) {
+ 
+            // Ensure the the checkbox was actually checked.
+            if (empty($value)) {
+                continue;
+            }
+ 
+            // Ensure the logid is valid.
+            if (! $log = $tool->get_log($logid)) {
+                continue;
+            }
+ 
+            // Ensure that this user is allowed to access this log in this context.
+            if ($log->userid == $USER->id && $log->vocabid == $vocabid) {
+                $skip = false;
+            } else if ($siteadmin) {
+                $skip = false;
+            } else {
+                $skip = true;
+            }
+            if ($skip) {
+                continue;
+            }
+
+            // Fetch the adhoc task (usually it's already been deleted)
+            // and ensure the main values match what we expect.
+            if ($task = $DB->get_record('task_adhoc', ['id' => $log->taskid])) {
+                if ($task->classname == '\\vocabtool_questionbank\\task\\questions') {
+                    if ($task->component == 'vocabtool_questionbank') {
+                        if ($task->customdata == '{"logid":'.$logid.'}') { // JSON.
+                            $task = \core\task\manager::adhoc_task_from_record($task);
+                        }
+                    }
+                }
+                // Unset the task if the fields didn't match.
+                if (get_class($task) == 'stdClass') {
+                    $task = false;
+                }
+            }
+
+            // Now we are ready to perform the requested action.
+            switch ($logaction) {
+
+                case 'deletelog':
+                    if ($task) {
+                        if ($task->get_lock()) {
+                            // If the task has a lock, we mark it as "complete".
+                            // This will delete the task and release any locks.
+                            \core\task\manager::adhoc_task_complete($task);
+                        } else {
+                            // There's no "lock", so we just delete the DB task record.
+                            $DB->delete_records('task_adhoc', array('id' => $task->get_id()));
+                        }
+                        $task = null;
+                    }
+                    $tool::delete_logs(['id' => $logid]);
+                    $ids[] = $logid;
+                    break;
+
+                case 'resettask':
+                case 'resumetask':
+                    if ($task) {
+                        // The "reschedule" method has no return value,
+                        // so we just try it and hope that it works.
+                        \core\task\manager::reschedule_or_queue_adhoc_task($task);
+                        $taskid = $task->get_id();
+                    } else {
+                        // Create a new task to generate questions.
+                        $task = new \vocabtool_questionbank\task\questions();
+                        $task->set_userid($log->userid);
+                        $task->set_custom_data(['logid' => $logid]);
+                        // The "queue" method returns an "id", if successful.
+                        $taskid = \core\task\manager::queue_adhoc_task($task);
+                    }
+                    if ($taskid) {
+                        if ($logaction == 'resettask') {
+                            $tool::update_log($logid, [
+                                'taskid' => $taskid,
+                                'tries' => 0,
+                                'error' => '',
+                                'prompt' => '',
+                                'results' => '',
+                                'status' => $tool::TASKSTATUS_QUEUED,
+                            ]);
+                        } else {
+                            // Resume task.
+                            $tool::update_log($logid, [
+                                'taskid' => $taskid,
+                                'status' => $tool::TASKSTATUS_RESUMED,
+                            ]);
+                        }
+                        $ids[] = $logid;
+                    }
+                    break;
+
+                default:
+                    echo "Unknown log action: $logaction.";
+                    die;
+            }
+        }
+
+        if (empty($ids)) {
+            return ''; // Shouldn't happen !!
+        }
+
+        // Format results for display.
+        $count = count($ids);
+        if ($count == 1) {
+            $strname = $logaction.'result';
+        } else {
+            $strname = $logaction.'results';
+        }
+        $a = (object)['count' => $count, 'ids' => ''];
+        if ($siteadmin && ($ids = implode(', ', $ids))) {
+            if ($count == 1) {
+                $a->ids = " (log id: $ids)";
+            } else {
+                $a->ids = " (log ids: $ids)";
+            }
+        }
+        return $tool->get_string($strname, $a);
+    }
+
+
+    /**
+     * get_log_records
+     *
+     * @param array $logids
+     * @param string $logaction
+     * @return array $logs of records vocabtool_questionbank_log table.
+     */
+    public function get_log_records($logaction, $logids) {
+        global $DB, $OUTPUT, $PAGE;
 
         $datefmt = get_string('strftimerecent', 'langconfig');
         $datefmt = get_string('strftimedatetimeshort', 'langconfig');
@@ -832,8 +1033,21 @@ class form extends \mod_vocab\toolform {
         $settingstable = 'vocab_config_settings';
         $categoriestable = 'question_categories';
 
+        // Cache the action strings and icons.
+        $actions = [
+            'viewlog' => 't/preview',
+            'editlog' => 't/edit',
+            'resettask' => 't/reload',
+            'resumetask' => 't/play',
+            'deletelog' => 't/delete',
+        ];
+        $cssclass = (object)[
+            'logactions' => 'd-inline-block border rounded mx-1 my-0 p-1 bg-light logactions',
+            'logaction' => 'd-inline-block border-light mx-0 my-0 pl-1 py-0 text-nowrap logaction',
+        ];
+
         // Cache status strings.
-        $status = [
+        $statusnames = [
             $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
             $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
             $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
@@ -843,7 +1057,7 @@ class form extends \mod_vocab\toolform {
             $tool::TASKSTATUS_PROCESSING_RESULTS => $this->get_string('taskstatus_processingresults'),
             $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
             $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
-        ];                    
+        ];
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
@@ -902,15 +1116,14 @@ class form extends \mod_vocab\toolform {
                     $log->subcattype = $subcattypes[$log->subcattype];
                 }
 
-                if (array_key_exists($log->status, $status)) {
-                    $log->status = $status[$log->status];
+                if (array_key_exists($log->status, $statusnames)) {
+                    $log->status = $statusnames[$log->status];
                 }
 
                 $names = ['error', 'prompt', 'results'];
                 foreach ($names as $name) {
-                    if ($log->$name) {
+                    if ($log->$name && strlen($log->$name) > 10) {
                         $log->$name = substr($log->$name, 0, 10);
-                        $log->$name = \html_writer::tag('span', $log->$name, ['class' => 'text-nowrap']);
                     }
                 }
 
@@ -930,8 +1143,32 @@ class form extends \mod_vocab\toolform {
                     }
                 }
 
+                $name = 'logids';
+                $checked = array_key_exists($log->id, $logids);
+                $checkbox = \html_writer::checkbox($name.'['.$log->id.']', $log->id, $checked);
+
+                $logactions = '';
+                foreach ($actions as $action => $icon) {
+                    $text = $tool->get_string($action);
+                    $icon = $OUTPUT->pix_icon($icon, $text);
+                    $url = $PAGE->url;
+                    $url->params([
+                        'logid' => $log->id,
+                        'logaction' => $action,
+                        'sesskey' => sesskey(),
+                    ]);
+                    $text = \html_writer::tag('small', $text);
+                    $logaction = \html_writer::link($url, $icon.' '.$text);
+                    $logactions .= \html_writer::tag('div', $logaction, ['class' => $cssclass->logaction]);
+                }
+                $logactions = \html_writer::tag('div', $logactions, ['class' => $cssclass->logactions]);
+
+                $tasklink = '['.$log->taskid.']';
+                $log->nextruntime = $tasklink.' '.$log->nextruntime;
+
                 $row = [];
-                $row[] = '[ ]';
+                $row[] = $checkbox;
+                $row[] = $logactions;
                 $row[] = $log->nextruntime;
                 $row[] = fullname($users[$log->userid]);
                 $row[] = $log->word;
@@ -960,8 +1197,25 @@ class form extends \mod_vocab\toolform {
         if (empty($table->data)) {
             return false;
         } else {
+
+            $checked = array_key_exists(0, $logids);
+            $checkbox = \html_writer::checkbox('logids[selectall]', 0, $checked, '', ['class' => 'd-none']);
+
+            $table->align = [
+                0 => 'center', // Select.
+                6 => 'center', // Question count.
+                7 => 'center', // Question level.
+                15 => 'center', // Maxtries.
+                16 => 'center', // Tries.
+            ];
+            $table->wrap = [
+                18 => 'nowrap', // Error.
+                19 => 'nowrap', // Prompt.
+                20 => 'nowrap', // Results.
+            ];
             $table->head = [
-                get_string('select'),
+                get_string('select').'<br>'.$checkbox,
+                get_string('actions'),
                 get_string('nextruntime', 'tool_task'),
                 $this->get_string('taskowner'),
                 $this->get_string('word'),

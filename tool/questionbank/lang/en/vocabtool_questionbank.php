@@ -165,3 +165,18 @@ $string['taskstatus_resumed'] = 'Task resumed';
 $string['taskstatus_processingresults'] = 'Processing results';
 $string['taskstatus_completed'] = 'Task completed';
 $string['taskstatus_failed'] = 'Task failed';
+
+$string['viewlog'] = 'View log';
+$string['editlog'] = 'Edit log';
+$string['savelog'] = 'Save log';
+$string['resettask'] = 'Reset task';
+$string['resumetask'] = 'Resume task';
+$string['deletelog'] = 'Delete log';
+$string['resettaskresult'] = '{$a->count} task was reset {$a->ids}';
+$string['resumelogresult'] = '{$a->count} log record was resumed {$a->ids}';
+$string['deletelogresult'] = '{$a->count} log record was deleted {$a->ids}';
+$string['resettaskresults'] = '{$a->count} tasks were reset {$a->ids}';
+$string['resumelogresults'] = '{$a->count} log records were resumed {$a->ids}';
+$string['deletelogresults'] = '{$a->count} log records were deleted {$a->ids}';
+
+$string['withselected'] = 'With selected';

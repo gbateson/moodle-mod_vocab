@@ -176,7 +176,7 @@ class tool extends \mod_vocab\toolbase {
     }
 
     /**
-     * Get a record from the log table using the given $id.
+     * Get records from the log table using the given $vocabid.
      *
      * @param integer $id
      * @return object the record form the log table

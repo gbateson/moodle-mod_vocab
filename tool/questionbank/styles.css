@@ -19,6 +19,14 @@
 }
 
 /**
+ * Hide the label for the wordlist words by overriding the flex-basis
+ * set by "flex: 0 0 25%" for the "col-md-3" selector of Bootstrap.
+ */
+#vocabtool_questionbank_form #fgroup_id_logactionelements > .col-form-label {
+    flex-basis: auto !important;
+}
+
+/**
  * Remove the bottom margin on question items so that they appear more bunched together.
  */
 #vocabtool_questionbank_form #id_questiontypescontainer > .fitem {
