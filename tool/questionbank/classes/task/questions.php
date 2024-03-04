@@ -99,8 +99,14 @@ class questions extends \core\task\adhoc_task {
         $maxtries = $log->maxtries;
         $tries = $log->tries;
 
+        // We expect the status to be TASKSTATUS_QUEUED.
+        // It could also be TASKSTATUS_AWAITING_IMPORT.
+        // Anything else is unexpected.
         $status = $log->status;
+        $review = $log->review;
+
         $error = $log->error;
+        $prompt = $log->prompt;
         $results = $log->results;
 
         // Intialize the vocab activity tool.
@@ -131,72 +137,6 @@ class questions extends \core\task\adhoc_task {
             return $this->report_error($log, 'invalidteacherid', $a);
         }
 
-        // Get all question categories in the current course.
-        $coursecategory = question_get_top_category($coursecontext->id);
-        $categories = question_categorylist($coursecategory->id);
-
-        // Ensure that the target question category is in the target course.
-        if (! in_array($parentcatid, $categories)) {
-            return $this->report_error($log, 'invalidquestioncategoryid', $parentcatid);
-        }
-
-        // Cache the parent category.
-        $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
-
-        // Determine the human readable text for $qtype e.g. "Multiple choice".
-        $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
-
-        // Determine the human readable text for $qlevel e.g. "A2: Elementary".
-        $qleveltext = \vocabtool_questionbank\form::get_question_level_text($qlevel);
-
-        // Format course name.
-        $coursename = $this->tool->vocab->course->shortname;
-        $coursename = format_string($coursename, true, ['context' => $coursecontext]);
-
-        // Format section type e.g. "Topic" or "Week".
-        $sectiontype = 'format_'.$this->tool->vocab->course->format;
-        $sectiontype = get_string('sectionname', $sectiontype);
-
-        // Format section name.
-        $sectionid = $this->tool->vocab->cm->section;
-        if ($modinfo = get_fast_modinfo($this->tool->vocab->course)) {
-            $sectionname = $modinfo->get_section_info_by_id($sectionid)->name;
-        } else {
-            // Shouldn't happen - but we can get the section name directly from the $DB.
-            $sectionname = $DB->get_field('course_sections', 'name', ['id' => $sectionid]);
-        }
-        if ($sectionname) {
-            $sectionname = format_string($sectionname, true, ['context' => $coursecontext]);
-            $sectionname = trim($sectionname);
-        } else {
-            $sectionname = '';
-        }
-        if ($sectionname == '') {
-            // Create a default name for this section e.g. "Topic 1" or "Week 2".
-            $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
-            $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
-        }
-
-        // Format vocab name.
-        $vocabname = $this->tool->vocab->name;
-        $vocabname = format_string($vocabname, true, ['context' => $this->tool->vocab->context]);
-
-        // Setup arguments for the strings used to create question category names.
-        $a = (object)[
-            'coursename' => $coursename,
-            'sectiontype' => $sectiontype,
-            'sectionname' => $sectionname,
-            'vocabname' => $vocabname,
-            'word' => $word,
-            'qtype' => $qtypetext,
-            'level' => $qlevel, // Just the code is enough e.g. "A2".
-        ];
-
-        // Ensure that we can get or create a suitable question category.
-        if (! $category = $this->get_question_category($parentcategory, $subcattype, $subcatname, $word, $a)) {
-            return $this->report_error($log, 'missingquestioncategory', $word);
-        }
-
         $a = [];
         if (! $accessconfig = $this->get_config($accessid)) {
             $a[] = "accessid ($accessid)";
@@ -211,95 +151,214 @@ class questions extends \core\task\adhoc_task {
             return $this->report_error($log, 'invalidtaskparameters', $a);
         }
 
-        $prompt = $this->get_prompt($promptconfig, $formatconfig, $word, $qtype, $qlevel, $qcount, $qformat);
+        // The status should never be "fetching results" at this point.
+        // Perhaps, there was an error in a previous run.
+        // Anyway, we reset the status and try to continue.
+        if ($status == $toolclass::TASKSTATUS_FETCHING_RESULTS) {
+            if ($results && $review) {
+                $status = $toolclass::TASKSTATUS_AWAITING_REVIEW;
+            } else if (empty($results)) {
+                // Try to create results again.
+                $status = $toolclass::TASKSTATUS_QUEUED;
+            } else {
+                // Try to create questions.
+                $status = $toolclass::RESUMED;
+            }
+            $this->tool->update_log($log->id, ['status' => $status]);
+        }
 
-        // Set log status to "Fetching results".
-        $this->tool->update_log($log->id, [
-            'prompt' => $prompt,
-            'status' => $toolclass::TASKSTATUS_FETCHING_RESULTS,
-        ]);
+        // If the status is any of the following, something
+        // is wrong so we stop here.
+        if ($status == $toolclass::TASKSTATUS_AWAITING_REVIEW ||
+            $status == $toolclass::TASKSTATUS_COMPLETED ||
+            $status == $toolclass::TASKSTATUS_CANCELLED ||
+            $status == $toolclass::TASKSTATUS_FAILED) {
+            return; // No return value is required.
+        }
 
-        // Initialize the curl connection.
-        $this->init_curl($accessconfig, $prompt);
+        /*//////////////////////////////////
+        // Fetch results from AI assistant.
+        //////////////////////////////////*/
 
-        // Initialize the error message.
-        $error = '';
+        if ($status == $toolclass::TASKSTATUS_NOTSET ||
+            $status == $toolclass::TASKSTATUS_QUEUED) {
 
-        // Ensure sensible values for min/max tries.
-        $maxtries = max(1, min(10, $maxtries));
-        $mintries = max(0, min($maxtries, $log->tries));
+            // Create prompt, if necessary.
+            if (empty($prompt)) {
+                $prompt = $this->get_prompt(
+                    $promptconfig, $formatconfig,
+                    $word, $qtype, $qlevel, $qcount, $qformat
+                );
+                $this->tool->update_log($log->id, ['prompt' => $prompt]);
+            }
 
-        // Prompt the AI assistant until either we succeed
-        // or we have tried the allowed number of times.
-        for ($i = $mintries; $i < $maxtries; $i++) {
+            // Set log status to "Fetching results".
+            $status = $toolclass::TASKSTATUS_FETCHING_RESULTS;
+            $this->tool->update_log($log->id, ['status' => $status]);
 
-            // Loop may finish before $maxtries
-            // if results are received from AI.
+            // Initialize the curl connection.
+            $this->init_curl($accessconfig, $prompt);
 
-            // Update tries value in the database.
-            $this->tool->update_log($log->id, [
-                'tries' => ($i + 1),
-            ]);
+            // Ensure sensible values for min/max tries.
+            $maxtries = max(1, min(10, $maxtries));
+            $mintries = max(0, min($maxtries, $log->tries));
 
-            // Send the prompt to the AI assistant and receive the response.
-            $response = curl_exec($this->curl);
-            $response = json_decode($response);
-            $response = (object)[
-                'text' => ($response->choices[0]->message->content ?? null),
-                'error' => ($response->error ?? null),
-            ];
+            // Prompt the AI assistant until either we succeed
+            // or we have tried the allowed number of times.
+            for ($i = $mintries; $i < $maxtries; $i++) {
 
-            if ($response->text) {
+                // Loop may finish before $maxtries
+                // if results are received from AI.
 
-                // Store results.
+                // Update tries value in the database.
                 $this->tool->update_log($log->id, [
-                    'results' => $response->text,
+                    'tries' => ($i + 1),
                 ]);
 
-                // Unset $error, thus ignoring any previous errors.
-                $error = '';
+                // Send the prompt to the AI assistant and receive the response.
+                $response = curl_exec($this->curl);
+                $response = json_decode($response);
+                $response = (object)[
+                    'text' => ($response->choices[0]->message->content ?? ''),
+                    'error' => ($response->error ?? null),
+                ];
 
-                if ($log->review) {
-                    $this->tool->update_log($log->id, [
-                        'status' => $toolclass::TASKSTATUS_AWAITING_REVIEW,
-                    ]);
-                } else {
-                    $this->tool->update_log($log->id, [
-                        'status' => $toolclass::TASKSTATUS_PROCESSING_RESULTS,
-                    ]);
-                    // Parse the questions text.
-                    if ($questions = $this->parse_questions($response->text, $qformat, $category->id)) {
-                        // Update the log.
-                        $this->tool->update_log($log->id, [
-                            'error' => $error,
-                            'results' => $response->text,
-                            'status' => $toolclass::TASKSTATUS_COMPLETED,
-                        ]);
+                if ($results = $response->text) {
+
+                    if ($log->review) {
+                        $status = $toolclass::TASKSTATUS_AWAITING_REVIEW;
                     } else {
-                        $error = "Questions for {$word} could not be parsed.";
+                        $status = $toolclass::TASKSTATUS_AWAITING_IMPORT;
                     }
+
+                    // Store error, status and results.
+                    $this->tool->update_log($log->id, [
+                        'error' => $error,
+                        'status' => $status,
+                        'results' => $results,
+                    ]);
+
+                    // We have receieved a message from the AI assistant
+                    // so we can leave the FOR loop now.
+                    break;
                 }
 
-                // We have receieved a message from the AI assistant
-                // so we can leave the FOR loop now.
-                break;
+                // Prepare error message for cronoutput.
+                if (! empty($response->error->message)) {
+                    $error = $response->error->message;
+                } else if (! empty($response->error->code)) {
+                    $error = 'Code '.$response->error->code;
+                } else {
+                    $error = 'Unknown error';
+                }
+            }
+        }
+
+        /*//////////////////////////////////
+        // Create question categories
+        // and generate questions.
+        //////////////////////////////////*/
+
+        if ($status == $toolclass::TASKSTATUS_AWAITING_IMPORT ||
+            $status == $toolclass::TASKSTATUS_IMPORTING_RESULTS) {
+
+            if (empty($results)) {
+                return $this->report_error($log, 'emptyresults');
             }
 
-            // Prepare error message for cronoutput.
-            if (! empty($response->error->message)) {
-                $error = $response->error->message;
-            } else if (! empty($response->error->code)) {
-                $error = 'Code '.$response->error->code;
-            } else {
-                $error = 'Unknown error';
+            // Update the log status.
+            $status = $toolclass::TASKSTATUS_IMPORTING_RESULTS;
+            $this->tool->update_log($log->id, ['status' => $status]);
+
+            // Get all question categories in the current course.
+            $coursecategory = question_get_top_category($coursecontext->id);
+            $categories = question_categorylist($coursecategory->id);
+
+            // Ensure that the target question category is in the target course.
+            if (! in_array($parentcatid, $categories)) {
+                return $this->report_error($log, 'invalidquestioncategoryid', $parentcatid);
             }
+
+            // Cache the parent category.
+            $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
+
+            // Determine the human readable text for $qtype e.g. "Multiple choice".
+            $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
+
+            // Determine the human readable text for $qlevel e.g. "A2: Elementary".
+            $qleveltext = \vocabtool_questionbank\form::get_question_level_text($qlevel);
+
+            // Format course name.
+            $coursename = $this->tool->vocab->course->shortname;
+            $coursename = format_string($coursename, true, ['context' => $coursecontext]);
+
+            // Format section type e.g. "Topic" or "Week".
+            $sectiontype = 'format_'.$this->tool->vocab->course->format;
+            $sectiontype = get_string('sectionname', $sectiontype);
+
+            // Format section name.
+            $sectionid = $this->tool->vocab->cm->section;
+            if ($modinfo = get_fast_modinfo($this->tool->vocab->course)) {
+                $sectionname = $modinfo->get_section_info_by_id($sectionid)->name;
+            } else {
+                // Shouldn't happen - but we can get the section name directly from the $DB.
+                $sectionname = $DB->get_field('course_sections', 'name', ['id' => $sectionid]);
+            }
+            if ($sectionname) {
+                $sectionname = format_string($sectionname, true, ['context' => $coursecontext]);
+                $sectionname = trim($sectionname);
+            } else {
+                $sectionname = '';
+            }
+            if ($sectionname == '') {
+                // Create a default name for this section e.g. "Topic 1" or "Week 2".
+                $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
+                $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
+            }
+
+            // Format vocab name.
+            $vocabname = $this->tool->vocab->name;
+            $vocabname = format_string($vocabname, true, ['context' => $this->tool->vocab->context]);
+
+            // Setup arguments for the strings used to create question category names.
+            $a = (object)[
+                'coursename' => $coursename,
+                'sectiontype' => $sectiontype,
+                'sectionname' => $sectionname,
+                'vocabname' => $vocabname,
+                'word' => $word,
+                'qtype' => $qtypetext,
+                'level' => $qlevel, // Just the code is enough e.g. "A2".
+            ];
+
+            // Ensure that we can get or create a suitable question category.
+            if (! $category = $this->get_question_category($parentcategory, $subcattype, $subcatname, $word, $a)) {
+                return $this->report_error($log, 'missingquestioncategory', $word);
+            }
+
+            // At last, we can generate the questions from the results
+            // and store them in a suitable question category.
+            if ($questions = $this->parse_questions($results, $qformat, $category->id)) {
+                $status = $toolclass::TASKSTATUS_COMPLETED;
+                $error = ''; // Unset any previous errors.
+            } else {
+                $status = $toolclass::TASKSTATUS_FAILED;
+                $error = $this->tool->get_string('resultsnotparsed', $word);
+            }
+
+            // Update the log status and report and errors.
+            $this->tool->update_log($log->id, [
+                'status' => $status,
+                'error' => $error,
+            ]);
         }
 
         if ($error) {
             return $this->report_error($log, 'generatequestions', $error);
-        } else {
-            return \core\task\manager::adhoc_task_complete($this);
         }
+
+        // Mark the adhoc task as completed.
+        \core\task\manager::adhoc_task_complete($this);
     }
 
     /**
@@ -640,6 +699,7 @@ EOD;
 
         // Initialize the array of questions that will be returned by this method.
         $questions = [];
+mtrace("Parse questions: text $text");
 
         // Parse the text into individual questions.
         // Match $1 contains the question name.

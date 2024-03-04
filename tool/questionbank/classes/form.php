@@ -652,7 +652,7 @@ class form extends \mod_vocab\toolform {
 
         // Get sensible value for number of tries.
         $mintries = 1;
-        $maxtries = 10;
+        $maxtries = 5;
         $name = 'maxtries';
         if (isset($data->$name) && is_numeric($data->$name)) {
             $maxtries = min($maxtries, max($mintries, $data->$name));
@@ -828,27 +828,36 @@ class form extends \mod_vocab\toolform {
             $this->generate_questions($mform, $data);
         }
 
-        // Display table of adhoc tasks to generate jobs.
-        if ($table = $this->get_log_records($logaction, $logids)) {
-            $this->add_heading($mform, 'questionbanklog', $this->subpluginname, false);
+        // Get table of current log records.
+        $logtable = $this->get_log_records($logaction, $logids);
+
+        if ($logtable || $logmessage) {
+
+            $this->add_heading($mform, 'questionbanklog', $this->subpluginname, strlen($logmessage));
+
+            // Display log messages about any log action that was just taken.
             if ($logmessage) {
                 $logmessage = $OUTPUT->notification($logmessage, 'info', false);
                 $mform->addElement('html', $logmessage);
             }
-            $mform->addElement('html', $table);
 
-            // Add "with selected" menu and "Go" button.
-            $elements = [];
-            $options = [
-                '' => $this->get_string('withselected'),
-                'resettask' => $this->get_string('resettask'),
-                'resumetask' => $this->get_string('resumetask'),
-                'deletelog' => $this->get_string('deletelog'),
-            ];
-            $elements[] = $mform->createElement('select', 'logaction', '', $options);
-            $elements[] = $mform->createElement('submit', 'logbutton', get_string('go'));
+            // Display table of adhoc tasks to generate questions.
+            if ($logtable) {
+                $mform->addElement('html', $logtable);
 
-            $mform->addGroup($elements, 'logactionelements', get_string('action'), '');
+                // Add menu for actions on multiple selected logs.
+                $elements = [];
+                $options = [
+                    '' => $this->get_string('withselected'),
+                    'redotask' => $this->get_string('redotask'),
+                    'resumetask' => $this->get_string('resumetask'),
+                    'deletelog' => $this->get_string('deletelog'),
+                ];
+                $elements[] = $mform->createElement('select', 'logaction', '', $options);
+                $elements[] = $mform->createElement('submit', 'logbutton', get_string('go'));
+
+                $mform->addGroup($elements, 'logactionelements', get_string('action'), '');
+            }
         }
     }
 
@@ -874,24 +883,24 @@ class form extends \mod_vocab\toolform {
 
         $ids = [];
         foreach ($logids as $logid => $value) {
- 
+
             // Ensure the the checkbox was actually checked.
             if (empty($value)) {
                 continue;
             }
- 
+
             // Ensure the logid is valid.
             if (! $log = $tool->get_log($logid)) {
                 continue;
             }
- 
+
             // Ensure that this user is allowed to access this log in this context.
             if ($log->userid == $USER->id && $log->vocabid == $vocabid) {
-                $skip = false;
+                $skip = false; // Valid userid and vocabid.
             } else if ($siteadmin) {
-                $skip = false;
+                $skip = false; // Site admin can always do anything.
             } else {
-                $skip = true;
+                $skip = true; // Invalid userid and/or vocabid.
             }
             if ($skip) {
                 continue;
@@ -924,7 +933,7 @@ class form extends \mod_vocab\toolform {
                             \core\task\manager::adhoc_task_complete($task);
                         } else {
                             // There's no "lock", so we just delete the DB task record.
-                            $DB->delete_records('task_adhoc', array('id' => $task->get_id()));
+                            $DB->delete_records('task_adhoc', ['id' => $task->get_id()]);
                         }
                         $task = null;
                     }
@@ -932,7 +941,7 @@ class form extends \mod_vocab\toolform {
                     $ids[] = $logid;
                     break;
 
-                case 'resettask':
+                case 'redotask':
                 case 'resumetask':
                     if ($task) {
                         // The "reschedule" method has no return value,
@@ -948,7 +957,7 @@ class form extends \mod_vocab\toolform {
                         $taskid = \core\task\manager::queue_adhoc_task($task);
                     }
                     if ($taskid) {
-                        if ($logaction == 'resettask') {
+                        if ($logaction == 'redotask') {
                             $tool::update_log($logid, [
                                 'taskid' => $taskid,
                                 'tries' => 0,
@@ -961,7 +970,7 @@ class form extends \mod_vocab\toolform {
                             // Resume task.
                             $tool::update_log($logid, [
                                 'taskid' => $taskid,
-                                'status' => $tool::TASKSTATUS_RESUMED,
+                                'status' => $tool::TASKSTATUS_AWAITING_IMPORT,
                             ]);
                         }
                         $ids[] = $logid;
@@ -969,8 +978,7 @@ class form extends \mod_vocab\toolform {
                     break;
 
                 default:
-                    echo "Unknown log action: $logaction.";
-                    die;
+                    return "Unknown log action: $logaction";
             }
         }
 
@@ -1007,9 +1015,15 @@ class form extends \mod_vocab\toolform {
     public function get_log_records($logaction, $logids) {
         global $DB, $OUTPUT, $PAGE;
 
-        $datefmt = get_string('strftimerecent', 'langconfig');
+        // Specify a short date/time format.
         $datefmt = get_string('strftimedatetimeshort', 'langconfig');
+        // The "strftimerecent" is slightly more readable,
+        // but includes "." after abbreviated months and days.
 
+        // Cache the admin flag.
+        $siteadmin = is_siteadmin();
+
+        // Initialize the HTML table.
         $table = new \html_table();
         $table->id = 'questionbanklog_table';
         $table->head = [];
@@ -1037,13 +1051,14 @@ class form extends \mod_vocab\toolform {
         $actions = [
             'viewlog' => 't/preview',
             'editlog' => 't/edit',
-            'resettask' => 't/reload',
+            'redotask' => 't/reload',
             'resumetask' => 't/play',
             'deletelog' => 't/delete',
         ];
+
         $cssclass = (object)[
             'logactions' => 'd-inline-block border rounded mx-1 my-0 p-1 bg-light logactions',
-            'logaction' => 'd-inline-block border-light mx-0 my-0 pl-1 py-0 text-nowrap logaction',
+            'logaction' => 'd-inline-block border-light mx-0 my-0 px-1 py-0 text-nowrap logaction',
         ];
 
         // Cache status strings.
@@ -1051,11 +1066,11 @@ class form extends \mod_vocab\toolform {
             $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
             $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
             $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
-            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awatingresults'),
-            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
-            $tool::TASKSTATUS_RESUMED => $this->get_string('taskstatus_resumed'),
-            $tool::TASKSTATUS_PROCESSING_RESULTS => $this->get_string('taskstatus_processingresults'),
+            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
+            $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
+            $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
             $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
+            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
             $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
         ];
 
@@ -1134,19 +1149,27 @@ class form extends \mod_vocab\toolform {
                     $log->timemodified = userdate($log->timemodified, $datefmt);
                 }
                 if ($log->nextruntime) {
-                    $log->nextruntime = userdate($log->nextruntime, $datefmt);
+                    $log->nextruntime = get_string('nextruntime', 'tool_task').
+                                        get_string('labelsep', 'langconfig').
+                                        userdate($log->nextruntime, $datefmt);
                 } else {
                     $log->nextruntime = get_string('completed');
                     if ($log->timemodified) {
                         $log->nextruntime .= get_string('labelsep', 'langconfig');
                         $log->nextruntime .= $log->timemodified;
                     }
+                    if ($siteadmin) {
+                        $msg = get_string('adhoctaskid', 'tool_task', $log->taskid);
+                        $log->nextruntime .= \html_writer::tag('small', " ($msg)", ['class' => 'text-nowrap']);
+                    }
                 }
 
+                // Define checkbox to select this log record.
                 $name = 'logids';
                 $checked = array_key_exists($log->id, $logids);
                 $checkbox = \html_writer::checkbox($name.'['.$log->id.']', $log->id, $checked);
 
+                // Define actions allowed on this log record.
                 $logactions = '';
                 foreach ($actions as $action => $icon) {
                     $text = $tool->get_string($action);
@@ -1163,15 +1186,12 @@ class form extends \mod_vocab\toolform {
                 }
                 $logactions = \html_writer::tag('div', $logactions, ['class' => $cssclass->logactions]);
 
-                $tasklink = '['.$log->taskid.']';
-                $log->nextruntime = $tasklink.' '.$log->nextruntime;
-
                 $row = [];
                 $row[] = $checkbox;
                 $row[] = $logactions;
                 $row[] = $log->nextruntime;
                 $row[] = fullname($users[$log->userid]);
-                $row[] = $log->word;
+                $row[] = \html_writer::tag('b', $log->word);
                 $row[] = self::get_question_type_text($log->qtype);
                 $row[] = $log->qcount;
                 $row[] = $log->qlevel;
@@ -1195,50 +1215,61 @@ class form extends \mod_vocab\toolform {
         }
 
         if (empty($table->data)) {
-            return false;
-        } else {
+            return '';
+        }
 
+        // Define the "Select all" checkbox for the log records.
+        // It is initially hidden and then unhidden by Javascript.
+        if (count($table->data) == 1) {
+            $checkbox = '';
+        } else {
             $checked = array_key_exists(0, $logids);
             $checkbox = \html_writer::checkbox('logids[selectall]', 0, $checked, '', ['class' => 'd-none']);
-
-            $table->align = [
-                0 => 'center', // Select.
-                6 => 'center', // Question count.
-                7 => 'center', // Question level.
-                15 => 'center', // Maxtries.
-                16 => 'center', // Tries.
-            ];
-            $table->wrap = [
-                18 => 'nowrap', // Error.
-                19 => 'nowrap', // Prompt.
-                20 => 'nowrap', // Results.
-            ];
-            $table->head = [
-                get_string('select').'<br>'.$checkbox,
-                get_string('actions'),
-                get_string('nextruntime', 'tool_task'),
-                $this->get_string('taskowner'),
-                $this->get_string('word'),
-                $this->get_string('questiontype'),
-                $this->get_string('questioncount'),
-                $this->get_string('questionlevel'),
-                $this->get_string('qformat'),
-                $this->get_string('assistant'),
-                $this->get_string('promptname'),
-                $this->get_string('formatname'),
-                $this->get_string('parentcategory'),
-                $this->get_string('subcattype'),
-                $this->get_string('subcatname'),
-                $this->get_string('maxtries'),
-                $this->get_string('tries'),
-                get_string('status'),
-                get_string('error'),
-                $this->get_string('prompttext'),
-                $this->get_string('resultstext'),
-                $this->get_string('timecreated'),
-                $this->get_string('timemodified'),
-            ];
-            return \html_writer::table($table);
+            $checkbox = \html_writer::tag('div', $checkbox);
         }
+
+        // Specify centrally aligned columns.
+        $table->align = [
+            0 => 'center', // Select.
+            6 => 'center', // Question count.
+            7 => 'center', // Question level.
+            15 => 'center', // Maxtries.
+            16 => 'center', // Tries.
+        ];
+
+        // Specify nowrap columns.
+        $table->wrap = [
+            18 => 'nowrap', // Error.
+            19 => 'nowrap', // Prompt.
+            20 => 'nowrap', // Results.
+        ];
+
+        // Define strings for column headings.
+        $table->head = [
+            get_string('select').$checkbox,
+            get_string('actions'),
+            $this->get_string('backgroundtask'),
+            $this->get_string('taskowner'),
+            $this->get_string('word'),
+            $this->get_string('questiontype'),
+            $this->get_string('questioncount'),
+            $this->get_string('questionlevel'),
+            $this->get_string('qformat'),
+            $this->get_string('assistant'),
+            $this->get_string('promptname'),
+            $this->get_string('formatname'),
+            $this->get_string('parentcategory'),
+            $this->get_string('subcattype'),
+            $this->get_string('subcatname'),
+            $this->get_string('maxtries'),
+            $this->get_string('tries'),
+            get_string('status'),
+            get_string('error'),
+            $this->get_string('prompttext'),
+            $this->get_string('resultstext'),
+            $this->get_string('timecreated'),
+            $this->get_string('timemodified'),
+        ];
+        return \html_writer::table($table);
     }
 }

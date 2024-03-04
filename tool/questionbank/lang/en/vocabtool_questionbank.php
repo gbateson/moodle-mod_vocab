@@ -113,13 +113,6 @@ $string['catinfo_wordtype'] = '{$a->qtype} questions for the word "{$a->word}"';
 $string['catinfo_wordtypelevel'] = '{$a->qtype} questions ({$a->level}) for the word "{$a->word}"';
 $string['catinfo_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
 
-$string['statusqueued'] = 'Queued';
-$string['statusfetchingresults'] = 'Fecthing results';
-$string['statusawaitinginspection'] = 'Awaiting inspection';
-$string['statusprocessingresults'] = 'Processing results';
-$string['statuscompleted'] = 'Completed successfully';
-$string['statusfailed'] = 'Failed with error';
-
 $string['selectprompt'] = 'Select prompt ...';
 $string['selectformat'] = 'Select format ...';
 
@@ -152,31 +145,38 @@ $string['prompttext'] = 'Prompt text';
 $string['resultstext'] = 'Results text';
 $string['timecreated'] = 'Time created';
 $string['timemodified'] = 'Time modified';
+
 $string['missingconfigname'] = 'Config missing (id={$a->configid}, type={$a->type})';
 $string['invalidquestioncategory'] = 'Invalid question category (id={$a})';
+$string['resultsnotparsed'] = 'Results for {$a} could not be parsed.';
+$string['emptyresults'] = 'Results from AI assistant were empty.';
+
 $string['questionbanklog'] = 'Question bank log';
 
 $string['taskstatus_notset'] = 'Not set';
 $string['taskstatus_queued'] = 'Task queued';
 $string['taskstatus_fetchingresults'] = 'Fetching results';
-$string['taskstatus_awatingresults'] = 'Awaiting review';
-$string['taskstatus_cancelled'] = 'Task cancelled';
-$string['taskstatus_resumed'] = 'Task resumed';
-$string['taskstatus_processingresults'] = 'Processing results';
-$string['taskstatus_completed'] = 'Task completed';
-$string['taskstatus_failed'] = 'Task failed';
+$string['taskstatus_awaitingreview'] = 'Awaiting review of results';
+$string['taskstatus_awaitingimport'] = 'Waiting to import results';
+$string['taskstatus_importingresults'] = 'Importing results';
+$string['taskstatus_completed'] = 'Task completed successfully';
+$string['taskstatus_cancelled'] = 'Task cancelled by user';
+$string['taskstatus_failed'] = 'Task failed with error';
 
 $string['viewlog'] = 'View log';
 $string['editlog'] = 'Edit log';
 $string['savelog'] = 'Save log';
-$string['resettask'] = 'Reset task';
+$string['redotask'] = 'Redo task';
 $string['resumetask'] = 'Resume task';
 $string['deletelog'] = 'Delete log';
-$string['resettaskresult'] = '{$a->count} task was reset {$a->ids}';
-$string['resumelogresult'] = '{$a->count} log record was resumed {$a->ids}';
+
+$string['redotaskresult'] = '{$a->count} task will be redone {$a->ids}';
+$string['resumetaskresult'] = '{$a->count} task will be resumed {$a->ids}';
 $string['deletelogresult'] = '{$a->count} log record was deleted {$a->ids}';
-$string['resettaskresults'] = '{$a->count} tasks were reset {$a->ids}';
-$string['resumelogresults'] = '{$a->count} log records were resumed {$a->ids}';
+
+$string['redotaskresults'] = '{$a->count} tasks will be redone {$a->ids}';
+$string['resumetaskresults'] = '{$a->count} tasks will be resumed {$a->ids}';
 $string['deletelogresults'] = '{$a->count} log records were deleted {$a->ids}';
 
 $string['withselected'] = 'With selected';
+$string['backgroundtask'] = 'Background task';

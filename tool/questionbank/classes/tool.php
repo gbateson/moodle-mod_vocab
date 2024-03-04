@@ -40,7 +40,7 @@ class tool extends \mod_vocab\toolbase {
     /** @var string holds the name of the log table */
     const LOGTABLE = 'vocabtool_questionbank_log';
 
-    /** @var integer database value signifying the task is not yet set */
+    /** @var integer database value signifying the task status is not set yet */
     const TASKSTATUS_NOTSET = 0;
 
     /** @var integer database value signifying the task has been queued */
@@ -49,22 +49,22 @@ class tool extends \mod_vocab\toolbase {
     /** @var integer database value signifying the task results are being fetched */
     const TASKSTATUS_FETCHING_RESULTS = 2;
 
-    /** @var integer database value signifying the task results are awaiting review by teacher */
+    /** @var integer database value signifying the task results are awaiting review by a teacher or admin */
     const TASKSTATUS_AWAITING_REVIEW = 3;
 
-    /** @var integer database value signifying the task has been cancelled after inspection */
-    const TASKSTATUS_CANCELLED = 4;
+    /** @var integer database value signifying the task results are ready to be imported into Moodle */
+    const TASKSTATUS_AWAITING_IMPORT = 4;
 
-    /** @var integer database value signifying the task has been resumed after inspection */
-    const TASKSTATUS_RESUMED = 5;
-
-    /** @var integer database value signifying the task results are being processed */
-    const TASKSTATUS_PROCESSING_RESULTS = 6;
+    /** @var integer database value signifying the task results are being imported into Moodle */
+    const TASKSTATUS_IMPORTING_RESULTS = 5;
 
     /** @var integer database value signifying the task has been completed */
-    const TASKSTATUS_COMPLETED = 7;
+    const TASKSTATUS_COMPLETED = 6;
 
-    /** @var integer database value signifying the task was aborted */
+    /** @var integer database value signifying the task was cancelled after being reviewed */
+    const TASKSTATUS_CANCELLED = 7;
+
+    /** @var integer database value signifying the task failed for some reason, e.g. a program error or unexpected setting */
     const TASKSTATUS_FAILED = 8;
 
     /**
