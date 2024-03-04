@@ -171,7 +171,14 @@ class form extends \mod_vocab\toolform {
 
         $name = 'questionlevels';
         $options = self::get_question_levels();
-        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'A2', 'multiple');
+        if (is_scalar($options[key($options)])) {
+            $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'A2', 'multiple');
+        } else {
+            $default = $options[key($options)];
+            $default = array_keys($default);
+            $default = next($default); // Get the 2nd key.
+            $this->add_field_selectgroups($mform, $name, $options, PARAM_ALPHANUM, $default, 'multiple');
+        }
 
         $name = 'questioncount';
         $this->add_field_text($mform, $name, PARAM_INT, 5, 2);
@@ -351,21 +358,52 @@ class form extends \mod_vocab\toolform {
     /**
      * get_question_levels
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return array of vocabulary levels.
      */
     public static function get_question_levels() {
-        // ToDo: get these levels from the vocab_levelnames table.
-        $plugin = 'vocabtool_questionbank';
-        return [
-            'A1' => get_string('cefr_a1_description', $plugin),
-            'A2' => get_string('cefr_a2_description', $plugin),
-            'B1' => get_string('cefr_b1_description', $plugin),
-            'B2' => get_string('cefr_b2_description', $plugin),
-            'C1' => get_string('cefr_c1_description', $plugin),
-            'C2' => get_string('cefr_c2_description', $plugin),
-        ];
+        global $DB;
+
+        $metrics = [];
+
+        $select = 'names.*, lvl.levelcode, lng.langcode';
+        $from = '{vocab_levelnames} names '.
+                'JOIN {vocab_levels} lvl ON names.levelid = lvl.id  '.
+                'JOIN {vocab_langs} lng  ON names.langid = lng.id';
+        $where = 'lng.langcode = ?';
+        $sql = "SELECT $select FROM $from WHERE $where";
+        if ($names = $DB->get_records_sql($sql, ['en'])) {
+            foreach ($names as $id => $level) {
+                
+                $code = $level->levelcode;
+                $name = $level->levelname;
+
+                if (preg_match('/^\w+/iu', $name, $type)) {
+                    $type = $type[0]; // E.g. "CEFR" or "Lexile".
+                    if (empty($levels[$type])) {
+                        $levels[$type] = [];
+                    }
+                    if (empty($levels[$type][$code])) {
+                        $levels[$type][$code] = [];
+                    }
+                    $levels[$type][$code] = $name;
+                }
+            }
+        }
+
+        if (count($levels)) {
+            return $levels;
+        } else {
+            // Thre are currently no levels in the DB, so use default.
+            $plugin = 'vocabtool_questionbank';
+            return [
+                'A1' => get_string('cefr_a1_description', $plugin),
+                'A2' => get_string('cefr_a2_description', $plugin),
+                'B1' => get_string('cefr_b1_description', $plugin),
+                'B2' => get_string('cefr_b2_description', $plugin),
+                'C1' => get_string('cefr_c1_description', $plugin),
+                'C2' => get_string('cefr_c2_description', $plugin),
+            ];
+        }
     }
 
     /**

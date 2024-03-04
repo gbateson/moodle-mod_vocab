@@ -192,7 +192,7 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
-     * Add a select field to the given $mform
+     * Add a selectgroups field to the given $mform
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $name the name of this select element
@@ -202,18 +202,34 @@ abstract class subpluginform extends \moodleform {
      * @param array $attributes (optional, default=null)
      * @return void (but will update $mform)
      */
-    public function add_field_select($mform, $name, $options, $type, $default=null, $attributes=null) {
+    public function add_field_selectgroups($mform, $name, $options, $type, $default=null, $attributes=null) {
+        $this->add_field_select($mform, $name, $options, $type, $default, $attributes, 'selectgroups');
+    }
+
+    /**
+     * Add a select field to the given $mform
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name the name of this select element
+     * @param array $options to display in the drop menu
+     * @param mixed $type a PARAM_xxx constant value
+     * @param mixed $default (optional, default=null)
+     * @param array $attributes (optional, default=null)
+     * @param string $elementtype (optional, default="select")
+     * @return void (but will update $mform)
+     */
+    public function add_field_select($mform, $name, $options, $type, $default=null, $attributes=null, $elementtype='select') {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 // An on/off attribute e.g. 'disabled' or 'multiple'.
                 $attributes = [$attributes => $attributes];
             }
             if (array_key_exists('multiple', $attributes)) {
-                $attributes['size'] = min(6, count($options));
+                $attributes['size'] = min(6, max(10, count($options)));
             }
         }
         $label = $this->get_string($name);
-        $mform->addElement('select', $name, $label, $options, $attributes);
+        $mform->addElement($elementtype, $name, $label, $options, $attributes);
         $mform->addHelpButton($name, $name, $this->subpluginname);
         $mform->setType($name, $type);
         if ($default) {

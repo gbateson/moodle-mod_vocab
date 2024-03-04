@@ -54,8 +54,12 @@ $string['emptyxmlfile'] = 'The XML file was empty or missing.';
 $string['invalidxmlfile'] = 'The content of the XML file is invalid.';
 $string['showsampleformatxml'] = 'Sample XML code for the format file is shown below:';
 
-$string['explainmetadata'] = '"meta" {$a} contain headings and settings, whereas "data" {$a} contain the actual data values.';
-$string['explainstartend'] = 'Define "start" (default=1) and "end" (default=last) {$a}.';
+$string['explainmeta'] = 'A "meta" {$a} contains headings and settings';
+$string['explaindata'] = 'A "data" {$a} contains the actual data values.';
+
+$string['explainstartend'] = 'Define "{$a}type" "{$a}start" (default=1) and "{$a}end" (default=last)';
+$string['explainname'] = 'Use "{$a}name" to specify a name, e.g. {$a}name="VALUE(word)"';
+$string['explainskip'] = 'Use "{$a}skip" to define skip conditions, e.g. {$a}skip="EMPTY(word)"';
 $string['explainsettings'] = 'Default values for form settings can be overridden by specifying the name and value.';
 
 $string['headingsandpreviewrows'] = 'The headings and first {$a} rows of data appear below.';

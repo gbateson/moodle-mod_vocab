@@ -425,7 +425,9 @@ class form extends \mod_vocab\toolform {
             if ($datafilepath) {
 
                 // Add datafilename to settings so that it is accessible later.
-                $format->settings['datafilename'] = $datafilename;
+                if ($format) {
+                    $format->settings['datafilename'] = $datafilename;
+                }
 
                 $reader = $iofactory::createReaderForFile($datafilepath);
                 $workbook = $reader->load($datafilepath);
@@ -756,7 +758,6 @@ class form extends \mod_vocab\toolform {
 
         $xml .= $nl;
         $xml .= str_repeat($tab, $i).$this->get_comment('explainsettings').$nl;
-        $xml .= str_repeat($tab, $i++).'<settings>'.$nl;
 
         // Set default form settings.
         $setting = (object)[
@@ -776,11 +777,6 @@ class form extends \mod_vocab\toolform {
             $xml .= str_repeat($tab, $i).'<value>'.$setting->value.'</value>'.$nl;
             $xml .= str_repeat($tab, --$i).'</setting>'.$nl;
         }
-        $xml .= str_repeat($tab, --$i).'</settings>'.$nl;
-
-        $xml .= $nl;
-        $xml .= str_repeat($tab, $i).$this->get_comment('explainmetadata', 'sheets').$nl;
-        $xml .= str_repeat($tab, $i++).'<sheets type="data">'.$nl;
 
         $smin = 1;
         $smax = $workbook->getSheetCount();
@@ -789,11 +785,10 @@ class form extends \mod_vocab\toolform {
             $worksheet = $workbook->setActiveSheetIndex($s - 1);
 
             $xml .= $nl;
+            $xml .= str_repeat($tab, $i).$this->get_comment('explainmeta', 'sheet').$nl;
+            $xml .= str_repeat($tab, $i).$this->get_comment('explaindata', 'sheet').$nl;
             $xml .= str_repeat($tab, $i).$this->get_comment('explainstartend', 'sheet').$nl;
-            $xml .= str_repeat($tab, $i++).'<sheet start="'.$s.'" end="'.$s.'">'.$nl;
-
-            $xml .= $nl;
-            $xml .= str_repeat($tab, $i).$this->get_comment('explainmetadata', 'rows').$nl;
+            $xml .= str_repeat($tab, $i++).'<sheet sheettype="data" sheetstart="'.$s.'" sheetend="'.$s.'">'.$nl;
 
             list($rmin, $rmax) = $this->get_min_max_rows($worksheet);
 
@@ -804,28 +799,19 @@ class form extends \mod_vocab\toolform {
                 list($cmin, $cmax) = $this->get_min_max_cols($worksheet, $r);
 
                 if ($cmin < $cmax) {
-                    $comment = $this->get_comment('explainstartend', 'row');
-
                     $xmlmetarow .= $nl.
-                                   str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i).'<row start="'.$r.'" end="'.$r.'">'.$nl;
+                                   str_repeat($tab, $i).$this->get_comment('explainmeta', 'row').$nl.
+                                   str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
+                                   str_repeat($tab, $i).'<row rowtype="meta" rowstart="'.$r.'" rowend="'.$r.'">'.$nl;
 
                     $xmldatarow .= $nl.
-                                   str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i).'<row start="'.($r + 1).'" end="'.$rmax.'">'.$nl;
-                    $i++;
+                                   str_repeat($tab, $i).$this->get_comment('explaindata', 'row').$nl.
+                                   str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
+                                   str_repeat($tab, $i).$this->get_comment('explainname', 'row').$nl.
+                                   str_repeat($tab, $i).$this->get_comment('explainskip', 'row').$nl.
+                                   str_repeat($tab, $i).'<row rowtype="data" rowstart="'.($r + 1).'" rowend="'.$rmax.'" cellstart="'.($cmin + 1).'" cellend="'.($cmax + 1).'">'.$nl;
 
-                    $comment = $this->get_comment('explainstartend', 'column');
-
-                    $tag = '<cells type="meta" start="'.($cmin + $coffset).'" end="'.($cmax + $coffset).'">';
-                    $xmlmetarow .= $nl.
-                                   str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i).$tag.$nl;
-
-                    $tag = '<cells type="data" start="'.($cmin + $coffset).'" end="'.($cmax + $coffset).'">';
-                    $xmldatarow .= $nl.
-                                   str_repeat($tab, $i).$comment.$nl.
-                                   str_repeat($tab, $i).$tag.$nl;
+                    // Increase indentation for cells.
                     $i++;
 
                     $cells = [];
@@ -836,9 +822,6 @@ class form extends \mod_vocab\toolform {
                         $xmldatarow .= str_repeat($tab, $i).'<cell>'.$cleanvalue.'</cell>'.$nl;
                     }
 
-                    $xmlmetarow .= str_repeat($tab, --$i).'</cells>'.$nl;
-                    $xmldatarow .= str_repeat($tab, $i).'</cells>'.$nl;
-
                     $xmlmetarow .= str_repeat($tab, --$i).'</row>'.$nl;
                     $xmldatarow .= str_repeat($tab, $i).'</row>'.$nl;
 
@@ -846,18 +829,13 @@ class form extends \mod_vocab\toolform {
                 }
             }
 
-            $xml .= str_repeat($tab, $i++).'<rows type="meta">'.$nl;
+            // Add meta and data row
             $xml .= $xmlmetarow;
-            $xml .= str_repeat($tab, --$i).'</rows>'.$nl;
-
-            $xml .= str_repeat($tab, $i++).'<rows type="data">'.$nl;
             $xml .= $xmldatarow;
-            $xml .= str_repeat($tab, --$i).'</rows>'.$nl;
 
             $xml .= str_repeat($tab, --$i).'</sheet>'.$nl;
         }
 
-        $xml .= str_repeat($tab, --$i).'</sheets>'.$nl;
         $xml .= '</datafileformat>'.$nl;
 
         return $xml;
@@ -964,7 +942,8 @@ class form extends \mod_vocab\toolform {
      */
     public function get_clean_text($txt) {
         // Replace all punctuation and spaces with an underscore, "_".
-        return preg_replace('/([[:punct:]]|[[:blank:]])+/', '_', $txt);
+        $txt = preg_replace('/([[:punct:]]|[[:blank:]])+/', '_', $txt);
+        return trim($txt, ' _');
     }
 
     /**
