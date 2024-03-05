@@ -699,7 +699,6 @@ EOD;
 
         // Initialize the array of questions that will be returned by this method.
         $questions = [];
-mtrace("Parse questions: text $text");
 
         // Parse the text into individual questions.
         // Match $1 contains the question name.

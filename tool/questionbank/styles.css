@@ -2,7 +2,8 @@
 #vocabtool_questionbank_form fieldset.collapsible {
     max-width: 760px;
 }
-#vocabtool_questionbank_form fieldset#id_questionbanklog:not(.collapsed) {
+#vocabtool_questionbank_form fieldset#id_selectedlogrecord:not(.collapsed),
+#vocabtool_questionbank_form fieldset#id_logrecords:not(.collapsed) {
     max-width: 1140px;
 }
 

@@ -95,7 +95,7 @@ class form extends \mod_vocab\toolform {
         // Cache line break for flex context.
         $br = \html_writer::tag('span', '', ['class' => 'w-100']);
 
-        // Heading for the "Word list".
+        // Add a heading for the "Word list".
         $name = 'wordlist';
         $this->add_heading($mform, $name, 'mod_vocab', true);
 
@@ -120,7 +120,7 @@ class form extends \mod_vocab\toolform {
         $mform->addGroup($elements, $name, $label, $br);
         $mform->addHelpButton($name, $name, $this->subpluginname);
 
-        // Heading for the "AI settings".
+        // Add a heading for the "AI settings".
         $name = 'aisettings';
         $this->add_heading($mform, $name, $this->subpluginname, true);
 
@@ -141,7 +141,7 @@ class form extends \mod_vocab\toolform {
         $options = self::get_question_formats();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'gift');
 
-        // Heading for the "Question types".
+        // Add a heading for the "Question types".
         $name = 'questiontypes';
         $this->add_heading($mform, $name, $this->subpluginname, true);
 
@@ -165,12 +165,12 @@ class form extends \mod_vocab\toolform {
             $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
         }
 
-        // Heading for the "Question settings".
+        // Add a heading for the "Question settings".
         $name = 'questionsettings';
         $this->add_heading($mform, $name, $this->subpluginname, true);
 
         $name = 'questionlevels';
-        $options = self::get_question_levels();
+        $options = self::get_question_levels(true);
         if (is_scalar($options[key($options)])) {
             $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'A2', 'multiple');
         } else {
@@ -187,7 +187,7 @@ class form extends \mod_vocab\toolform {
         $options = [get_string('no'), get_string('yes')];
         $this->add_field_select($mform, $name, $options, PARAM_INT, 1);
 
-        // Heading for the "Category settings".
+        // Add a heading for the "Category settings".
         $name = 'categorysettings';
         $this->add_heading($mform, $name, $this->subpluginname, true);
 
@@ -244,12 +244,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * Get a list of AI assistants that are available to the current user and context.
+     * Get a list of AI config options that are available to the current user and context.
      *
      * @param string $type of config ("prompts" or "formats")
      * @param string $namefield name of setting that holds the name of this config
      * @param string $selectstring name of string to display as first option
-     * @return array of AI assistants [config id => config name]
+     * @return array of AI config options [config id => config name]
      */
     public function get_config_options($type, $namefield, $selectstring) {
         global $DB;
@@ -358,34 +358,86 @@ class form extends \mod_vocab\toolform {
     /**
      * get_question_levels
      *
+     * @param boolean $sortbyprefix (optional, default=FALSE)
+     *                If TRUE, return a two-dimensional array [prefix => [code => name]].
+     *                If FALSE return a one-dimensional array [code => name].
      * @return array of vocabulary levels.
      */
-    public static function get_question_levels() {
+    public static function get_question_levels($sortbyprefix=false) {
         global $DB;
 
-        $metrics = [];
+        // The $levels array is the return value for this function.
+        $levels = [];
 
-        $select = 'names.*, lvl.levelcode, lng.langcode';
-        $from = '{vocab_levelnames} names '.
-                'JOIN {vocab_levels} lvl ON names.levelid = lvl.id  '.
-                'JOIN {vocab_langs} lng  ON names.langid = lng.id';
-        $where = 'lng.langcode = ?';
+        // Define the languages we are interested in.
+        $langs = [current_language()];
+        if ($pos = strpos($langs[0], '_')) {
+            $langs[] = substr($langs[0], 0, $pos);
+        }
+        if (in_array('en', $langs) == false) {
+            $langs[] = 'en';
+        }
+
+        $select = 'n.*, lvl.levelcode, lng.langcode';
+        $from = '{vocab_levelnames} n '.
+                'JOIN {vocab_levels} lvl ON n.levelid = lvl.id  '.
+                'JOIN {vocab_langs} lng  ON n.langid = lng.id';
+        list($where, $params) = $DB->get_in_or_equal($langs);
+        $where = "lng.langcode $where";
+
         $sql = "SELECT $select FROM $from WHERE $where";
-        if ($names = $DB->get_records_sql($sql, ['en'])) {
+        if ($names = $DB->get_records_sql($sql, $params)) {
+
+            // Sort by langcode: child, parent, "en".
+            uasort($names, function ($a, $b) {
+
+                $acode = $a->langcode;
+                $bcode = $b->langcode;
+
+                // Put parent language last.
+                $aparent = (strpos($acode, '_') == false);
+                $bparent = (strpos($bcode, '_') == false);
+                if ($aparent && $bparent == false) {
+                    return 1; // Put $a after $b.
+                }
+                if ($aparent == false && $bparent) {
+                    return -1; // Put $a before $b.
+                }
+
+                // Put English language last.
+                $aenglish = ($acode == 'en');
+                $benglish = ($bcode == 'en');
+                if ($aenglish && $benglish == false) {
+                    return 1; // Put $a after $b.
+                }
+                if ($aenglish == false && $benglish) {
+                    return -1; // Put $a before $b.
+                }
+
+                // Otherwise, do "natural" sort by levelcode
+                // so that "1200L" comes after "300L".
+                return strnatcmp($a->levelcode, $b->levelcode);
+            });
+
+            // Extract $levels from the the $names array.
+            // Note that we don't overwrite items.
             foreach ($names as $id => $level) {
-                
+
                 $code = $level->levelcode;
                 $name = $level->levelname;
 
-                if (preg_match('/^\w+/iu', $name, $type)) {
-                    $type = $type[0]; // E.g. "CEFR" or "Lexile".
-                    if (empty($levels[$type])) {
-                        $levels[$type] = [];
+                if ($sortbyprefix && preg_match('/^\w+/iu', $name, $prefix)) {
+                    $prefix = $prefix[0]; // E.g. "CEFR" or "Lexile".
+                    if (empty($levels[$prefix])) {
+                        $levels[$prefix] = [];
                     }
-                    if (empty($levels[$type][$code])) {
-                        $levels[$type][$code] = [];
+                    if (empty($levels[$prefix][$code])) {
+                        $levels[$prefix][$code] = $name;
                     }
-                    $levels[$type][$code] = $name;
+                } else {
+                    if (empty($levels[$code])) {
+                        $levels[$code] = $name;
+                    }
                 }
             }
         }
@@ -393,7 +445,7 @@ class form extends \mod_vocab\toolform {
         if (count($levels)) {
             return $levels;
         } else {
-            // Thre are currently no levels in the DB, so use default.
+            // There are currently no levels in the DB, so use default levels.
             $plugin = 'vocabtool_questionbank';
             return [
                 'A1' => get_string('cefr_a1_description', $plugin),
@@ -552,15 +604,35 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * Get subcategory options
+     * Get subcategory types
      *
-     * @return array of subcategory options.
+     * @return array of subcategory types.
      */
     public function get_subcategory_types() {
         return [
             self::SUBCAT_NONE => get_string('none'),
             self::SUBCAT_SINGLE => $this->get_string('singlesubcategory'),
             self::SUBCAT_AUTOMATIC => $this->get_string('automaticsubcategories'),
+        ];
+    }
+
+    /**
+     * Get status types
+     *
+     * @return array of status types.
+     */
+    public function get_status_types() {
+        $tool = $this->get_subplugin();
+        return [
+            $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
+            $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
+            $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
+            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
+            $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
+            $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
+            $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
+            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
+            $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
         ];
     }
 
@@ -674,11 +746,13 @@ class form extends \mod_vocab\toolform {
             }
         }
 
-        if (property_exists($data, 'questionlevels') && is_array($data->questionlevels)) {
-            $qlevels = self::get_question_levels();
-            foreach ($qlevels as $name => $text) {
-                if (! in_array($name, $data->questionlevels)) {
-                    unset($qlevels[$name]);
+        if (property_exists($data, 'questionlevels')) {
+            if (is_array($data->questionlevels)) {
+                $qlevels = self::get_question_levels();
+                foreach ($qlevels as $name => $text) {
+                    if (! in_array($name, $data->questionlevels)) {
+                        unset($qlevels[$name]);
+                    }
                 }
             }
             unset($data->questionlevels);
@@ -857,7 +931,7 @@ class form extends \mod_vocab\toolform {
                 $logids = optional_param_array('logids', [], PARAM_INT);
             }
             if (count($logids) && confirm_sesskey()) {
-                $logmessage = $this->process_log_records($logaction, $logids);
+                $logmessage = $this->process_log_records($mform, $logaction, $logids);
             }
         }
 
@@ -871,7 +945,7 @@ class form extends \mod_vocab\toolform {
 
         if ($logtable || $logmessage) {
 
-            $this->add_heading($mform, 'questionbanklog', $this->subpluginname, strlen($logmessage));
+            $this->add_heading($mform, 'logrecords', $this->subpluginname, strlen($logmessage));
 
             // Display log messages about any log action that was just taken.
             if ($logmessage) {
@@ -902,22 +976,23 @@ class form extends \mod_vocab\toolform {
     /**
      * process_log_records
      *
+     * @param moodleform $mform representing the Moodle form
      * @param string $logaction
      * @param array $logids
      * @return void, but may update vocabtool_questionbank_log table in DB.
      */
-    public function process_log_records($logaction, $logids) {
+    public function process_log_records($mform, $logaction, $logids) {
         global $DB, $USER;
 
         // Cache reference to this questionbank tool object.
         // This allows easy access to the log functions.
         $tool = $this->get_subplugin();
 
-        // Cache the siteadmin flag.
-        $siteadmin = is_siteadmin();
-
         // Cache the vocabid.
         $vocabid = $tool->vocab->id;
+
+        // Cache the siteadmin flag.
+        $siteadmin = is_siteadmin();
 
         $ids = [];
         foreach ($logids as $logid => $value) {
@@ -936,7 +1011,7 @@ class form extends \mod_vocab\toolform {
             if ($log->userid == $USER->id && $log->vocabid == $vocabid) {
                 $skip = false; // Valid userid and vocabid.
             } else if ($siteadmin) {
-                $skip = false; // Site admin can always do anything.
+                $skip = false; // Site admin always has access.
             } else {
                 $skip = true; // Invalid userid and/or vocabid.
             }
@@ -963,20 +1038,101 @@ class form extends \mod_vocab\toolform {
             // Now we are ready to perform the requested action.
             switch ($logaction) {
 
-                case 'deletelog':
-                    if ($task) {
-                        if ($task->get_lock()) {
-                            // If the task has a lock, we mark it as "complete".
-                            // This will delete the task and release any locks.
-                            \core\task\manager::adhoc_task_complete($task);
-                        } else {
-                            // There's no "lock", so we just delete the DB task record.
-                            $DB->delete_records('task_adhoc', ['id' => $task->get_id()]);
-                        }
-                        $task = null;
-                    }
-                    $tool::delete_logs(['id' => $logid]);
-                    $ids[] = $logid;
+                case 'viewlog':
+                case 'editlog':
+                    $this->add_heading($mform, 'selectedlogrecord', $this->subpluginname, true);
+
+                    $name = 'backgroundtask';
+                    $this->add_field_static($mform, "log$name", $log->taskid, ['strname' => $name]);
+
+                    $name = 'taskowner';
+                    $log->$name = $DB->get_record('user', ['id' => $log->userid]);
+                    $log->$name = fullname($log->$name);
+                    $this->add_field_static($mform, "log$name", $log->$name, ['strname' => $name]);
+
+                    $name = 'word';
+                    $log->$name = $DB->get_field('vocab_words', 'word', ['id' => $log->wordid]);
+                    $log->$name = \html_writer::tag('b', $log->$name);
+                    $this->add_field_static($mform, "log$name", $log->$name, ['strname' => $name]);
+
+                    $name = 'qtype';
+                    $a = ['strname' => 'questiontype'];
+                    $options = self::get_question_types();
+                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHANUM, $log->$name, $a);
+
+                    $name = 'qlevel';
+                    $a = ['strname' => 'questionlevel'];
+                    $options = self::get_question_levels(true);
+                    $this->add_field_selectgroups($mform, "log$name", $options, PARAM_ALPHANUM, $log->$name, $a);
+
+                    $name = 'qcount';
+                    $a = ['strname' => 'questioncount', 'size' => 2];
+                    $this->add_field_text($mform, "log$name", PARAM_INT, $log->$name, $a);
+
+                    $name = 'qformat';
+                    $a = ['strname' => $name];
+                    $options = self::get_question_formats();
+                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHANUM, $log->$name, $a);
+
+                    $name = 'accessid';
+                    $a = ['strname' => 'assistant'];
+                    $options = self::get_assistant_options();
+                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+
+                    $name = 'promptid';
+                    $a = ['strname' => 'prompt'];
+                    $options = $this->get_config_options('prompts', 'promptname', 'selectprompt');
+                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+
+                    $name = 'formatid';
+                    $a = ['strname' => 'qformat'];
+                    $options = $this->get_config_options('formats', 'formatname', 'selectformat');
+                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+
+                    $name = 'parentcatid';
+                    $a = ['strname' => 'parentcategory'];
+                    $options = $this->get_question_categories();
+                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+
+                    $name = 'subcattype';
+                    $a = ['strname' => $name];
+                    $options = $this->get_subcategory_types();
+                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHA, $log->$name, $a);
+
+                    $name = 'subcatname';
+                    $a = ['strname' => $name, 'size' => 20];
+                    $this->add_field_text($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+
+                    $name = 'maxtries';
+                    $a = ['strname' => $name, 'size' => 2];
+                    $this->add_field_text($mform, "log$name", PARAM_INT, $log->$name, $a);
+
+                    $name = 'tries';
+                    $a = ['strname' => $name, 'size' => 2];
+                    $this->add_field_text($mform, "log$name", PARAM_INT, $log->$name, $a);
+
+                    $name = 'status';
+                    $a = ['strname' => 'taskstatus'];
+                    $options = $this->get_status_types();
+                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHA, $log->$name, $a);
+
+                    $name = 'review';
+                    $a = ['strname' => 'questionreview'];
+                    $options = [get_string('no'), get_string('yes')];
+                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHA, $log->$name, $a);
+
+                    $name = 'error';
+                    $a = ['strname' => 'taskerror'];
+                    $this->add_field_textarea($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+
+                    $name = 'prompt';
+                    $a = ['strname' => 'prompttext'];
+                    $this->add_field_textarea($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+
+                    $name = 'results';
+                    $a = ['strname' => 'resultstext'];
+                    $this->add_field_textarea($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+
                     break;
 
                 case 'redotask':
@@ -1013,6 +1169,22 @@ class form extends \mod_vocab\toolform {
                         }
                         $ids[] = $logid;
                     }
+                    break;
+
+                case 'deletelog':
+                    if ($task) {
+                        if ($task->get_lock()) {
+                            // If the task has a lock, we mark it as "complete".
+                            // This will delete the task and release any locks.
+                            \core\task\manager::adhoc_task_complete($task);
+                        } else {
+                            // There's no "lock", so we just delete the DB task record.
+                            $DB->delete_records('task_adhoc', ['id' => $task->get_id()]);
+                        }
+                        $task = null;
+                    }
+                    $tool::delete_logs(['id' => $logid]);
+                    $ids[] = $logid;
                     break;
 
                 default:
@@ -1100,17 +1272,7 @@ class form extends \mod_vocab\toolform {
         ];
 
         // Cache status strings.
-        $statusnames = [
-            $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
-            $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
-            $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
-            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
-            $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
-            $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
-            $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
-            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
-            $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
-        ];
+        $statusnames = $this->get_status_types();
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {

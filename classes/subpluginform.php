@@ -123,6 +123,28 @@ abstract class subpluginform extends \moodleform {
     /**
      * Add a heading to the given $mform
      *
+     * @param string $name the name of a form element
+     * @param string $attributes (passed by reference) the attributes on this form element.
+     * @param boolean $expanded
+     * @return void (but will update $mform)
+     */
+    public function get_names($name, &$attributes) {
+        $names = [
+            'name' => $name,
+            'strname' => $name,
+        ];
+        foreach ($names as $key => $value) {
+            if (is_array($attributes) && array_key_exists($key, $attributes)) {
+                $names[$key] = $attributes[$key];
+                unset($attributes[$key]);
+            }
+        }
+        return array_values($names);
+    }
+
+    /**
+     * Add a heading to the given $mform
+     *
      * @param object $mform representing the Moodle form
      * @param string $name the name of this heading
      * @param string $component
@@ -135,6 +157,22 @@ abstract class subpluginform extends \moodleform {
         if (method_exists($mform, 'setExpanded')) {
             $mform->setExpanded($name, $expanded);
         }
+    }
+
+    /**
+     * Add a add_field_static field to the given $mform
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name the name of this static element
+     * @param mixed $value the value to be displayed
+     * @param array $attributes (optional, default=null)
+     * @return void (but may update $mform)
+     */
+    public function add_field_static($mform, $name, $value, $attributes=null) {
+        list($name, $strname) = $this->get_names($name, $attributes);
+        $label = $this->get_string($strname);
+        $mform->addElement('static', $name, $label, $value);
+        //$mform->addHelpButton($name, $name, $this->subpluginname);
     }
 
     /**
@@ -162,9 +200,10 @@ abstract class subpluginform extends \moodleform {
                 $attributes['size'] = min(6, count($options));
             }
         }
-        $label = $this->get_string($name);
+        list($name, $strname) = $this->get_names($name, $attributes);
+        $label = $this->get_string($strname);
         $mform->addElement('text', $name, $label, $attributes);
-        $mform->addHelpButton($name, $name, $this->subpluginname);
+        $mform->addHelpButton($name, $strname, $this->subpluginname);
         $mform->setDefault($name, $default);
         $mform->setType($name, $type);
     }
@@ -180,13 +219,13 @@ abstract class subpluginform extends \moodleform {
      * @return void (but may update $mform)
      */
     public function add_field_textarea($mform, $name, $type, $default, $attributes=null) {
-        if ($attributes) {
-            $attributes['rows'] = 5;
-            $attributes['cols'] = '40';
+        if (is_array($attributes)) {
+            $attributes = array_merge(['rows' => 5, 'cols' => 40], $attributes);
         }
-        $label = $this->get_string($name);
+        list($name, $strname) = $this->get_names($name, $attributes);
+        $label = $this->get_string($strname);
         $mform->addElement('textarea', $name, $label, $attributes);
-        $mform->addHelpButton($name, $name, $this->subpluginname);
+        $mform->addHelpButton($name, $strname, $this->subpluginname);
         $mform->setDefault($name, $default);
         $mform->setType($name, $type);
     }
@@ -228,9 +267,10 @@ abstract class subpluginform extends \moodleform {
                 $attributes['size'] = min(6, max(10, count($options)));
             }
         }
-        $label = $this->get_string($name);
+        list($name, $strname) = $this->get_names($name, $attributes);
+        $label = $this->get_string($strname);
         $mform->addElement($elementtype, $name, $label, $options, $attributes);
-        $mform->addHelpButton($name, $name, $this->subpluginname);
+        $mform->addHelpButton($name, $strname, $this->subpluginname);
         $mform->setType($name, $type);
         if ($default) {
             $mform->setDefault($name, $default);
@@ -246,9 +286,10 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_field_datetime($mform, $name, $attributes=null) {
-        $label = $this->get_string($name);
+        list($name, $strname) = $this->get_names($name, $attributes);
+        $label = $this->get_string($strname);
         $mform->addElement('date_time_selector', $name, $label, $attributes);
-        $mform->addHelpButton($name, $name, $this->subpluginname);
+        $mform->addHelpButton($name, $strname, $this->subpluginname);
     }
 
     /**
@@ -261,9 +302,10 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
-        $label = $this->get_string($name);
+        list($name, $strname) = $this->get_names($name, $attributes);
+        $label = $this->get_string($strname);
         $mform->addElement('filepicker', $name, $label, $attributes, $options);
-        $mform->addHelpButton($name, $name, $this->subpluginname);
+        $mform->addHelpButton($name, $strname, $this->subpluginname);
         if ($options) {
             if (is_array($options) && array_key_exists('required', $options)) {
                 $required = ($options['required'] ? true : false);

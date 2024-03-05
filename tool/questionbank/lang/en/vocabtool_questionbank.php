@@ -133,15 +133,23 @@ $string['questionreview'] = 'Question review';
 
 $string['taskowner'] = 'Task owner';
 $string['word'] = 'Word';
+$string['questiontype_help'] = 'questiontype_help';
 $string['questiontype'] = 'Question type';
+$string['questionlevel_help'] = 'questionlevel_help';
 $string['questionlevel'] = 'Question level';
 $string['promptname'] = 'AI prompt name';
 $string['formatname'] = 'AI format name';
+$string['subcattype_help'] = 'subcattype_help';
 $string['subcattype'] = 'Subcategory type';
+$string['subcatname_help'] = 'subcatname_help';
 $string['subcatname'] = 'Subcategory name';
+$string['maxtries_help'] = 'maxtries_help';
 $string['maxtries'] = 'Maximum tries';
+$string['tries_help'] = 'tries_help';
 $string['tries'] = 'Number of tries';
+$string['prompttext_help'] = 'prompttext_help';
 $string['prompttext'] = 'Prompt text';
+$string['resultstext_help'] = 'resultstext_help';
 $string['resultstext'] = 'Results text';
 $string['timecreated'] = 'Time created';
 $string['timemodified'] = 'Time modified';
@@ -151,8 +159,11 @@ $string['invalidquestioncategory'] = 'Invalid question category (id={$a})';
 $string['resultsnotparsed'] = 'Results for {$a} could not be parsed.';
 $string['emptyresults'] = 'Results from AI assistant were empty.';
 
-$string['questionbanklog'] = 'Question bank log';
+$string['logrecords'] = 'Log records';
+$string['selectedlogrecord'] = 'Selected log record';
 
+$string['taskstatus_help'] = 'taskstatus_help';
+$string['taskstatus'] = 'Task status';
 $string['taskstatus_notset'] = 'Not set';
 $string['taskstatus_queued'] = 'Task queued';
 $string['taskstatus_fetchingresults'] = 'Fetching results';
@@ -180,3 +191,6 @@ $string['deletelogresults'] = '{$a->count} log records were deleted {$a->ids}';
 
 $string['withselected'] = 'With selected';
 $string['backgroundtask'] = 'Background task';
+
+$string['taskerror_help'] = 'taskerror_help';
+$string['taskerror'] = 'Task error';
