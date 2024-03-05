@@ -138,7 +138,7 @@ class questions extends \core\task\adhoc_task {
         }
 
         $a = [];
-        if (! $accessconfig = $this->get_config($accessid)) {
+        if (! $accessconfig = $this->c($accessid)) {
             $a[] = "accessid ($accessid)";
         }
         if (! $promptconfig = $this->get_config($promptid)) {
@@ -331,6 +331,8 @@ class questions extends \core\task\adhoc_task {
                 'level' => $qlevel, // Just the code is enough e.g. "A2".
             ];
 
+            $tags = ['AI', 'en', $qlevel, $qtype];
+
             // Ensure that we can get or create a suitable question category.
             if (! $category = $this->get_question_category($parentcategory, $subcattype, $subcatname, $word, $a)) {
                 return $this->report_error($log, 'missingquestioncategory', $word);
@@ -338,9 +340,22 @@ class questions extends \core\task\adhoc_task {
 
             // At last, we can generate the questions from the results
             // and store them in a suitable question category.
-            if ($questions = $this->parse_questions($results, $qformat, $category->id)) {
+            if ($questions = $this->parse_questions($results, $qformat, $category->id, $tags)) {
+
                 $status = $toolclass::TASKSTATUS_COMPLETED;
                 $error = ''; // Unset any previous errors.
+
+                // Add tags, if there are any.
+                if (is_array($tags) && count($tags)) {
+                    foreach ($questions as $question) {
+                        core_tag_tag::set_item_tags(
+                            'core_question', 'question',
+                            $question->id, $coursecontext,
+                            tags, 0
+                        );
+                    }
+                }
+
             } else {
                 $status = $toolclass::TASKSTATUS_FAILED;
                 $error = $this->tool->get_string('resultsnotparsed', $word);
@@ -375,15 +390,20 @@ class questions extends \core\task\adhoc_task {
         list($where, $params) = $DB->get_in_or_equal($contexts);
 
         // Retrieve all field names and values in the required config record.
-        $select = 'vcs.name, vcs.value';
+        $select = 'vcs.id, vcs.name, vcs.value, vc.subplugin';
         $from = '{vocab_config_settings} vcs '.
                 'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
         $where = "vcs.configid = ? AND vc.contextid $where";
         $params = array_merge([$configid], $params);
 
         $sql = "SELECT $select FROM $from WHERE $where";
-        if ($config = $DB->get_records_sql_menu($sql, $params)) {
-            return (object)$config;
+        if ($settings = $DB->get_records_sql($sql, $params)) {
+            $config = new stdClass();
+            foreach ($settings as $setting) {
+                $config->subplugin = $setting->subplugin;
+                $config->{$setting->name} = $setting->value;
+            }
+            return $config;
         } else {
             return null;
         }
@@ -518,6 +538,11 @@ EOD;
      * @return object of questions
      */
     protected function init_curl($accessconfig, $prompt, $temperature = 0.7) {
+
+        //$classname = '\\'.$accessconfig->subplugin.'\\ai';
+        //$ai = new $classname($this->tool->vocab);
+        //$ai->set_config($accessconfig);
+
         if (empty($accessconfig->chatgptkey)) {
             $url = 'https://api.openai.com/v1/chat/completions';
             $key = ''; // Put your key here.
@@ -692,6 +717,12 @@ EOD;
             return null;
         }
 
+        // Get the context for this question category.
+        // We need it when we add tags.
+        $context = \context::instance_by_id($DB->get_field(
+            'question_categories', 'contextid', ['id' => $categoryid]
+        ));
+
         // Get an instance of the required qformat class.
         // It is this instance that will actually parse the $text
         // and create the questions in the question bank.
@@ -710,12 +741,10 @@ EOD;
                 $lines = explode("\n", $matches[0][$i]);
                 if ($question = $format->readquestion($lines)) {
                     if (empty($question->name)) {
-                        // We should clean this text.
-                        $question->name = $matches[1][$i];
+                        $question->name = clean_param($matches[1][$i], PARAM_TEXT);
                     }
                     if (empty($question->questiontext)) {
-                        // We should clean this text.
-                        $question->questiontext = $matches[2][$i];
+                        $question->questiontext = clean_param($matches[2][$i], PARAM_TEXT);
                     }
                     if (is_scalar($question->questiontext)) {
                         $question->questiontext = [
@@ -728,9 +757,6 @@ EOD;
                     $question->timecreated = $question->timemodified = time();
                     $qtype = \question_bank::get_qtype($question->qtype);
                     $qtype->save_question($question, $question);
-                    // We should also add tags for this question.
-
-                    // Set tags for word, level, language.
                     $questions[] = $question;
                 }
             }

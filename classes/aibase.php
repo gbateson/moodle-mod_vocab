@@ -569,4 +569,19 @@ class aibase extends \mod_vocab\subpluginbase {
         $newconfig->owneruserid = $USER->id;
         return $this->save_config_settings($newconfig);
     }
+
+    /**
+     * Set the internally stored config record.
+     *
+     * @param object $config the config settings to set.
+     * @return void (but will updated the "config" property)
+     */
+    public function set_config($config) {
+        $this->config = stdClass();
+        foreach (static::SETTINGNAMES as $name) {
+            if (isset($config->$name)) {
+                $this->config->$name = $config->$name;
+            }
+        }
+    }
 }
