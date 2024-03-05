@@ -176,10 +176,12 @@ $string['taskstatus_failed'] = 'Task failed with error';
 
 $string['viewlog'] = 'View log';
 $string['editlog'] = 'Edit log';
-$string['savelog'] = 'Save log';
 $string['redotask'] = 'Redo task';
 $string['resumetask'] = 'Resume task';
 $string['deletelog'] = 'Delete log';
+
+$string['editlogresult'] = '{$a->count} log was updated {$a->ids}';
+$string['editlogsresult'] = '{$a->count} logs were updated {$a->ids}';
 
 $string['redotaskresult'] = '{$a->count} task will be redone {$a->ids}';
 $string['resumetaskresult'] = '{$a->count} task will be resumed {$a->ids}';

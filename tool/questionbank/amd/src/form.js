@@ -42,6 +42,7 @@ define([], function(){
      */
     JS.init = function() {
         this.init_selectall_logs();
+        this.init_textareas_logs();
         this.init_selectall_words();
         this.init_checkboxes_words();
     };
@@ -55,6 +56,18 @@ define([], function(){
                 selectall.classList.remove("d-none");
             }
         }
+    };
+
+    JS.init_textareas_logs = function(){
+        const s = '#id_log_error, #id_log_prompt, #id_log_results';
+        document.querySelectorAll(s).forEach(function(textarea){
+            // Add event listener that adjusts height to accommodate content.
+            JS.add_event_listener(textarea, 'input', function(){
+                this.style.height = 'auto'; // '1px' also works
+                this.style.height = (this.scrollHeight + 6) + 'px';
+            });
+            textarea.dispatchEvent(new Event('input'));
+        });
     };
 
     JS.init_selectall_words = function(){

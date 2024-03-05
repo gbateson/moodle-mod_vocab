@@ -908,11 +908,75 @@ class form extends \mod_vocab\toolform {
      * @return array $logs of records vocabtool_questionbank_log table.
      */
     public function display_log_records($mform) {
-        global $OUTPUT;
+        global $OUTPUT, $USER;
 
         $logids = [];
         $logaction = '';
+
+        $logtable = '';
         $logmessage = '';
+
+        // Get new log values.
+        if ($values = optional_param_array('log', null, PARAM_TEXT)) {
+
+            $tool = $this->get_subplugin();
+            $siteadmin = is_siteadmin();
+
+            $logid = (int)$values['id'];
+            $log = $tool::get_log($logid);
+
+            if (empty($values['savechanges'])) {
+                // Some other button was pressed
+                // probably the cancel button.
+                $allowupdate = false;
+            } else {
+                $allowupdate = $siteadmin;
+                if ($log->userid == $USER->id) {
+                    if ($log->vocabid == $tool->vocab->id) {
+                        $allowupdate = true;
+                    }
+                }
+            }
+
+            if ($allowupdate) {
+
+                // Specify the names of numeric fields.
+                $numfields = [
+                    'qcount', 'accessid', 'promptid', 'formatid',
+                    'parentcatid', 'maxtries', 'tries', 'status', 'review',
+                ];
+
+                // The $updated array will hold the names
+                // and values of fields that have changed.
+                $updated = [];
+
+                // We only allow fields that exist in the
+                // record that has just come from the $DB.
+                foreach ($log as $name => $value) {
+                    if (array_key_exists($name, $values)) {
+                        $value = $values[$name];
+                        if (in_array($name, $numfields)) {
+                            $value = (int)$value;
+                        }
+                        if ($value && $value != $log->$name) {
+                            $updated[$name] = $value;
+                        }
+                    }
+                }
+
+                if (count($updated)) {
+                    $log = $tool::update_log($logid, $updated);
+                    $a = (object)['count' => 1, 'ids' => ''];
+                    if ($siteadmin) {
+                        $a->ids = " (log id: $logid)";
+                    }
+                    $logmessage = $tool->get_string('editlogresult', $a);
+                }
+            }
+
+            // Remove all the evidence.
+            unset($_POST['log']);
+        }
 
         if ($logaction = optional_param_array('logactionelements', '', PARAM_ALPHA)) {
             if (empty($logaction['logaction'])) {
@@ -937,7 +1001,9 @@ class form extends \mod_vocab\toolform {
 
         // Clean and process incoming form data.
         if (($data = data_submitted()) && confirm_sesskey()) {
-            $this->generate_questions($mform, $data);
+            if (isset($data->submitbutton) && $data->submitbutton) {
+                $this->generate_questions($mform, $data);
+            }
         }
 
         // Get table of current log records.
@@ -1042,96 +1108,109 @@ class form extends \mod_vocab\toolform {
                 case 'editlog':
                     $this->add_heading($mform, 'selectedlogrecord', $this->subpluginname, true);
 
-                    $name = 'backgroundtask';
-                    $this->add_field_static($mform, "log$name", $log->taskid, ['strname' => $name]);
+                    // Add the log id as a hidden field.
+                    $mform->addElement('hidden', 'log[id]', $log->id);
+                    $mform->setType('log[id]', PARAM_INT);
 
-                    $name = 'taskowner';
+                    $name = 'taskid';
+                    $a = ['strname' => 'backgroundtask'];
+                    $this->add_field_static($mform, "log[$name]", $log->taskid, $a);
+
+                    $name = 'userid';
+                    $a = ['strname' => 'taskowner'];
                     $log->$name = $DB->get_record('user', ['id' => $log->userid]);
                     $log->$name = fullname($log->$name);
-                    $this->add_field_static($mform, "log$name", $log->$name, ['strname' => $name]);
+                    $this->add_field_static($mform, "log[$name]", $log->$name, $a);
 
-                    $name = 'word';
+                    $name = 'wordid';
+                    $a = ['strname' => 'word'];
                     $log->$name = $DB->get_field('vocab_words', 'word', ['id' => $log->wordid]);
                     $log->$name = \html_writer::tag('b', $log->$name);
-                    $this->add_field_static($mform, "log$name", $log->$name, ['strname' => $name]);
+                    $this->add_field_static($mform, "log[$name]", $log->$name, $a);
 
                     $name = 'qtype';
                     $a = ['strname' => 'questiontype'];
                     $options = self::get_question_types();
-                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHANUM, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
 
                     $name = 'qlevel';
                     $a = ['strname' => 'questionlevel'];
                     $options = self::get_question_levels(true);
-                    $this->add_field_selectgroups($mform, "log$name", $options, PARAM_ALPHANUM, $log->$name, $a);
+                    $this->add_field_selectgroups($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
 
                     $name = 'qcount';
                     $a = ['strname' => 'questioncount', 'size' => 2];
-                    $this->add_field_text($mform, "log$name", PARAM_INT, $log->$name, $a);
+                    $this->add_field_text($mform, "log[$name]", PARAM_INT, $log->$name, $a);
 
                     $name = 'qformat';
                     $a = ['strname' => $name];
                     $options = self::get_question_formats();
-                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHANUM, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
 
                     $name = 'accessid';
                     $a = ['strname' => 'assistant'];
                     $options = self::get_assistant_options();
-                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'promptid';
                     $a = ['strname' => 'prompt'];
                     $options = $this->get_config_options('prompts', 'promptname', 'selectprompt');
-                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'formatid';
                     $a = ['strname' => 'qformat'];
                     $options = $this->get_config_options('formats', 'formatname', 'selectformat');
-                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'parentcatid';
                     $a = ['strname' => 'parentcategory'];
                     $options = $this->get_question_categories();
-                    $this->add_field_select($mform, "log$name", $options, PARAM_INT, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'subcattype';
                     $a = ['strname' => $name];
                     $options = $this->get_subcategory_types();
-                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHA, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHA, $log->$name, $a);
 
                     $name = 'subcatname';
                     $a = ['strname' => $name, 'size' => 20];
-                    $this->add_field_text($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+                    $this->add_field_text($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
 
                     $name = 'maxtries';
                     $a = ['strname' => $name, 'size' => 2];
-                    $this->add_field_text($mform, "log$name", PARAM_INT, $log->$name, $a);
+                    $this->add_field_text($mform, "log[$name]", PARAM_INT, $log->$name, $a);
 
                     $name = 'tries';
                     $a = ['strname' => $name, 'size' => 2];
-                    $this->add_field_text($mform, "log$name", PARAM_INT, $log->$name, $a);
+                    $this->add_field_text($mform, "log[$name]", PARAM_INT, $log->$name, $a);
 
                     $name = 'status';
                     $a = ['strname' => 'taskstatus'];
                     $options = $this->get_status_types();
-                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHA, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHA, $log->$name, $a);
 
                     $name = 'review';
                     $a = ['strname' => 'questionreview'];
                     $options = [get_string('no'), get_string('yes')];
-                    $this->add_field_select($mform, "log$name", $options, PARAM_ALPHA, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHA, $log->$name, $a);
 
                     $name = 'error';
-                    $a = ['strname' => 'taskerror'];
-                    $this->add_field_textarea($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+                    $a = ['strname' => 'taskerror', 'rows' => 1];
+                    $this->add_field_textarea($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
 
                     $name = 'prompt';
-                    $a = ['strname' => 'prompttext'];
-                    $this->add_field_textarea($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+                    $a = ['strname' => 'prompttext', 'rows' => 1];
+                    $this->add_field_textarea($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
 
                     $name = 'results';
-                    $a = ['strname' => 'resultstext'];
-                    $this->add_field_textarea($mform, "log$name", PARAM_TEXT, $log->$name, $a);
+                    $a = ['strname' => 'resultstext', 'rows' => 1];
+                    $this->add_field_textarea($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
+
+                    $name = 'savechanges';
+                    $mform->addGroup([
+                        $mform->createElement('submit', "log[$name]", get_string($name)),
+                        $mform->createElement('cancel'),
+                    ], $name, '', [' '], false);
 
                     break;
 

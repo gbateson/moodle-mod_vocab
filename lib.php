@@ -130,16 +130,61 @@ function vocab_update_instance($data, $mform) {
 function vocab_delete_instance($id) {
     global $DB;
 
-    if (! $vocab = $DB->get_record('vocab', ['id' => $id])) {
-        return false;
+    $vocab = $DB->get_record('vocab', ['id' => $id]);
+
+    $params = ['modulename' => 'vocab', 'instance' => $id];
+    if ($events = $DB->get_records('event', $params)) {
+        foreach ($events as $event) {
+            calendar_event::load($event)->delete();
+        }
     }
 
-    $cm = get_coursemodule_from_instance('vocab', $id);
-    \core_completion\api::update_completion_date_event($cm->id, 'vocab', $id, null);
+    $wordtables = [
+        'vocab_attributes', 
+        'vocab_attribute_names', 
+        'vocab_attribute_values', 
+        'vocab_corpuses', 
+        'vocab_definitions', 
+        'vocab_frequencies', 
+        'vocab_langnames', 
+        'vocab_langs', 
+        'vocab_lemmas', 
+        'vocab_levelnames', 
+        'vocab_levels', 
+        'vocab_multimedia', 
+        'vocab_pronunciations', 
+        'vocab_relationships', 
+        'vocab_relationship_names', 
+        'vocab_samples', 
+        'vocab_sample_words', 
+        'vocab_words', 
+    ];
+    $configtables = [
+        'vocab_config', 
+        'vocab_config_settings', 
+    ];
+    $othertables = [
+        'vocabtool_questionbank_log', 
+        'vocab_games',
+    ];
+    $tables = [
+        'vocab_game_attempts', 
+        'vocab_game_instances', 
+        'vocab_word_attempts', 
+        'vocab_word_instances', 
+        'vocab_word_states', 
+        'vocab_word_usages', 
+    ];
+    $tables = []; // Sort this out later.
 
-    // Delete related records first (using $params), then ...
-    $DB->delete_records('vocab', ['id' => $vocab->id]);
+    foreach ($tables as $table => $params) {
+        $DB->delete_records($table, array('vocabid' => $id));
+    }
 
+    // Finally delete the vocab record
+    $DB->delete_records('vocab', ['id' => $id]);
+
+    return true;
 }
 
 
