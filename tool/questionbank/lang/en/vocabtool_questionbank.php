@@ -85,6 +85,7 @@ $string['scheduletaskssuccess'] = 'The following tasks were successfully schedul
 $string['scheduletasksfailure'] = 'The following tasks could NOT be scheduled. Please try again later. {$a}';
 $string['taskgeneratequestions'] = 'Task to generate {$a->count} {$a->type} question(s) at level "{$a->level}" for the word "{$a->word}".';
 
+$string['error_emptyresults'] = 'The results from the AI assistant are empty/missing. No questions could be generated/imported.';
 $string['error_generatequestions'] = 'Unable to generate questions; {$a}.';
 $string['error_invalidlogid'] = 'Invliad log ({$a}) received from adhoc task';
 $string['error_invalidquestioncategoryid'] = 'Invalid question category ID ({$a}) sent to adhoc task to generate questions.';
@@ -117,9 +118,9 @@ $string['selectprompt'] = 'Select prompt ...';
 $string['selectformat'] = 'Select format ...';
 
 $string['missingaidetails'] = 'Questions cannot be generated yet because the following settings have not been defined: {$a}';
-$string['noassistantsfound'] = 'Access details to an AI assistant';
-$string['nopromptsfound'] = 'Prompts for the AI assistants';
-$string['noformatsfound'] = 'Output formats for the prompts';
+$string['noassistantsfound'] = '{$a} Access details to an AI assistant';
+$string['nopromptsfound'] = '{$a} Prompts for the AI assistants';
+$string['noformatsfound'] = '{$a} Output formats for the prompts';
 $string['addaidetails'] = 'Please use the links on the "AI assistants" menu to add the missing details.';
 
 $string['qformat'] = 'AI output format';
@@ -174,7 +175,6 @@ $string['taskstatus_completed'] = 'Task completed successfully';
 $string['taskstatus_cancelled'] = 'Task cancelled by user';
 $string['taskstatus_failed'] = 'Task failed with error';
 
-$string['viewlog'] = 'View log';
 $string['editlog'] = 'Edit log';
 $string['redotask'] = 'Redo task';
 $string['resumetask'] = 'Resume task';
@@ -196,3 +196,21 @@ $string['backgroundtask'] = 'Background task';
 
 $string['taskerror_help'] = 'taskerror_help';
 $string['taskerror'] = 'Task error';
+
+$string['ai_generated'] = 'AI';
+$string['descriptionshort'] = 'Desc';
+$string['ddimageortextshort'] = 'DD(image/text)';
+$string['essayautogradeshort'] = 'Essay(auto)';
+$string['gapselectshort'] = 'Gap';
+$string['matchshort'] = 'Match';
+$string['multianswershort'] = 'Cloze';
+$string['multichoiceshort'] = 'MC';
+$string['orderingshort'] = 'Ordering';
+$string['shortanswershort'] = 'SA';
+$string['speakautogradeshort'] = 'Speak(auto)';
+$string['truefalseshort'] = 'TF';
+$string['sassessmentshort'] = 'Speak(assessment)';
+
+$string['moodlequestions'] = 'Moodle questions';
+$string['generatingquestions'] = '... generating {$a->count} questions for "{$a->word}"';
+$string['importingquestions'] = '... importing {$a->count} questions for "{$a->word}"';

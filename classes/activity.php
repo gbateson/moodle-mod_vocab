@@ -284,13 +284,18 @@ class activity {
         if ($instance || $cm) {
             if ($course === null) {
                 $course = ($cm ? $cm->course : ($instance ? $instance->course : 0));
-                $course = $DB->get_record('course', ['id' => $course], '*', MUST_EXIST);
+                if (is_scalar($course)) {
+                    $course = $DB->get_record('course', ['id' => $course], '*', MUST_EXIST);
+                }
             }
             if ($cm === null) {
                 $cm = get_coursemodule_from_instance(self::PLUGINNAME, $instance->id, 0, false, MUST_EXIST);
             }
             if ($instance === null) {
-                $instance = $DB->get_record(self::PLUGINNAME, ['id' => $cm->instance], '*', MUST_EXIST);
+                $instance = $cm->instance;
+                if (is_scalar($instance)) {
+                    $instance = $DB->get_record(self::PLUGINNAME, ['id' => $cminstance], '*', MUST_EXIST);
+                }
             }
             return new activity($course, $cm, $instance);
         }

@@ -17,9 +17,10 @@
 /**
  * Redo an upgrade. This script is intended only for development purposes.
  *
- * @package    mod_vocab
- * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
+ * @package    vocabtool_questionbank
+ * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
 

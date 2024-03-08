@@ -96,6 +96,7 @@ class tool extends \mod_vocab\toolbase {
             'error' => '',
             'prompt' => '',
             'results' => '',
+            'questionids' => '',
             'timecreated' => $time,
             'timemodified' => $time,
         ];
@@ -178,8 +179,8 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Get records from the log table using the given $vocabid.
      *
-     * @param integer $id
-     * @return object the record form the log table
+     * @param integer $vocabid
+     * @return array of records from the log table
      */
     public static function get_logs($vocabid) {
         global $DB;

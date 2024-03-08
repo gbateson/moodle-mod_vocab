@@ -800,16 +800,19 @@ class form extends \mod_vocab\toolform {
 
                 if ($cmin < $cmax) {
                     $xmlmetarow .= $nl.
-                                   str_repeat($tab, $i).$this->get_comment('explainmeta', 'row').$nl.
-                                   str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
-                                   str_repeat($tab, $i).'<row rowtype="meta" rowstart="'.$r.'" rowend="'.$r.'">'.$nl;
+                       str_repeat($tab, $i).$this->get_comment('explainmeta', 'row').$nl.
+                       str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
+                       str_repeat($tab, $i).'<row rowtype="meta" rowstart="'.$r.'" rowend="'.$r.'">'.$nl;
 
                     $xmldatarow .= $nl.
-                                   str_repeat($tab, $i).$this->get_comment('explaindata', 'row').$nl.
-                                   str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
-                                   str_repeat($tab, $i).$this->get_comment('explainname', 'row').$nl.
-                                   str_repeat($tab, $i).$this->get_comment('explainskip', 'row').$nl.
-                                   str_repeat($tab, $i).'<row rowtype="data" rowstart="'.($r + 1).'" rowend="'.$rmax.'" cellstart="'.($cmin + 1).'" cellend="'.($cmax + 1).'">'.$nl;
+                       str_repeat($tab, $i).$this->get_comment('explaindata', 'row').$nl.
+                       str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
+                       str_repeat($tab, $i).$this->get_comment('explainname', 'row').$nl.
+                       str_repeat($tab, $i).$this->get_comment('explainskip', 'row').$nl.
+                       str_repeat($tab, $i).'<row rowtype="data"'.
+                                            ' rowstart="'.($r + 1).'" '.'rowend="'.$rmax.'"'.
+                                            ' cellstart="'.($cmin + 1).'" cellend="'.($cmax + 1).'"'.
+                                            '>'.$nl;
 
                     // Increase indentation for cells.
                     $i++;
@@ -829,7 +832,7 @@ class form extends \mod_vocab\toolform {
                 }
             }
 
-            // Add meta and data row
+            // Add meta and data row.
             $xml .= $xmlmetarow;
             $xml .= $xmldatarow;
 

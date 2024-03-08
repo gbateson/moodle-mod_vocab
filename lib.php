@@ -140,48 +140,48 @@ function vocab_delete_instance($id) {
     }
 
     $wordtables = [
-        'vocab_attributes', 
-        'vocab_attribute_names', 
-        'vocab_attribute_values', 
-        'vocab_corpuses', 
-        'vocab_definitions', 
-        'vocab_frequencies', 
-        'vocab_langnames', 
-        'vocab_langs', 
-        'vocab_lemmas', 
-        'vocab_levelnames', 
-        'vocab_levels', 
-        'vocab_multimedia', 
-        'vocab_pronunciations', 
-        'vocab_relationships', 
-        'vocab_relationship_names', 
-        'vocab_samples', 
-        'vocab_sample_words', 
-        'vocab_words', 
+        'vocab_attributes',
+        'vocab_attribute_names',
+        'vocab_attribute_values',
+        'vocab_corpuses',
+        'vocab_definitions',
+        'vocab_frequencies',
+        'vocab_langnames',
+        'vocab_langs',
+        'vocab_lemmas',
+        'vocab_levelnames',
+        'vocab_levels',
+        'vocab_multimedia',
+        'vocab_pronunciations',
+        'vocab_relationships',
+        'vocab_relationship_names',
+        'vocab_samples',
+        'vocab_sample_words',
+        'vocab_words',
     ];
     $configtables = [
-        'vocab_config', 
-        'vocab_config_settings', 
+        'vocab_config',
+        'vocab_config_settings',
     ];
     $othertables = [
-        'vocabtool_questionbank_log', 
+        'vocabtool_questionbank_log',
         'vocab_games',
     ];
     $tables = [
-        'vocab_game_attempts', 
-        'vocab_game_instances', 
-        'vocab_word_attempts', 
-        'vocab_word_instances', 
-        'vocab_word_states', 
-        'vocab_word_usages', 
+        'vocab_game_attempts',
+        'vocab_game_instances',
+        'vocab_word_attempts',
+        'vocab_word_instances',
+        'vocab_word_states',
+        'vocab_word_usages',
     ];
     $tables = []; // Sort this out later.
 
     foreach ($tables as $table => $params) {
-        $DB->delete_records($table, array('vocabid' => $id));
+        $DB->delete_records($table, ['vocabid' => $id]);
     }
 
-    // Finally delete the vocab record
+    // Finally delete the vocab record.
     $DB->delete_records('vocab', ['id' => $id]);
 
     return true;

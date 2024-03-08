@@ -125,8 +125,7 @@ abstract class subpluginform extends \moodleform {
      *
      * @param string $name the name of a form element
      * @param string $attributes (passed by reference) the attributes on this form element.
-     * @param boolean $expanded
-     * @return void (but will update $mform)
+     * @return array of names ['name' => name, 'strname' => 'strname']
      */
     public function get_names($name, &$attributes) {
         $names = [
@@ -172,7 +171,7 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('static', $name, $label, $value);
-        //$mform->addHelpButton($name, $name, $this->subpluginname);
+        // Should we also add a help button?
     }
 
     /**

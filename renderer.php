@@ -684,9 +684,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     /**
      * Redo the upgrade for main module or a subplugin.
      *
-     * @param string plugin frankenstyle plugin name
-     * @param string basedir path to main folder of this plugin
-     * @param string dateformat (optional, default='jS M Y') format string for "date()"
+     * @param string $plugin frankenstyle plugin name
+     * @param string $basedir path to main folder of this plugin
+     * @param string $dateformat (optional, default='jS M Y') format string for "date()"
      * @return void, but may modify settings in the config_plugins DB table
      */
     public function redo_upgrade($plugin, $basedir, $dateformat='jS M Y') {

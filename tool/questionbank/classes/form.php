@@ -72,19 +72,26 @@ class form extends \mod_vocab\toolform {
             return;
         }
 
+        // Cache cmid and edit icon used for links to add missing settings.
+        $cmid = $this->get_vocab()->cm->id;
+        $icon = $OUTPUT->pix_icon('t/edit', get_string('editsettings'));
+
         // Ensure that we have access details, prompts and formats for AI assistants.
         $a = [];
         if (! $assistants = self::get_assistant_options()) {
-            $a[] = $this->get_string('noassistantsfound');
+            $url = new \moodle_url('/mod/vocab/ai/chatgpt/index.php', ['id' => $cmid]);
+            $a[] = $this->get_string('noassistantsfound', \html_writer::link($url, $icon));
         }
         if (! $prompts = $this->get_config_options('prompts', 'promptname', 'selectprompt')) {
-            $a[] = $this->get_string('nopromptsfound');
+            $url = new \moodle_url('/mod/vocab/ai/prompts/index.php', ['id' => $cmid]);
+            $a[] = $this->get_string('nopromptsfound', \html_writer::link($url, $icon));
         }
         if (! $formats = $this->get_config_options('formats', 'formatname', 'selectformat')) {
-            $a[] = $this->get_string('noformatsfound');
+            $url = new \moodle_url('/mod/vocab/ai/formats/index.php', ['id' => $cmid]);
+            $a[] = $this->get_string('noformatsfound', \html_writer::link($url, $icon));
         }
         if (count($a)) {
-            $a = \html_writer::alist($a);
+            $a = \html_writer::alist($a, ['class' => 'list-unstyled']);
             $msg = $this->get_string('missingaidetails', $a).
                    $this->get_string('addaidetails');
             $msg = $OUTPUT->notification($msg, 'warning', false);
@@ -194,7 +201,7 @@ class form extends \mod_vocab\toolform {
         $this->add_parentcategory($mform);
         $this->add_subcategories($mform);
 
-        // Use "generatequestions" as the label for the submit button.
+        // Use "Generate questions" as the label for the submit button.
         $label = $this->get_string('generatequestions');
         $this->add_action_buttons(true, $label);
 
@@ -303,7 +310,7 @@ class form extends \mod_vocab\toolform {
     /**
      * Get question plugins ("qtype" or "qformat")
      *
-     * @param string plugintype
+     * @param string $plugintype
      * @param array $include (optional, default=null)
      * @param array $order (optional, default=[])
      * @return array $plugins of question formats for which we can generate questions.
@@ -442,12 +449,22 @@ class form extends \mod_vocab\toolform {
             }
         }
 
+        // If there is only one prefix, remove the prefix hierarchy.
+        if ($sortbyprefix) {
+            if (count($levels) == 1) {
+                $prefix = key($levels);
+                if (is_array($levels[$prefix])) {
+                    $levels = $levels[$prefix];
+                }
+            }
+        }
+
         if (count($levels)) {
             return $levels;
         } else {
-            // There are currently no levels in the DB, so use default levels.
+            // Default value an array of CEFR levels.
             $plugin = 'vocabtool_questionbank';
-            return [
+            $cefr = [
                 'A1' => get_string('cefr_a1_description', $plugin),
                 'A2' => get_string('cefr_a2_description', $plugin),
                 'B1' => get_string('cefr_b1_description', $plugin),
@@ -1104,7 +1121,6 @@ class form extends \mod_vocab\toolform {
             // Now we are ready to perform the requested action.
             switch ($logaction) {
 
-                case 'viewlog':
                 case 'editlog':
                     $this->add_heading($mform, 'selectedlogrecord', $this->subpluginname, true);
 
@@ -1206,6 +1222,11 @@ class form extends \mod_vocab\toolform {
                     $a = ['strname' => 'resultstext', 'rows' => 1];
                     $this->add_field_textarea($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
 
+                    $name = 'questionids';
+                    $a = ['strname' => 'moodlequestions'];
+                    $log->$name = $this->format_questionids($log->$name);
+                    $this->add_field_static($mform, "log[$name]", $log->$name, $a);
+
                     $name = 'savechanges';
                     $mform->addGroup([
                         $mform->createElement('submit', "log[$name]", get_string($name)),
@@ -1293,12 +1314,34 @@ class form extends \mod_vocab\toolform {
         return $tool->get_string($strname, $a);
     }
 
+    /**
+     * format_questionids
+     *
+     * @param string $questionids comma-separated list of question ids.
+     * @return string containing a list of links to previw pages of the questions. 
+     */
+    public function format_questionids($questionids) {
+        if (empty($questionids)) {
+            return '';
+        }
+        $ids = explode(',', $questionids);
+        $ids = array_map('trim', $ids);
+        $ids = array_filter($ids);
+        foreach ($ids as $i => $id) {
+            $url = '/question/bank/previewquestion/preview.php';
+            $url = new \moodle_url($url, ['id' => $id]);
+            $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
+            $ids[$i] = \html_writer::link($url, $id, $params);
+        }
+        return implode(', ', $ids);
+    }
+
 
     /**
      * get_log_records
      *
-     * @param array $logids
      * @param string $logaction
+     * @param array $logids
      * @return array $logs of records vocabtool_questionbank_log table.
      */
     public function get_log_records($logaction, $logids) {
@@ -1323,14 +1366,6 @@ class form extends \mod_vocab\toolform {
         // This allows easy access to the log functions.
         $tool = $this->get_subplugin();
 
-        $users = [];
-        $qformats = [];
-        $accessnames = [];
-        $promptnames = [];
-        $formatnames = [];
-        $categorynames = [];
-        $subcattypes = $this->get_subcategory_types();
-
         // Cache the DB table names.
         $configtable = 'vocab_config';
         $settingstable = 'vocab_config_settings';
@@ -1338,7 +1373,6 @@ class form extends \mod_vocab\toolform {
 
         // Cache the action strings and icons.
         $actions = [
-            'viewlog' => 't/preview',
             'editlog' => 't/edit',
             'redotask' => 't/reload',
             'resumetask' => 't/play',
@@ -1352,6 +1386,15 @@ class form extends \mod_vocab\toolform {
 
         // Cache status strings.
         $statusnames = $this->get_status_types();
+
+        // Initialize arrays that cache commonly used values in the main loop.
+        $users = [];
+        $qformats = [];
+        $accessnames = [];
+        $promptnames = [];
+        $formatnames = [];
+        $categorynames = [];
+        $subcattypes = $this->get_subcategory_types();
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
@@ -1402,7 +1445,11 @@ class form extends \mod_vocab\toolform {
                 }
 
                 if (empty($qformats[$log->qformat])) {
-                    $name = get_string('pluginname', 'qformat_'.$log->qformat);
+                    if (empty($log->qformat)) {
+                        $name = ''; // Shouldn't happen !!
+                    } else {
+                        $name = get_string('pluginname', 'qformat_'.$log->qformat);
+                    }
                     $qformats[$log->qformat] = $name;
                 }
 
@@ -1420,6 +1467,9 @@ class form extends \mod_vocab\toolform {
                         $log->$name = substr($log->$name, 0, 10);
                     }
                 }
+
+                $name = 'questionids';
+                $log->$name = $this->format_questionids($log->$name);
 
                 if ($log->timecreated) {
                     $log->timecreated = userdate($log->timecreated, $datefmt);
@@ -1465,31 +1515,33 @@ class form extends \mod_vocab\toolform {
                 }
                 $logactions = \html_writer::tag('div', $logactions, ['class' => $cssclass->logactions]);
 
-                $row = [];
-                $row[] = $checkbox;
-                $row[] = $logactions;
-                $row[] = $log->nextruntime;
-                $row[] = fullname($users[$log->userid]);
-                $row[] = \html_writer::tag('b', $log->word);
-                $row[] = self::get_question_type_text($log->qtype);
-                $row[] = $log->qcount;
-                $row[] = $log->qlevel;
-                $row[] = $qformats[$log->qformat];
-                $row[] = $accessnames[$log->accessid];
-                $row[] = $promptnames[$log->promptid];
-                $row[] = $formatnames[$log->formatid];
-                $row[] = $categorynames[$log->parentcatid];
-                $row[] = $log->subcattype;
-                $row[] = $log->subcatname;
-                $row[] = $log->maxtries;
-                $row[] = $log->tries;
-                $row[] = $log->status;
-                $row[] = $log->error;
-                $row[] = $log->prompt;
-                $row[] = $log->results;
-                $row[] = $log->timecreated;
-                $row[] = $log->timemodified;
-                $table->data[] = $row;
+                // Add a row of values for the current log record.
+                $table->data[] = [
+                    $checkbox,
+                    $logactions,
+                    $log->nextruntime,
+                    fullname($users[$log->userid]),
+                    \html_writer::tag('b', $log->word),
+                    self::get_question_type_text($log->qtype),
+                    $log->qcount,
+                    $log->qlevel,
+                    $qformats[$log->qformat],
+                    $accessnames[$log->accessid],
+                    $promptnames[$log->promptid],
+                    $formatnames[$log->formatid],
+                    $categorynames[$log->parentcatid],
+                    $log->subcattype,
+                    $log->subcatname,
+                    $log->maxtries,
+                    $log->tries,
+                    $log->status,
+                    $log->error,
+                    $log->prompt,
+                    $log->results,
+                    $log->questionids,
+                    $log->timecreated,
+                    $log->timemodified,
+                ];
             }
         }
 
@@ -1546,6 +1598,7 @@ class form extends \mod_vocab\toolform {
             get_string('error'),
             $this->get_string('prompttext'),
             $this->get_string('resultstext'),
+            $this->get_string('moodlequestions'),
             $this->get_string('timecreated'),
             $this->get_string('timemodified'),
         ];

@@ -577,7 +577,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @return void (but will updated the "config" property)
      */
     public function set_config($config) {
-        $this->config = stdClass();
+        $this->config = new \stdClass();
         foreach (static::SETTINGNAMES as $name) {
             if (isset($config->$name)) {
                 $this->config->$name = $config->$name;
