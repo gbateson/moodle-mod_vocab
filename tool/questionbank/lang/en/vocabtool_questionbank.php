@@ -86,6 +86,7 @@ $string['scheduletasksfailure'] = 'The following tasks could NOT be scheduled. P
 $string['taskgeneratequestions'] = 'Task to generate {$a->count} {$a->type} question(s) at level "{$a->level}" for the word "{$a->word}".';
 
 $string['error_emptyresults'] = 'The results from the AI assistant are empty/missing. No questions could be generated/imported.';
+$string['error_failedtoconnect'] = 'Failed to connect to {$a->ai} {$a->configid}';
 $string['error_generatequestions'] = 'Unable to generate questions; {$a}.';
 $string['error_invalidlogid'] = 'Invliad log ({$a}) received from adhoc task';
 $string['error_invalidquestioncategoryid'] = 'Invalid question category ID ({$a}) sent to adhoc task to generate questions.';
@@ -214,3 +215,4 @@ $string['sassessmentshort'] = 'Speak(assessment)';
 $string['moodlequestions'] = 'Moodle questions';
 $string['generatingquestions'] = '... generating {$a->count} questions for "{$a->word}"';
 $string['importingquestions'] = '... importing {$a->count} questions for "{$a->word}"';
+

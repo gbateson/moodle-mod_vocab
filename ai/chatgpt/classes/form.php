@@ -81,6 +81,8 @@ class form extends \mod_vocab\aiform {
                 'chatgpturl' => 'https://api.openai.com/v1/chat/completions',
                 'chatgptkey' => '',
                 'chatgptmodel' => 'gpt-4',
+                'temperature' => 0.2,
+                'top_p' => 0.1,
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
                 'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
@@ -170,6 +172,23 @@ class form extends \mod_vocab\aiform {
         $options = ['gpt-3.5-turbo' => 'gpt-3.5-turbo', 'gpt-4' => 'gpt-4'];
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+
+        $options = [];
+        for ($i = 0.0; $i <= 1; $i += 0.1) {
+            if ($i == 0.0) {
+                $options[''] = 'Not set';
+            }
+            $i = sprintf('%0.1f', $i);
+            $options["$i"] = "$i";
+        }
+
+        // For more information about,and comparison of, temperature and p_top, see:
+        // https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api/172683.
+        $name = 'temperature';
+        $this->add_field_select($mform, $name, $options, PARAM_LOCALISEDFLOAT, $default->$name);
+
+        $name = 'top_p';
+        $this->add_field_select($mform, $name, $options, PARAM_LOCALISEDFLOAT, $default->$name);
 
         $name = 'sharingcontext';
         $options = $this->get_sharingcontext_options();

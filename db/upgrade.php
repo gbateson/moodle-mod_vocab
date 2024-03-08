@@ -151,7 +151,7 @@ function xmldb_vocab_upgrade($oldversion) {
 
     $newversion = 2024022271;
     if ($oldversion < $newversion) {
-        // Remove prompt settings referring to 'promptai' as this is no longer used. 
+        // Remove prompt settings referring to 'promptai' as this is no longer used.
         $DB->delete_records('vocab_config_settings', ['name' => 'promptai']);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }

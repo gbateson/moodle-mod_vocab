@@ -37,9 +37,6 @@ class questions extends \core\task\adhoc_task {
     /** @var object to represent the vocabtool_questionbank object */
     protected $tool = null;
 
-    /** @var object to represent a curl object */
-    protected $curl = null;
-
     /**
      * Execute the task.
      *
@@ -200,8 +197,20 @@ class questions extends \core\task\adhoc_task {
             $status = $toolclass::TASKSTATUS_FETCHING_RESULTS;
             $this->tool->update_log($log->id, ['status' => $status]);
 
-            // Initialize the curl connection.
-            $this->init_curl($accessconfig, $prompt);
+            // Create a new object to connect to the AI assistant.
+            // The class name is something like \vocabai_chatgpt\ai.
+            $ai = '\\'.$accessconfig->subplugin.'\\ai';
+            $ai = new $ai($this->tool->vocab);
+            $ai->set_config($accessconfig);
+
+            // Try to setup a connection to the AI assistant.
+            if (! $ai->setup_connection($prompt)) {
+                $a = (object)['ai' => $accessconfig->subplugin, 'configid' => ''];
+                if (is_siteadmin()) {
+                    $a->configid = ' (configid='.$accessconfig->configid.')';
+                }
+                return $this->report_error($log, 'failedtoconnect', $a);
+            }
 
             // Ensure sensible values for min/max tries.
             $maxtries = max(1, min(10, $maxtries));
@@ -219,14 +228,9 @@ class questions extends \core\task\adhoc_task {
                     'tries' => ($i + 1),
                 ]);
 
-                // Send the prompt to the AI assistant and receive the response.
-                $response = curl_exec($this->curl);
-                $response = json_decode($response);
-                $response = (object)[
-                    'text' => ($response->choices[0]->message->content ?? ''),
-                    'error' => ($response->error ?? null),
-                ];
-
+                // Send the prompt to the AI assistant
+                // and receive the response.
+                $response = $ai->get_response();
                 if ($results = $response->text) {
 
                     if ($log->review) {
@@ -423,7 +427,7 @@ class questions extends \core\task\adhoc_task {
         list($where, $params) = $DB->get_in_or_equal($contexts);
 
         // Retrieve all field names and values in the required config record.
-        $select = 'vcs.id, vcs.name, vcs.value, vc.subplugin';
+        $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, vc.subplugin';
         $from = '{vocab_config_settings} vcs '.
                 'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
         $where = "vcs.configid = ? AND vc.contextid $where";
@@ -433,6 +437,7 @@ class questions extends \core\task\adhoc_task {
         if ($settings = $DB->get_records_sql($sql, $params)) {
             $config = new \stdClass();
             foreach ($settings as $setting) {
+                $config->configid = $setting->configid;
                 $config->subplugin = $setting->subplugin;
                 $config->{$setting->name} = $setting->value;
             }
@@ -561,71 +566,6 @@ Match the following words with their corresponding meanings. {
    =similar-word-3 -> definition-of-similar-word-3
 }
 EOD;
-    }
-
-    /**
-     * init_curl
-     *
-     * @param array $accessconfig values from vocab_config_settings.
-     * @param string $prompt the prompt to send to the AI assistant.
-     * @param float $temperature (optional, default=0.7) to regulate "randomness" in the AI assistant
-     * @return object of questions
-     */
-    protected function init_curl($accessconfig, $prompt, $temperature = 0.7) {
-
-        $classname = '\\'.$accessconfig->subplugin.'\\ai';
-        $ai = new $classname($this->tool->vocab);
-        $ai->set_config($accessconfig);
-
-        if (empty($accessconfig->chatgptkey)) {
-            $url = 'https://api.openai.com/v1/chat/completions';
-            $key = ''; // Put your key here.
-            $model = 'gpt-4';
-        } else {
-            $url = $accessconfig->chatgpturl;
-            $key = $accessconfig->chatgptkey;
-            $model = $accessconfig->chatgptmodel;
-        }
-
-        // Set the maximum number of tokens.
-        switch ($model) {
-            case 'gpt-4':
-                $maxtokens = 8192;
-                break;
-            case 'gpt-3.5-turbo':
-                $maxtokens = 4097;
-                break;
-            default:
-                $maxtokens = 1000;
-        }
-
-        if ($this->curl === null) {
-            $this->curl = curl_init();
-
-            curl_setopt($this->curl, CURLOPT_URL, $url);
-            curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($this->curl, CURLOPT_POST, true);
-
-            curl_setopt($this->curl, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'Authorization: Bearer '.$key,
-            ]);
-
-            // Define the role of the AI assistant.
-            $systemrole = 'Act as an expert producer of online language-learning materials.';
-
-            // Set the POST fields.
-            curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode([
-                'model' => $model,
-                'messages' => [
-                    (object)['role' => 'system', 'content' => $systemrole],
-                    (object)['role' => 'user', 'content' => $prompt],
-                ],
-                // We could also set ...
-                // 'max_tokens' => $maxtokens.
-                'temperature' => $temperature,
-            ]));
-        }
     }
 
     /**

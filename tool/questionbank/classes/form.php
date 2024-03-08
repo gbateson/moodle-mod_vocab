@@ -955,15 +955,43 @@ class form extends \mod_vocab\toolform {
                 }
             }
 
+            // These fields are protected and cannot be updated..
+            // The values in the form should match those in the log.
+            $names = [
+
+            ];
+            foreach ($names as $name) {
+                $values[$name] = $log->$name;
+            }
+
             if ($allowupdate) {
 
-                // Specify the names of numeric fields.
-                $numfields = [
-                    'qcount', 'accessid', 'promptid', 'formatid',
-                    'parentcatid', 'maxtries', 'tries', 'status', 'review',
+                // Define the types of the log fields that can be updated.
+                // Fields that are not in this array cannot be updated.
+                // The includes the folowing fields:
+                // id, taskid, userid, vocabid, wordid, questionids
+                // any new fields that are added to the log table.
+                $types = [
+                    'qtype' => PARAM_TEXT,
+                    'qlevel' => PARAM_TEXT,
+                    'qcount' => PARAM_INT,
+                    'qformat' => PARAM_TEXT,
+                    'accessid' => PARAM_INT,
+                    'promptid' => PARAM_INT,
+                    'formatid' => PARAM_INT,
+                    'parentcatid' => PARAM_INT,
+                    'subcattype' => PARAM_TEXT,
+                    'subcatname' => PARAM_TEXT,
+                    'maxtries' => PARAM_INT,
+                    'tries' => PARAM_INT,
+                    'status' => PARAM_INT,
+                    'review' => PARAM_INT,
+                    'error' => PARAM_TEXT,
+                    'prompt' => PARAM_TEXT,
+                    'results' => PARAM_TEXT,
                 ];
 
-                // The $updated array will hold the names
+                // The $updated array holds the names
                 // and values of fields that have changed.
                 $updated = [];
 
@@ -971,12 +999,11 @@ class form extends \mod_vocab\toolform {
                 // record that has just come from the $DB.
                 foreach ($log as $name => $value) {
                     if (array_key_exists($name, $values)) {
-                        $value = $values[$name];
-                        if (in_array($name, $numfields)) {
-                            $value = (int)$value;
-                        }
-                        if ($value && $value != $log->$name) {
-                            $updated[$name] = $value;
+                        if (array_key_exists($name, $types)) {
+                            $value = clean_param($values[$name], $types[$name]);
+                            if ($value != $log->$name) {
+                                $updated[$name] = $value;
+                            }
                         }
                     }
                 }
@@ -991,7 +1018,7 @@ class form extends \mod_vocab\toolform {
                 }
             }
 
-            // Remove all the evidence.
+            // Remove all the log fields so that the moodleform does not get confused later.
             unset($_POST['log']);
         }
 
@@ -1318,7 +1345,7 @@ class form extends \mod_vocab\toolform {
      * format_questionids
      *
      * @param string $questionids comma-separated list of question ids.
-     * @return string containing a list of links to previw pages of the questions. 
+     * @return string containing a list of links to previw pages of the questions.
      */
     public function format_questionids($questionids) {
         if (empty($questionids)) {
@@ -1461,6 +1488,12 @@ class form extends \mod_vocab\toolform {
                     $log->status = $statusnames[$log->status];
                 }
 
+                if (empty($log->review)) {
+                    $log->review = get_string('no');
+                } else {
+                    $log->review = get_string('yes');
+                }
+
                 $names = ['error', 'prompt', 'results'];
                 foreach ($names as $name) {
                     if ($log->$name && strlen($log->$name) > 10) {
@@ -1535,6 +1568,7 @@ class form extends \mod_vocab\toolform {
                     $log->maxtries,
                     $log->tries,
                     $log->status,
+                    $log->review,
                     $log->error,
                     $log->prompt,
                     $log->results,
@@ -1566,13 +1600,14 @@ class form extends \mod_vocab\toolform {
             7 => 'center', // Question level.
             15 => 'center', // Maxtries.
             16 => 'center', // Tries.
+            18 => 'center', // Review.
         ];
 
         // Specify nowrap columns.
         $table->wrap = [
-            18 => 'nowrap', // Error.
-            19 => 'nowrap', // Prompt.
-            20 => 'nowrap', // Results.
+            19 => 'nowrap', // Error.
+            20 => 'nowrap', // Prompt.
+            21 => 'nowrap', // Results.
         ];
 
         // Define strings for column headings.
@@ -1595,6 +1630,7 @@ class form extends \mod_vocab\toolform {
             $this->get_string('maxtries'),
             $this->get_string('tries'),
             get_string('status'),
+            $this->get_string('questionreview'),
             get_string('error'),
             $this->get_string('prompttext'),
             $this->get_string('resultstext'),

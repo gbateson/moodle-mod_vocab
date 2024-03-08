@@ -62,6 +62,9 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var string the optional action to be performed on the $config settings object */
     public $action = '';
 
+    /** @var object to represent a curl object used for connecting to an AI assistant */
+    public $curl = null;
+
     /**
      * Get the array containing the names of all the config settings for this subplugin.
      */
@@ -583,5 +586,21 @@ class aibase extends \mod_vocab\subpluginbase {
                 $this->config->$name = $config->$name;
             }
         }
+    }
+    /**
+     * Setup the connection to the AI assistant.
+     *
+     * @param string $prompt to send to the AI assistant.
+     * @return void, but may update the "curl" property.
+     */
+    public function setup_connection($prompt) {
+    }
+
+    /**
+     * Get response from the AI assistant.
+     *
+     * @return object containing "text" and "error" properties.
+     */
+    public function get_response() {
     }
 }
