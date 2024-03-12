@@ -127,10 +127,9 @@ class form extends \mod_vocab\toolform {
         $name = 'addwords';
         $groupname = $name.'elements';
         $label = $this->get_string($name);
-        $options = ['rows' => 2, 'cols' => 20];
         $elements = [
-            $mform->createElement('textarea', $name, '', $options),
-            $mform->createElement('submit', $name.'button', $this->get_string('add')),
+            $mform->createElement('textarea', $name, '', ['rows' => 2, 'cols' => 20]),
+            $mform->createElement('submit', $name.'button', get_string('add'), ['class' => 'align-self-end']),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
@@ -140,43 +139,15 @@ class form extends \mod_vocab\toolform {
         $label = $this->get_string($name);
         $elements = [
             $mform->createElement('text', $name, $label, ['size' => 2]),
-            $mform->createElement('submit', $name.'button', $this->get_string('select')),
+            $mform->createElement('submit', $name.'button', get_string('select')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
         $mform->setDefault($groupname.'['.$name.']', 10);
         $mform->setType($groupname.'['.$name.']', PARAM_INT);
 
-        $this->add_heading($mform, 'import', $this->subpluginname, false);
-
-        $name = 'importfile';
-        $groupname = $name.'elements';
-        $label = $this->get_string($name);
-        $options = ['accepted_types' => ['.txt', '.xml']];
-        // Perhaps we could also consider csv, xlsx, xls, ods?
-        $elements = [
-            $mform->createElement('filepicker', $name, $label, '', $options),
-            $mform->createElement('submit', $name.'button', $this->get_string('import')),
-        ];
-        $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->subpluginname);
-
-        $this->add_heading($mform, 'export', $this->subpluginname, false);
-
-        $filename = $this->get_vocab()->name;
-        $filename = preg_replace('/[ \.]+/', '_', $filename).'.xml';
-
-        $name = 'exportfile';
-        $groupname = $name.'elements';
-        $label = $this->get_string($name);
-        $elements = [
-            $mform->createElement('text', $name, $label, '', ['size' => 20]),
-            $mform->createElement('submit', $name.'button', $this->get_string('export')),
-        ];
-        $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->subpluginname);
-        $mform->setDefault($groupname.'['.$name.']', $filename);
-        $mform->setType($groupname.'['.$name.']', PARAM_FILE);
+        $this->add_importfile($mform);
+        $this->add_exportfile($mform);
 
         $PAGE->requires->js_call_amd('vocabtool_wordlist/form', 'init');
     }
@@ -355,8 +326,8 @@ class form extends \mod_vocab\toolform {
         // Add "with selected" menu and "Go" button.
         $options = [
             '' => $this->get_string('withselected'),
-            'remove' => $this->get_string('remove'),
-            'export' => $this->get_string('export'),
+            'remove' => $this->get_vocab()->get_string('remove'),
+            'export' => $this->get_vocab()->get_string('export'),
             'getquestions' => $this->get_string('getquestions'),
             'getsamplesentences' => $this->get_string('getsamplesentences'),
         ];

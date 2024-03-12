@@ -162,3 +162,12 @@ $string['nodescription'] = 'No description';
 $string['redoupgrade'] = 'Redo upgrade: {$a}';
 $string['redoversiondate'] = '"Vocab activity module version set to just before {$a->version} - {$a->datetext}"';
 $string['clicktocontinue'] = 'Click here to continue';
+
+$string['import'] = 'Import';
+$string['importfile_help'] = 'Here you can import a word list from a file. You can create your own text file with one word or phrase per line, or you can use a file that has been exported from another Vocabulary activity.';
+$string['importfile'] = 'Import file';
+$string['export'] = 'Export';
+$string['exportfile_help'] = 'Here you can export this word list to a file. You can define a file name yourself, or use the default name. The exported file can be kept as a backup, or imported into another Vocabulary activity.';
+$string['exportfile'] = 'Export file name';
+
+$string['remove'] = 'Remove';

@@ -46,8 +46,13 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
+        // If any of this user's configs are found below,
+        // export will be enabled.
+        $enableexport = false;
+
         // Try and get current config for editing.
         if ($default = $this->get_subplugin()->config) {
+            $enableexport = true;
 
             $name = 'cid';
             $mform->addElement('hidden', $name, $default->id);
@@ -123,6 +128,7 @@ class form extends \mod_vocab\aiform {
         // apply to the current context. These are editable by the current user.
         $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id);
         if (count($configs)) {
+            $enableexport = true;
 
             $name = 'otherkeysownedbyme';
             $this->add_heading($mform, $name, $this->subpluginname, true);
@@ -139,6 +145,7 @@ class form extends \mod_vocab\aiform {
         // the current context. These are editable by the current user.
         $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id);
         if (count($configs)) {
+            $enableexport = true;
 
             $name = 'keysownedbyme';
             $this->add_heading($mform, $name, $this->subpluginname, true);
@@ -208,6 +215,11 @@ class form extends \mod_vocab\aiform {
         $this->add_field_datetime($mform, $name, $params);
 
         $this->add_action_buttons(true, $submitlabel);
+
+        $this->add_importfile($mform);
+        if ($enableexport) {
+            $this->add_exportfile($mform);
+        }
     }
 
     /**

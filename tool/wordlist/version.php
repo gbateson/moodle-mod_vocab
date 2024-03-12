@@ -30,5 +30,5 @@ $plugin->cron      = 0;
 $plugin->component = 'vocabtool_wordlist';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2023101206;
-$plugin->release   = '2023-10-12 (06)';
+$plugin->version   = 2024031207;
+$plugin->release   = '2024-03-12 (07)';

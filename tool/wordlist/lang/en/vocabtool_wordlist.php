@@ -36,17 +36,6 @@ $string['addwords'] = 'Add more words or phrases';
 $string['selectwords_help'] = 'Here you can specify how many words you would like to be selected randomly from the database and added to this wordlist. Type the number of words into the box and then press the "Select" button.';
 $string['selectwords'] = 'Select random words';
 
-$string['importfile_help'] = 'Here you can import a word list from a file. You can create your own text file with one word or phrase per line, or you can use a file that has been exported from another Vocabulary activity.';
-$string['importfile'] = 'Import file';
-
-$string['exportfile_help'] = 'Here you can export this word list to a file. You can define a file name yourself, or use the default name. The exported file can be kept as a backup, or imported into another Vocabulary activity.';
-$string['exportfile'] = 'Export file name';
-
-$string['add'] = 'Add';
-$string['select'] = 'Select';
-$string['import'] = 'Import';
-$string['export'] = 'Export';
-
 $string['wordsaddedtolist'] = 'The following word(s) were added to this word list: {$a}';
 $string['wordsfoundinlist'] = 'The following word(s) already existed in this word list {$a}';
 $string['nowordsfound'] = 'This word list does not yet contain any words. Please use the add, select and import buttons below to add words.';
@@ -56,8 +45,6 @@ $string['successrate'] = 'Success rate';
 $string['masteryrate'] = 'Mastery rate';
 
 $string['withselected'] = 'With selected ...';
-$string['remove'] = 'Remove';
-$string['export'] = 'Export';
 $string['getquestions'] = 'Get questions';
 $string['getsamplesentences'] = 'Get sample sentences';
 

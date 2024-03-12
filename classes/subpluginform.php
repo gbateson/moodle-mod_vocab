@@ -318,4 +318,58 @@ abstract class subpluginform extends \moodleform {
             }
         }
     }
+
+    /**
+     * Add a form section to import a file.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @return void (but will update $mform)
+     */
+    public function add_importfile($mform) {
+        $vocab = $this->get_vocab();
+
+        $this->add_heading($mform, 'import', $vocab->plugin, false);
+
+        $name = 'importfile';
+        $groupname = $name.'elements';
+        $label = $vocab->get_string($name);
+        $options = ['accepted_types' => ['.txt', '.xml']];
+        // Perhaps we could also consider csv, xlsx, xls, ods?
+        $elements = [
+            $mform->createElement('filepicker', $name, $label, '', $options),
+            $mform->createElement('submit', $name.'button', $vocab->get_string('import')),
+        ];
+        $mform->addGroup($elements, $groupname, $label);
+        $mform->addHelpButton($groupname, $name, $vocab->plugin);
+    }
+
+    /**
+     * Add a form section to export a file.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @return void (but will update $mform)
+     */
+    public function add_exportfile($mform) {
+        $vocab = $this->get_vocab();
+
+        $this->add_heading($mform, 'export', $vocab->plugin, false);
+
+        $filename = $vocab->name;
+        $filename = preg_replace('/[ \._]+/', '_', $filename);
+        $filename = trim($filename, ' -._');
+        $filename .= '.'.$this->get_subplugin()::SUBPLUGINNAME;
+        $filename = $filename.'.xml';
+
+        $name = 'exportfile';
+        $groupname = $name.'elements';
+        $label = $vocab->get_string($name);
+        $elements = [
+            $mform->createElement('text', $name, $label, '', ['size' => 20]),
+            $mform->createElement('submit', $name.'button', $vocab->get_string('export')),
+        ];
+        $mform->addGroup($elements, $groupname, $label);
+        $mform->addHelpButton($groupname, $name, $vocab->plugin);
+        $mform->setDefault($groupname.'['.$name.']', $filename);
+        $mform->setType($groupname.'['.$name.']', PARAM_FILE);
+    }
 }

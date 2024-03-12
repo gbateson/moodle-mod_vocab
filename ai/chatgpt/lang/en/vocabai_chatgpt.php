@@ -96,8 +96,8 @@ $string['nokeysfound'] = 'No keys found';
 $string['note'] = 'Note';
 $string['cannoteditkeys'] = 'You cannot edit these keys.';
 
-$string['temperature_help'] = 'This setting controls the randomness of tokens. A low value (e.g. 0.2) means that only the most likely tokens will be chosen. A high value (e.g. 0.7) means the output will be more diverse and creative.';
+$string['temperature_help'] = 'This setting controls how randomly the AI engine choses the next word. A low value (e.g. 0.2) means that only one of the most likely words will be chosen. A high value (e.g. 0.7) means that less likely words could also be chosen, resulting in more diverse and creative output.';
 $string['temperature'] = 'Temperature';
 
-$string['top_p_help'] = 'A percentage that limits the subset of possible tokens that the AI engine uses to generate content. A low value (e.g. 0.1) considers only a small set of tokens. A high value (e.g. 0.7) increases the number of candidate tokens.';
+$string['top_p_help'] = 'This value limits the size of the pool of words that the AI engine uses to generate each successive word. A low value (e.g. 0.1) considers only a small set of the most likely words. A high value (e.g. 0.7) increases the number of candidate words.';
 $string['top_p'] = 'Top-P';
