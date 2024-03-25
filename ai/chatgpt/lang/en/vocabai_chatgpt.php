@@ -28,15 +28,6 @@ $string['pluginname'] = 'ChatGPT AI assistant for a Vocabulary activity.';
 $string['privacy:metadata'] = 'The vocabai_chatgpt plugin does not store any personal data.';
 $string['chatgpt'] = 'ChatGPT';
 
-$string['chatgpturl_help'] = 'The URL of ChatGPT\'s API e.g. https://api.openai.com/v1/completions';
-$string['chatgpturl'] = 'ChatGPT url';
-
-$string['chatgptkey_help'] = 'The key required to access ChatGPT\'s API. This usually starts "sk-" followed by 48 random letters and numbers.';
-$string['chatgptkey'] = 'ChatGPT key';
-
-$string['chatgptmodel_help'] = 'The ChatGPT model to be used e.g. gpt-3.5-turbo, gpt-4';
-$string['chatgptmodel'] = 'ChatGPT model';
-
 $string['keysownedbyotherusers'] = 'Keys owned by other users';
 $string['keysownedbyme'] = 'Keys owned by me';
 
@@ -49,20 +40,44 @@ $string['editkey'] = 'Edit existing key';
 $string['key'] = 'Key';
 $string['owner'] = 'Owner';
 
+$string['chatgpturl_help'] = 'The URL of ChatGPT\'s API e.g. https://api.openai.com/v1/completions';
+$string['chatgpturl'] = 'ChatGPT url';
+
+$string['chatgptkey_help'] = 'The key required to access ChatGPT\'s API. This usually starts "sk-" followed by 48 random letters and numbers.';
+$string['chatgptkey'] = 'ChatGPT key';
+
+$string['chatgptmodel_help'] = 'The ChatGPT model to be used e.g. gpt-3.5-turbo, gpt-4';
+$string['chatgptmodel'] = 'ChatGPT model';
+
+$string['chatgptfile_help'] = 'The name of the training file, that is used for fine-tuning of the ChatGPT response. This is not required, but it can greatly increase the usefulness of the responses from ChatGPT.';
+$string['chatgptfile'] = 'Training file';
+
+$string['temperature_help'] = 'This setting controls how randomly the AI engine choses the next word. A low value (e.g. 0.2) means that only one of the most likely words will be chosen. A high value (e.g. 0.7) means that less likely words could also be chosen, resulting in more diverse and creative output.';
+$string['temperature'] = 'Temperature';
+
+$string['top_p_help'] = 'This value limits the size of the pool of words that the AI engine uses to generate each successive word. A low value (e.g. 0.1) considers only a small set of the most likely words. A high value (e.g. 0.7) increases the number of candidate words.';
+$string['top_p'] = 'Top-P';
+
+$string['sharingcontext'] = 'Sharing context';
+$string['sharingcontext_help'] = 'The context in which this key can be shared.';
+
+$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
+$string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
+$string['sharedincoursecontext'] = 'Shared in all activities in the current course';
+$string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
+$string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
+
 $string['sharedfrom'] = 'Shared from';
 $string['sharedfrom_help'] = 'The key is shared starting from, and including, this date and time.';
 
 $string['shareduntil'] = 'Shared until';
 $string['shareduntil_help'] = 'The key is shared up to, and including, this date and time.';
 
+$string['sharingperiod'] = 'Sharing period';
 $string['sharedanydate'] = 'Shared forever';
 $string['sharedfromdate'] = 'Shared from {$a}';
 $string['shareduntildate'] = 'Shared until {$a}';
 $string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
-
-$string['sharingperiod'] = 'Sharing period';
-$string['sharingcontext'] = 'Sharing context';
-$string['sharingcontext_help'] = 'The context in which this key can be shared.';
 
 $string['edit'] = 'Edit';
 $string['copy'] = 'Copy';
@@ -85,19 +100,7 @@ $string['copycancelled'] = 'Copying of the key was cancelled.';
 $string['deletecompleted'] = 'The key was successfully deleted.';
 $string['deletecancelled'] = 'Key deletion was cancelled.';
 
-$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
-$string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
-$string['sharedincoursecontext'] = 'Shared in all activities in the current course';
-$string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
-$string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
-
 $string['nokeysfound'] = 'No keys found';
 
 $string['note'] = 'Note';
 $string['cannoteditkeys'] = 'You cannot edit these keys.';
-
-$string['temperature_help'] = 'This setting controls how randomly the AI engine choses the next word. A low value (e.g. 0.2) means that only one of the most likely words will be chosen. A high value (e.g. 0.7) means that less likely words could also be chosen, resulting in more diverse and creative output.';
-$string['temperature'] = 'Temperature';
-
-$string['top_p_help'] = 'This value limits the size of the pool of words that the AI engine uses to generate each successive word. A low value (e.g. 0.1) considers only a small set of the most likely words. A high value (e.g. 0.7) increases the number of candidate words.';
-$string['top_p'] = 'Top-P';

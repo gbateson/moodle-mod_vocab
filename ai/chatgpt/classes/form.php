@@ -41,7 +41,7 @@ class form extends \mod_vocab\aiform {
      * Add fields to the main form for this subplugin.
      */
     public function definition() {
-        global $DB, $USER;
+        global $DB, $PAGE, $USER;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
@@ -88,6 +88,7 @@ class form extends \mod_vocab\aiform {
                 'chatgptmodel' => 'gpt-4',
                 'temperature' => 0.2,
                 'top_p' => 0.1,
+                'chatgptfile' => '',
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
                 'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
@@ -180,6 +181,11 @@ class form extends \mod_vocab\aiform {
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
+        $name = 'chatgptfile';
+        $this->add_field_text($mform, $name, PARAM_FILE, $default->$name, ['size' => '13']);
+        // For more information about fine-tuning files and fine-tuning jobs, see:
+        // https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset.
+
         $options = [];
         for ($i = 0.0; $i <= 1; $i += 0.1) {
             if ($i == 0.0) {
@@ -189,7 +195,7 @@ class form extends \mod_vocab\aiform {
             $options["$i"] = "$i";
         }
 
-        // For more information about,and comparison of, temperature and p_top, see:
+        // For more information about, and comparison of, temperature and p_top, see:
         // https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api/172683.
         $name = 'temperature';
         $this->add_field_select($mform, $name, $options, PARAM_LOCALISEDFLOAT, $default->$name);
@@ -220,6 +226,8 @@ class form extends \mod_vocab\aiform {
         if ($enableexport) {
             $this->add_exportfile($mform);
         }
+
+        $PAGE->requires->js_call_amd('vocabai_chatgpt/form', 'init');
     }
 
     /**

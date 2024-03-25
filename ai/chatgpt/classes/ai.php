@@ -44,7 +44,8 @@ class ai extends \mod_vocab\aibase {
      */
     const SETTINGNAMES = [
         'chatgpturl', 'chatgptkey',
-        'chatgptmodel', 'temperature',
+        'chatgptmodel', 'chatgptfile',
+        'temperature', 'top_p',
         'sharedfrom', 'shareduntil',
     ];
 
