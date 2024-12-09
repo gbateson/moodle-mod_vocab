@@ -44,40 +44,40 @@ class activity {
     /** @var string the name of this plugin */
     const PLUGINNAME = 'vocab';
 
-    /** @var integer database value to represent "live" mode */
+    /** @var int database value to represent "live" mode */
     const MODE_LIVE = 0;
 
-    /** @var integer database value to represent "demo" mode */
+    /** @var int database value to represent "demo" mode */
     const MODE_DEMO = 1;
 
-    /** @var integer database value to represent "any" attempts */
+    /** @var int database value to represent "any" attempts */
     const ATTEMPTTYPE_ANY = 0;
 
     /** @var database value to represent "recent" attempts */
     const ATTEMPTTYPE_RECENT = 1;
 
-    /** @var integer database value to represent "consecutive" attempts */
+    /** @var int database value to represent "consecutive" attempts */
     const ATTEMPTTYPE_CONSECUTIVE = 2;
 
-    /** @var integer database value to represent "no" delay between attempts */
+    /** @var int database value to represent "no" delay between attempts */
     const ATTEMPTDELAY_NONE = 0;
 
-    /** @var integer database value to represent a "fixed" delay between attempts */
+    /** @var int database value to represent a "fixed" delay between attempts */
     const ATTEMPTDELAY_FIXED = -1;
 
-    /** @var integer database value to represent an "expanding" delay between attempts */
+    /** @var int database value to represent an "expanding" delay between attempts */
     const ATTEMPTDELAY_EXPANDING = -2;
 
-    /** @var integer database value to denote expanding the navigation for "everyone" */
+    /** @var int database value to denote expanding the navigation for "everyone" */
     const EXPAND_EVERYONE = 0;
 
-    /** @var integer database value to denote expanding the navigation only for "students" (for teachers, it will be collapsed) */
+    /** @var int database value to denote expanding the navigation only for "students" (for teachers, it will be collapsed) */
     const EXPAND_STUDENTS = 1;
 
-    /** @var integer database value to denote expanding the navigation only for "teachers" (for students, it will be collapsed) */
+    /** @var int database value to denote expanding the navigation only for "teachers" (for students, it will be collapsed) */
     const EXPAND_TEACHERS = 2;
 
-    /** @var integer database value to denote expanding the navigation for "no one" */
+    /** @var int database value to denote expanding the navigation for "no one" */
     const EXPAND_NO_ONE = 3;
 
     /** @var stdclass vocab config settings */
@@ -107,14 +107,14 @@ class activity {
     /** @var string vocab activity intro */
     public $intro = '';
 
-    /** @var integer vocab activity introformat */
+    /** @var int vocab activity introformat */
     public $introformat = 0;
 
-    /** @var integer the "mode" of the current Vocab activity */
+    /** @var int the "mode" of the current Vocab activity */
     public $operationmode = 0;
 
     /**
-     * @var integer denoting whether to show (=expand) or hide (=collapse) the "mycourses" navigation menu
+     * @var int denoting whether to show (=expand) or hide (=collapse) the "mycourses" navigation menu
      *      0: expand for everyone
      *      1: expand for students (collapse for teachers)
      *      2: expand for teachers (collapse for students)
@@ -125,31 +125,31 @@ class activity {
     /** @var string specifying the preferred page layout, at least for the main "view" page */
     public $pagelayout = '';
 
-    /** @var integer the minimum score required for mastery */
+    /** @var int the minimum score required for mastery */
     public $activityscore = 0;
 
-    /** @var integer the minimum number of attempts required for mastery */
+    /** @var int the minimum number of attempts required for mastery */
     public $activitycount = 0;
 
-    /** @var integer the minimum total duration of attempts required for mastery */
+    /** @var int the minimum total duration of attempts required for mastery */
     public $activityduration = 0;
 
-    /** @var integer the type of attempts considered for mastery conditions */
+    /** @var int the type of attempts considered for mastery conditions */
     public $activitytype = 0;
 
-    /** @var integer minimum interval between attempts */
+    /** @var int minimum interval between attempts */
     public $activityinterval = 0;
 
-    /** @var integer vocab activity open time */
+    /** @var int vocab activity open time */
     public $activityopen = 0;
 
-    /** @var integer vocab activity close time */
+    /** @var int vocab activity close time */
     public $activityclose = 0;
 
-    /** @var integer vocab games open time */
+    /** @var int vocab games open time */
     public $gamesopen = 0;
 
-    /** @var integer vocab games close time */
+    /** @var int vocab games close time */
     public $gamesclose = 0;
 
     /** @var string vocab activity timecreated */
@@ -167,10 +167,10 @@ class activity {
     /** @var string the path to this plugin e.g. "mod/vocab" */
     public $pluginpath = '';
 
-    /** @var boolean denotes whether or not the current user can view this activity */
+    /** @var bool denotes whether or not the current user can view this activity */
     public $viewable = '';
 
-    /** @var boolean denotes whether or not the activity is playable by the current user */
+    /** @var bool denotes whether or not the activity is playable by the current user */
     public $playable = '';
 
     /**
@@ -294,7 +294,7 @@ class activity {
             if ($instance === null) {
                 $instance = $cm->instance;
                 if (is_scalar($instance)) {
-                    $instance = $DB->get_record(self::PLUGINNAME, ['id' => $cminstance], '*', MUST_EXIST);
+                    $instance = $DB->get_record(self::PLUGINNAME, ['id' => $instance], '*', MUST_EXIST);
                 }
             }
             return new activity($course, $cm, $instance);

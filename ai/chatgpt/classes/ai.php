@@ -43,8 +43,7 @@ class ai extends \mod_vocab\aibase {
      * @var array the names of config settings that this subplugin maintains.
      */
     const SETTINGNAMES = [
-        'chatgpturl', 'chatgptkey',
-        'chatgptmodel', 'chatgptfile',
+        'chatgpturl', 'chatgptkey', 'chatgptmodel',
         'temperature', 'top_p',
         'sharedfrom', 'shareduntil',
     ];

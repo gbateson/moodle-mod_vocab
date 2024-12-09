@@ -124,11 +124,17 @@ $string['nopromptsfound'] = '{$a} Prompts for the AI assistants';
 $string['noformatsfound'] = '{$a} Output formats for the prompts';
 $string['addaidetails'] = 'Please use the links on the "AI assistants" menu to add the missing details.';
 
+$string['nofilesfound'] = 'No tuning files were found. They are not essential to create questions, but they can improve the quality of questions produced by the AI assistant. {$a}';
+$string['clicktoaddfiles'] = 'Click here to add tuning files.';
+
 $string['qformat'] = 'AI output format';
 $string['qformat_help'] = 'Choose a format for the AI output that will it to be imported into the question bank.';
 
 $string['prompt'] = 'AI prompt';
 $string['prompt_help'] = 'Select the AI prompt that will be sent to the selected AI assistant.';
+
+$string['file'] = 'AI tuning file';
+$string['file_help'] = 'Select the AI tuning file that contains training data that will be sent to the selected AI assistant.';
 
 $string['questionreview_help'] = 'If this setting is enabled, the AI results will not be imported into the question bank until they have been reviewed by the teacher.';
 $string['questionreview'] = 'Question review';

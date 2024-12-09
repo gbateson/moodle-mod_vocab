@@ -149,6 +149,12 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2024120900;
+    if ($oldversion < $newversion) {
+        // Add "grademax" and "gradepartial" fields to "vocab" table.
+        xmldb_vocab_check_structure($dbman, ['vocab']);
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
     return true;
 }
 

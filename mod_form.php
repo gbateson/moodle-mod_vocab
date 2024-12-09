@@ -158,6 +158,48 @@ class mod_vocab_mod_form extends moodleform_mod {
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
         // -----------------------------------------------------------------------------
+        $name = 'grades';
+        $label = get_string($name, 'grades');
+        $mform->addElement('header', $name, $label);
+        // -----------------------------------------------------------------------------
+
+        $name = 'gradedesc';
+        $html = get_string($name, $plugin);
+        $html = \html_writer::tag('div', $html, ['class' => 'px-2 px-md-4']);
+        $mform->addElement('html', $html);
+
+        $name = 'grademax';
+        $label = get_string($name, $plugin);
+        $mform->addElement('text', $name, $label, ['size' => '10']);
+        $mform->addHelpButton($name, $name, $plugin);
+        self::set_type_default_advanced($mform, $config, $name, PARAM_INT, 100);
+
+        // Note: the min pass grade field must be called "gradepass" so that
+        // it is recognized by edit_module_post_actions() in "course/modlib.php"
+        // Also, FEATURE_GRADE_HAS_GRADE must be enabled in "mod/vocab/lib.php".
+        $name = 'gradepass';
+        $label = get_string($name, 'grades');
+        $mform->addElement('text', $name, $label, ['size' => '10']);
+        $mform->addHelpButton($name, $name, 'grades');
+        self::set_type_default_advanced($mform, $config, $name, PARAM_FLOAT, 60);
+
+        // Note: the grade category field must be called "gradecat" so that
+        // it is recognized by edit_module_post_actions() in "course/modlib.php"
+        // Also, FEATURE_GRADE_HAS_GRADE must be enabled in "mod/vocab/lib.php".
+        $name = 'gradecat';
+        $label = get_string('gradecategoryonmodform', 'grades');
+        $options = grade_get_categories_menu($this->get_course()->id);
+        $mform->addElement('select', $name, $label, $options);
+        $mform->addHelpButton($name, 'gradecategoryonmodform', 'grades');
+        self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
+
+        $name = 'gradepartial';
+        $label = get_string($name, $plugin);
+        $mform->addElement('selectyesno', $name, $label);
+        $mform->addHelpButton($name, $name, $plugin);
+        self::set_type_default_advanced($mform, $config, $name, PARAM_INT, 1);
+
+        // -----------------------------------------------------------------------------
         $name = 'wordmasteryconditions';
         $label = get_string($name, $plugin);
         $mform->addElement('header', $name, $label);

@@ -85,15 +85,17 @@ class form extends \mod_vocab\aiform {
                 'id' => 0,
                 'chatgpturl' => 'https://api.openai.com/v1/chat/completions',
                 'chatgptkey' => '',
-                'chatgptmodel' => 'gpt-4',
+                'chatgptmodel' => 'gpt-4o-mini',
                 'temperature' => 0.2,
                 'top_p' => 0.1,
-                'chatgptfile' => '',
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
                 'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
             ];
         }
+
+        // Cache the label separator, e.g. ": ".
+        $labelsep = get_string('labelsep', 'langconfig');
 
         // Display the config settings that apply to this context and are
         // owned by other users. These are NOT editable by the current user.
@@ -113,8 +115,7 @@ class form extends \mod_vocab\aiform {
                 // explaining that they cannot edit keys owned by other people.
                 $text = $this->get_string('note');
                 $text = \html_writer::tag('span', $text, ['class' => 'text-danger']);
-                $text = $text.get_string('labelsep', 'langconfifg');
-                $text = $text.$this->get_string('cannoteditkeys');
+                $text = $text.$labelsep.$this->get_string('cannoteditkeys');
                 $text = \html_writer::tag('h5', $text, ['class' => 'cannotedit']);
                 $mform->addElement('html', $text);
             }
@@ -177,15 +178,16 @@ class form extends \mod_vocab\aiform {
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'chatgptmodel';
-        $options = ['gpt-3.5-turbo' => 'gpt-3.5-turbo', 'gpt-4' => 'gpt-4'];
+        $options = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o-mini', 'gpt-4o'];
+        $options = array_flip($options);
+        foreach ($options as $option => $i) {
+            $options[$option] = $option.$labelsep.$this->get_string($option);
+        }
+
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
-        $name = 'chatgptfile';
-        $this->add_field_text($mform, $name, PARAM_FILE, $default->$name, ['size' => '13']);
-        // For more information about fine-tuning files and fine-tuning jobs, see:
-        // https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset.
-
+        // Generate reusable menu of numeric values for "temperature" and "top_p".
         $options = [];
         for ($i = 0.0; $i <= 1; $i += 0.1) {
             if ($i == 0.0) {

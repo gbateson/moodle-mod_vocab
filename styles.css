@@ -5,7 +5,7 @@
 /** add bg colors to form headings */
 
 .path-mod-vocab fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #fdc; /* lighter shade of #fc9 */ 
+    background-color: #ccebff; /* light blue */ 
     border-radius: 0.25rem;
     border: 1px solid #666;
 }
@@ -87,10 +87,14 @@
     max-width: 110px;
 }
 
-/** The following styles are shared among the TOOL subplugins */
-
+/** The following styles are shared among the AI and TOOL subplugins */
+.path-mod-vocab-ai fieldset.collapsible > div:first-of-type:not(.fcontainer),
 .path-mod-vocab-tool fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #e6ffe6; /* very light green */
+    background-color: #e6e6e6;
+}
+.path-mod-vocab-ai .configinfo dl:first-of-type,
+.path-mod-vocab-tool .configinfo dl:first-of-type {
+    background-color: #4d4d4d;
 }
 
 /** The following styles are shared among the AI subplugins */

@@ -1,8 +1,7 @@
-/* Use light yellow as the background color on headings. */
+/** Set background color on headings and subheadings. */
 .path-mod-vocab-ai-formats fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ffffe6; /* light yellow */
+    background-color: #fcf;
 }
-
 .path-mod-vocab-ai-formats .configinfo dl:first-of-type {
-    background-color: #660; /* dark greeny/brown */
+    background-color: #909;
 }

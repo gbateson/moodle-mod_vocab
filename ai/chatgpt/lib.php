@@ -28,5 +28,5 @@
  * Define the icon for this vocab ai
  */
 function vocabai_chatgpt_get_fontawesome_icon_map() {
-    return ['vocabai_chatgpt:chatgpt' => 'fa-globe'];
+    return ['vocabai_chatgpt:chatgpt' => 'fa-puzzle-piece']; // Could also use "globe".
 }

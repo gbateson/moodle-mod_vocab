@@ -34,6 +34,9 @@ $string['promptname'] = 'Prompt name';
 $string['prompttext_help'] = 'The prompt text that will be passed to the AI assistant. Placeholders for values are specified using double-braces. e.g. {{num-of-questions}}';
 $string['prompttext'] = 'Prompt text';
 
+$string['promptfile_help'] = 'The name of the training file, that is used for fine-tuning of the response from the AI assistant. This is not required, but it can greatly increase the usefulness of the AI-geneerated content.';
+$string['promptfile'] = 'Training file';
+
 $string['promptsownedbyotherusers'] = 'Prompts owned by other users';
 $string['promptsownedbyme'] = 'Prompts owned by me';
 

@@ -171,7 +171,31 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('static', $name, $label, $value);
-        // Should we also add a help button?
+
+        $showhelp = '';
+        switch (true) {
+            case is_string($attributes):
+                $showhelp = $attributes;
+                break;
+
+            case is_object($attributes):
+                if (property_exists($attributes, 'showhelp')) {
+                    $showhelp = $attributes->showhelp;
+                }
+                break;
+
+            case is_array($attributes):
+                if (array_key_exists($attributes, 'showhelp')) {
+                    $showhelp = $attributes['showhelp'];
+                }
+                break;
+        }
+        if (is_string($showhelp)) {
+            $showhelp = ($showhelp == 'showhelp');
+        }
+        if ($showhelp) {
+            $mform->addHelpButton($name, $strname, $this->subpluginname);
+        }
     }
 
     /**
@@ -292,7 +316,22 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
+     * Add a filemanager field to the given $mform
+     * File manager can store multiple files intended to be kept on the server.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name
+     * @param array $attributes (optional, default=null)
+     * @param array $options (optional, default=null)
+     * @return void (but will update $mform)
+     */
+    public function add_field_filemanager($mform, $name, $attributes=null, $options=null) {
+        $this->add_field_file('filemanager', $mform, $name, $attributes, $options);
+    }
+
+    /**
      * Add a filepicker field to the given $mform
+     * File picker is intended to select a disposable file.
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $name
@@ -301,9 +340,23 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
+        $this->add_field_file('filepicker', $mform, $name, $attributes, $options);
+    }
+
+    /**
+     * Add a filepicker or filemanager field to the given $mform.
+     *
+     * @param string $type either "filemanager" or "filepicker"
+     * @param moodleform $mform representing the Moodle form
+     * @param string $name
+     * @param array $attributes (optional, default=null)
+     * @param array $options (optional, default=null)
+     * @return void (but will update $mform)
+     */
+    public function add_field_file($type, $mform, $name, $attributes=null, $options=null) {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
-        $mform->addElement('filepicker', $name, $label, $attributes, $options);
+        $mform->addElement($type, $name, $label, $attributes, $options);
         $mform->addHelpButton($name, $strname, $this->subpluginname);
         if ($options) {
             if (is_array($options) && array_key_exists('required', $options)) {

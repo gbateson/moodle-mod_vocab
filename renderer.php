@@ -106,8 +106,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function modedit_icon() {
         $params = [
             'update' => $this->vocab->cm->id,
-            'return' => 1,
             'sesskey' => sesskey(),
+            'return' => 1,
         ];
         $url = new moodle_url('/course/modedit.php', $params);
         $img = $this->pix_icon('t/edit', get_string('edit'));

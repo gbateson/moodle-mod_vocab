@@ -1,3 +1,4 @@
+/** Restrict the width of the sections in the main form */ 
 #vocabtool_import_form {
     max-width: 640px;
 }

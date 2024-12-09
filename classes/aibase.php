@@ -47,8 +47,11 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var array the names of date settings that this subplugin maintains. */
     const DATESETTINGNAMES = [];
 
+    /** @var array the names of file settings that this subplugin maintains. */
+    const FILESETTINGNAMES = [];
+
     /**
-     * @var boolean to signify whether or not duplicate records,
+     * @var bool to signify whether or not duplicate records,
      * i.e. records with the same owner and context, are allowed.
      */
     const ALLOW_DUPLICATES = false;
@@ -76,10 +79,20 @@ class aibase extends \mod_vocab\subpluginbase {
      * Is the given setting $name a date setting?
      *
      * @param string $name the name of the setting to be checked.
-     * @return boolean TRUE if the $name is that of a data settings; otherwise FALSE
+     * @return boolean TRUE if the $name is that of a date settings; otherwise FALSE
      */
     public function is_date_setting($name) {
         return in_array($name, static::DATESETTINGNAMES);
+    }
+
+    /**
+     * Is the given setting $name a file setting?
+     *
+     * @param string $name the name of the setting to be checked.
+     * @return boolean TRUE if the $name is that of a file settings; otherwise FALSE
+     */
+    public function is_file_setting($name) {
+        return in_array($name, static::FILESETTINGNAMES);
     }
 
     /**
@@ -382,11 +395,23 @@ class aibase extends \mod_vocab\subpluginbase {
                     $DB->delete_records($table, $params);
                 }
             } else {
-                if ($this->is_date_setting($name)) {
-                    $value = $this->get_date_value($settings->$name);
-                } else {
-                    $value = $settings->$name;
+                $value = $settings->$name;
+
+                // Special processing for data and file fields.
+                switch (true) {
+
+                    case $this->is_date_setting($name):
+                        $value = $this->get_date_value($value);
+                        break;
+
+                    case $this->is_file_setting($name):
+                        // Copy the file to the file area for this field
+                        // using the config id as the "itemid" for the file.
+                        file_save_draft_area_files($value, $config->contextid, $this->plugin, $name, $config->id);
+                        $value = $config->id;
+                        break;
                 }
+
                 if ($setting = $DB->get_record($table, $params)) {
                     // Update previous value, if it has changed.
                     if ($setting->value != $value) {

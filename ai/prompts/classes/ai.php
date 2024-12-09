@@ -48,7 +48,7 @@ class ai extends \mod_vocab\aibase {
     ];
 
     /**
-     * @var boolean to signify whether or not duplicate records,
+     * @var bool to signify whether or not duplicate records,
      * i.e. records with the same owner and context, are allowed.
      */
     const ALLOW_DUPLICATES = true;

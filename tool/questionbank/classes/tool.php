@@ -40,31 +40,31 @@ class tool extends \mod_vocab\toolbase {
     /** @var string holds the name of the log table */
     const LOGTABLE = 'vocabtool_questionbank_log';
 
-    /** @var integer database value signifying the task status is not set yet */
+    /** @var int database value signifying the task status is not set yet */
     const TASKSTATUS_NOTSET = 0;
 
-    /** @var integer database value signifying the task has been queued */
+    /** @var int database value signifying the task has been queued */
     const TASKSTATUS_QUEUED = 1;
 
-    /** @var integer database value signifying the task results are being fetched */
+    /** @var int database value signifying the task results are being fetched */
     const TASKSTATUS_FETCHING_RESULTS = 2;
 
-    /** @var integer database value signifying the task results are awaiting review by a teacher or admin */
+    /** @var int database value signifying the task results are awaiting review by a teacher or admin */
     const TASKSTATUS_AWAITING_REVIEW = 3;
 
-    /** @var integer database value signifying the task results are ready to be imported into Moodle */
+    /** @var int database value signifying the task results are ready to be imported into Moodle */
     const TASKSTATUS_AWAITING_IMPORT = 4;
 
-    /** @var integer database value signifying the task results are being imported into Moodle */
+    /** @var int database value signifying the task results are being imported into Moodle */
     const TASKSTATUS_IMPORTING_RESULTS = 5;
 
-    /** @var integer database value signifying the task has been completed */
+    /** @var int database value signifying the task has been completed */
     const TASKSTATUS_COMPLETED = 6;
 
-    /** @var integer database value signifying the task was cancelled after being reviewed */
+    /** @var int database value signifying the task was cancelled after being reviewed */
     const TASKSTATUS_CANCELLED = 7;
 
-    /** @var integer database value signifying the task failed for some reason, e.g. a program error or unexpected setting */
+    /** @var int database value signifying the task failed for some reason, e.g. a program error or unexpected setting */
     const TASKSTATUS_FAILED = 8;
 
     /**

@@ -58,6 +58,14 @@ $string['gamesopen_help'] = 'Students can view and interact with games starting 
 $string['gamesclose'] = 'Games playable until';
 $string['gamesclose_help'] = 'Students can view and interact with games until this date and time. After this date, students cannot access the games, but they can still view their results.';
 
+$string['gradedesc'] = 'The grade is set as the percentage of vocabulary items that have been mastered, according to the "Word mastery conditions" defined below.';
+
+$string['gradepartial'] = 'Include partial grades';
+$string['gradepartial_help'] = 'Choose whether or not to include partial word grades in the activity grade. A partial word grade is the grade for a word that has been studied but not yet fully mastered according to the "Word mastery conditions" defined below.';
+
+$string['grademax'] = 'Maximum grade';
+$string['grademax_help'] = 'This setting specifies the maximum grade for this activity. If set to 0, this activity does not appear in the grades pages.';
+
 $string['nowordsforyou'] = 'Sorry, this vocabulary activity does not yet contain any words for you to study. Please try again later.';
 $string['nowordsfound'] = 'This vocabulary activity does not yet contain any words. Please use the tools menu to import or define a word list.';
 

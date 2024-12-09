@@ -49,8 +49,11 @@ $string['chatgptkey'] = 'ChatGPT key';
 $string['chatgptmodel_help'] = 'The ChatGPT model to be used e.g. gpt-3.5-turbo, gpt-4';
 $string['chatgptmodel'] = 'ChatGPT model';
 
-$string['chatgptfile_help'] = 'The name of the training file, that is used for fine-tuning of the ChatGPT response. This is not required, but it can greatly increase the usefulness of the responses from ChatGPT.';
-$string['chatgptfile'] = 'Training file';
+$string['gpt-3.5-turbo'] = 'A fast, inexpensive model for simple tasks.';
+$string['gpt-4'] = 'Multilingual and better at complex reasoning.';
+$string['gpt-4-turbo'] = 'Simlilar to GPT-4 but can understand images.';
+$string['gpt-4o-mini'] = 'Intelligent small model for fast, lightweight tasks.';
+$string['gpt-4o'] = 'High-intelligence flagship model for complex, multi-step tasks.';
 
 $string['temperature_help'] = 'This setting controls how randomly the AI engine choses the next word. A low value (e.g. 0.2) means that only one of the most likely words will be chosen. A high value (e.g. 0.7) means that less likely words could also be chosen, resulting in more diverse and creative output.';
 $string['temperature'] = 'Temperature';

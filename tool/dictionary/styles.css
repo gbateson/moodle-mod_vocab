@@ -1,3 +1,8 @@
+/** Set background color on form headings. */
+.path-mod-vocab-tool-dictionary fieldset.collapsible > div:first-of-type:not(.fcontainer) {
+    background-color: #ccffcc;
+}
+
 .vocabtool_dictionary thead tr {
     /* bg-primary and text-light */
     background-color: #0f6cbf;

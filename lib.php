@@ -88,6 +88,9 @@ function vocab_add_instance($data, $mform) {
 
     $id = $DB->insert_record('vocab', $data);
 
+    // Add the gradebook item for this Vocab acitivity.
+    vocab_grade_item_update($data);
+
     $time = (empty($data->completionexpected) ? null : $data->completionexpected);
     \core_completion\api::update_completion_date_event($data->coursemodule, 'vocab', $id, $time);
 
@@ -111,6 +114,9 @@ function vocab_update_instance($data, $mform) {
     $data->id = $data->instance;
 
     $DB->update_record('vocab', $data);
+
+    // Add the gradebook item for this Vocab acitivity.
+    vocab_grade_item_update($data);
 
     $time = (empty($data->completionexpected) ? null : $data->completionexpected);
     \core_completion\api::update_completion_date_event($data->coursemodule, 'vocab', $data->id, $time);
@@ -188,6 +194,163 @@ function vocab_delete_instance($id) {
 }
 
 
+/*////////////////////*/
+// Gradebook API.
+/*////////////////////*/
+
+/**
+ * Creates or updates grade items for the given vocab instance
+ *
+ * Needed by grade_update_mod_grades() in lib/gradelib.php.
+ * Also used by vocab_update_grades().
+ *
+ * @param object $vocab object with extra cmidnumber and modname property
+ * @param mixed $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
+ * @return int 0 if ok, error code otherwise
+ */
+function vocab_grade_item_update($vocab, $grades=null) {
+    global $CFG;
+    require_once($CFG->dirroot.'/lib/gradelib.php');
+
+    // Sanity check on $vocab->id.
+    if (empty($vocab->id) || empty($vocab->course)) {
+        return;
+    }
+
+    // Set up params for grade_update().
+    $params = ['itemname' => $vocab->name];
+    if ($grades === 'reset') {
+        $params['reset'] = true;
+        $grades = null;
+    }
+    if (isset($vocab->cmidnumber)) {
+        // The "cmidnumber" property may not be always present.
+        $params['idnumber'] = $vocab->cmidnumber;
+    }
+    if (empty($vocab->grademax)) {
+        $params['gradetype'] = GRADE_TYPE_NONE;
+        // Note: when adding a new activity, a gradeitem will *not*
+        // be created in the grade book if gradetype==GRADE_TYPE_NONE
+        // A gradeitem will be created later if gradetype changes to GRADE_TYPE_VALUE
+        // However, the gradeitem will *not* be deleted if the activity's
+        // gradetype changes back from GRADE_TYPE_VALUE to GRADE_TYPE_NONE
+        // Therefore, we force the removal of empty gradeitems.
+        $params['deleted'] = true;
+    } else {
+        $params['gradetype'] = GRADE_TYPE_VALUE;
+        $params['grademax']  = $vocab->grademax;
+        $params['grademin']  = 0;
+    }
+    return grade_update('mod/vocab', $vocab->course, 'mod', 'vocab', $vocab->id, 0, $grades, $params);
+}
+
+/**
+ * vocab_get_grades
+ *
+ * @param stdclass $vocab object with extra cmidnumber and modname property
+ * @param integer $userid >0 update grade of specific user only, 0 means all participants
+ * @param string $timefield (optional, default="timefinish")
+ * @return array of grades
+ */
+function vocab_get_grades($vocab, $userid, $timefield='timefinish') {
+    global $DB;
+    // ToDo: return something useful here.
+    return [];
+}
+
+/**
+ * Update vocab grades in the gradebook
+ *
+ * Needed by grade_update_mod_grades() in lib/gradelib.php
+ *
+ * @param stdclass $vocab instance object with extra cmidnumber and modname property
+ * @param integer $userid >0 update grade of specific user only, 0 means all participants
+ * @param boolean $nullifnone TRUE = force creation of NULL grade if this user has no grade
+ * @return boolean TRUE if successful, FALSE otherwise
+ */
+function vocab_update_grades($vocab=null, $userid=0, $nullifnone=true) {
+    global $CFG, $DB;
+
+    if ($vocab === null) {
+        // Update/create grades for all vocabs.
+
+        // Set up sql strings.
+        $strupdating = get_string('updatinggrades', 'mod_vocab');
+        $select = 'h.*, cm.idnumber AS cmidnumber';
+        $from   = '{vocab} h, {course_modules} cm, {modules} m';
+        $where  = 'h.id = cm.instance AND cm.module = m.id AND m.name = ?';
+        $params = ['vocab'];
+
+        // Get previous record index (if any).
+        $configname = 'update_grades';
+        $configvalue = get_config('mod_vocab', $configname);
+        if (is_numeric($configvalue)) {
+            $imin = intval($configvalue);
+        } else {
+            $imin = 0;
+        }
+
+        if ($imax = $DB->count_records_sql("SELECT COUNT('x') FROM $from WHERE $where", $params)) {
+            if ($rs = $DB->get_recordset_sql("SELECT $select FROM $from WHERE $where", $params)) {
+                if (defined('CLI_SCRIPT') && CLI_SCRIPT) {
+                    $bar = false;
+                } else {
+                    $bar = new progress_bar('vocabupgradegrades', 500, true);
+                }
+                $i = 0;
+                foreach ($rs as $vocab) {
+
+                    // Update grade.
+                    if ($i >= $imin) {
+                        upgrade_set_timeout(); // Apply for more time (3 mins).
+                        vocab_update_grades($vocab, $userid, $nullifnone);
+                    }
+
+                    // Update progress bar.
+                    $i++;
+                    if ($bar) {
+                        $bar->update($i, $imax, $strupdating.": ($i/$imax)");
+                    }
+
+                    // Update record index.
+                    if ($i > $imin) {
+                        set_config($configname, $i, 'mod_vocab');
+                    }
+                }
+                $rs->close();
+            }
+        }
+
+        // Delete the record index.
+        unset_config($configname, 'mod_vocab');
+
+        return; // Finish here.
+    }
+
+    // Sanity check on $vocab->id.
+    if (! isset($vocab->id)) {
+        return false;
+    }
+
+    $grades = vocab_get_grades($vocab, $userid);
+
+    if (count($grades)) {
+        vocab_grade_item_update($vocab, $grades);
+
+    } else if ($userid && $nullifnone) {
+        // No grades for this user, but we must force the creation of a "null" grade record.
+        vocab_grade_item_update($vocab, (object)['userid' => $userid, 'rawgrade' => null]);
+
+    } else {
+        // No grades and no userid.
+        vocab_grade_item_update($vocab);
+    }
+}
+
+/*////////////////////*/
+// Navigation API.
+/*////////////////////*/
+
 /**
  * Adds module specific settings to the settings block
  *
@@ -246,7 +409,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
             'report' => [],
             'game' => [],
             'tool' => ['wordlist', 'dictionary', 'questionbank', 'import', 'phpdocs'],
-            'ai' => ['prompts', 'formats', 'chatgpt'],
+            'ai' => ['prompts', 'formats', 'files', 'chatgpt'],
         ];
 
         foreach ($types as $type => $order) {

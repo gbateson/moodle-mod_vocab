@@ -40,40 +40,40 @@ class form extends \mod_vocab\toolform {
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_import';
 
-    /** @var integer internal value to represent "Add new only" action */
+    /** @var int internal value to represent "Add new only" action */
     const ACTION_ADD_NEW_ONLY = 1;
 
-    /** @var integer internal value to represent "Add and update" action */
+    /** @var int internal value to represent "Add and update" action */
     const ACTION_ADD_AND_UPDATE = 2;
 
-    /** @var integer internal value to represent "Update existing" action */
+    /** @var int internal value to represent "Update existing" action */
     const ACTION_UPDATE_EXISTING = 3;
 
-    /** @var integer internal value to represent "Add, update and remove" action */
+    /** @var int internal value to represent "Add, update and remove" action */
     const ACTION_ADD_UPDATE_REMOVE  = 4;
 
-    /** @var integer internal value to represent "Select none" */
+    /** @var int internal value to represent "Select none" */
     const SELECT_NONE = 0;
 
-    /** @var integer internal value to represent "Select all" */
+    /** @var int internal value to represent "Select all" */
     const SELECT_ALL  = 1;
 
-    /** @var integer internal value to represent "Select new" */
+    /** @var int internal value to represent "Select new" */
     const SELECT_NEW  = 2;
 
-    /** @var integer internal value to represent "Neither meta nor data row" */
+    /** @var int internal value to represent "Neither meta nor data row" */
     const TYPE_NONE = 0;
 
-    /** @var integer internal value to represent "Meta rows" e.g. headings */
+    /** @var int internal value to represent "Meta rows" e.g. headings */
     const TYPE_META = 1;
 
-    /** @var integer internal value to represent "Data rows" */
+    /** @var int internal value to represent "Data rows" */
     const TYPE_DATA = 2;
 
-    /** @var integer internal value to represent "Dry run mode" */
+    /** @var int internal value to represent "Dry run mode" */
     const MODE_DRYRUN = 1;
 
-    /** @var integer internal value to represent "Import mode" */
+    /** @var int internal value to represent "Import mode" */
     const MODE_IMPORT = 2;
 
     /** @var string the corrent form state */
@@ -82,7 +82,7 @@ class form extends \mod_vocab\toolform {
     /** @var object representing the import data file */
     protected $phpspreadsheet = null;
 
-    /** @var boolean TRUE if branch pruning is available (Excel on Moodle >= 4.x), otherwise FALSE */
+    /** @var bool TRUE if branch pruning is available (Excel on Moodle >= 4.x), otherwise FALSE */
     protected $phpbranchpruning = null;
 
     /** @var array to hold punctuation characters */
@@ -100,10 +100,10 @@ class form extends \mod_vocab\toolform {
     /** @var array of vocab tables that have been updated by this import tool */
     protected $totals = null;
 
-    /** @var integer index on current sheet data file */
+    /** @var int index on current sheet data file */
     protected $currentsheet = 0;
 
-    /** @var integer Index on current row data file */
+    /** @var int Index on current row data file */
     protected $currentrow = 0;
 
     /** @var string name of current sheet in data file */

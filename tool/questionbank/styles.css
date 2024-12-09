@@ -1,4 +1,9 @@
-/** restrict the width of the sections in the main form */ 
+/** Set background color on form headings. */
+.path-mod-vocab-tool-questionbank fieldset.collapsible > div:first-of-type:not(.fcontainer) {
+    background-color: #ccffe6;
+}
+
+/** Restrict the width of the sections in the main form */ 
 #vocabtool_questionbank_form fieldset.collapsible {
     max-width: 760px;
 }
@@ -45,7 +50,7 @@
 }
 
 /**
- * To avoid visual overload, the drop-down menus for formats are
+ * To avoid visual overload, the drop-down menus for questionbank are
  * initially hidden using "hideIf" on the Moodle form. However, this
  * causes the height to change which in turn causes the vertically centered
  * checkbox to jump to a new position. To prevent this, we fix the height

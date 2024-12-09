@@ -52,7 +52,6 @@ class form extends \mod_vocab\toolform {
     /**
      * definition
      *
-     *
      * TODO: Finish documenting this function
      */
     public function definition() {
@@ -67,8 +66,7 @@ class form extends \mod_vocab\toolform {
         $words = $this->get_vocab()->get_wordlist_words();
         if (empty($words)) {
             $msg = $this->get_string('nowordsfound');
-            $msg = $OUTPUT->notification($msg, 'warning');
-            $mform->addElement('html', $msg);
+            $this->add_message($mform, $msg);
             return;
         }
 
@@ -94,9 +92,13 @@ class form extends \mod_vocab\toolform {
             $a = \html_writer::alist($a, ['class' => 'list-unstyled']);
             $msg = $this->get_string('missingaidetails', $a).
                    $this->get_string('addaidetails');
-            $msg = $OUTPUT->notification($msg, 'warning', false);
-            $mform->addElement('html', $msg);
+            $this->add_message($mform, $msg);
             return;
+        }
+
+        // The training files are not essential so we allow them to be empty.
+        if ($files = $this->get_config_options('files', 'filedescription', 'selectfile')) {
+            $files = [0 => get_string('none')] + $files;
         }
 
         // Cache line break for flex context.
@@ -147,6 +149,16 @@ class form extends \mod_vocab\toolform {
         $name = 'qformat';
         $options = self::get_question_formats();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'gift');
+
+        $name = 'file';
+        if (empty($files)) {
+            $url = new \moodle_url('/mod/vocab/ai/files/index.php', ['id' => $cmid]);
+            $msg = \html_writer::link($url, $this->get_string('clicktoaddfiles'));
+            $msg = $this->get_string('nofilesfound', \html_writer::empty_tag('br').$msg);
+            $this->add_field_static($mform, $name, $msg, 'showhelp');
+        } else {
+            $this->add_field_select($mform, $name, $files, PARAM_INT);
+        }
 
         // Add a heading for the "Question types".
         $name = 'questiontypes';
@@ -206,6 +218,27 @@ class form extends \mod_vocab\toolform {
         $this->add_action_buttons(true, $label);
 
         $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
+    }
+
+    /**
+     * Get a list of AI assistants that are available to the current user and context.
+     *
+     * @param object $mform the Moodle form
+     * @param string $msg the message to be displayed
+     * @param string $type of message to be displayed (optional, default='warning')
+     * @param boolean $closebutton should a "close" button be added to the message (optional, default=false)
+     * @param string $closeafter the name of previous section, if any (optional, default='logrecords')
+     * @return void, but update $mform settings and fields
+     */
+    public function add_message($mform, $msg, $type='warning', $closebutton=false, $closeafter='logrecords') {
+        global $OUTPUT;
+        if ($mform->elementExists($closeafter)) {
+            $name = 'closebeforeme';
+            $mform->add_field_static($mform, $name, '');
+            $mform->closeHeaderBefore($name);
+        }
+        $msg = $OUTPUT->notification($msg, $type, $closebutton);
+        $mform->addElement('html', $msg);
     }
 
     /**

@@ -1,5 +1,10 @@
+/** Set background color on form headings. */
+.path-mod-vocab-tool-wordlist fieldset.collapsible > div:first-of-type:not(.fcontainer) {
+    background-color: #e6ffcc;
+}
+
 /**
- * restrict the width of this form, otherwise
+ * Restrict the width of this form, otherwise
  * the file upload elements are too wide
  */ 
 #vocabtool_wordlist_form {
