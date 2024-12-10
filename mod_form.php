@@ -161,6 +161,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $name = 'grades';
         $label = get_string($name, 'grades');
         $mform->addElement('header', $name, $label);
+        $mform->setExpanded($name, true);
         // -----------------------------------------------------------------------------
 
         $name = 'gradedesc';
@@ -193,6 +194,13 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform->addHelpButton($name, 'gradecategoryonmodform', 'grades');
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
+        $name = 'gradecount';
+        $label = get_string($name, $plugin);
+        $mform->addElement('text', $name, $label, ['size' => '10']);
+        $mform->addHelpButton($name, $name, $plugin);
+        self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
+        // ToDo: add 'readgoal', 'listengoal', 'speakgoal', 'writegoal'
+
         $name = 'gradepartial';
         $label = get_string($name, $plugin);
         $mform->addElement('selectyesno', $name, $label);
@@ -200,7 +208,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT, 1);
 
         // -----------------------------------------------------------------------------
-        $name = 'wordmasteryconditions';
+        $name = 'masteryconditions';
         $label = get_string($name, $plugin);
         $mform->addElement('header', $name, $label);
         $mform->setExpanded($name, true);

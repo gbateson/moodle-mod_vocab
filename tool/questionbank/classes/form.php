@@ -758,6 +758,9 @@ class form extends \mod_vocab\toolform {
         $name = 'qformat';
         $qformat = (empty($data->$name) ? '' : $data->$name);
 
+        $name = 'file';
+        $fileid = (empty($data->$name) ? 0 : $data->$name);
+
         if (property_exists($data, 'selectedwords')) {
             unset($data->selectedwords['selectall']);
 
@@ -906,6 +909,7 @@ class form extends \mod_vocab\toolform {
                         'subcatname' => $subcatname,
                         'accessid' => $accessid,
                         'promptid' => $promptid,
+                        'fileid' => $fileid,
                         'formatid' => $qtypesettings->formatid,
                         'status' => $tool::TASKSTATUS_NOTSET,
                         'review' => $review,

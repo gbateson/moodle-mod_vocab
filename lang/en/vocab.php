@@ -58,13 +58,16 @@ $string['gamesopen_help'] = 'Students can view and interact with games starting 
 $string['gamesclose'] = 'Games playable until';
 $string['gamesclose_help'] = 'Students can view and interact with games until this date and time. After this date, students cannot access the games, but they can still view their results.';
 
-$string['gradedesc'] = 'The grade is set as the percentage of vocabulary items that have been mastered, according to the "Word mastery conditions" defined below.';
-
-$string['gradepartial'] = 'Include partial grades';
-$string['gradepartial_help'] = 'Choose whether or not to include partial word grades in the activity grade. A partial word grade is the grade for a word that has been studied but not yet fully mastered according to the "Word mastery conditions" defined below.';
+$string['gradedesc'] = 'The grade is set as the percentage of vocabulary items that have been mastered, according to the "Mastery conditions" defined below.';
 
 $string['grademax'] = 'Maximum grade';
 $string['grademax_help'] = 'This setting specifies the maximum grade for this activity. If set to 0, this activity does not appear in the grades pages.';
+
+$string['gradepartial'] = 'Include partial grades';
+$string['gradepartial_help'] = 'Choose whether or not to include partial word grades in the activity grade. A partial word grade is the grade for a word that has been studied but not yet fully mastered according to the "Mastery conditions" defined below.';
+
+$string['gradecount'] = 'Minimum number of items';
+$string['gradecount_help'] = 'The minimum number of vocabulary items that students are required to master in order to complete this activity and achieve the maximum grade. If empty, or "0", or greater than the number of items in the word list, then *all* vocabulary items must be mastered. If a student studies more than this number of items, then only the best scores will be used to calculate the grade.';
 
 $string['nowordsforyou'] = 'Sorry, this vocabulary activity does not yet contain any words for you to study. Please try again later.';
 $string['nowordsfound'] = 'This vocabulary activity does not yet contain any words. Please use the tools menu to import or define a word list.';
@@ -104,7 +107,7 @@ $string['vocab:reviewmyattempts'] = 'Review your own attempts at a Vocabulary ac
 $string['vocab:view'] = 'View a Vocabulary activity';
 $string['vocab:viewreports'] = 'View reports for a Vocabulary activity';
 
-$string['wordmasteryconditions'] = 'Word mastery conditions';
+$string['masteryconditions'] = 'Mastery conditions';
 
 $string['attemptscore'] = 'Minimum attempt score';
 $string['attemptscore_help'] = 'The minimum score required for an attempt to qualify as a successful attempt at a word.';
@@ -135,7 +138,7 @@ $string['attemptdelay'] = 'Minimum delay between attempts';
 $string['attemptdelay_help'] = 'The minimum delay between attempts. This setting can be used to prevent students from cramming their vocbulary study into a short period of time.';
 
 $string['fixeddelay'] = 'Fixed delay';
-$string['expandingdelay'] = 'Expanding delay (i.e. spaced repitition)';
+$string['expandingdelay'] = 'Expanding delay (i.e. spaced repetition)';
 
 $string['expandnavigation_help'] = 'You can use this setting to specify for whom the global navigation menu should be expanded.';
 $string['expandnavigation'] = 'Expand navigation';
