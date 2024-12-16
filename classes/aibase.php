@@ -50,6 +50,12 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var array the names of file settings that this subplugin maintains. */
     const FILESETTINGNAMES = [];
 
+    /** @var bool enable or disable trace and debugging messages during development. */
+    const DEBUG = false;
+
+    /** @var string used to denote that an adhoc task should be rescheduled. */
+    const RESCHEDULE_ADHOC_TASK = 'reschedule-adhoc-task';
+
     /**
      * @var bool to signify whether or not duplicate records,
      * i.e. records with the same owner and context, are allowed.
@@ -68,6 +74,9 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var object to represent a curl object used for connecting to an AI assistant */
     public $curl = null;
 
+    /** @var array of POST parameters to be sent via the curl object */
+    public $postparams = null;
+
     /**
      * Get the array containing the names of all the config settings for this subplugin.
      */
@@ -79,7 +88,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * Is the given setting $name a date setting?
      *
      * @param string $name the name of the setting to be checked.
-     * @return boolean TRUE if the $name is that of a date settings; otherwise FALSE
+     * @return bool TRUE if the $name is that of a date settings; otherwise FALSE
      */
     public function is_date_setting($name) {
         return in_array($name, static::DATESETTINGNAMES);
@@ -89,7 +98,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * Is the given setting $name a file setting?
      *
      * @param string $name the name of the setting to be checked.
-     * @return boolean TRUE if the $name is that of a file settings; otherwise FALSE
+     * @return bool TRUE if the $name is that of a file settings; otherwise FALSE
      */
     public function is_file_setting($name) {
         return in_array($name, static::FILESETTINGNAMES);
@@ -100,7 +109,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * such as those returned from a date field in a Moodle form.
      *
      * @param array $value time and date values to be converted to a time stamp.
-     * @return integer a time/date stamp
+     * @return int a time/date stamp
      */
     public function get_date_value($value) {
         if (is_array($value)) {
@@ -127,7 +136,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @uses $DB
      * @uses $USER
      * @param array $contexts of context ids that are relevant to the current vocab activity
-     * @param integer $configid (optional, default = 0) a specific configid
+     * @param int $configid (optional, default = 0) a specific configid
      * @param mixed $user (optional, default = null) an optional user id or record
      * @return mixed array of records from "vocab_config_settings", or FALSE if there are none.
      */
@@ -174,7 +183,7 @@ class aibase extends \mod_vocab\subpluginbase {
      *
      * @param string $returnuser (optional, default='') Either "otherusers" or "thisuser"
      * @param string $returncontext (optional, default='') Either "othercontexts" or "thiscontext"
-     * @param boolean $removeconfigid (optional, default=false)
+     * @param bool $removeconfigid (optional, default=false)
      * @return array
      */
     public function get_configs($returnuser='', $returncontext='', $removeconfigid=false) {
@@ -305,7 +314,7 @@ class aibase extends \mod_vocab\subpluginbase {
     /**
      * Find the config with the given id.
      *
-     * @param integer $configid The id of the required config record.
+     * @param int $configid The id of the required config record.
      * @return object The required config record, or NULL if it is not found.
      */
     public function find_config($configid) {
@@ -335,9 +344,9 @@ class aibase extends \mod_vocab\subpluginbase {
      * @uses $DB
      * @uses $USER
      * @param object $settings the form data containing the settings
-     * @param integer $contextid (optional, default = 0) a specific contextid
-     * @param integer $contextlevel (optional, default = 0) a specific context level
-     * @return integer if settings could be found/added the configid; otherwise 0.
+     * @param int $contextid (optional, default = 0) a specific contextid
+     * @param int $contextlevel (optional, default = 0) a specific context level
+     * @return int if settings could be found/added the configid; otherwise 0.
      */
     public function save_config_settings($settings, $contextid=0, $contextlevel=0) {
         global $DB, $USER;
@@ -412,19 +421,8 @@ class aibase extends \mod_vocab\subpluginbase {
                         break;
                 }
 
-                if ($setting = $DB->get_record($table, $params)) {
-                    // Update previous value, if it has changed.
-                    if ($setting->value != $value) {
-                        $setting->value = $value;
-                        $DB->set_field($table, 'value', $value, ['id' => $setting->id]);
-                    }
-                } else {
-                    // Add a new setting name and value.
-                    $params['value'] = $value;
-                    $setting = (object)$params;
-                    $setting->id = $DB->insert_record($table, $setting);
-                }
                 $config->$name = $value;
+                $this->save_config_setting($table, $params, $value);
             }
         }
 
@@ -434,6 +432,31 @@ class aibase extends \mod_vocab\subpluginbase {
         }
 
         return $config->id;
+    }
+
+    /**
+     * Save config setting.
+     *
+     * @uses $DB
+     * @param string $table the name of the DB table to update.
+     * @param array $params DB field names and values used to select record from $table.
+     * @param string $value the setting value to be added or updated.
+     * @return void but may update $table in the DB.
+     */
+    public function save_config_setting($table, $params, $value) {
+        global $DB;
+        if ($setting = $DB->get_record($table, $params)) {
+            // Update previous value, if it has changed.
+            if ($setting->value != $value) {
+                $setting->value = $value;
+                $DB->set_field($table, 'value', $value, ['id' => $setting->id]);
+            }
+        } else {
+            // Add a new setting name and value.
+            $params['value'] = $value;
+            $setting = (object)$params;
+            $setting->id = $DB->insert_record($table, $setting);
+        }
     }
 
     /**
@@ -612,20 +635,55 @@ class aibase extends \mod_vocab\subpluginbase {
             }
         }
     }
+
     /**
-     * Setup the connection to the AI assistant.
+     * Send a prompt to an AI assistant and get the response.
      *
-     * @param string $prompt to send to the AI assistant.
-     * @return void, but may update the "curl" property.
+     * @param string $prompt
+     * @return object containing "text" and "error" properties.
      */
-    public function setup_connection($prompt) {
+    public function get_response($prompt) {
     }
 
     /**
-     * Get response from the AI assistant.
+     * Check the prompt config values are valid and complete.
      *
-     * @return object containing "text" and "error" properties.
+     * @param object $promptconfig the config settings for this prompt.
+     * @return bool TRUE if prompt is valid; Otherwise FALSE.
      */
-    public function get_response() {
+    public function check_prompt_params($promptconfig) {
+        return true;
+    }
+
+    /**
+     * Check the format config values are valid and complete.
+     *
+     * @param object $formatconfig the config settings for this format.
+     * @return bool TRUE if format is valid; Otherwise FALSE.
+     */
+    public function check_format_params($formatconfig) {
+        return true;
+    }
+
+    /**
+     * Check the file config values are valid and complete.
+     *
+     * @param object $fileconfig the config settings for this file.
+     * @return bool TRUE if file is valid; Otherwise FALSE.
+     */
+    public function check_file_params($fileconfig) {
+        return true;
+    }
+
+    /**
+     * Should we reschedule the Moodle adhoc_task to run again later?
+     *
+     * @param object $promptconfig the config settings for the prompt
+     * @param object $formatconfig the config settings for the output format
+     * @param object $fileconfig the config settings for the AI tuning file
+     * @return bool TRUE if the adhoc task should be rescheduled; otherwise FALSE.
+     */
+    public function reschedule_task($promptconfig, $formatconfig, $fileconfig) {
+        return false;
     }
 }

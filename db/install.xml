@@ -19,6 +19,8 @@
         <FIELD NAME="gamesopen" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="gamesclose" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="grademax" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="100" SEQUENCE="false"/>
+        <FIELD NAME="gradecount" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="5" SEQUENCE="false"/>
+        <FIELD NAME="gradetype" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="gradepartial" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="attemptscore" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="80" SEQUENCE="false"/>
         <FIELD NAME="attemptcount" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="5" SEQUENCE="false"/>

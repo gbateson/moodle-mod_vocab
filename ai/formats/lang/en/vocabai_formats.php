@@ -45,27 +45,6 @@ $string['addnewformat'] = 'Add a new format';
 $string['editformat'] = 'Edit existing format';
 $string['owner'] = 'Owner';
 
-$string['sharedfrom'] = 'Shared from';
-$string['sharedfrom_help'] = 'The format is shared starting from, and including, this date and time.';
-
-$string['shareduntil'] = 'Shared until';
-$string['shareduntil_help'] = 'The format is shared up to, and including, this date and time.';
-
-$string['sharedanydate'] = 'Shared forever';
-$string['sharedfromdate'] = 'Shared from {$a}';
-$string['shareduntildate'] = 'Shared until {$a}';
-$string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
-
-$string['sharingperiod'] = 'Sharing period';
-$string['sharingcontext'] = 'Sharing context';
-$string['sharingcontext_help'] = 'The context in which this format can be shared.';
-
-$string['edit'] = 'Edit';
-$string['copy'] = 'Copy';
-$string['delete'] = 'Delete';
-
-$string['addmissingvalue'] = 'Please add a value here.';
-
 $string['deleteformat'] = 'Delete AI format';
 $string['confirmdeleteformat'] = 'Are you sure you want to delete this output format?';
 

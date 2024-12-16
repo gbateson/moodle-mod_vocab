@@ -50,6 +50,21 @@ class activity {
     /** @var int database value to represent "demo" mode */
     const MODE_DEMO = 1;
 
+    /** @var int database value to represent "any" word score */
+    const GRADETYPE_ANY = 0;
+
+    /** @var int database value to represent "highest" word scores */
+    const GRADETYPE_HIGHEST = 1;
+
+    /** @var int database value to represent "lowest" word scores */
+    const GRADETYPE_LOWEST = 2;
+
+    /** @var int database value to represent "newest" word scores */
+    const GRADETYPE_NEWEST = 3;
+
+    /** @var int database value to represent "oldest" word scores */
+    const GRADETYPE_OLDEST = 4;
+
     /** @var int database value to represent "any" attempts */
     const ATTEMPTTYPE_ANY = 0;
 
@@ -343,7 +358,7 @@ class activity {
     /**
      * Determine if the current user is prevented from viewing this Vocab activity.
      *
-     * @return boolean TRUE if user is prevented from viewing; otherwise return FALSE
+     * @return bool TRUE if user is prevented from viewing; otherwise return FALSE
      */
     public function not_viewable() {
         return ($this->viewable ? false : true);
@@ -353,7 +368,7 @@ class activity {
      * Determine if the current user is prevented from playing
      * (=interacting with) games in this Vocab activity.
      *
-     * @return boolean TRUE if user is prevented from playing; otherwise return FALSE
+     * @return bool TRUE if user is prevented from playing; otherwise return FALSE
      */
     public function not_playable() {
         return ($this->playable ? false : true);
@@ -397,7 +412,7 @@ class activity {
      * Get a URL connected to this plugin.
      *
      * @param string $filepath
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=array)
      * @return string a URL connected to this plugin
      */
@@ -416,7 +431,7 @@ class activity {
     /**
      * Get the URL of the main view page for this plugin.
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string URL of the main view page for this plugin
      */
@@ -427,7 +442,7 @@ class activity {
     /**
      * Get the URL of the report page for this plugin.
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string URL of the report page for this plugin
      */
@@ -438,7 +453,7 @@ class activity {
     /**
      * Get the URL of the attempt page for this plugin.
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string URL of the attempt page for this plugin
      */
@@ -449,7 +464,7 @@ class activity {
     /**
      * Get the URL of the submit page for this plugin.
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string URL of the submit page for this plugin
      */
@@ -460,7 +475,7 @@ class activity {
     /**
      * Get the URL of the attempt page for this plugin.
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string URL of the review page for this plugin
      */
@@ -471,7 +486,7 @@ class activity {
     /**
      * Get the URL of the index page for this plugin.
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string the URL of the index page for this plugin
      */
@@ -520,7 +535,7 @@ class activity {
     /**
      * require_login
      *
-     * @return boolean TRUE if user has required capability; otherwise FALSE.
+     * @return bool TRUE if user has required capability; otherwise FALSE.
      */
     public function require_login() {
         return require_login($this->course, false, $this->cm);
@@ -543,7 +558,7 @@ class activity {
      *
      * @param string $capability
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user has the specified capability in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user has the specified capability in the current context. Otherwise, FALSE.
      */
     public function can($capability, $user=null) {
         return has_capability("{$this->pluginpath}:$capability", $this->context, $user);
@@ -553,7 +568,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:addinstance". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can add instance in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can add instance in the current context. Otherwise, FALSE.
      */
     public function can_addinstance($user=null) {
         return $this->can('addinstance', $user);
@@ -563,7 +578,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:manage". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can manage the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can manage the current context. Otherwise, FALSE.
      */
     public function can_manage($user=null) {
         return $this->can('manage', $user);
@@ -573,7 +588,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:viewreports". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can view reports in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can view reports in the current context. Otherwise, FALSE.
      */
     public function can_viewreports($user=null) {
         return $this->can('viewreports', $user);
@@ -583,7 +598,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:deleteattempts". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can delete attempts in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can delete attempts in the current context. Otherwise, FALSE.
      */
     public function can_deleteattempts($user=null) {
         return $this->can('deleteattempts', $user);
@@ -593,7 +608,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:view". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can view Vocab activities in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can view Vocab activities in the current context. Otherwise, FALSE.
      */
     public function can_view($user=null) {
         return $this->can('view', $user);
@@ -603,7 +618,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:attempt". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can view attempt games in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can view attempt games in the current context. Otherwise, FALSE.
      */
     public function can_attempt($user=null) {
         return $this->can('attempt', $user);
@@ -613,7 +628,7 @@ class activity {
      * Return TRUE is user has capability "mod/vocab:reviewmyattempts". Otherwise, FALSE.
      *
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
-     * @return boolean TRUE if $user can review their own game attempts in the current context. Otherwise, FALSE.
+     * @return bool TRUE if $user can review their own game attempts in the current context. Otherwise, FALSE.
      */
     public function can_reviewmyattempts($user=null) {
         return $this->can('reviewmyattempts', $user);
@@ -661,7 +676,7 @@ class activity {
      * get_userids that are accessible to the current user.
      *
      * @uses $DB
-     * @param integer $groupid (optional, default=0)
+     * @param int $groupid (optional, default=0)
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -697,7 +712,7 @@ class activity {
     /**
      * is_demo
      *
-     * @return boolean
+     * @return bool
      *
      * TODO: Finish documenting this function
      */

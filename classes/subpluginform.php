@@ -147,11 +147,12 @@ abstract class subpluginform extends \moodleform {
      * @param object $mform representing the Moodle form
      * @param string $name the name of this heading
      * @param string $component
-     * @param boolean $expanded
+     * @param bool $expanded
+     * @param array $a required for header string (optional, default=null)
      * @return void (but will update $mform)
      */
-    public function add_heading($mform, $name, $component, $expanded) {
-        $label = get_string($name, $component);
+    public function add_heading($mform, $name, $component, $expanded, $a=null) {
+        $label = get_string($name, $component, $a);
         $mform->addElement('header', $name, $label);
         if (method_exists($mform, 'setExpanded')) {
             $mform->setExpanded($name, $expanded);
@@ -185,7 +186,7 @@ abstract class subpluginform extends \moodleform {
                 break;
 
             case is_array($attributes):
-                if (array_key_exists($attributes, 'showhelp')) {
+                if (array_key_exists('showhelp', $attributes)) {
                     $showhelp = $attributes['showhelp'];
                 }
                 break;

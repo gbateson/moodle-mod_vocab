@@ -147,7 +147,7 @@ class subpluginbase {
      * Creates a url for this subplugin
      *
      * @param string $filepath
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return xxx
      *
@@ -168,7 +168,7 @@ class subpluginbase {
     /**
      * Creates a url for this tool
      *
-     * @param boolean $escaped (optional, default=null)
+     * @param bool $escaped (optional, default=null)
      * @param array $params (optional, default=[])
      * @return string the URL of the index file for this plugin
      */

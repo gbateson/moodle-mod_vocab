@@ -41,7 +41,7 @@ abstract class toolform extends \mod_vocab\subpluginform {
      * @uses $DB
      * @param string $table name of a table in the database
      * @param array $fields array of database field names and values
-     * @return integer
+     * @return int
      */
     public function get_record_id($table, $fields) {
         global $DB;

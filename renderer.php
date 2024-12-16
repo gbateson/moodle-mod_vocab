@@ -389,9 +389,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     /**
      * Build HTML to display the pie-chart as an SVG image.
      *
-     * @param integer $radius radius of the pie-chart (in pixels)
-     * @param integer $offsetx the "x" offset (in pixels) to the left hand edge of the pie chart
-     * @param integer $offsety the "y" offset (in pixels) to the top edge of the pie chart
+     * @param int $radius radius of the pie-chart (in pixels)
+     * @param int $offsetx the "x" offset (in pixels) to the left hand edge of the pie chart
+     * @param int $offsety the "y" offset (in pixels) to the top edge of the pie chart
      * @param array $values numbers to be displayed as a pie-chart
      * @param array $colors strings colors expressed as RGB colors
      * @param array $params settings to be used in the <path> tag e.g. "stroke", "stroke-width"
@@ -468,11 +468,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
     /**
      * Generate SVG code for the pie-graph's key.
      *
-     * @param integer $xoffset
-     * @param integer $xspace
-     * @param integer $yoffset
-     * @param integer $yspace
-     * @param integer $size
+     * @param int $xoffset
+     * @param int $xspace
+     * @param int $yoffset
+     * @param int $yspace
+     * @param int $size
      * @param array $colors strings colors expressed as RGB colors
      * @param string $delimiter
      * @param array $texts
@@ -643,7 +643,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      *
      * @param string $startcolor an RGB color, e.g. '#ff6633'.
      * @param string $endcolor an RGB color, e.g. '#aabbcc'.
-     * @param integer $n number of colors to return.
+     * @param int $n number of colors to return.
      * @return array containing "n" number of RGB colors.
      */
     public function get_colors($startcolor, $endcolor, $n) {

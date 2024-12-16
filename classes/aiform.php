@@ -34,6 +34,33 @@ namespace mod_vocab;
  * @since      Moodle 3.11
  */
 abstract class aiform extends \mod_vocab\subpluginform {
+
+    /**
+     * Add sharing fields: context, sharedfrom shareduntil.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param array $default
+     * @return void (but will update $mform)
+     */
+    public function add_sharing_fields($mform, $default) {
+        $name = 'sharingcontext';
+        $options = $this->get_sharingcontext_options();
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);
+
+        // Shared from/until date are both optional.
+        $params = ['optional' => true];
+
+        // Shared from date and time (default is start of today).
+        $name = 'sharedfrom';
+        $params['defaulttime'] = $default->$name;
+        $this->add_field_datetime($mform, $name, $params);
+
+        // Shared until date and time (default is end of today).
+        $name = 'shareduntil';
+        $params['defaulttime'] = $default->$name;
+        $this->add_field_datetime($mform, $name, $params);
+    }
+
     /**
      * Add a filepicker or filemanager field to the given $mform.
      *

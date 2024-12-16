@@ -169,18 +169,14 @@ class mod_vocab_mod_form extends moodleform_mod {
         $html = \html_writer::tag('div', $html, ['class' => 'px-2 px-md-4']);
         $mform->addElement('html', $html);
 
-        $name = 'grademax';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, ['size' => '10']);
-        $mform->addHelpButton($name, $name, $plugin);
-        self::set_type_default_advanced($mform, $config, $name, PARAM_INT, 100);
+        $this->add_grademax($mform, $plugin);
 
         // Note: the min pass grade field must be called "gradepass" so that
         // it is recognized by edit_module_post_actions() in "course/modlib.php"
         // Also, FEATURE_GRADE_HAS_GRADE must be enabled in "mod/vocab/lib.php".
         $name = 'gradepass';
         $label = get_string($name, 'grades');
-        $mform->addElement('text', $name, $label, ['size' => '10']);
+        $mform->addElement('text', $name, $label, ['size' => '4']);
         $mform->addHelpButton($name, $name, 'grades');
         self::set_type_default_advanced($mform, $config, $name, PARAM_FLOAT, 60);
 
@@ -194,18 +190,8 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform->addHelpButton($name, 'gradecategoryonmodform', 'grades');
         self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
 
-        $name = 'gradecount';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, ['size' => '10']);
-        $mform->addHelpButton($name, $name, $plugin);
-        self::set_type_default_advanced($mform, $config, $name, PARAM_INT);
-        // ToDo: add 'readgoal', 'listengoal', 'speakgoal', 'writegoal'
-
-        $name = 'gradepartial';
-        $label = get_string($name, $plugin);
-        $mform->addElement('selectyesno', $name, $label);
-        $mform->addHelpButton($name, $name, $plugin);
-        self::set_type_default_advanced($mform, $config, $name, PARAM_INT, 1);
+        $this->add_gradecount($mform, $plugin);
+        $this->add_gradepartial($mform, $plugin);
 
         // -----------------------------------------------------------------------------
         $name = 'masteryconditions';
@@ -246,6 +232,78 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
+     * Add the gradescore field to the $mform.
+     *
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
+     */
+    public function add_grademax($mform, $plugin) {
+        $name = 'grademax';
+        $label = get_string($name, $plugin);
+        $mform->addElement('text', $name, $label, ['size' => '4']);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, 100);
+    }
+
+    /**
+     * Add the gradecount field to the $mform.
+     *
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
+     */
+    public function add_gradecount($mform, $plugin) {
+        global $OUTPUT;
+
+        $elements = [];
+
+        $namecount = 'gradecount';
+        $labelcount = get_string($namecount, $plugin);
+        $elements[] = $mform->createElement('text', $namecount, $labelcount, ['size' => '4']);
+        // ToDo: Consider adding readgoal, listengoal, speakgoal, writegoal.
+
+        $nametype = 'gradetype';
+        $labeltype = get_string($nametype, $plugin);
+        $options = [
+            \mod_vocab\activity::GRADETYPE_HIGHEST => get_string('highestwordscores', $plugin),
+            \mod_vocab\activity::GRADETYPE_LOWEST => get_string('lowestwordscores', $plugin),
+            \mod_vocab\activity::GRADETYPE_NEWEST => get_string('newestwordscores', $plugin),
+            \mod_vocab\activity::GRADETYPE_OLDEST => get_string('oldestwordscores', $plugin),
+        ];
+        $elements[] = $mform->createElement('select', $nametype, $labeltype, $options);
+        $elements[] = $mform->createElement('html', $OUTPUT->help_icon($nametype, $plugin));
+
+        $groupname = $namecount.'elements';
+        $mform->addGroup($elements, $groupname, $labelcount, [' '], false);
+        $mform->addHelpButton($groupname, $namecount, $plugin);
+
+        $mform->setType($namecount, PARAM_INT);
+        $mform->setDefault($namecount, 0);
+
+        $mform->setType($nametype, PARAM_INT);
+        $mform->setDefault($nametype, \mod_vocab\activity::GRADETYPE_HIGHEST);
+    }
+
+    /**
+     * Add the gradepartial field to the $mform.
+     *
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
+     */
+    public function add_gradepartial($mform, $plugin) {
+        $name = 'gradepartial';
+        $label = get_string($name, $plugin);
+        $mform->addElement('selectyesno', $name, $label);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, 1);
+    }
+
+
+    /**
      * Add the attemptscore field to the $mform.
      *
      * @param object $mform representing the Moodle form
@@ -255,7 +313,7 @@ class mod_vocab_mod_form extends moodleform_mod {
     public function add_attemptscore($mform, $plugin) {
         $name = 'attemptscore';
         $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, ['size' => '2']);
+        $mform->addElement('text', $name, $label, ['size' => '4']);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, 80);
@@ -398,7 +456,7 @@ class mod_vocab_mod_form extends moodleform_mod {
      * Determine whether or not a completion rule is enabled.
      *
      * @param stdClass $data submitted from the form
-     * @return boolean
+     * @return bool
      */
     public function completion_rule_enabled($data) {
         return false;

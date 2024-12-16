@@ -99,6 +99,10 @@ $string['error_missingcoursecategory'] = 'Could not locate or create a question 
 $string['error_missingwordinstance'] = 'Word "{$a->word}" is not in the word list for this Vocabulary activity.';
 $string['error_recordnotadded'] = 'Could not add record to table {$a->table}: {$a->record}';
 
+$string['error_invalidprompt'] = 'Invalid AI prompt (id={$a->id}): {$a->name}';
+$string['error_invalidformat'] = 'Invalid AI format (id={$a->id}): {$a->name}';
+$string['error_invalidfile'] = 'Invalid AI file (id={$a->id}): {$a->name}';
+
 $string['catname_course'] = 'Vocabulary: {$a->coursename}';
 $string['catname_section'] = '{$a->sectiontype}: {$a->sectionname}';
 $string['catname_vocab'] = '{$a->vocabname}';
@@ -147,6 +151,7 @@ $string['questionlevel_help'] = 'questionlevel_help';
 $string['questionlevel'] = 'Question level';
 $string['promptname'] = 'AI prompt name';
 $string['formatname'] = 'AI format name';
+$string['filedescription'] = 'AI tuning file';
 $string['subcattype_help'] = 'subcattype_help';
 $string['subcattype'] = 'Subcategory type';
 $string['subcatname_help'] = 'subcatname_help';
@@ -167,13 +172,14 @@ $string['invalidquestioncategory'] = 'Invalid question category (id={$a})';
 $string['resultsnotparsed'] = 'Results for {$a} could not be parsed.';
 $string['emptyresults'] = 'Results from AI assistant were empty.';
 
-$string['logrecords'] = 'Log records';
+$string['logrecords'] = 'Log records {$a}';
 $string['selectedlogrecord'] = 'Selected log record';
 
 $string['taskstatus_help'] = 'taskstatus_help';
 $string['taskstatus'] = 'Task status';
 $string['taskstatus_notset'] = 'Not set';
 $string['taskstatus_queued'] = 'Task queued';
+$string['taskstatus_checkingparams'] = 'Checking parameters';
 $string['taskstatus_fetchingresults'] = 'Fetching results';
 $string['taskstatus_awaitingreview'] = 'Awaiting review of results';
 $string['taskstatus_awaitingimport'] = 'Waiting to import results';
@@ -219,6 +225,7 @@ $string['truefalseshort'] = 'TF';
 $string['sassessmentshort'] = 'Speak(assessment)';
 
 $string['moodlequestions'] = 'Moodle questions';
+$string['checkingparams'] = '... checking parameters';
 $string['generatingquestions'] = '... generating {$a->count} questions for "{$a->word}"';
 $string['importingquestions'] = '... importing {$a->count} questions for "{$a->word}"';
 

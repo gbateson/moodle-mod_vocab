@@ -46,26 +46,29 @@ class tool extends \mod_vocab\toolbase {
     /** @var int database value signifying the task has been queued */
     const TASKSTATUS_QUEUED = 1;
 
+    /** @var int database value signifying that task parameters are being checked */
+    const TASKSTATUS_CHECKING_PARAMS = 2;
+
     /** @var int database value signifying the task results are being fetched */
-    const TASKSTATUS_FETCHING_RESULTS = 2;
+    const TASKSTATUS_FETCHING_RESULTS = 3;
 
     /** @var int database value signifying the task results are awaiting review by a teacher or admin */
-    const TASKSTATUS_AWAITING_REVIEW = 3;
+    const TASKSTATUS_AWAITING_REVIEW = 4;
 
     /** @var int database value signifying the task results are ready to be imported into Moodle */
-    const TASKSTATUS_AWAITING_IMPORT = 4;
+    const TASKSTATUS_AWAITING_IMPORT = 5;
 
     /** @var int database value signifying the task results are being imported into Moodle */
-    const TASKSTATUS_IMPORTING_RESULTS = 5;
+    const TASKSTATUS_IMPORTING_RESULTS = 6;
 
     /** @var int database value signifying the task has been completed */
-    const TASKSTATUS_COMPLETED = 6;
+    const TASKSTATUS_COMPLETED = 7;
 
     /** @var int database value signifying the task was cancelled after being reviewed */
-    const TASKSTATUS_CANCELLED = 7;
+    const TASKSTATUS_CANCELLED = 8;
 
     /** @var int database value signifying the task failed for some reason, e.g. a program error or unexpected setting */
-    const TASKSTATUS_FAILED = 8;
+    const TASKSTATUS_FAILED = 9;
 
     /**
      * Return a default log record with values initialized to 0 or "".
@@ -86,6 +89,7 @@ class tool extends \mod_vocab\toolbase {
             'accessid' => 0,
             'promptid' => 0,
             'formatid' => 0,
+            'fileid' => 0,
             'parentcatid' => 0,
             'subcattype' => '',
             'subcatname' => '',
@@ -107,7 +111,7 @@ class tool extends \mod_vocab\toolbase {
      *
      * @param object $log
      * @param array $params
-     * @return boolean TRUE if new values were supplied in $params, otherwise FALSE.
+     * @return bool TRUE if new values were supplied in $params, otherwise FALSE.
      */
     public static function add_log_params($log, $params) {
         $update = false;
@@ -126,7 +130,7 @@ class tool extends \mod_vocab\toolbase {
      * adhoc task that prompts an AI assistant and receives results.
      *
      * @param array $params
-     * @return integer of newly created record (or FALSE on failure)
+     * @return int of newly created record (or FALSE on failure)
      */
     public static function insert_log($params) {
         global $DB;
@@ -138,7 +142,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Get a record from the log table using the given $id.
      *
-     * @param integer $id
+     * @param int $id
      * @return object the record form the log table
      */
     public static function get_log($id) {
@@ -149,9 +153,9 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Update a record in the log table.
      *
-     * @param integer $id
+     * @param int $id
      * @param array $params
-     * @return boolean, TRUE if log was updated, otherwise FALSE
+     * @return bool, TRUE if log was updated, otherwise FALSE
      */
     public static function update_log($id, $params) {
         global $DB;
@@ -179,7 +183,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Get records from the log table using the given $vocabid.
      *
-     * @param integer $vocabid
+     * @param int $vocabid
      * @return array of records from the log table
      */
     public static function get_logs($vocabid) {

@@ -293,9 +293,9 @@ class tool extends \mod_vocab\toolbase {
     /**
      * get_report_remove_fix
      *
-     * @param integer $action
-     * @param boolean $missing
-     * @param boolean $incorrect
+     * @param int $action
+     * @param bool $missing
+     * @param bool $incorrect
      * @param moodleform $mform representing the Moodle form
      * @return xxx
      *
@@ -345,9 +345,9 @@ class tool extends \mod_vocab\toolbase {
      * @param moodleform $mform representing the Moodle form
      * @param stdClass $data submitted from the form
      * @param string $filepath
-     * @param integer $action
+     * @param int $action
      * @param string $contents (passed by reference)
-     * @param boolean $update (passed by reference)
+     * @param bool $update (passed by reference)
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -385,7 +385,7 @@ class tool extends \mod_vocab\toolbase {
      * remove_copyright
      *
      * @param string $contents (passed by reference)
-     * @param boolean $update (passed by reference)
+     * @param bool $update (passed by reference)
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -405,7 +405,7 @@ class tool extends \mod_vocab\toolbase {
      * add_copyright
      *
      * @param string $contents (passed by reference)
-     * @param boolean $update (passed by reference)
+     * @param bool $update (passed by reference)
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -430,9 +430,9 @@ class tool extends \mod_vocab\toolbase {
      * @param moodleform $mform representing the Moodle form
      * @param stdClass $data submitted from the form
      * @param string $filepath
-     * @param integer $action
+     * @param int $action
      * @param string $contents (passed by reference)
-     * @param boolean $update (passed by reference)
+     * @param bool $update (passed by reference)
      *
      * TODO: Finish documenting this function
      */
@@ -461,9 +461,9 @@ class tool extends \mod_vocab\toolbase {
      * @param moodleform $mform representing the Moodle form
      * @param stdClass $data submitted from the form
      * @param string $filepath
-     * @param integer $action
+     * @param int $action
      * @param string $contents (passed by reference)
-     * @param boolean $update (passed by reference)
+     * @param bool $update (passed by reference)
      * @param xxx $type
      * @return xxx
      *
@@ -852,7 +852,7 @@ class tool extends \mod_vocab\toolbase {
      * @param string $blockname name of this function or code block
      * @param object $parseold parsed version of the old PHPDocs
      * @param object $parsenew parsed version of the expected PHPDocs
-     * @return boolean TRUE if params are different, FALSE if they are the same.
+     * @return bool TRUE if params are different, FALSE if they are the same.
      */
     public function different_params($blockname, $parseold, $parsenew) {
         if (array_key_exists('param', $parseold->tags)) {
@@ -969,7 +969,7 @@ END;
      *
      * @param string $filepath relative to $CFG->dirroot
      * @param string $contents the content of the file
-     * @param integer $start position of the start of this block with the file contents
+     * @param int $start position of the start of this block with the file contents
      * @param string $indent white space to begin each line of PHPdocs
      * @param string $blockname the function name e.g. "xmldb_vocab_check_structure"
      * @param string $parameters the function parameters e.g. "($dbman, $tablenames=null)"
@@ -1054,7 +1054,7 @@ END;
      * remove_phpdocs
      *
      * @param string $contents (passed by reference)
-     * @param boolean $update (passed by reference)
+     * @param bool $update (passed by reference)
      * @return xxx
      *
      * TODO: Finish documenting this function

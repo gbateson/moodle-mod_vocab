@@ -86,6 +86,7 @@ class questions extends \core\task\adhoc_task {
         $accessid = $log->accessid;
         $promptid = $log->promptid;
         $formatid = $log->formatid;
+        $fileid = $log->fileid;
 
         $review = $log->review;
 
@@ -134,6 +135,7 @@ class questions extends \core\task\adhoc_task {
             return $this->report_error($log, 'invalidteacherid', $a);
         }
 
+        // Check the essential elements (key, prompt, format) are available.
         $a = [];
         if (! $accessconfig = $this->get_config($accessid)) {
             $a[] = "accessid ($accessid)";
@@ -143,6 +145,13 @@ class questions extends \core\task\adhoc_task {
         }
         if (! $formatconfig = $this->get_config($formatid)) {
             $a[] = "formatid ($formatid)";
+        }
+        // If fileid is given, it must be valid.
+        // If it is null, blank or zero, we just ignore it.
+        if (! $fileconfig = $this->get_config($fileid)) {
+            if ($fileid) {
+                $a[] = "fileid ($fileid)";
+            }
         }
         if ($a = implode(', ', $a)) {
             return $this->report_error($log, 'invalidtaskparameters', $a);
@@ -173,12 +182,57 @@ class questions extends \core\task\adhoc_task {
             return; // No return value is required.
         }
 
+        // Initialize variable to represent instance of AI subplugin.
+        // If required, it will be setup later.
+        $ai = null;
+
+        /*//////////////////////////////////
+        // Check parameters (e.g. fileid).
+        //////////////////////////////////*/
+
+        if ($status == $toolclass::TASKSTATUS_NOTSET ||
+            $status == $toolclass::TASKSTATUS_QUEUED ||
+            $status == $toolclass::TASKSTATUS_CHECKING_PARAMS) {
+
+            mtrace($this->tool->get_string('checkingparams'), ' ');
+
+            $status = $toolclass::TASKSTATUS_CHECKING_PARAMS;
+            $this->tool->update_log($log->id, ['status' => $status]);
+
+            // Setup the AI assistant if required.
+            if ($ai === null) {
+                $ai = $this->get_ai($accessconfig);
+            }
+
+            if (! $ai->check_prompt_params($promptconfig)) {
+                $a = ['id' => 'promptid', 'name' => $promptconfig->promptname];
+                return $this->report_error($log, 'invalidprompt', $a);
+            }
+            if (! $ai->check_format_params($formatconfig)) {
+                $a = ['id' => 'formatid', 'name' => $formatconfig->formatname];
+                return $this->report_error($log, 'invalidformat', $a);
+            }
+            if (! $ai->check_file_params($fileconfig)) {
+                $a = ['id' => $fileid, 'name' => $fileconfig->filedescription];
+                return $this->report_error($log, 'invalidfile', $a);
+            }
+
+            if ($ai->reschedule_task($promptconfig, $formatconfig, $fileconfig)) {
+                mtrace(' - task has been rescheduled and will run again later.');
+                \core\task\manager::reschedule_or_queue_adhoc_task($this);
+                return;
+            }
+
+            // Set log status to "Fetching results".
+            $status = $toolclass::TASKSTATUS_FETCHING_RESULTS;
+            $this->tool->update_log($log->id, ['status' => $status]);
+        }
+
         /*//////////////////////////////////
         // Fetch results from AI assistant.
         //////////////////////////////////*/
 
-        if ($status == $toolclass::TASKSTATUS_NOTSET ||
-            $status == $toolclass::TASKSTATUS_QUEUED) {
+        if ($status == $toolclass::TASKSTATUS_FETCHING_RESULTS) {
 
             // Report status of this adhoc task.
             $a = (object)['count' => $qcount, 'word' => $word];
@@ -193,23 +247,9 @@ class questions extends \core\task\adhoc_task {
                 $this->tool->update_log($log->id, ['prompt' => $prompt]);
             }
 
-            // Set log status to "Fetching results".
-            $status = $toolclass::TASKSTATUS_FETCHING_RESULTS;
-            $this->tool->update_log($log->id, ['status' => $status]);
-
-            // Create a new object to connect to the AI assistant.
-            // The class name is something like \vocabai_chatgpt\ai.
-            $ai = '\\'.$accessconfig->subplugin.'\\ai';
-            $ai = new $ai($this->tool->vocab);
-            $ai->set_config($accessconfig);
-
-            // Try to setup a connection to the AI assistant.
-            if (! $ai->setup_connection($prompt)) {
-                $a = (object)['ai' => $accessconfig->subplugin, 'configid' => ''];
-                if (is_siteadmin()) {
-                    $a->configid = ' (configid='.$accessconfig->configid.')';
-                }
-                return $this->report_error($log, 'failedtoconnect', $a);
+            // Setup the AI assistant if required.
+            if ($ai === null) {
+                $ai = $this->get_ai($accessconfig);
             }
 
             // Ensure sensible values for min/max tries.
@@ -230,7 +270,8 @@ class questions extends \core\task\adhoc_task {
 
                 // Send the prompt to the AI assistant
                 // and receive the response.
-                $response = $ai->get_response();
+                $response = $ai->get_response($prompt);
+
                 if ($results = $response->text) {
 
                     if ($log->review) {
@@ -241,7 +282,7 @@ class questions extends \core\task\adhoc_task {
 
                     // Store error, status and results.
                     $this->tool->update_log($log->id, [
-                        'error' => $error,
+                        'error' => $response->error,
                         'status' => $status,
                         'results' => $results,
                     ]);
@@ -255,12 +296,8 @@ class questions extends \core\task\adhoc_task {
                 }
 
                 // Prepare error message for cron output.
-                if (! empty($response->error->message)) {
-                    $error = $response->error->message;
-                } else if (! empty($response->error->code)) {
-                    $error = 'Code '.$response->error->code;
-                } else {
-                    $error = 'Unknown error';
+                if (! empty($response->error)) {
+                    $error = $response->error;
                 }
             }
         }
@@ -414,37 +451,57 @@ class questions extends \core\task\adhoc_task {
     }
 
     /**
+     * Create a new object to represent an AI assistant.
+     * The class name will be something like \vocabai_chatgpt\ai.
+     *
+     * @param object $accessconfig settings for an AI subplugin.
+     * @return object to represent an instance of the required AI subplugin
+     */
+    public function get_ai($accessconfig) {
+        $ai = '\\'.$accessconfig->subplugin.'\\ai';
+        $ai = new $ai($this->tool->vocab);
+        $ai->set_config($accessconfig);
+        return $ai;
+    }
+
+    /**
      * get_config
      *
-     * @param integer $configid
+     * @param int $configid
      * @return object record from the vocab_config table
      */
     protected function get_config($configid) {
         global $DB;
 
-        // Get all relevant contexts (activity, course, coursecat, site).
-        $contexts = $this->tool->vocab->get_readable_contexts('', 'id');
-        list($where, $params) = $DB->get_in_or_equal($contexts);
+        // Sanity check on the $configid.
+        if ($configid && is_numeric($configid)) {
 
-        // Retrieve all field names and values in the required config record.
-        $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, vc.subplugin';
-        $from = '{vocab_config_settings} vcs '.
-                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
-        $where = "vcs.configid = ? AND vc.contextid $where";
-        $params = array_merge([$configid], $params);
+            // Get all relevant contexts (activity, course, coursecat, site).
+            $contexts = $this->tool->vocab->get_readable_contexts('', 'id');
+            list($where, $params) = $DB->get_in_or_equal($contexts);
 
-        $sql = "SELECT $select FROM $from WHERE $where";
-        if ($settings = $DB->get_records_sql($sql, $params)) {
-            $config = new \stdClass();
-            foreach ($settings as $setting) {
-                $config->configid = $setting->configid;
-                $config->subplugin = $setting->subplugin;
-                $config->{$setting->name} = $setting->value;
+            // Retrieve all field names and values in the required config record.
+            $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, vc.subplugin, vc.contextid';
+            $from = '{vocab_config_settings} vcs '.
+                    'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
+            $where = "vcs.configid = ? AND vc.contextid $where";
+            $params = array_merge([$configid], $params);
+
+            $sql = "SELECT $select FROM $from WHERE $where";
+            if ($settings = $DB->get_records_sql($sql, $params)) {
+                $config = new \stdClass();
+                foreach ($settings as $setting) {
+                    $config->configid = $setting->configid;
+                    $config->subplugin = $setting->subplugin;
+                    $config->contextid = $setting->contextid;
+                    $config->{$setting->name} = $setting->value;
+                }
+                return $config;
             }
-            return $config;
-        } else {
-            return null;
         }
+
+        // The config id was missing or invalid.
+        return null;
     }
 
     /**
@@ -455,7 +512,7 @@ class questions extends \core\task\adhoc_task {
      * @param string $word
      * @param string $qtype
      * @param string $qlevel
-     * @param integer $qcount
+     * @param int $qcount
      * @param string $qformat
      * @return string a prompt to send to an AI assistant, such as ChatGPT.
      */
@@ -576,7 +633,7 @@ EOD;
      * @param string $subcatname
      * @param string $word
      * @param object $a arguments to get strings used as question category names
-     * @return integer the category into which these new questions will be put
+     * @return int the category into which these new questions will be put
      */
     protected function get_question_category($category, $subcattype, $subcatname, $word, $a) {
         global $DB;
@@ -746,7 +803,7 @@ EOD;
      * @param object $log the log record associated with this adhoc task
      * @param string $error name of an error in the in lang pack
      * @param string $a arguments required (if any) by $error string
-     * @return boolean false
+     * @return bool false
      */
     public function report_error($log, $error, $a=null) {
 

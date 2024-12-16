@@ -183,23 +183,7 @@ class form extends \mod_vocab\aiform {
         $this->add_field_textarea($mform, $name, PARAM_TEXT, $default->$name, ['rows' => '5', 'cols' => 40]);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
-        $name = 'sharingcontext';
-        $options = $this->get_sharingcontext_options();
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);
-
-        // Shared from/until date are both optional.
-        $params = ['optional' => true];
-
-        // Shared from date and time (default is start of today).
-        $name = 'sharedfrom';
-        $params['defaulttime'] = $default->$name;
-        $this->add_field_datetime($mform, $name, $params);
-
-        // Shared until date and time (default is end of today).
-        $name = 'shareduntil';
-        $params['defaulttime'] = $default->$name;
-        $this->add_field_datetime($mform, $name, $params);
-
+        $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);
 
         $this->add_importfile($mform);
@@ -238,8 +222,8 @@ class form extends \mod_vocab\aiform {
      *
      * @param object $config
      * @param array $actions (optional, default=[])
-     * @param boolean $showowner (optional, default=false)
-     * @param boolean $showownerpic (optional, default=false)
+     * @param bool $showowner (optional, default=false)
+     * @param bool $showownerpic (optional, default=false)
      * @return array of availability options [contextlevel => availability description]
      */
     public function format_config($config, $actions=[], $showowner=false, $showownerpic=false) {

@@ -226,7 +226,7 @@ class form extends \mod_vocab\toolform {
      * @param object $mform the Moodle form
      * @param string $msg the message to be displayed
      * @param string $type of message to be displayed (optional, default='warning')
-     * @param boolean $closebutton should a "close" button be added to the message (optional, default=false)
+     * @param bool $closebutton should a "close" button be added to the message (optional, default=false)
      * @param string $closeafter the name of previous section, if any (optional, default='logrecords')
      * @return void, but update $mform settings and fields
      */
@@ -257,7 +257,7 @@ class form extends \mod_vocab\toolform {
         // Get all available AI assistants.
         $plugintype = 'vocabai';
         $plugins = \core_component::get_plugin_list($plugintype);
-        unset($plugins['formats'], $plugins['prompts']);
+        unset($plugins['files'], $plugins['formats'], $plugins['prompts']);
 
         $prefix = $plugintype.'_';
         $prefixlen = strlen($prefix);
@@ -398,7 +398,7 @@ class form extends \mod_vocab\toolform {
     /**
      * get_question_levels
      *
-     * @param boolean $sortbyprefix (optional, default=FALSE)
+     * @param bool $sortbyprefix (optional, default=FALSE)
      *                If TRUE, return a two-dimensional array [prefix => [code => name]].
      *                If FALSE return a one-dimensional array [code => name].
      * @return array of vocabulary levels.
@@ -676,6 +676,7 @@ class form extends \mod_vocab\toolform {
         return [
             $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
             $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
+            $tool::TASKSTATUS_CHECKING_PARAMS => $this->get_string('taskstatus_checkingparams'),
             $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
             $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
             $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
@@ -894,7 +895,6 @@ class form extends \mod_vocab\toolform {
 
                 foreach ($qlevels as $qlevel => $qlevelname) {
                     $a->level = $qlevels[$qlevel];
-
                     $logid = $tool::insert_log([
                         'userid' => $USER->id,
                         'vocabid' => $vocabid,
@@ -909,8 +909,8 @@ class form extends \mod_vocab\toolform {
                         'subcatname' => $subcatname,
                         'accessid' => $accessid,
                         'promptid' => $promptid,
-                        'fileid' => $fileid,
                         'formatid' => $qtypesettings->formatid,
+                        'fileid' => $fileid,
                         'status' => $tool::TASKSTATUS_NOTSET,
                         'review' => $review,
                     ]);
@@ -1016,6 +1016,7 @@ class form extends \mod_vocab\toolform {
                     'accessid' => PARAM_INT,
                     'promptid' => PARAM_INT,
                     'formatid' => PARAM_INT,
+                    'fileid' => PARAM_INT,
                     'parentcatid' => PARAM_INT,
                     'subcattype' => PARAM_TEXT,
                     'subcatname' => PARAM_TEXT,
@@ -1088,11 +1089,17 @@ class form extends \mod_vocab\toolform {
         }
 
         // Get table of current log records.
-        $logtable = $this->get_log_records($logaction, $logids);
+        list($logcount, $logtable) = $this->get_log_records_table($logaction, $logids);
 
         if ($logtable || $logmessage) {
 
-            $this->add_heading($mform, 'logrecords', $this->subpluginname, strlen($logmessage));
+            // If there is a log message, we expand the logrecords section.
+            // If there are any log records, we append how many there are.
+            $this->add_heading(
+                $mform, 'logrecords', $this->subpluginname,
+                (strlen($logmessage) == 0 ? false : true),
+                ($logcount == 0 ? '' : " ($logcount)")
+            );
 
             // Display log messages about any log action that was just taken.
             if ($logmessage) {
@@ -1240,6 +1247,11 @@ class form extends \mod_vocab\toolform {
                     $name = 'formatid';
                     $a = ['strname' => 'qformat'];
                     $options = $this->get_config_options('formats', 'formatname', 'selectformat');
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
+
+                    $name = 'fileid';
+                    $a = ['strname' => 'file'];
+                    $options = $this->get_config_options('files', 'filedescription', 'selectfile');
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'parentcatid';
@@ -1402,13 +1414,13 @@ class form extends \mod_vocab\toolform {
 
 
     /**
-     * get_log_records
+     * get_log_records_table
      *
      * @param string $logaction
-     * @param array $logids
-     * @return array $logs of records vocabtool_questionbank_log table.
+     * @param array $logids of selected log records.
+     * @return array [$logcount, $html] HTML table of log records from vocabtool_questionbank_log table.
      */
-    public function get_log_records($logaction, $logids) {
+    public function get_log_records_table($logaction, $logids) {
         global $DB, $OUTPUT, $PAGE;
 
         // Specify a short date/time format.
@@ -1418,6 +1430,9 @@ class form extends \mod_vocab\toolform {
 
         // Cache the admin flag.
         $siteadmin = is_siteadmin();
+
+        // Initialize the log counter.
+        $logcount = 0;
 
         // Initialize the HTML table.
         $table = new \html_table();
@@ -1457,6 +1472,7 @@ class form extends \mod_vocab\toolform {
         $accessnames = [];
         $promptnames = [];
         $formatnames = [];
+        $filedescriptions = [];
         $categorynames = [];
         $subcattypes = $this->get_subcategory_types();
 
@@ -1498,6 +1514,15 @@ class form extends \mod_vocab\toolform {
                         $name = $this->get_string('missingconfigname', $a);
                     }
                     $formatnames[$log->formatid] = $name;
+                }
+
+                if (empty($filedescriptions[$log->fileid])) {
+                    $params = ['configid' => $log->fileid, 'name' => 'filedescription'];
+                    if (! $name = $DB->get_field($settingstable, 'value', $params)) {
+                        $a = ['configid' => $log->fileid, 'type' => 'filedescription'];
+                        $name = $this->get_string('missingconfigname', $a);
+                    }
+                    $filedescriptions[$log->fileid] = $name;
                 }
 
                 if (empty($categorynames[$log->parentcatid])) {
@@ -1599,6 +1624,7 @@ class form extends \mod_vocab\toolform {
                     $accessnames[$log->accessid],
                     $promptnames[$log->promptid],
                     $formatnames[$log->formatid],
+                    $filedescriptions[$log->fileid],
                     $categorynames[$log->parentcatid],
                     $log->subcattype,
                     $log->subcatname,
@@ -1613,11 +1639,14 @@ class form extends \mod_vocab\toolform {
                     $log->timecreated,
                     $log->timemodified,
                 ];
+
+                // Update the log count.
+                $logcount++;
             }
         }
 
         if (empty($table->data)) {
-            return '';
+            return [0, ''];
         }
 
         // Define the "Select all" checkbox for the log records.
@@ -1661,6 +1690,7 @@ class form extends \mod_vocab\toolform {
             $this->get_string('assistant'),
             $this->get_string('promptname'),
             $this->get_string('formatname'),
+            $this->get_string('filedescription'),
             $this->get_string('parentcategory'),
             $this->get_string('subcattype'),
             $this->get_string('subcatname'),
@@ -1675,6 +1705,6 @@ class form extends \mod_vocab\toolform {
             $this->get_string('timecreated'),
             $this->get_string('timemodified'),
         ];
-        return \html_writer::table($table);
+        return [$logcount, \html_writer::table($table)];
     }
 }

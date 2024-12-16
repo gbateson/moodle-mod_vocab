@@ -116,12 +116,12 @@ class form extends \mod_vocab\toolform {
      * constructor
      *
      * @uses $CFG
-     * @param integer $action (optional, default=null)
+     * @param int $action (optional, default=null)
      * @param array $customdata (optional, default=null)
      * @param string $method (optional, default='post')
      * @param string $target (optional, default='')
      * @param array $attributes (optional, default=null)
-     * @param boolean $editable (optional, default=true)
+     * @param bool $editable (optional, default=true)
      *
      * TODO: Finish documenting this function
      */
@@ -296,8 +296,8 @@ class form extends \mod_vocab\toolform {
      * definition_buttons
      *
      * @param moodleform $mform representing the Moodle form
-     * @param boolean $submit
-     * @param boolean $cancel
+     * @param bool $submit
+     * @param bool $cancel
      *
      * TODO: Finish documenting this function
      */
@@ -891,7 +891,7 @@ class form extends \mod_vocab\toolform {
      * get_min_max_cols
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param integer $r a row number
+     * @param int $r a row number
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1008,11 +1008,11 @@ class form extends \mod_vocab\toolform {
      * render_caption
      *
      * @param string $datafilename
-     * @param integer $totalsheets
-     * @param integer $totalrows
+     * @param int $totalsheets
+     * @param int $totalrows
      * @param string $formatfilename
-     * @param integer $targetsheets
-     * @param integer $targetrows
+     * @param int $targetsheets
+     * @param int $targetrows
      * @return HTML list of items to show in the table caption
      */
     public function render_caption($datafilename, $totalsheets, $totalrows,
@@ -1179,7 +1179,7 @@ class form extends \mod_vocab\toolform {
      * @param object $workbook
      * @param object $format
      * @param string $table name of a table in the database
-     * @param boolean $dryrun (optional, default=true)
+     * @param bool $dryrun (optional, default=true)
      *
      * TODO: Finish documenting this function
      */
@@ -1385,7 +1385,7 @@ class form extends \mod_vocab\toolform {
      * @param array $vars values from the cells in this row.
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @param string $aliastype "FILE", "SHEET" or "ROW"
-     * @return boolean TRUE if this record should be skipped; otherwise FALSE.
+     * @return bool TRUE if this record should be skipped; otherwise FALSE.
      */
     public function skip_record($record, &$vars, &$tableinfo, $aliastype) {
         $names = ['skip', 'skiprecord', 'recordskip'];
@@ -1409,7 +1409,7 @@ class form extends \mod_vocab\toolform {
      * @param array $vars values and settings for in this row in the data file.
      * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
      * @param array $rowvars (passed by reference) values for this row in the data file.
-     * @return boolean TRUE if this row should be skipped; otherwise FALSE.
+     * @return bool TRUE if this row should be skipped; otherwise FALSE.
      */
     public function skip_row($row, &$vars, &$tableinfo, &$rowvars) {
 
@@ -1785,8 +1785,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $item representing an item in the XML file
      * @param string $prefix
-     * @param integer $defaultmin
-     * @param integer $defaultmax
+     * @param int $defaultmin
+     * @param int $defaultmax
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1915,11 +1915,11 @@ class form extends \mod_vocab\toolform {
      * get_row_cells
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param integer $r a row number
-     * @param integer $cmin the minimum column number
-     * @param integer $cmax the maximum column number
+     * @param int $r a row number
+     * @param int $cmin the minimum column number
+     * @param int $cmax the maximum column number
      * @param string $text
-     * @param boolean $th if TRUE, the 1st cell should be made a TH cell (optional, default=false)
+     * @param bool $th if TRUE, the 1st cell should be made a TH cell (optional, default=false)
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1942,8 +1942,8 @@ class form extends \mod_vocab\toolform {
      * get_singleline_value
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param integer $c a column number
-     * @param integer $r a row number
+     * @param int $c a column number
+     * @param int $r a row number
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1957,8 +1957,8 @@ class form extends \mod_vocab\toolform {
      * get_cell_value
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param integer $c a column number
-     * @param integer $r a row number
+     * @param int $c a column number
+     * @param int $r a row number
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -2217,7 +2217,7 @@ class form extends \mod_vocab\toolform {
      * a valid alias to the non-scalar cache.
      *
      * @param string $alias
-     * @return boolean TRUE if the given string is valid alias; otherwise FALSE.
+     * @return bool TRUE if the given string is valid alias; otherwise FALSE.
      */
     protected function is_value_alias($alias) {
         if (preg_match('/^ALIAS_(\w+_)?(\d+)$/', $alias)) {
@@ -2660,7 +2660,7 @@ class form extends \mod_vocab\toolform {
      * @uses $DB
      * @param string $table name of a table in the database
      * @param array $fields array of database field names and values
-     * @return integer
+     * @return int
      */
     public function get_record_id($table, $fields) {
         global $DB;

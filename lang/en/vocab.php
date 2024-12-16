@@ -58,16 +58,37 @@ $string['gamesopen_help'] = 'Students can view and interact with games starting 
 $string['gamesclose'] = 'Games playable until';
 $string['gamesclose_help'] = 'Students can view and interact with games until this date and time. After this date, students cannot access the games, but they can still view their results.';
 
-$string['gradedesc'] = 'The grade is set as the percentage of vocabulary items that have been mastered, according to the "Mastery conditions" defined below.';
+$string['gradedesc'] = 'The grade is set as the percentage of words that have been mastered, according to the "Mastery conditions" defined below.';
 
 $string['grademax'] = 'Maximum grade';
 $string['grademax_help'] = 'This setting specifies the maximum grade for this activity. If set to 0, this activity does not appear in the grades pages.';
 
-$string['gradepartial'] = 'Include partial grades';
-$string['gradepartial_help'] = 'Choose whether or not to include partial word grades in the activity grade. A partial word grade is the grade for a word that has been studied but not yet fully mastered according to the "Mastery conditions" defined below.';
+$string['gradecount'] = 'Minimum word count';
+$string['gradecount_help'] = 'The number of words that students are required to master in order to complete this activity. If empty, or "0", or greater than the number of items in the word list, then *all* words must be mastered.';
 
-$string['gradecount'] = 'Minimum number of items';
-$string['gradecount_help'] = 'The minimum number of vocabulary items that students are required to master in order to complete this activity and achieve the maximum grade. If empty, or "0", or greater than the number of items in the word list, then *all* vocabulary items must be mastered. If a student studies more than this number of items, then only the best scores will be used to calculate the grade.';
+$string['gradetype'] = 'Word score type';
+$string['gradetype_help'] = 'The type of word scores to be considered when calculating the activity grade.
+
+**Highest word scores**
+The scores of all attempted words will be examined and the highest will be used to calculate the activity grade.
+
+**Lowest word scores**
+The scores of all attempted words will be examined and the lowest will be used to calculate the activity grade.
+
+**Latest word scores**
+Only scores for the most recently completed words will be considered.
+
+**Earliest word scores**
+Only scores for the earliest completed words will be considered.';
+
+$string['anywordscores'] = 'Any word scores';
+$string['highestwordscores'] = 'Highest word scores';
+$string['lowestwordscores'] = 'Lowest word scores';
+$string['newestwordscores'] = 'Latest word scores';
+$string['oldestwordscores'] = 'Earliest word scores';
+
+$string['gradepartial'] = 'Include partially completed words';
+$string['gradepartial_help'] = 'Choose whether or not the activity grade should include scores for partially completed words. A partially completed word is one that has been studied but not yet fully mastered according to the "Mastery conditions" defined below.';
 
 $string['nowordsforyou'] = 'Sorry, this vocabulary activity does not yet contain any words for you to study. Please try again later.';
 $string['nowordsfound'] = 'This vocabulary activity does not yet contain any words. Please use the tools menu to import or define a word list.';
@@ -113,7 +134,7 @@ $string['attemptscore'] = 'Minimum attempt score';
 $string['attemptscore_help'] = 'The minimum score required for an attempt to qualify as a successful attempt at a word.';
 
 $string['attemptcount'] = 'Minimum attempt count';
-$string['attemptcount_help'] = 'The minimum number of successful attempts required to demonstrate mastery of a word.';
+$string['attemptcount_help'] = 'The number of successful attempts required to demonstrate mastery of a word.';
 
 $string['attemptduration'] = 'Maximum total duration of attempts';
 $string['attemptduration_help'] = 'The maximum total duration for attempts which satisfy the score and count conditions.';
