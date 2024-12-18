@@ -55,6 +55,12 @@ class ai extends \mod_vocab\aibase {
         'sharedfrom', 'shareduntil',
     ];
 
+    /**
+     * @var string containing type of this AI subplugin
+     * (see AI_TYPE_XXX constants in mod/vocab/classes/aibase.php)
+     */
+    public $type = self::AI_TYPE_TEXT;
+
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
 

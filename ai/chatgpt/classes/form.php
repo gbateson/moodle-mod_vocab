@@ -178,7 +178,7 @@ class form extends \mod_vocab\aiform {
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'chatgptmodel';
-        $options = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o-mini', 'gpt-4o'];
+        $options = ['gpt-3.5-turbo', 'gpt-4o-mini', 'gpt-4o', 'gpt-4'];
         $options = array_flip($options);
         foreach ($options as $option => $i) {
             $options[$option] = $option.$labelsep.$this->get_string($option);

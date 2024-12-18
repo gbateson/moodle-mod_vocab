@@ -50,6 +50,24 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var array the names of file settings that this subplugin maintains. */
     const FILESETTINGNAMES = [];
 
+    /**
+     * The AI type for subplugins such as "prompts", "formats",
+     * and "files" that provide input for other AI plugins.
+     */
+    const AI_TYPE_INPUT = 'input';
+
+    /** the AI type for subplugins that generate "text" (e.g. chatgpt) */
+    const AI_TYPE_TEXT = 'text';
+
+    /** the AI type for subplugins that generate "image" (e.g. dalle, midjourney) */
+    const AI_TYPE_IMAGE = 'image';
+
+    /** the AI type for subplugins that generate "audio" (e.g. openai-tts) */
+    const AI_TYPE_AUDIO = 'audio';
+
+    /** the AI type for subplugins that generate "video" (e.g. vyond) */
+    const AI_TYPE_VIDEO = 'video';
+
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
 
@@ -61,6 +79,12 @@ class aibase extends \mod_vocab\subpluginbase {
      * i.e. records with the same owner and context, are allowed.
      */
     const ALLOW_DUPLICATES = false;
+
+    /**
+     * @var string containing type of this AI subplugin
+     * (see AI_TYPE_XXX constants above)
+     */
+    public $type = '';
 
     /** @var object containing arrays of configs */
     public $configs = null;

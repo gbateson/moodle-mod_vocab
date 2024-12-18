@@ -49,6 +49,9 @@ $string['chatgptkey'] = 'ChatGPT key';
 $string['chatgptmodel_help'] = 'The ChatGPT model to be used e.g. gpt-3.5-turbo, gpt-4';
 $string['chatgptmodel'] = 'ChatGPT model';
 
+$string['chatgptmodelid'] = 'ChatGPT tuned model';
+$string['chatgptmodelid_help'] = 'The ChatGPT model that has been tuned using this tuning file.';
+
 $string['gpt-3.5-turbo'] = 'A fast, inexpensive model for simple tasks.';
 $string['gpt-4'] = 'Multilingual and better at complex reasoning.';
 $string['gpt-4-turbo'] = 'Simlilar to GPT-4 but can understand images.';
