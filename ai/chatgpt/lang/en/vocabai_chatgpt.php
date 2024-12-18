@@ -64,33 +64,6 @@ $string['temperature'] = 'Temperature';
 $string['top_p_help'] = 'This value limits the size of the pool of words that the AI engine uses to generate each successive word. A low value (e.g. 0.1) considers only a small set of the most likely words. A high value (e.g. 0.7) increases the number of candidate words.';
 $string['top_p'] = 'Top-P';
 
-$string['sharingcontext'] = 'Sharing context';
-$string['sharingcontext_help'] = 'The context in which this key can be shared.';
-
-$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
-$string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
-$string['sharedincoursecontext'] = 'Shared in all activities in the current course';
-$string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
-$string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
-
-$string['sharedfrom'] = 'Shared from';
-$string['sharedfrom_help'] = 'The key is shared starting from, and including, this date and time.';
-
-$string['shareduntil'] = 'Shared until';
-$string['shareduntil_help'] = 'The key is shared up to, and including, this date and time.';
-
-$string['sharingperiod'] = 'Sharing period';
-$string['sharedanydate'] = 'Shared forever';
-$string['sharedfromdate'] = 'Shared from {$a}';
-$string['shareduntildate'] = 'Shared until {$a}';
-$string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
-
-$string['edit'] = 'Edit';
-$string['copy'] = 'Copy';
-$string['delete'] = 'Delete';
-
-$string['addmissingvalue'] = 'Please add a value here.';
-
 $string['deletekey'] = 'Delete API key for ChatGPT';
 $string['confirmdeletekey'] = 'Are you sure you want to delete this key?';
 

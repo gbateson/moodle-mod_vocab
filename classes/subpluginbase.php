@@ -200,11 +200,34 @@ class subpluginbase {
     /**
      * Get a string for this vocabtool plugin
      *
-     * @param string $name the name of the required string
+     * @param string $strname the name of the required string
      * @param mixed $a (optional, default=null) additional value or values required for the string
      * @return string
      */
-    public function get_string($name, $a=null) {
-        return get_string($name, $this->plugin, $a);
+    public function get_string($strname, $a=null) {
+        $component = $this->get_string_component($strname);
+        return get_string($strname, $component, $a);
+    }
+
+    /**
+     * Get the component of a string used by this subplugin.
+     *
+     * @param string $strname the name of the required string
+     * @return string name of component that define the required string.
+     */
+    public function get_string_component($strname) {
+        $strman = get_string_manager();
+        
+        $components = [$this->plugin, 'mod_vocab', 'moodle'];
+        foreach ($components as $component) {
+            if ($strman->string_exists($strname, $component)) {
+                return $component;
+            }
+        }
+
+        // String could not be found, but we return the
+        // current subpluginname anyway, so that an error
+        // will be triggered and reported in the normal way.
+        return $this->subpluginname;
     }
 }

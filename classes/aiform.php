@@ -82,7 +82,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
             file_prepare_draft_area(
                 // The file saved in the specified filearea with the specified $itemid
                 // will be copied to the draft filearea with returned $draftitemid.
-                // We use the field name as the name of the fielara (e.g. promptfile).
+                // We use the field name as the name of the fielarea (e.g. promptfile).
                 $draftitemid, $config->contextid, $this->subpluginname, $name, $config->id
                 // When "file_prepare_draft_area()" is called with draftitemid (the first argument)
                 // set to 0 or null, then it will be assigned automatically, and the files

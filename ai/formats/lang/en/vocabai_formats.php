@@ -60,12 +60,6 @@ $string['copycancelled'] = 'Copying of the format was cancelled.';
 $string['deletecompleted'] = 'The format was successfully deleted.';
 $string['deletecancelled'] = 'Format deletion was cancelled.';
 
-$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
-$string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
-$string['sharedincoursecontext'] = 'Shared in all activities in the current course';
-$string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
-$string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
-
 $string['noformatsfound'] = 'No output formats found';
 
 $string['note'] = 'Note';

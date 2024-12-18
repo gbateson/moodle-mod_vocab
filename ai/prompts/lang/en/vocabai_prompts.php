@@ -48,27 +48,6 @@ $string['addnewprompt'] = 'Add a new prompt';
 $string['editprompt'] = 'Edit existing prompt';
 $string['owner'] = 'Owner';
 
-$string['sharedfrom'] = 'Shared from';
-$string['sharedfrom_help'] = 'The prompt is shared starting from, and including, this date and time.';
-
-$string['shareduntil'] = 'Shared until';
-$string['shareduntil_help'] = 'The prompt is shared up to, and including, this date and time.';
-
-$string['sharedanydate'] = 'Shared forever';
-$string['sharedfromdate'] = 'Shared from {$a}';
-$string['shareduntildate'] = 'Shared until {$a}';
-$string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
-
-$string['sharingperiod'] = 'Sharing period';
-$string['sharingcontext'] = 'Sharing context';
-$string['sharingcontext_help'] = 'The context in which this prompt can be shared.';
-
-$string['edit'] = 'Edit';
-$string['copy'] = 'Copy';
-$string['delete'] = 'Delete';
-
-$string['addmissingvalue'] = 'Please add a value here.';
-
 $string['deleteprompt'] = 'Delete AI prompt';
 $string['confirmdeleteprompt'] = 'Are you sure you want to delete this prompt?';
 
@@ -83,12 +62,6 @@ $string['copycancelled'] = 'Copying of the prompt was cancelled.';
 
 $string['deletecompleted'] = 'The prompt was successfully deleted.';
 $string['deletecancelled'] = 'Prompt deletion was cancelled.';
-
-$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
-$string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
-$string['sharedincoursecontext'] = 'Shared in all activities in the current course';
-$string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
-$string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
 
 $string['nopromptsfound'] = 'No prompts found';
 

@@ -202,4 +202,26 @@ $string['export'] = 'Export';
 $string['exportfile_help'] = 'Here you can export this word list to a file. You can define a file name yourself, or use the default name. The exported file can be kept as a backup, or imported into another Vocabulary activity.';
 $string['exportfile'] = 'Export file name';
 
-$string['remove'] = 'Remove';
+$string['sharingcontext'] = 'Sharing context';
+$string['sharingcontext_help'] = 'The context in which this item can be shared.';
+
+$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
+$string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
+$string['sharedincoursecontext'] = 'Shared in all activities in the current course';
+$string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
+$string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
+
+$string['sharedfrom'] = 'Shared from';
+$string['sharedfrom_help'] = 'This item is shared starting from, and including, this date and time.';
+
+$string['shareduntil'] = 'Shared until';
+$string['shareduntil_help'] = 'This item is shared up to, and including, this date and time.';
+
+$string['sharingperiod'] = 'Sharing period';
+$string['sharedanydate'] = 'Shared forever';
+$string['sharedfromdate'] = 'Shared from {$a}';
+$string['shareduntildate'] = 'Shared until {$a}';
+$string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
+
+$string['addmissingvalue'] = 'Please add a value here.';
+

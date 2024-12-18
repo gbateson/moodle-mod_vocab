@@ -93,14 +93,17 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
-     * Get a string for the subplugin that is displaying this form.
+     * Get a string for the subplugin that is displayed this form.
+     * If the string is not found in the language pack for the current subplugin,
+     * then corresponding string in the parent activity's language pack will be used.
      *
      * @param string $name the name of the required string
      * @param mixed $a (optional, default=null) additional value or values required for the string
      * @return string requested string from the lang pack for the current subplugin
      */
     public function get_string($name, $a=null) {
-        return $this->get_subplugin()->get_string($name, $a);
+        $component = $this->get_subplugin()->get_string_component($name);
+        return get_string($name, $component, $a);
     }
 
     /**
@@ -159,6 +162,20 @@ abstract class subpluginform extends \moodleform {
         }
     }
 
+
+    /**
+     * Add a help button to element, only one button per element is allowed.
+     *
+     * @param object $mform representing the Moodle form
+     * @param string $name name of the element to add the item to
+     * @param string $strname help string identifier without _help suffix
+     * @return void, but may update $mform
+     */
+    public function add_help_button($mform, $name, $strname) {
+        $component = $this->get_subplugin()->get_string_component($strname);
+        return $mform->addHelpButton($name, $strname, $component);
+    }
+
     /**
      * Add a add_field_static field to the given $mform
      *
@@ -195,7 +212,7 @@ abstract class subpluginform extends \moodleform {
             $showhelp = ($showhelp == 'showhelp');
         }
         if ($showhelp) {
-            $mform->addHelpButton($name, $strname, $this->subpluginname);
+            $this->add_help_button($mform, $name, $strname);
         }
     }
 
@@ -227,7 +244,7 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('text', $name, $label, $attributes);
-        $mform->addHelpButton($name, $strname, $this->subpluginname);
+        $this->add_help_button($mform, $name, $strname);
         $mform->setDefault($name, $default);
         $mform->setType($name, $type);
     }
@@ -249,7 +266,7 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('textarea', $name, $label, $attributes);
-        $mform->addHelpButton($name, $strname, $this->subpluginname);
+        $this->add_help_button($mform, $name, $strname);
         $mform->setDefault($name, $default);
         $mform->setType($name, $type);
     }
@@ -294,7 +311,7 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement($elementtype, $name, $label, $options, $attributes);
-        $mform->addHelpButton($name, $strname, $this->subpluginname);
+        $this->add_help_button($mform, $name, $strname);
         $mform->setType($name, $type);
         if ($default) {
             $mform->setDefault($name, $default);
@@ -313,7 +330,7 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('date_time_selector', $name, $label, $attributes);
-        $mform->addHelpButton($name, $strname, $this->subpluginname);
+        $this->add_help_button($mform, $name, $strname);
     }
 
     /**
@@ -358,7 +375,7 @@ abstract class subpluginform extends \moodleform {
         list($name, $strname) = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement($type, $name, $label, $attributes, $options);
-        $mform->addHelpButton($name, $strname, $this->subpluginname);
+        $this->add_help_button($mform, $name, $strname);
         if ($options) {
             if (is_array($options) && array_key_exists('required', $options)) {
                 $required = ($options['required'] ? true : false);
