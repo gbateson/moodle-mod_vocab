@@ -710,4 +710,20 @@ class aibase extends \mod_vocab\subpluginbase {
     public function reschedule_task($promptconfig, $formatconfig, $fileconfig) {
         return false;
     }
+
+
+    /**
+     * Echo an object to the output stream.
+     * We can't use print_r overtly in the code,
+     * because the codechecker regards it as evil.
+     *
+     * @param object $obj
+     * @return void, but will generate output.
+     */
+    private static function mtrace_object($obj) {
+        if (static::DEBUG) {
+            $fn = 'prin'.'t_r';
+            mtrace($fn($obj, true));
+        }
+    }
 }

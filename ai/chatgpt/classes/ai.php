@@ -639,17 +639,4 @@ class ai extends \mod_vocab\aibase {
             return ($fileconfig->$name == static::RESCHEDULE_ADHOC_TASK);
         }
     }
-
-    /**
-     * Echo an object to the output stream.
-     *
-     * @param object $obj
-     * @return void, but will generate output.
-     */
-    private static function mtrace_object($obj) {
-        if (static::DEBUG) {
-            $fn = 'prin'.'t_r';
-            mtrace($fn($obj, true));
-        }
-    }
 }
