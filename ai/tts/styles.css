@@ -1,7 +1,10 @@
 /** Set background color on headings and subheadings. */
 .path-mod-vocab-ai-tts fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ffffcc;
+    background-color: #ccffe6;
 }
 .path-mod-vocab-ai-tts .configinfo dl:first-of-type {
-    background-color: #999900;
+    background-color: #00994d;
+}
+.icon.vocabai_tts_icon {
+    color: #00994d;
 }

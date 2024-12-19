@@ -1,6 +1,9 @@
 /** Set background color on form headings. */
 .path-mod-vocab-tool-wordlist fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #e6ffcc;
+    background-color: #ffcce6;
+}
+.icon.vocabtool_wordlist_icon {
+    color: #99004d;
 }
 
 /**

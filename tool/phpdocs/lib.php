@@ -47,5 +47,5 @@ function vocabtool_phpdocs_extend_settings_navigation(settings_navigation $setti
  * Define the icon for this vocab tool
  */
 function vocabtool_phpdocs_get_fontawesome_icon_map() {
-    return ['vocabtool_phpdocs:phpdocs' => 'fa-code'];
+    return ['vocabtool_phpdocs:phpdocs' => 'fa-solid fa-code'];
 }

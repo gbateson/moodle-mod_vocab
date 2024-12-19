@@ -235,7 +235,7 @@ class form extends \mod_vocab\toolform {
         ];
         $this->transfer_incoming_values($mform, $values);
 
-        $this->add_heading($mform, 'settings', 'moodle', true);
+        $this->add_heading($mform, 'settings', true);
 
         // Give user (another) chance to specify ignore values.
         $name = 'ignorevalues';

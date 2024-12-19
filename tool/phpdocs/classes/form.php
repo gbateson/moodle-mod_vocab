@@ -83,7 +83,7 @@ class form extends \mod_vocab\toolform {
         $actions = $this->get_actions();
 
         // Heading for file settings.
-        $this->add_heading($mform, 'filesettings', $this->subpluginname, true);
+        $this->add_heading($mform, 'filesettings', true);
 
         $params = array_merge($textoptions, ['disabled' => 'disabled']);
         $this->add_field_text($mform, 'folderpath', PARAM_PATH, '/mod/vocab', $params);
@@ -93,13 +93,13 @@ class form extends \mod_vocab\toolform {
         $mform->disabledIf('filetypes', 'filepath', 'ne', '');
 
         // Heading for search and replace settings.
-        $this->add_heading($mform, 'searchreplaceactions', $this->subpluginname, true);
+        $this->add_heading($mform, 'searchreplaceactions', true);
 
         $this->add_field_select($mform, 'copyrightaction', $actions, PARAM_INT, self::ACTION_REPORT_ALL);
         $this->add_field_select($mform, 'phpdocsaction', $actions, PARAM_INT, self::ACTION_REPORT_ALL);
 
         // Heading for copyright settings.
-        $this->add_heading($mform, 'copyrightsettings', $this->subpluginname, true);
+        $this->add_heading($mform, 'copyrightsettings', true);
 
         $this->add_field_text($mform, 'package', PARAM_TEXT, 'mod_vocab', $textoptions);
         $this->add_field_text($mform, 'startyear', PARAM_TEXT, date('Y'), $textoptions);

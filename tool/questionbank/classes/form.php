@@ -106,7 +106,7 @@ class form extends \mod_vocab\toolform {
 
         // Add a heading for the "Word list".
         $name = 'wordlist';
-        $this->add_heading($mform, $name, 'mod_vocab', true);
+        $this->add_heading($mform, $name, true);
 
         $name = 'selectedwords';
         $label = $this->get_string($name);
@@ -131,7 +131,7 @@ class form extends \mod_vocab\toolform {
 
         // Add a heading for the "AI settings".
         $name = 'aisettings';
-        $this->add_heading($mform, $name, $this->subpluginname, true);
+        $this->add_heading($mform, $name, true);
 
         $name = 'assistant';
         $this->add_field_select($mform, $name, $assistants, PARAM_INT);
@@ -162,7 +162,7 @@ class form extends \mod_vocab\toolform {
 
         // Add a heading for the "Question types".
         $name = 'questiontypes';
-        $this->add_heading($mform, $name, $this->subpluginname, true);
+        $this->add_heading($mform, $name, true);
 
         $qtypes = self::get_question_types();
         foreach ($qtypes as $qtype => $label) {
@@ -186,7 +186,7 @@ class form extends \mod_vocab\toolform {
 
         // Add a heading for the "Question settings".
         $name = 'questionsettings';
-        $this->add_heading($mform, $name, $this->subpluginname, true);
+        $this->add_heading($mform, $name, true);
 
         $name = 'questionlevels';
         $options = self::get_question_levels(true);
@@ -208,7 +208,7 @@ class form extends \mod_vocab\toolform {
 
         // Add a heading for the "Category settings".
         $name = 'categorysettings';
-        $this->add_heading($mform, $name, $this->subpluginname, true);
+        $this->add_heading($mform, $name, true);
 
         $this->add_parentcategory($mform);
         $this->add_subcategories($mform);
@@ -1193,7 +1193,7 @@ class form extends \mod_vocab\toolform {
             switch ($logaction) {
 
                 case 'editlog':
-                    $this->add_heading($mform, 'selectedlogrecord', $this->subpluginname, true);
+                    $this->add_heading($mform, 'selectedlogrecord', true);
 
                     // Add the log id as a hidden field.
                     $mform->addElement('hidden', 'log[id]', $log->id);

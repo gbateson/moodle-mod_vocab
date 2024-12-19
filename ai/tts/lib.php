@@ -28,5 +28,5 @@
  * Define the icon for this vocab ai
  */
 function vocabai_tts_get_fontawesome_icon_map() {
-    return ['vocabai_tts:tts' => 'fa-puzzle-piece fa-rotate-270']; // Could also use "globe".
+    return ['vocabai_tts:tts' => 'fa-solid fa-puzzle-piece vocabai_tts_icon'];
 }

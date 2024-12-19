@@ -44,7 +44,7 @@ class ai extends \mod_vocab\aibase {
      */
     const SETTINGNAMES = [
         'ttsurl', 'ttskey', 'ttsmodel',
-        'quality', 'response_format', 'size', 'style',
+        'voice', 'response_format', 'speed',
         'sharedfrom', 'shareduntil',
     ];
 

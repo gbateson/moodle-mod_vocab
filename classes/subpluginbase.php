@@ -210,24 +210,14 @@ class subpluginbase {
     }
 
     /**
-     * Get the component of a string used by this subplugin.
+     * Get the name of the Moodle component that defines
+     * a string used by a subplugin of mod_vocab.
      *
      * @param string $strname the name of the required string
-     * @return string name of component that define the required string.
+     * @return string name of component that defines the required string.
      */
     public function get_string_component($strname) {
-        $strman = get_string_manager();
-        
-        $components = [$this->plugin, 'mod_vocab', 'moodle'];
-        foreach ($components as $component) {
-            if ($strman->string_exists($strname, $component)) {
-                return $component;
-            }
-        }
-
-        // String could not be found, but we return the
-        // current subpluginname anyway, so that an error
-        // will be triggered and reported in the normal way.
-        return $this->subpluginname;
+        $components = [$this->plugin, $this->vocab->plugin, 'moodle'];
+        return $this->vocab->get_string_component($strname, $components);
     }
 }

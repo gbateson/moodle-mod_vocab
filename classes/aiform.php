@@ -43,6 +43,10 @@ abstract class aiform extends \mod_vocab\subpluginform {
      * @return void (but will update $mform)
      */
     public function add_sharing_fields($mform, $default) {
+
+        $name = 'sharing';
+        $this->add_heading($mform, $name, $this->get_vocab()->plugin, true);
+
         $name = 'sharingcontext';
         $options = $this->get_sharingcontext_options();
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);

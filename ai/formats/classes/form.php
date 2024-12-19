@@ -104,7 +104,7 @@ class form extends \mod_vocab\aiform {
             $expanded = false;
 
             $name = 'formatsownedbyothers';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             if (is_siteadmin()) {
                 // Site admin can always edit, copy and delete anything.
@@ -135,7 +135,7 @@ class form extends \mod_vocab\aiform {
             $enableexport = true;
 
             $name = 'otherformatsownedbyme';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             $actions = ['edit', 'copy', 'delete'];
             foreach ($configs as $configid => $config) {
@@ -155,7 +155,7 @@ class form extends \mod_vocab\aiform {
             $expanded = false;
 
             $name = 'formatsownedbyme';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             $actions = ['edit', 'delete'];
             foreach ($configs as $configid => $config) {
@@ -170,7 +170,7 @@ class form extends \mod_vocab\aiform {
         ////////////////////////////*/
 
         // Note, a section cannot be collapsed if it contains required fields.
-        $this->add_heading($mform, $mainheading, $this->subpluginname, $expanded);
+        $this->add_heading($mform, $mainheading, $expanded);
 
         // Cache message that is used for missing form values.
         $addmissingvalue = $this->get_string('addmissingvalue');

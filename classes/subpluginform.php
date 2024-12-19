@@ -149,12 +149,12 @@ abstract class subpluginform extends \moodleform {
      *
      * @param object $mform representing the Moodle form
      * @param string $name the name of this heading
-     * @param string $component
      * @param bool $expanded
      * @param array $a required for header string (optional, default=null)
      * @return void (but will update $mform)
      */
-    public function add_heading($mform, $name, $component, $expanded, $a=null) {
+    public function add_heading($mform, $name, $expanded, $a=null) {
+        $component = $this->get_subplugin()->get_string_component($name);
         $label = get_string($name, $component, $a);
         $mform->addElement('header', $name, $label);
         if (method_exists($mform, 'setExpanded')) {
@@ -399,7 +399,7 @@ abstract class subpluginform extends \moodleform {
     public function add_importfile($mform) {
         $vocab = $this->get_vocab();
 
-        $this->add_heading($mform, 'import', $vocab->plugin, false);
+        $this->add_heading($mform, 'import', false);
 
         $name = 'importfile';
         $groupname = $name.'elements';
@@ -423,7 +423,7 @@ abstract class subpluginform extends \moodleform {
     public function add_exportfile($mform) {
         $vocab = $this->get_vocab();
 
-        $this->add_heading($mform, 'export', $vocab->plugin, false);
+        $this->add_heading($mform, 'export', false);
 
         $filename = $vocab->name;
         $filename = preg_replace('/[ \._]+/', '_', $filename);

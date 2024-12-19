@@ -103,7 +103,7 @@ class form extends \mod_vocab\aiform {
         if (count($configs)) {
 
             $name = 'keysownedbyothers';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             if (is_siteadmin()) {
                 // Site admin can always edit, copy and delete anything.
@@ -133,7 +133,7 @@ class form extends \mod_vocab\aiform {
             $enableexport = true;
 
             $name = 'otherkeysownedbyme';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             $actions = ['edit', 'copy', 'delete'];
             foreach ($configs as $configid => $config) {
@@ -150,7 +150,7 @@ class form extends \mod_vocab\aiform {
             $enableexport = true;
 
             $name = 'keysownedbyme';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             $actions = ['edit', 'delete'];
             foreach ($configs as $configid => $config) {
@@ -164,7 +164,7 @@ class form extends \mod_vocab\aiform {
         // Main form starts here.
         ////////////////////////////*/
 
-        $this->add_heading($mform, $mainheading, $this->subpluginname, true);
+        $this->add_heading($mform, $mainheading, true);
 
         // Cache message that is used for missing form values.
         $addmissingvalue = $this->get_string('addmissingvalue');

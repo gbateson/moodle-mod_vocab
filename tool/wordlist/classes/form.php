@@ -120,7 +120,7 @@ class form extends \mod_vocab\toolform {
         }
 
         $name = 'currentlist';
-        $this->add_heading($mform, $name, $this->subpluginname, true);
+        $this->add_heading($mform, $name, true);
 
         $this->add_wordlist($mform);
 

@@ -28,5 +28,5 @@
  * Define the icon for this vocab tool
  */
 function vocabtool_dictionary_get_fontawesome_icon_map() {
-    return ['vocabtool_dictionary:dictionary' => 'fa-book'];
+    return ['vocabtool_dictionary:dictionary' => 'fa-solid fa-book vocabtool_dictionary_icon'];
 }

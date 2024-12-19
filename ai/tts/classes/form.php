@@ -83,13 +83,12 @@ class form extends \mod_vocab\aiform {
             // Define default values for new key.
             $default = (object)[
                 'id' => 0,
-                'ttsurl' => 'https://api.openai.com/v1/images/generations',
+                'ttsurl' => 'https://api.openai.com/v1/audio/speech',
                 'ttskey' => '',
-                'ttsmodel' => 'dall-e-3',
-                'quality' => 'standard',
-                'response_format' => 'b64_json',
-                'size' => '1792x1024',
-                'style' => 'vivid',
+                'ttsmodel' => 'tts-1',
+                'voice' => 'alloy',
+                'response_format' => 'mp3',
+                'speed' => '1.0',
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
                 'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
@@ -105,7 +104,7 @@ class form extends \mod_vocab\aiform {
         if (count($configs)) {
 
             $name = 'keysownedbyothers';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             if (is_siteadmin()) {
                 // Site admin can always edit, copy and delete anything.
@@ -135,7 +134,7 @@ class form extends \mod_vocab\aiform {
             $enableexport = true;
 
             $name = 'otherkeysownedbyme';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             $actions = ['edit', 'copy', 'delete'];
             foreach ($configs as $configid => $config) {
@@ -152,7 +151,7 @@ class form extends \mod_vocab\aiform {
             $enableexport = true;
 
             $name = 'keysownedbyme';
-            $this->add_heading($mform, $name, $this->subpluginname, true);
+            $this->add_heading($mform, $name, true);
 
             $actions = ['edit', 'delete'];
             foreach ($configs as $configid => $config) {
@@ -166,7 +165,7 @@ class form extends \mod_vocab\aiform {
         // Main form starts here.
         ////////////////////////////*/
 
-        $this->add_heading($mform, $mainheading, $this->subpluginname, true);
+        $this->add_heading($mform, $mainheading, true);
 
         // Cache message that is used for missing form values.
         $addmissingvalue = $this->get_string('addmissingvalue');
@@ -180,45 +179,57 @@ class form extends \mod_vocab\aiform {
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'ttsmodel';
-        $options = ['dall-e-2', 'dall-e-3'];
+        $options = ['tts-1', 'tts-1-hd'];
         $options = array_flip($options);
         foreach ($options as $option => $i) {
             $options[$option] = strtoupper($option).$labelsep.$this->get_string($option);
         }
-
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
-        $name = 'quality';
+        $name = 'voice';
         $options = [
-            'standard' => $this->get_string($name.'standard'),
-            'hd' => $this->get_string($name.'hd'),
+            'alloy' => $this->get_string($name.'alloy'),
+            'echo' => $this->get_string($name.'echo'),
+            'fable' => $this->get_string($name.'fable'),
+            'onyx' => $this->get_string($name.'onyx'),
+            'nova' => $this->get_string($name.'nova'),
+            'shimmer' => $this->get_string($name.'shimmer'),
         ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHA, $default->$name);
 
         $name = 'response_format';
         $options = [
-            'b64_json' => $this->get_string($name.'b64_json'),
-            'url' => $this->get_string($name.'url'),
+            'mp3' => $this->get_string($name.'mp3'),
+            'opus' => $this->get_string($name.'opus'),
+            'aac' => $this->get_string($name.'aac'),
+            'flac' => $this->get_string($name.'flac'),
+            'wav' => $this->get_string($name.'wav'),
+            'pcm' => $this->get_string($name.'pcm'),
         ];
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHA, $default->$name);
+
+        $name = 'speed'; // Default is 1.0.
+        $options = ['0.25' => '0.25'];
+        for ($i=0.5; $i<=4.0; $i+=0.5) {
+            $options["$i"] = number_format($i, 1);
+        }
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
 
-        $name = 'size';
-        $options = [
-            '256x256' => $this->get_string($name.'256x256'),
-            '512x512' => $this->get_string($name.'512x512'),
-            '1024x1024' => $this->get_string($name.'1024x1024'),
-            '1792x1024' => $this->get_string($name.'1792x1024'),
-            '1024x1792' => $this->get_string($name.'1024x1792'),
-        ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
-
-        $name = 'style';
-        $options = [
-            'vivid' => $this->get_string($name.'vivid'),
-            'natural' => $this->get_string($name.'natural'),
-        ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+        // -----------------------
+        // You can generate spoken audio in these languages
+        // by providing the input text in the required language.
+        // -----------------------
+        // Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian,
+        // Bosnian, Bulgarian, Catalan, Chinese, Croatian, Czech,
+        // Danish, Dutch, English, Estonian, Finnish, French,
+        // Galician, German, Greek, Hebrew, Hindi, Hungarian,
+        // Icelandic, Indonesian, Italian, Japanese, Kannada,
+        // Kazakh, Korean, Latvian, Lithuanian, Macedonian,
+        // Malay, Marathi, Maori, Nepali, Norwegian, Persian,
+        // Polish, Portuguese, Romanian, Russian, Serbian, Slovak,
+        // Slovenian, Spanish, Swahili, Swedish, Tagalog, Tamil,
+        // Thai, Turkish, Ukrainian, Urdu, Vietnamese, Welsh
 
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);

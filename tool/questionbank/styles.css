@@ -1,6 +1,9 @@
 /** Set background color on form headings. */
 .path-mod-vocab-tool-questionbank fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ccffe6;
+    background-color: #e6ccff;
+}
+.icon.vocabtool_questionbank_icon {
+    color: #4d0099;
 }
 
 /** Restrict the width of the sections in the main form */ 

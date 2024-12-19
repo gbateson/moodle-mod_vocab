@@ -24,9 +24,9 @@
  * @since      Moodle 3.11
  */
 
-$string['pluginname'] = 'DALL-E AI assistant for a Vocabulary activity.';
+$string['pluginname'] = 'TTS (OpenAI) AI assistant for a Vocabulary activity.';
 $string['privacy:metadata'] = 'The vocabai_tts plugin does not store any personal data.';
-$string['tts'] = 'DALL-E';
+$string['tts'] = 'TTS (OpenAI)';
 
 $string['keysownedbyotherusers'] = 'Keys owned by other users';
 $string['keysownedbyme'] = 'Keys owned by me';
@@ -40,48 +40,46 @@ $string['editkey'] = 'Edit existing key';
 $string['key'] = 'Key';
 $string['owner'] = 'Owner';
 
-$string['ttsurl_help'] = 'The URL of DALL-E\'s API e.g. https://api.openai.com/v1/images/generations';
-$string['ttsurl'] = 'DALL-E url';
+$string['ttsurl_help'] = 'The URL of TTS (OpenAI)\'s API e.g. https://api.openai.com/v1/audio/speech';
+$string['ttsurl'] = 'TTS url';
 
-$string['ttskey_help'] = 'The key required to access DALL-E\'s API. This usually starts "sk-" followed by 48 random letters and numbers.';
-$string['ttskey'] = 'DALL-E key';
+$string['ttskey_help'] = 'The key required to access TTS (OpenAI)\'s API. This usually starts "sk-" followed by 48 random letters and numbers.';
+$string['ttskey'] = 'TTS key';
 
-$string['ttsmodel_help'] = 'The DALL-E model to be used e.g. dall-e-2, dall-e-3';
-$string['ttsmodel'] = 'DALL-E model';
+$string['ttsmodel_help'] = 'The TTS (OpenAI) model to be used e.g. tts-1, tts-1-hd';
+$string['ttsmodel'] = 'TTS model';
 
-$string['ttsmodelid'] = 'DALL-E tuned model';
-$string['ttsmodelid_help'] = 'The DALL-E model that has been tuned using this tuning file.';
+$string['ttsmodelid'] = 'TTS tuned model';
+$string['ttsmodelid_help'] = 'The TTS (OpenAI) model that has been tuned using a tuning file.';
 
-$string['dall-e-2'] = 'Generates creative images quickly with good quality.';
-$string['dall-e-3'] = 'Generates high-quality, detailed images with better prompt accuracy.';
+$string['tts-1'] = 'Generates creative audio quickly with good quality.';
+$string['tts-1-hd'] = 'Generates high-quality, detailed audio with better prompt accuracy.';
 
-$string['quality'] = 'Image quality';
-$string['quality_help'] = 'The quality of the image that will be generated. A value of "High definition" creates images with finer details and greater consistency across the image. This param is only supported for DALL-E-3.';
-$string['qualityhd'] = 'High definition';
-$string['qualitystandard'] = 'Standard definition';
+$string['voice'] = 'Voice';
+$string['voice_help'] = 'The voice to use when generating the speech audio.';
+$string['voicealloy'] = 'Alloy (male, US)';
+$string['voiceecho'] = 'Echo (male, US)';
+$string['voicefable'] = 'Fable (male, UK)';
+$string['voiceonyx'] = 'Onyx (male, US)';
+$string['voicenova'] = 'Nova (female, US)';
+$string['voiceshimmer'] = 'Shimmer (female, US)';
 
-$string['response_format'] = 'Image format';
-$string['response_format_help'] = 'The format in which the generated images are returned. This must be either "url" or "b64_json". URLs are only valid for 60 minutes after the image has been generated.';
-$string['response_formatb64_json'] = 'Base64 (json) format';
-$string['response_formaturl'] = 'URL';
+$string['response_format'] = 'Audio format';
+$string['response_format_help'] = 'The file format in which the speech audio will be returned.';
+$string['response_formatmp3'] = 'MP3 format';
+$string['response_formatopus'] = 'OPUS format';
+$string['response_formataac'] = 'AAC format';
+$string['response_formatflac'] = 'FLAC format';
+$string['response_formatwav'] = 'WAV format';
+$string['response_formatpcm'] = 'PCM format';
 
-$string['size'] = 'Image size';
-$string['size_help'] = 'The size of the generated images. For DALL-E-2, this must be one of 256x256, 512x512, or 1024x1024. For DALL-E-3, this must be one of 1024x1024, 1792x1024, or 1024x1792.';
-$string['size256x256'] = '■ 256 x 256 pixels (DALL-E-2 only)';
-$string['size512x512'] = '■ 512 x 512 pixels (DALL-E-2 only)';
-$string['size1024x1024'] = '■ 1024 x 1024 pixels';
-$string['size1792x1024'] = '▬ 1792 x 1024 pixels (DALL-E-3 only)';
-$string['size1024x1792'] = '▮ 1024 x 1792 pixels (DALL-E-3 only)';
+$string['speed'] = 'Speed';
+$string['speed_help'] = 'The speed of the generated speech audio. Generally, it is best to leave this settings at the default value (1.0), as the speed can be adjusted during playback in an audio player.';
 
-$string['style'] = 'Image style';
-$string['style_help'] = 'The style of the generated images. Must be either "vivid" or "natural". Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This param is only supported for DALL-E-3.';
-$string['stylevivid'] = 'Vivid style';
-$string['stylenatural'] = 'Natural style';
-
-$string['deletekey'] = 'Delete API key for DALL-E';
+$string['deletekey'] = 'Delete API key for TTS (OpenAI)';
 $string['confirmdeletekey'] = 'Are you sure you want to delete this key?';
 
-$string['copykey'] = 'Copy API key for DALL-E';
+$string['copykey'] = 'Copy API key for TTS (OpenAI)';
 $string['confirmcopykey'] = 'Are you sure you want to copy this key?';
 
 $string['editcompleted'] = 'The modified key was successfully saved.';

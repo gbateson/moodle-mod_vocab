@@ -202,6 +202,7 @@ $string['export'] = 'Export';
 $string['exportfile_help'] = 'Here you can export this word list to a file. You can define a file name yourself, or use the default name. The exported file can be kept as a backup, or imported into another Vocabulary activity.';
 $string['exportfile'] = 'Export file name';
 
+$string['sharing'] = 'Sharing';
 $string['sharingcontext'] = 'Sharing context';
 $string['sharingcontext_help'] = 'The context in which this item can be shared.';
 

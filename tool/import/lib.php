@@ -28,5 +28,5 @@
  * Define the icon for this plugin
  */
 function vocabtool_import_get_fontawesome_icon_map() {
-    return ['vocabtool_import:import' => 'fa-download'];
+    return ['vocabtool_import:import' => 'fa-solid fa-download vocabtool_import_icon'];
 }

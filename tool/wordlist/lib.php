@@ -28,5 +28,5 @@
  * Define the icon for this vocab tool
  */
 function vocabtool_wordlist_get_fontawesome_icon_map() {
-    return ['vocabtool_wordlist:wordlist' => 'fa-list'];
+    return ['vocabtool_wordlist:wordlist' => 'fa-solid fa-list vocabtool_wordlist_icon'];
 }

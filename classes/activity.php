@@ -641,14 +641,37 @@ class activity {
     /**
      * get a string fro this plugin
      *
-     * @param string $name
+     * @param string $strname
      * @param array $a additional value or values required for the language string (optional, default=null)
      * @return xxx
      *
      * TODO: Finish documenting this function
      */
-    public function get_string($name, $a=null) {
-        return get_string($name, $this->plugin, $a);
+    public function get_string($strname, $a=null) {
+        $components = [$this->plugin, 'moodle'];
+        $component = $this->get_string_component($strname, $components);
+        return get_string($strname, $component, $a);
+    }
+
+    /**
+     * Get the name of the Moodle component that defines
+     * a string used by mod_vocab (or one of its subplugins).
+     *
+     * @param string $strname the name of the required string
+     * @param array $componenets array of Moodle components which may define $strname
+     * @return string name of component that defines the required string.
+     */
+    public function get_string_component($strname, $components) {
+        $strman = get_string_manager();
+        foreach ($components as $component) {
+            if ($strman->string_exists($strname, $component)) {
+                return $component;
+            }
+        }
+        // String could not be found, but we return the
+        // first component anyway, so that an error will
+        // be triggered and reported in the normal way.
+        return $components[0];
     }
 
     /*////////////////////////////////////////

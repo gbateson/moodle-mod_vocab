@@ -1,7 +1,10 @@
 /** Set background color on headings and subheadings. */
 .path-mod-vocab-ai-chatgpt fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ffe6cc;
+    background-color: #e6ffcc;
 }
 .path-mod-vocab-ai-chatgpt .configinfo dl:first-of-type {
-    background-color: #994d00;
+    background-color: #4d9900;
+}
+.icon.vocabai_chatgpt_icon {
+    color: #4d9900;
 }

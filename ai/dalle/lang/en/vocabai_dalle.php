@@ -40,7 +40,7 @@ $string['editkey'] = 'Edit existing key';
 $string['key'] = 'Key';
 $string['owner'] = 'Owner';
 
-$string['dalleurl_help'] = 'The URL of DALL-E\'s API e.g. https://api.openai.com/v1/images/generations';
+$string['dalleurl_help'] = 'The URL of DALL-E\'s API e.g. https://api.openai.com/v1/audio/speech';
 $string['dalleurl'] = 'DALL-E url';
 
 $string['dallekey_help'] = 'The key required to access DALL-E\'s API. This usually starts "sk-" followed by 48 random letters and numbers.';

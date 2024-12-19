@@ -1,8 +1,11 @@
 /* Set background color for headings an subheadings. */
 .path-mod-vocab-ai-prompts fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #e6ccff;
+    background-color: #ffe6cc;
 }
 .path-mod-vocab-ai-prompts .configinfo dl:first-of-type {
-    background-color: #4d0099;
+    background-color: #994d00;
     
+}
+.icon.vocabai_prompts_icon {
+    color: #994d00;
 }

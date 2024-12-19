@@ -28,6 +28,6 @@
  * Define the icon for this vocab tool
  */
 function vocabtool_questionbank_get_fontawesome_icon_map() {
-    return ['vocabtool_questionbank:questionbank' => 'fa-list-alt'];
+    return ['vocabtool_questionbank:questionbank' => 'fa-solid fa-list-alt vocabtool_questionbank_icon'];
     // The "clipboard" and "list-check" icons might also work.
 }

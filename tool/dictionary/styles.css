@@ -1,6 +1,9 @@
 /** Set background color on form headings. */
 .path-mod-vocab-tool-dictionary fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ccffcc;
+    background-color: #ffccff;
+}
+.icon.vocabtool_dictionary_icon {
+    color: #990099;
 }
 
 .vocabtool_dictionary thead tr {

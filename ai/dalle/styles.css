@@ -1,7 +1,10 @@
 /** Set background color on headings and subheadings. */
 .path-mod-vocab-ai-dalle fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ffffcc;
+    background-color: #ccffcc;
 }
 .path-mod-vocab-ai-dalle .configinfo dl:first-of-type {
-    background-color: #999900;
+    background-color: #009900;
+}
+.icon.vocabai_dalle_icon {
+    color: #009900;
 }

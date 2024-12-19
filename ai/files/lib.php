@@ -28,5 +28,6 @@
  * Define the icon for this vocab ai
  */
 function vocabai_files_get_fontawesome_icon_map() {
-    return ['vocabai_files:files' => 'fa-files-o']; // Could also use "files", "file" or "file-lines".
+    return ['vocabai_files:files' => 'fa-solid fa-files-o vocabai_files_icon'];
+    // Could also use "files", "file" or "file-lines".
 }
