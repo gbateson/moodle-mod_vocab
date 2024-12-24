@@ -83,10 +83,14 @@ class questions extends \core\task\adhoc_task {
         $qcount = $log->qcount;
         $qformat = $log->qformat;
 
-        $accessid = $log->accessid;
+        $textid = $log->textid;
         $promptid = $log->promptid;
         $formatid = $log->formatid;
         $fileid = $log->fileid;
+
+        $imageid = $log->imageid;
+        $audioid = $log->audioid;
+        $videoid = $log->videoid;
 
         $review = $log->review;
 
@@ -137,8 +141,8 @@ class questions extends \core\task\adhoc_task {
 
         // Check the essential elements (key, prompt, format) are available.
         $a = [];
-        if (! $accessconfig = $this->get_config($accessid)) {
-            $a[] = "accessid ($accessid)";
+        if (! $textconfig = $this->get_config($textid)) {
+            $a[] = "textid ($textid)";
         }
         if (! $promptconfig = $this->get_config($promptid)) {
             $a[] = "promptid ($promptid)";
@@ -201,7 +205,7 @@ class questions extends \core\task\adhoc_task {
 
             // Setup the AI assistant if required.
             if ($ai === null) {
-                $ai = $this->get_ai($accessconfig);
+                $ai = $this->get_ai($textconfig);
             }
 
             if (! $ai->check_prompt_params($promptconfig)) {
@@ -249,7 +253,7 @@ class questions extends \core\task\adhoc_task {
 
             // Setup the AI assistant if required.
             if ($ai === null) {
-                $ai = $this->get_ai($accessconfig);
+                $ai = $this->get_ai($textconfig);
             }
 
             // Ensure sensible values for min/max tries.
@@ -401,30 +405,13 @@ class questions extends \core\task\adhoc_task {
 
             // At last, we can generate the questions from the results
             // and store them in a suitable question category.
-            if ($questions = $this->parse_questions($results, $qformat, $category->id)) {
+            if ($questions = $this->parse_questions($log, $results, $qformat, $category->id, $tags)) {
                 $status = $toolclass::TASKSTATUS_COMPLETED;
                 $error = ''; // Unset any previous errors.
 
-                // Create an array of question ids.
+                // Create an string of comma-separated question ids.
                 $questionids = array_keys($questions);
-
-                // Add tags for these questions.
-                // e.g "AI-generated", "newword", "MC", "TOEIC-200".
-                // Note that all tags are usually displayed in lowercase
-                // even though the "rawname" field stores the uppercase.
-                if (is_array($tags) && count($tags)) {
-                    foreach ($questionids as $questionid) {
-                        \core_tag_tag::set_item_tags(
-                            'core_question', 'question',
-                            $questionid, $coursecontext, $tags
-                        );
-                    }
-                }
-
-                // Convert questionids array to a string
-                // containing comma-separated values.
                 $questionids = implode(', ', $questionids);
-
             } else {
                 $questionids = '';
                 $status = $toolclass::TASKSTATUS_FAILED;
@@ -454,13 +441,13 @@ class questions extends \core\task\adhoc_task {
      * Create a new object to represent an AI assistant.
      * The class name will be something like \vocabai_chatgpt\ai.
      *
-     * @param object $accessconfig settings for an AI subplugin.
+     * @param object $textconfig settings for an AI subplugin.
      * @return object to represent an instance of the required AI subplugin
      */
-    public function get_ai($accessconfig) {
-        $ai = '\\'.$accessconfig->subplugin.'\\ai';
+    public function get_ai($textconfig) {
+        $ai = '\\'.$textconfig->subplugin.'\\ai';
         $ai = new $ai($this->tool->vocab);
-        $ai->set_config($accessconfig);
+        $ai->set_config($textconfig);
         return $ai;
     }
 
@@ -723,12 +710,14 @@ EOD;
     /**
      * parse_questions
      *
+     * @param string $log
      * @param string $text
      * @param string $qformat
      * @param string $categoryid
+     * @param array $tags Moodle tags to be added for each question
      * @return object to represent the
      */
-    protected function parse_questions($text, $qformat, $categoryid) {
+    protected function parse_questions($log, $text, $qformat, $categoryid, $tags) {
         global $CFG, $DB, $USER;
 
         require_once("$CFG->dirroot/lib//questionlib.php");
@@ -743,6 +732,7 @@ EOD;
         require_once($filepath);
 
         // Ensure the class of the required qformat exists - it should !!
+        // E.g. "qformat_gift" class in "question/format/gift/format.php".
         $classname = "qformat_$qformat";
         if (! class_exists($classname)) {
             return null;
@@ -789,12 +779,522 @@ EOD;
                     $qtype = \question_bank::get_qtype($question->qtype);
                     $qtype->save_question($question, $question);
                     $questions[$question->id] = $question;
+                    $questiontags = $this->create_media($log, $question, $context, $tags);
+
+                    // Add tags for these question.
+                    // e.g "AI-generated", "newword", "MC", "TOEIC-200".
+                    // Note that all tags are usually displayed in lowercase
+                    // even though the "rawname" field stores the uppercase.
+                    \core_tag_tag::set_item_tags(
+                        'core_question', 'question', $question->id, $context, $questiontags
+                    );
                 }
             }
         }
 
         // Return either the array of questions, or FALSE if there are no questions.
         return (empty($questions) ? false : $questions);
+    }
+
+    /**
+     * Create media (images, audio and video) for the given question.
+     *
+     * @param object $log record form the "questionbank_log" table.
+     * @param object $question that has just been imported and created.
+     * @param object $context in which question was created.
+     * @param array $tags Moodle tags to be added for each question.
+     * @return void, but may add media file and updated question.
+     */
+    public function create_media($log, $question, $context, $tags) {
+
+        // Map each media tag to the configid of the AI subplugin
+        // that will create the media content for that tag.
+        static $mediatags = null;
+        if ($mediatags === null) {
+            $mediatags = [
+                'IMAGE' => $log->imageid,
+                'AUDIO' => $log->audioid,
+                'VIDEO' => $log->videoid,
+            ];
+            // Remove tags that are not required.
+            $mediatags = array_filter($mediatags);
+        }
+
+        // If there's nothing to do, we can finish early.
+        if (empty($mediatags)) {
+            return $tags;
+        }
+
+        // Cache the question type (e.g. multichoice).
+        $qtype = $question->qtype;
+
+        // Initialize the cache of fields and fileareas for this $qtype.
+        // Usually we are only generating questions for a single $qtype.
+        static $tables = [];
+        if (empty($tables[$qtype])) {
+            $tables[$qtype] = $this->get_tables($question);
+        }
+
+        // Initialize the $filerecord that will be used
+        // to store media file in Moodle's file repository.
+        $filerecord = array(
+            'contextid' => $context->id,
+            'component' => 'question',
+            'filearea'  => '', // Set this later.
+            'itemid'    => 0, // Set this later.
+            'filepath'  => '/', // Always this value.
+            'filename'  => '', // Set this later.
+        );
+
+        $moretags = [];
+        foreach ($tables[$qtype] as $table => $fields) {
+            foreach ($fields as $field => $filearea) {
+                $filerecord['filearea'] = $filearea;
+                $this->create_media_for_field(
+                    $mediatags, $question, $table,
+                    $field, $filerecord, $moretags
+                );
+            }
+        }
+
+        $moretags = array_keys($moretags);
+        foreach ($moretags as $i => $tagname) {
+            // Use messages defined in "lang/en/message.php".
+            $strname = 'messagecontent'.strtolower($tagname);
+            $moretags[$i] = get_string($strname, 'message');
+        }
+
+        return array_merge($tags, $moretags);
+    }
+
+    /**
+     * Get tables for the specified $qtype.
+     *
+     * @param object $question
+     * @return array [$table => [$fields]]
+     */
+    public function get_tables($question) {
+
+        // Initialize the array of tables.
+        $tables = [];
+
+        // Cache the question type.
+        $qtype = $question->qtype;
+
+        // Add the question table, if required.
+        if (property_exists($question, 'questiontext')) {
+            $table = 'question';
+            $fields = [
+                'questiontext' => 'questiontext',
+                'generalfeedback' => 'generalfeedback',
+            ];
+            $tables[$table] = $fields;
+        }
+
+        // Add the answer table, if required.
+        if (property_exists($question, 'answer')) {
+            $table = 'question_answers';
+            $fields = [
+                'answer' => 'answer',
+                'feedback' => 'answerfeedback',
+            ];
+            $tables[$table] = $fields;
+        }
+
+        // Add the hint table, if required.
+        if (property_exists($question, 'hint')) {
+            $table = 'question_hints';
+            $fields = ['hint' => 'hint'];
+            $tables[$table] = $fields;
+        }
+
+        // Add the combined feedback table, if any.
+        // Usually this is "qtype_{$qtype}_options".
+        if ($table = $this->get_feedback_table($qtype)) {
+            list($table, $fields) = $table;
+            $tables[$table] = $fields;
+        }
+
+        // Add the subquestions table, if any.
+        // This is only used by "qtype_match", in which case
+        // the table name is "qtype_{$qtype}_subquestions".
+        if ($table = $this->get_subquestions_table($qtype)) {
+            list($table, $fields) = $table;
+            $tables[$table] = $fields;
+        }
+
+        return $tables;
+    }
+
+    /**
+     * Get the name of the DB table that contains the
+     * combined feedback fields (e.g. correctfeedback).
+     *
+     * The following SQL can be used to select
+     * the DB tables that we are interested in:
+     *
+     * SELECT TABLE_NAME, COLUMN_NAME
+     * FROM information_schema.COLUMNS
+     * WHERE TABLE_SCHEMA = 'mdl_401'
+     *   AND (TABLE_NAME LIKE '%qtype_%' OR TABLE_NAME LIKE '%question_%')
+     *   AND (COLUMN_NAME = 'correctfeedback' OR COLUMN_NAME REGEXP '^(question|answer)text$')
+     * ORDER BY TABLE_NAME, COLUMN_NAME.
+     *
+     * @param string $qtype
+     * @return array [$table, [$fields]] if feedback table exists, otherwise NULL.
+     */
+    public function get_feedback_table($qtype) {
+        global $DB;
+
+        // We will use the DB manager to determine which tables exist.
+        $dbman = $DB->get_manager();
+
+        // These are the fields (and fileareas) we are looking for.
+        $fields = [
+            'correctfeedback' => 'correctfeedback',
+            'incorrectfeedback' => 'incorrectfeedback',
+            'partiallycorrectfeedback' => 'partiallycorrectfeedback',
+        ];
+        $field = 'correctfeedback';
+
+        $table = "qtype_{$qtype}_options";
+        if ($dbman->table_exists($table)) {
+            if ($dbman->field_exists($table, $field)) {
+                // qtype_essayautograde_options
+                // qtype_match_options
+                // qtype_multichoice_options
+                // qtype_ordering_options
+                // qtype_randomsamatch_options
+                // qtype_speakautograde_options
+                return [$table, $fields];
+            }
+            return null;
+        }
+    
+        $table = "qtype_{$qtype}";
+        if ($dbman->table_exists($table)) {
+            if ($dbman->field_exists($table, $field)) {
+                // qtype_ddimageortext
+                // qtype_ddmarker
+                return [$table, $fields];
+            }
+            return null;
+        }
+    
+        $table = "question_{$qtype}";
+        if ($dbman->table_exists($table)) {
+            if ($dbman->field_exists($table, $field)) {
+                // question_ddwtos
+                // question_gapselect
+                // question_order
+                return [$table, $fields];
+            }
+            return null;
+        }
+    
+        $table = "question_{$qtype}_options";
+        if ($dbman->table_exists($table)) {
+            if ($dbman->field_exists($table, $field)) {
+                // question_calculated_options
+                return [$table, $fields];
+            }
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the name of the DB table that contains subquestions
+     * such as the left/right items in a qtype_match question.
+     *
+     * @param string $qtype
+     * @return array [$table, [$fields]] if feedback table exists, otherwise NULL.
+     */
+    public function get_subquestions_table($qtype) {
+        global $DB;
+        $dbman = $DB->get_manager();
+
+        $table = "qtype_{$qtype}_subquestions";
+        if ($dbman->table_exists($table)) {
+
+            $fields = [];
+
+            $field = 'questiontext';
+            $filearea = 'questiontext';
+            if ($dbman->field_exists($table, $field)) {
+                $fields[$field] = $filearea;
+            }
+
+            $field = 'answertext';
+            $filearea = 'answer';
+            if ($dbman->field_exists($table, $field)) {
+                $fields[$field] = $filearea;
+            }
+
+            if (empty($fields)) {
+                return null;
+            }
+
+            // qtype_match_subquestions
+            return [$table, $fields];
+        }
+
+        return null;
+    }
+
+    /**
+     * Create media for the given field in the given question.
+     *
+     * @param object $mediatags
+     * @param object $question
+     * @param object $table
+     * @param object $field
+     * @param array $filerecord
+     * @param array $moretags (passed by reference) Moodle tags for media used in this question.
+     */
+    public function create_media_for_field($mediatags, $question, $table, $field, $filerecord, &$moretags) {
+        global $DB;
+
+        // Determine the SQL search values.
+        switch ($table) {
+            case 'question':
+                $select = 'id = ? AND '.$DB->sql_like($field, '?');
+                $params = [$question->id, '%[[%]]%'];
+                break;
+            case 'question_answers':
+                $select = 'question = ? AND '.$DB->sql_like($field, '?');
+                $params = [$question->id, '%[[%]]%'];
+                break;
+            default: // Question hints and qtype options table.
+                $select = 'questionid = ? AND '.$DB->sql_like($field, '?');
+                $params = [$question->id, '%[[%]]%'];
+        }
+        if ($records = $DB->get_records_select($table, $select, $params)) {
+
+            $count = 0;
+            foreach ($records as $id => $record) {
+                if ($table == 'question_answers' || $table == 'question_hints') {
+                    $filerecord['itemid'] = $id;
+                } else {
+                    $filerecord['itemid'] = $question->id;
+                }
+                $filearea = $filerecord['filearea'];
+                $number = str_pad(++$count, 2, '0', STR_PAD_LEFT);
+                $filerecord['filename'] = "{$filearea}-{$number}";
+
+                // Create the media for this field in this record.
+                $this->create_media_for_record(
+                    $mediatags, $table, $record, $field, $filerecord, $moretags
+                );
+            }
+        }
+    }
+
+    /**
+     * Create media for the given field in the given question.
+     *
+     * @param array $mediatags
+     * @param string $table
+     * @param object $record
+     * @param string $field
+     * @param array $filerecord
+     * @param array $moretags (passed by reference) Moodle tags for media used in the current question.
+     */
+    public function create_media_for_record($mediatags, $table, $record, $field, $filerecord, &$moretags) {
+        global $DB;
+
+        // Sanity check on incoming parameters.
+        if (empty($record) || empty($field) || empty($record->$field)) {
+            return false;
+        }
+
+        $filenameprefix = $filerecord['filename'];
+        $filerecord['filename'] = '';
+
+        // Set up search string for the media tags.
+        static $search = null;
+        if ($search === null) {
+            $search = (object)[
+                // Search string to extract media tags.
+                //   $1: type of media (IMAGE, AUDIO or VIDEO).
+                //   $2: tag attributes and AI prompt.
+                'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/',
+                // Search string to extract attributes of media tags.
+                //   $1: name of attribute (alt, width, height, class).
+                //   $2: value of attribute.
+                'attributes' => '/(\w+) *= *"(.*?)"/',
+            ];
+        }
+
+        // Initialize the counters used to generate unique filenames.
+        $count = (object)array_combine(
+            array_keys($mediatags), 
+            array_fill(0, count($mediatags), 0)
+        );
+
+        if (preg_match_all($search->tags, $record->$field, $tags, PREG_OFFSET_CAPTURE)) {
+
+            $tmax = count($tags[0]) - 1;
+            for ($t = $tmax; $t >= 0; $t--) {
+
+                list($tag, $tagstart) = $tags[0][$t];
+                $taglength = strlen($tag);
+                $tagname = $tags[1][$t][0];
+                $tagprompt = $tags[2][$t][0];
+
+                // Get the configid of the AI subplugin that will create the media file.
+                $configid = $mediatags[$tagname];
+
+                // Initilize the array of allowable tag parameters.
+                $tagparams = [
+                    'alt' => '',
+                    'class' => '',
+                    'width' => '',
+                    'height' => '',
+                    'filename' => '',
+                ];
+
+                // Transfer tag attributes (e.g. width, height) from $tagprompt to $tagparams.
+                if (preg_match_all($search->attributes, $tagprompt, $attributes, PREG_OFFSET_CAPTURE)) {
+
+                    $amax = count($attributes[0]) - 1;
+                    for ($a = $amax; $a >= 0; $a--) {
+
+                        list($attribute, $astart) = $attributes[0][$a];
+                        $alength = strlen($attribute);
+                        $aname = $attributes[1][$a][0];
+                        $avalue = $attributes[2][$a][0];
+
+                        // Check $aname is valid. Otherwise, ignore it.
+                        if (array_key_exists($aname, $tagparams)) {
+                            $tagparams[$aname] = $avalue;
+                            $tagprompt = substr_replace($tagprompt, '', $astart, $alength);
+                        }
+                    }
+                }
+
+                // Trim prompt and standardize space and tabs to a single space.
+                $tagprompt = trim(preg_replace('/[ \t]+/', ' ', $tagprompt));
+
+                // Increament the count of the number of media files
+                // of this tagname created in this $record->$field.
+                $count->$tagname = ($count->$tagname + 1);
+
+                // Set filename.    
+                if ($filename = $tagparams['filename']) {
+                    $filename = clean_param($filename, PARAM_FILE);
+                    $filename = preg_replace('/[ \._]+/', '_', $filename);
+                    $filename = trim($filename, ' -._');
+                    $filetype = pathinfo($path, PATHINFO_FILENAME);
+                }
+                if ($filename == '') {
+                    // E.g. questiontext-01-image-01.
+                    $filename = $filenameprefix.'-';
+                    $filename .= strtolower($tagname);
+                    $filename .= '-'.$count->$tagname;
+                }
+                $filetype = '';
+                switch ($tagname) {
+                    case 'IMAGE': $filetype = '.png'; break;
+                    case 'AUDIO': $filetype = '.mp3'; break;
+                    case 'VIDEO': $filetype = '.mp4'; break;
+                }
+                $filerecord['filename'] = $filename.$filetype;
+
+                // Send the prompt to one of the AI subplugins to generate the media file.
+                $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord);
+
+                if (is_object($file)) {
+                    $tagparams['src'] = '@@PLUGINFILE@@/'.$file->get_filename();
+                    if ($tagname == 'IMAGE') {
+                        $sampleparams = [
+                            'src' => '@@PLUGINFILE@@/a.png',
+                            'width' => '100',
+                            'height' => '100',
+                            'class' => 'img-fluid atto_image_button_text-bottom',
+                        ];
+                        $htmltag = \html_writer::empty_tag('img', $tagparams);
+                    } else {
+                        // AUDIO and VIDEO.
+                        $src = $tagparams['src'];
+                        $src = \html_writer::empty_tag('source', ['src' => $src]).$src;
+                        $htmltag = \html_writer::tag(strtolower($tagname), $src, $tagparams);
+                    }
+                    $record->$field = substr_replace($record->$field, $htmltag, $tagstart, $taglength);
+                    $DB->set_field($table, $field, $record->$field, ['id' => $record->id]);
+
+                    // Update the Moodle tags for this question.
+                    $moretags[strtolower($tagname)] = true;
+
+                } else if (is_string($file)) {
+                    // Report error message?
+                    mtrace($file);
+                } else {
+                    mtrace('Oops, "create_media_file()" returned an unrecognizeable result.');
+                }
+            }
+        }
+    }
+
+    /**
+     * create_media_file
+     *
+     * @param integer $configid
+     * @param string $mediatype IMAGE, AUDIO, VIDEO
+     * @param string $prompt
+     * @param array $filerecord
+     * @return object source_file or error string
+     */
+    public function create_media_file($configid, $mediatype, $prompt, $filerecord) {
+
+        static $configs = [];
+        if (! array_key_exists($configid, $configs)) {
+            $configs[$configid] = $this->get_config($configid);
+        }
+        if (! ($config = $configs[$configid])) {
+            return null; // Invalid configid - shouldn't happen !!
+        }
+
+        static $creators = [];
+        if (! array_key_exists($mediatype, $creators)) {
+            $creators[$mediatype] = $this->get_ai($config);
+        }
+        if (! ($creator = $creators[$mediatype])) {
+            return null; // Invalid mediatype - shouldn't happen !!
+        }
+
+        static $fs = null;
+        if ($fs === null) {
+            $fs = get_file_storage();
+        }
+ 
+        // How do we set the filename?
+        if ($media = $creator->get_response($prompt)) {
+            if (! empty($media->error)) {
+                return $media->error;
+            }
+            // Note that Dalle always returns PNG.
+            // It can be converted using $fs->convert_image().
+            if (! empty($media->content)) {
+                // Create file from string.
+                return $fs->create_file_from_string($filerecord, $media->content);
+            }
+            if (! empty($media->url)) {
+                // Create file from URL.
+                return $fs->create_file_from_url($filerecord, $media->url);
+            }
+            $file = null; // Shouldn't happen !!
+            if ($file) {
+                $filename = $filerecord['filename'];
+                $filename = pathinfo($filename, PATHINFO_FILENAME);
+                $filerecord['filename'] = "$filename.jpg";
+                return $fs->convert_image($filerecord, $file->get_id(), 640);
+                // It is also possible to reduce the "quality" and so reduce the file size.
+            }
+        }
+
+        return "Oops, {$mediatype} media could not be created.";
     }
 
     /**

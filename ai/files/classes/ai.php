@@ -54,9 +54,9 @@ class ai extends \mod_vocab\aibase {
 
     /**
      * @var string containing type of this AI subplugin
-     * (see AI_TYPE_XXX constants in mod/vocab/classes/aibase.php)
+     * (see SUBTYPE_XXX constants in mod/vocab/classes/aibase.php)
      */
-    public $type = self::AI_TYPE_INPUT;
+    public $subtype = self::SUBTYPE_INPUT;
 
     /**
      * @var bool to signify whether or not duplicate records,

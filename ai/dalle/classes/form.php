@@ -88,7 +88,7 @@ class form extends \mod_vocab\aiform {
                 'dallemodel' => 'dall-e-3',
                 'quality' => 'standard',
                 'response_format' => 'b64_json',
-                'size' => '1792x1024',
+                'size' => '1024x1792', // Height x Width.
                 'style' => 'vivid',
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
@@ -205,11 +205,12 @@ class form extends \mod_vocab\aiform {
 
         $name = 'size';
         $options = [
+             // Height x Width.
             '256x256' => $this->get_string($name.'256x256'),
             '512x512' => $this->get_string($name.'512x512'),
             '1024x1024' => $this->get_string($name.'1024x1024'),
-            '1792x1024' => $this->get_string($name.'1792x1024'),
             '1024x1792' => $this->get_string($name.'1024x1792'),
+            '1792x1024' => $this->get_string($name.'1792x1024'),
         ];
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
 

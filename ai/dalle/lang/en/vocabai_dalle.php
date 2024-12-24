@@ -70,8 +70,8 @@ $string['size_help'] = 'The size of the generated images. For DALL-E-2, this mus
 $string['size256x256'] = '■ 256 x 256 pixels (DALL-E-2 only)';
 $string['size512x512'] = '■ 512 x 512 pixels (DALL-E-2 only)';
 $string['size1024x1024'] = '■ 1024 x 1024 pixels';
-$string['size1792x1024'] = '▬ 1792 x 1024 pixels (DALL-E-3 only)';
-$string['size1024x1792'] = '▮ 1024 x 1792 pixels (DALL-E-3 only)';
+$string['size1024x1792'] = '▬ 1024 x 1792 pixels (DALL-E-3 only)';
+$string['size1792x1024'] = '▮ 1792 x 1024 pixels (DALL-E-3 only)';
 
 $string['style'] = 'Image style';
 $string['style_help'] = 'The style of the generated images. Must be either "vivid" or "natural". Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This param is only supported for DALL-E-3.';

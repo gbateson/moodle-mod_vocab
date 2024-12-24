@@ -57,9 +57,9 @@ class ai extends \mod_vocab\aibase {
 
     /**
      * @var string containing type of this AI subplugin
-     * (see AI_TYPE_XXX constants in mod/vocab/classes/aibase.php)
+     * (see SUBTYPE_XXX constants in mod/vocab/classes/aibase.php)
      */
-    public $type = self::AI_TYPE_IMAGE;
+    public $subtype = self::SUBTYPE_IMAGE;
 
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
@@ -123,10 +123,8 @@ class ai extends \mod_vocab\aibase {
             // Set the required POST fields.
             $this->postparams = [
                 'model' => $model,
-                'messages' => [
-                    (object)['role' => 'system', 'content' => $role],
-                    (object)['role' => 'user', 'content' => $prompt],
-                ],
+                'prompt' => $prompt,
+                'n' => 1, // The number of images to created.
             ];
 
             // Set optional POST fields.
@@ -144,29 +142,28 @@ class ai extends \mod_vocab\aibase {
         );
 
         if ($this->curl->error) {
-            return (object)['image' => '', 'url' => '', 'prompt' => '', 'error' => $response];
+            return (object)['error' => $response];
         }
 
-        $response = json_decode($response, true); // Force array structure.
+        // Extract response details (force array structure).
+        $response = json_decode($response, true);
 
-        // We expect an array of image objects,
-        // each of which contains b64_json, url, revised_prompt.
+        // We expect an array of image objects, each of
+        // which contains b64_json, url, revised_prompt.
 
         if (empty($response['data'][0])) {
             $error = 'Oops, unexpected response from DALL-E.';
-            return (object)['image' => '', 'url' => '', 'prompt' => '', 'error' => $error];
+            return (object)['error' => $error];
         }
 
+        // Create shortcut to the main $response data.
         $response = $response['data'][0];
-        if ($image = ($response['b64_json'] ?? '')) {
-            $image = base64_decode($image);
-        }
-        $url = ($response['url'] ?? '');
-        $prompt = ($response['revised_prompt'] ?? '');
 
         return (object)[
-            'image' => $image, 'url' => $url,
-            'prompt' => $prompt, 'error' => '',
+            'content' => base64_decode($response['b64_json'] ?? ''),
+            'prompt' => ($response['revised_prompt'] ?? ''),
+            'url' => ($response['url'] ?? ''),
+            'error' => '',
         ];
     }
 }

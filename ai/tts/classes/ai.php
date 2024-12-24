@@ -57,9 +57,9 @@ class ai extends \mod_vocab\aibase {
 
     /**
      * @var string containing type of this AI subplugin
-     * (see AI_TYPE_XXX constants in mod/vocab/classes/aibase.php)
+     * (see SUBTYPE_XXX constants in mod/vocab/classes/aibase.php)
      */
-    public $type = self::AI_TYPE_AUDIO;
+    public $subtype = self::SUBTYPE_AUDIO;
 
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
@@ -104,9 +104,6 @@ class ai extends \mod_vocab\aibase {
 
         if ($this->postparams === null) {
 
-            // Define the role of the AI assistant.
-            $role = 'Act as an expert creator of images for web-based learning materials.';
-
             // Shorten the prompt if necessary.
             // Note: shorten_text() is defined in "lib/moodlelib.php".
             switch ($model) {
@@ -123,14 +120,12 @@ class ai extends \mod_vocab\aibase {
             // Set the required POST fields.
             $this->postparams = [
                 'model' => $model,
-                'messages' => [
-                    (object)['role' => 'system', 'content' => $role],
-                    (object)['role' => 'user', 'content' => $prompt],
-                ],
+                'input' => $prompt,
+                'voice' => 'alloy',
             ];
 
             // Set optional POST fields.
-            foreach (['quality', 'response_format', 'size', 'style'] as $name) {
+            foreach (['voice', 'response_format', 'speed'] as $name) {
                 if (empty($this->config->$name)) {
                     continue;
                 }

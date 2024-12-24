@@ -28,8 +28,17 @@ $string['pluginname'] = 'Generate questions for a Vocabulary activity.';
 $string['privacy:metadata'] = 'The vocabtool_questionbank plugin does not store any personal data.';
 $string['questionbank'] = 'Question bank';
 
-$string['assistant'] = 'AI assistant';
-$string['assistant_help'] = 'Select an AI assistant to generate the questions.';
+$string['textassistant'] = 'AI text assistant';
+$string['textassistant_help'] = 'Select an AI text assistant to generate the questions.';
+
+$string['imageassistant'] = 'AI image assistant';
+$string['imageassistant_help'] = 'Select an AI image assistant to generate images embedded in questions.';
+
+$string['audioassistant'] = 'AI audio assistant';
+$string['audioassistant_help'] = 'Select an AI audio assistant to generate audio embedded in questions.';
+
+$string['videoassistant'] = 'AI video assistant';
+$string['videoassistant_help'] = 'Select an AI video assistant to generate video embedded in questions.';
 
 $string['questioncategory_help'] = 'The category to which the new questions should be added.';
 $string['questioncategory'] = 'Question category';
@@ -130,6 +139,15 @@ $string['addaidetails'] = 'Please use the links on the "AI assistants" menu to a
 
 $string['nofilesfound'] = 'No tuning files were found. They are not essential to create questions, but they can improve the quality of questions produced by the AI assistant. {$a}';
 $string['clicktoaddfiles'] = 'Click here to add tuning files.';
+
+$string['noimagefound'] = '{$a} Prompts for the AI image assistants';
+$string['clicktoaddimage'] = 'Click here to add an AI image assistant.';
+
+$string['noaudiofound'] = '{$a} Prompts for the AI audio assistants';
+$string['clicktoaddaudio'] = 'Click here to add an AI audio assistant.';
+
+$string['novideofound'] = '{$a} Prompts for the AI video assistants';
+$string['clicktoaddvideo'] = 'Click here to add an AI video assistant.';
 
 $string['qformat'] = 'AI output format';
 $string['qformat_help'] = 'Choose a format for the AI output that will it to be imported into the question bank.';
