@@ -46,6 +46,9 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
+        // The sort field used to sort configs by alphabetically.
+        $sortfield = 'formatname';
+
         // If any of this user's configs are found below,
         // export will be enabled.
         $enableexport = false;
@@ -97,7 +100,7 @@ class form extends \mod_vocab\aiform {
 
         // Display the config settings that apply to this context and are
         // owned by other users. These are NOT editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id);
+        $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id, $sortfield);
         if (count($configs)) {
 
             // Collapse the section to add a new key.
@@ -130,7 +133,7 @@ class form extends \mod_vocab\aiform {
 
         // Display the config settings that are owned by this user but do not
         // apply to the current context. These are editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id);
+        $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id, $sortfield);
         if (count($configs)) {
             $enableexport = true;
 
@@ -147,7 +150,7 @@ class form extends \mod_vocab\aiform {
 
         // Display the config settings that owned by this user and apply to
         // the current context. These are editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id);
+        $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id, $sortfield);
         if (count($configs)) {
             $enableexport = true;
 

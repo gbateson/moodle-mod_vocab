@@ -1500,17 +1500,31 @@ class form extends \mod_vocab\toolform {
      * @return string containing a list of links to previw pages of the questions.
      */
     public function format_questionids($questionids) {
+        global $OUTPUT;
+
         if (empty($questionids)) {
             return '';
         }
+
+        // Cache the courseid and edit/preview icons.
+        $courseid = $this->get_vocab()->course->id;
+        $editicon = $OUTPUT->pix_icon('t/edit', get_string('editsettings'));
+        $previewicon = $OUTPUT->pix_icon('t/preview', get_string('preview'));
+
         $ids = explode(',', $questionids);
         $ids = array_map('trim', $ids);
         $ids = array_filter($ids);
         foreach ($ids as $i => $id) {
+
+            $url = '/question/bank/editquestion/question.php';
+            $url = new \moodle_url($url, ['courseid' => $courseid, 'id' => $id]);
+            $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
+            $ids[$i] = ' '.\html_writer::link($url, $id, $params);
+
             $url = '/question/bank/previewquestion/preview.php';
             $url = new \moodle_url($url, ['id' => $id]);
             $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
-            $ids[$i] = \html_writer::link($url, $id, $params);
+            $ids[$i] .= ' '.\html_writer::link($url, $previewicon, $params);
         }
         return implode(', ', $ids);
     }

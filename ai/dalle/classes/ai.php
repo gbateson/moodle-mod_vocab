@@ -44,7 +44,11 @@ class ai extends \mod_vocab\aibase {
      */
     const SETTINGNAMES = [
         'dalleurl', 'dallekey', 'dallemodel',
-        'quality', 'response_format', 'size', 'style',
+        'response_format',
+        'filetype', 'filetypeconvert',
+        'quality', 'qualityconvert',
+        'size', 'sizeconvert',
+        'keeporiginals', 'style', 'n', 
         'sharedfrom', 'shareduntil',
     ];
 
@@ -62,7 +66,182 @@ class ai extends \mod_vocab\aibase {
     public $subtype = self::SUBTYPE_IMAGE;
 
     /** @var bool enable or disable trace and debugging messages during development. */
-    const DEBUG = false;
+    const DEBUG = true;
+
+    /**
+     * Get media files and store them in the specified filearea.
+     * If several files are generated, they will *all* be converted
+     * and stored, but only the first one will be returned by this method.
+     *
+     * @param array $filerecord
+     * @param string $prompt
+     * @return stored_file or error message as a string.
+     */
+    public function get_media_file($filerecord, $prompt) {
+
+        static $fs = null;
+        if ($fs === null) {
+            $fs = get_file_storage();
+        }
+
+        // Initialize arguments for error strings.
+        $a = (object)[
+            'subplugin' => $this->plugin,
+            'filearea' => $filerecord['filearea'],
+            'itemid' => $filerecord['itemid'],
+        ];
+
+        $media = $this->get_response($prompt);
+
+        if (empty($media)) {
+            return $this->get_string('medianotcreated', $a).' empty(media)';
+        }
+
+        if (is_string($media)) {
+            return $media; // Probably an error message.
+        }
+
+        if (! empty($media->error)) {
+            return $media->error;
+        }
+
+        if (! isset($media->data)) {
+            return $this->get_string('medianotcreated', $a).' ! isset(media->data)';
+        }
+
+        $files = [];
+        $errors = [];
+
+        // Main processing loop.
+        foreach ($media->data as $i => $data) {
+
+            if (! empty($data['content'])) {
+                // Create file from string.
+                $file = $fs->create_file_from_string($filerecord, $data['content']);
+            } else if (! empty($data['url'])) {
+                // Create file from URL.
+                $file = $fs->create_file_from_url($filerecord, $data['url']);
+            } else {
+                $file = null; // Shouldn't happen !!
+            }
+
+            if (empty($file)) {
+                $errors[] = $this->get_string('medianotcreated', $a).' empty(file)';
+                continue; // Shouldn't happen, but let's try to continue !!
+            }
+
+            // Note that Dalle always returns PNG.
+            // It can be converted using $fs->convert_image().
+            // At the same time, we can also scale the image
+            // and reduce quality, thereby reducing file size.
+
+            // Initialize the adjustable properties.
+            $width = $newwidth = 0;
+            $height = $newheight = 0;
+            $quality = $newquality = null;
+            $filetype = $newfiletype = 'png';
+
+            if ($imageinfo = $file->get_imageinfo()) {
+                $width = (int)$imageinfo['width'];
+                $height = (int)$imageinfo['height'];
+                $filetype = $imageinfo['mimetype']; // E.g. "image/png".
+                $filetype = str_replace('image/', '', $filetype);
+            } else {
+                $name = 'size';
+                if (! empty($this->config->$name)) {
+                    $size = explode('x', $this->config->$name);
+                    if (count($size) == 2) {
+                        $size = array_map('intval', $size);
+                        list($width, $height) = $size;
+                    }
+                }
+                $name = 'filetype';
+                if (! empty($this->config->$name)) {
+                    $filetype = strtolower($this->config->$name);
+                }
+            }
+
+            $name = 'sizeconvert';
+            if (! empty($this->config->$name)) {
+                $size = explode('x', $this->config->$name);
+                if (count($size) == 2) {
+                    $size = array_map('intval', $size);
+                    list($newwidth, $newheight) = $size;
+                }
+            }
+
+            $name = 'filetypeconvert';
+            if (! empty($this->config->$name)) {
+                $newfiletype = strtolower($this->config->$name);
+            }
+
+            $name = 'quality';
+            if (! empty($this->config->$name)) {
+                $quality = $this->config->$name;
+                if ($quality == 'hd') {
+                    $quality = 100;
+                } else {
+                    $quality = 75;
+                }
+            }
+
+            $name = 'qualityconvert';
+            if (! empty($this->config->$name)) {
+                $newquality = (int)$this->config->$name;
+                // This should already be a percentage.
+            }
+
+            // Do we need to convert this image? Usually, we do.
+            $convertimage = true;
+            if ($filetype == $newfiletype && $quality == $newquality) {
+                if ($width == $newwidth && $height == $newheight) {
+                    $convertimage = false;
+                }
+            }
+
+            if ($convertimage) {
+                mtrace('['.get_string('ok').']');
+                mtrace("Converting image to $filetype ($newwidth x $newheight) ...", ' ');
+
+                // Cache the file id, so that we can delete
+                // it later if it is no longer required.
+                $fileid = $file->get_id();
+
+                // Set the new filename.
+                $filename = $filerecord['filename'];
+                $filename = pathinfo($filename, PATHINFO_FILENAME);
+                $filerecord['filename'] = "$filename.$newfiletype";
+
+                // Convert the image. Note that
+                // the old image is kept by default.
+                $file = $fs->convert_image(
+                    $filerecord, $fileid,
+                    $newwidth, $newheight,
+                    true, $newquality
+                );
+
+                $name = 'keeporiginals';
+                if (empty($this->config->$name)) {
+                    mtrace('['.get_string('ok').']');
+                    mtrace('Deleting original image ...', ' ');
+                    $fs->get_file_by_id($fileid)->delete();
+                }
+
+                mtrace('['.get_string('ok').']');
+            }
+
+            $files[] = $file;
+        }
+
+        if (count($files)) {
+            return reset($files);
+        }
+        if (count($errors)) {
+            return reset($errors);
+        } else {
+            return '[D] '.$this->get_string('medianotcreated', $a);
+        }
+    }
 
     /**
      * Send a prompt to an AI assistant and get the response.
@@ -95,7 +274,7 @@ class ai extends \mod_vocab\aibase {
 
         if ($this->curl === null) {
             // Setup new Moodle curl object (see "lib/filelib.php").
-            $this->curl = new \curl(['debug' => static::DEBUG]);
+            $this->curl = new \curl(['debug' => false]); // static::DEBUG
             $this->curl->setHeader([
                 'Authorization: Bearer '.$this->config->dallekey,
                 'Content-Type: application/json',
@@ -124,15 +303,23 @@ class ai extends \mod_vocab\aibase {
             $this->postparams = [
                 'model' => $model,
                 'prompt' => $prompt,
-                'n' => 1, // The number of images to created.
             ];
 
             // Set optional POST fields.
-            foreach (['quality', 'response_format', 'size', 'style'] as $name) {
+            $params = [
+                'response_format' => PARAM_ALPHANUMEXT,
+                'quality' => PARAM_ALPHA,
+                'size' => PARAM_ALPHANUM,
+                'style' => PARAM_ALPHA,
+            ];
+            if ($model == 'dall-e-2') {
+                $params['n'] = PARAM_INT; // Only allowed on dall-e-2.
+            }
+            foreach ($params as $name => $type) {
                 if (empty($this->config->$name)) {
                     continue;
                 }
-                $this->postparams[$name] = $this->config->$name;
+                $this->postparams[$name] = clean_param($this->config->$name, $type);
             }
         }
 
@@ -142,28 +329,43 @@ class ai extends \mod_vocab\aibase {
         );
 
         if ($this->curl->error) {
-            return (object)['error' => $response];
+            return (object)['error' => get_string('error').': '.$response];
         }
 
         // Extract response details (force array structure).
         $response = json_decode($response, true);
 
-        // We expect an array of image objects, each of
-        // which contains b64_json, url, revised_prompt.
+        if (is_array($response) && array_key_exists('error', $response)) {
+            $error = [];
+            foreach (['type', 'code', 'message'] as $name) {
+                if (array_key_exists($name, $response['error'])) {
+                    $error[] = $name.': '.$response['error'][$name];
+                }
+            }
+            if ($error = implode(', ', $error)) {
+                $error = get_string('error').': '.$error;
+                return (object)['error' => $error];
+            }
+        }
 
-        if (empty($response['data'][0])) {
-            $error = 'Oops, unexpected response from DALL-E.';
+        // We expect $response['data'] to be an array of imagess,
+        // each of which is an array containing "revised_prompt"
+        // and either "b64_json" or "url"
+
+        if (empty($response['data'])) {
+            $error = get_string('error').': Unexpected response from DALL-E. (no data in response)';
             return (object)['error' => $error];
         }
 
-        // Create shortcut to the main $response data.
-        $response = $response['data'][0];
+        // Standardize the response data, prompt and url.
+        foreach ($response['data'] as $i => $data) {
+            $response['data'][$i] = [
+                'revised_prompt' => ($data['revised_prompt'] ?? ''),
+                'content' => base64_decode($data['b64_json'] ?? ''),
+                'url' => ($data['url'] ?? ''),
+            ];
+        }
 
-        return (object)[
-            'content' => base64_decode($response['b64_json'] ?? ''),
-            'prompt' => ($response['revised_prompt'] ?? ''),
-            'url' => ($response['url'] ?? ''),
-            'error' => '',
-        ];
+        return (object)['data' => $response['data'], 'error' => ''];
     }
 }

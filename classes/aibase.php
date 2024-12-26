@@ -208,9 +208,10 @@ class aibase extends \mod_vocab\subpluginbase {
      * @param string $returnuser (optional, default='') Either "otherusers" or "thisuser"
      * @param string $returncontext (optional, default='') Either "othercontexts" or "thiscontext"
      * @param bool $removeconfigid (optional, default=false)
+     * @param string $sortfield (optional, default='')
      * @return array
      */
-    public function get_configs($returnuser='', $returncontext='', $removeconfigid=false) {
+    public function get_configs($returnuser='', $returncontext='', $removeconfigid=false, $sortfield='') {
         global $USER;
 
         // Setup the configs object (1st time only).
@@ -330,6 +331,21 @@ class aibase extends \mod_vocab\subpluginbase {
                     unset($configs[$this->config->id]);
                 }
             }
+        }
+
+        
+        if ($sortfield) {
+            uasort($configs, function($a, $b) use ($sortfield) {
+                if ($a->$sortfield < $b->$sortfield) {
+                    return -1;
+                }
+                if ($a->$sortfield > $b->$sortfield) {
+                    return 1;
+                }
+                return 0;
+                // Use spaceship operator for comparison in PHP >= 7.x
+                // return $a->$sortfield <=> $b->$sortfield;
+            });
         }
 
         return $configs;
@@ -720,7 +736,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @param object $obj
      * @return void, but will generate output.
      */
-    private static function mtrace_object($obj) {
+    protected static function mtrace_object($obj) {
         if (static::DEBUG) {
             $fn = 'prin'.'t_r';
             mtrace($fn($obj, true));

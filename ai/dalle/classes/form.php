@@ -86,10 +86,16 @@ class form extends \mod_vocab\aiform {
                 'dalleurl' => 'https://api.openai.com/v1/audio/speech',
                 'dallekey' => '',
                 'dallemodel' => 'dall-e-3',
-                'quality' => 'standard',
                 'response_format' => 'b64_json',
-                'size' => '1024x1792', // Height x Width.
+                'filetype' => 'png',
+                'filetypeconvert' => 'jpg',
+                'quality' => 'standard',
+                'qualityconvert' => '75',
+                'size' => '1792x1024',
+                'sizeconvert' => '630x360',
                 'style' => 'vivid',
+                'keeporiginals' => 0,
+                'n' => 1, // Number of variarions.
                 'contextlevel' => CONTEXT_MODULE,
                 'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
                 'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
@@ -185,41 +191,19 @@ class form extends \mod_vocab\aiform {
         foreach ($options as $option => $i) {
             $options[$option] = strtoupper($option).$labelsep.$this->get_string($option);
         }
-
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
-        $name = 'quality';
-        $options = [
-            'standard' => $this->get_string($name.'standard'),
-            'hd' => $this->get_string($name.'hd'),
-        ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+        $name = 'settings';
+        $this->add_heading($mform, $name, true);
 
-        $name = 'response_format';
-        $options = [
-            'b64_json' => $this->get_string($name.'b64_json'),
-            'url' => $this->get_string($name.'url'),
-        ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
-
-        $name = 'size';
-        $options = [
-             // Height x Width.
-            '256x256' => $this->get_string($name.'256x256'),
-            '512x512' => $this->get_string($name.'512x512'),
-            '1024x1024' => $this->get_string($name.'1024x1024'),
-            '1024x1792' => $this->get_string($name.'1024x1792'),
-            '1792x1024' => $this->get_string($name.'1792x1024'),
-        ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
-
-        $name = 'style';
-        $options = [
-            'vivid' => $this->get_string($name.'vivid'),
-            'natural' => $this->get_string($name.'natural'),
-        ];
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+        $this->add_field_response_format($mform, $default);
+        $this->add_field_filetype($mform, $default);
+        $this->add_field_quality($mform, $default);
+        $this->add_field_size($mform, $default);
+        $this->add_field_style($mform, $default);
+        $this->add_field_keeporiginals($mform, $default);
+        $this->add_field_n($mform, $default);
 
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);
@@ -230,6 +214,216 @@ class form extends \mod_vocab\aiform {
         }
 
         $PAGE->requires->js_call_amd('vocabai_dalle/form', 'init');
+    }
+
+    /**
+     * add_field_response_format
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_response_format($mform, $default) {
+        $name = 'response_format';
+        $options = [
+            'b64_json' => $this->get_string($name.'b64_json'),
+            'url' => $this->get_string($name.'url'),
+        ];
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUMEXT, $default->$name);
+    }
+
+    /**
+     * add_field_filetype
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_filetype($mform, $default) {
+
+        $name = 'filetype';
+        $menu1 = [
+            'png' => $this->get_string($name.'file', 'PNG'),
+        ];
+        $menu2 = [
+            'png' => $this->get_string($name.'file', 'PNG'),
+            'jpg' => $this->get_string($name.'file', 'JPG'),
+            'gif' => $this->get_string($name.'file', 'GIF'),
+        ];
+
+        $names = [$name, $name.'convert'];
+        $menus = [$menu1, $menu2];
+        $labels = [
+            $this->get_string('generateas'),
+            $this->get_string('convertto'),
+        ]; 
+        $types = [PARAM_ALPHANUM, PARAM_ALPHA];
+        $defaults = [$default->$name, $default->{$name.'convert'}];
+        $this->add_group_menus($mform, $names, $menus, $labels, $types, $defaults);
+    }
+
+    /**
+     * add_field_quality
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_quality($mform, $default) {
+
+        $name = 'quality';
+        $menu1 = [
+            'standard' => $this->get_string($name.'standard'),
+            'hd' => $this->get_string($name.'hd')
+        ];
+
+        $menu2 = range(100, 5, -5);
+        $menu2 = array_combine($menu2, $menu2);
+        $menu2 = array_map(function ($num) { return "$num%"; }, $menu2);
+
+        $names = [$name, $name.'convert'];
+        $menus = [$menu1, $menu2];
+        $labels = [
+            $this->get_string('generateas'),
+            $this->get_string('convertto'),
+        ]; 
+        $types = [PARAM_ALPHANUM, PARAM_ALPHA];
+        $defaults = [$default->$name, $default->{$name.'convert'}];
+        $this->add_group_menus($mform, $names, $menus, $labels, $types, $defaults);
+    }
+
+    /**
+     * add_field_size
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_size($mform, $default) {
+
+        $name = 'size';
+        $menu1 = [
+             // Square.
+            '1792x1024' => $this->get_string($name.'landscape', '1792x1024'),
+            '1024x1792' => $this->get_string($name.'portrait', '1024x1792'),
+            '1024x1024' => $this->get_string($name.'square', '1024x1024'),
+            '512x512' => $this->get_string($name.'square', '512x512')." (DALL-E-2)",
+            '256x256' => $this->get_string($name.'square', '256x256')." (DALL-E-2)",
+        ];
+        $menu2 = [
+            '1120x640' => $this->get_string($name.'landscape', '1120x640'),
+            '840x480' => $this->get_string($name.'landscape', '840x480'),
+            '630x360' => $this->get_string($name.'landscape', '630x360'),
+            '640x1120' => $this->get_string($name.'portrait', '640x1120'),
+            '480x840' => $this->get_string($name.'portrait', '480x840'),
+            '360x630' => $this->get_string($name.'portrait', '360x630'),
+            '640x640' => $this->get_string($name.'square', '640x640'),
+            '480x480' => $this->get_string($name.'square', '480x480'),
+            '360x360' => $this->get_string($name.'square', '360x360'),
+        ];
+
+        $names = [$name, $name.'convert'];
+        $menus = [$menu1, $menu2];
+        $labels = [
+            $this->get_string('generateas'),
+            $this->get_string('convertto'),
+        ]; 
+        $types = [PARAM_ALPHANUM, PARAM_ALPHANUM];
+        $defaults = [$default->$name, $default->{$name.'convert'}];
+        $this->add_group_menus($mform, $names, $menus, $labels, $types, $defaults);
+    }
+
+    /**
+     * add_field_keeporiginals
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_keeporiginals($mform, $default) {
+        $name = 'keeporiginals';
+        $options = [get_string('no'), get_string('yes')];
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name);
+    }
+
+    /**
+     * add_field_style
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_style($mform, $default) {
+        $name = 'style';
+        $options = [
+            'vivid' => $this->get_string($name.'vivid'),
+            'natural' => $this->get_string($name.'natural'),
+        ];
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHA, $default->$name);
+    }
+
+    /**
+     * Add field n (the number of image variations)
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_n($mform, $default) {
+        $name = 'n';
+        $options = array_combine(range(1, 10), range(1, 10));
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name);
+    }
+
+    /**
+     * add_group_menus
+     *
+     * @param object $mform
+     * @param array $names array of element names.
+     * @param array $menus array of option arrays.
+     * @param array $labels array of label strings.
+     * @param array $types array of PARAM_xxx types.
+     * @param object $default values.
+     * @return void, but may update $mform.
+     */
+    public function add_group_menus($mform, $names, $menus, $labels, $types, $defaults) {
+        global $OUTPUT;
+        $elements = [];
+
+        // Cache line break element, label separator and subheading style.
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
+        $labelsep = get_string('labelsep', 'langconfig');
+        $subheadingstyle = ['style' => 'min-width: 100px;'];
+        $subplugin = $this->get_subplugin()->plugin;
+
+        $imax = count($names);
+        for ($i = 0; $i < $imax; $i++) {
+            if ($i) {
+                // Add separator to force new line between "rows".
+                $elements[] = $mform->createElement('html', $linebreak);
+            }
+            $name = $names[$i];
+            $menu = $menus[$i];
+            $label = $labels[$i];
+            $helpicon = $OUTPUT->help_icon($name, $subplugin);
+            $subheading = \html_writer::tag('div', $label.$labelsep, $subheadingstyle);
+            $elements[] = $mform->createElement('html', $subheading);
+            $elements[] = $mform->createElement('select', $name, $label, $menu);
+            $elements[] = $mform->createElement('html', $helpicon);
+        }
+
+        $name = reset($names).'_elements';
+        $label = $this->get_string($name);
+        $mform->addGroup($elements, $name, $label, ' ', false);
+        $this->add_help_button($mform, $name, $name);
+
+        for ($i = 0; $i < $imax; $i++) {
+            $name = $names[$i];
+            $type = $types[$i];
+            $default = $defaults[$i];
+            $mform->setType($name, $type);
+            $mform->setDefault($name, $default);
+        }
     }
 
     /**

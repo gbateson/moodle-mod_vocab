@@ -198,6 +198,7 @@ class questions extends \core\task\adhoc_task {
             $status == $toolclass::TASKSTATUS_QUEUED ||
             $status == $toolclass::TASKSTATUS_CHECKING_PARAMS) {
 
+            // Report start of checking params.
             mtrace($this->tool->get_string('checkingparams'), ' ');
 
             $status = $toolclass::TASKSTATUS_CHECKING_PARAMS;
@@ -226,6 +227,9 @@ class questions extends \core\task\adhoc_task {
                 \core\task\manager::reschedule_or_queue_adhoc_task($this);
                 return;
             }
+
+            // Report successful completion of checking params.
+            mtrace('['.get_string('ok').']');
 
             // Set log status to "Fetching results".
             $status = $toolclass::TASKSTATUS_FETCHING_RESULTS;
@@ -320,7 +324,7 @@ class questions extends \core\task\adhoc_task {
 
             // Report status to cron job.
             $a = (object)['count' => $qcount, 'word' => $word];
-            mtrace($this->tool->get_string('importingquestions', $a), ' ');
+            mtrace($this->tool->get_string('importingquestions', $a));
 
             // Update the log status.
             $status = $toolclass::TASKSTATUS_IMPORTING_RESULTS;
@@ -424,9 +428,6 @@ class questions extends \core\task\adhoc_task {
                 'status' => $status,
                 'error' => $error,
             ]);
-
-            // Report successful completion to cron job.
-            mtrace('['.get_string('ok').']');
         }
 
         if ($error) {
@@ -1203,17 +1204,16 @@ EOD;
                 $filerecord['filename'] = $filename.$filetype;
 
                 // Send the prompt to one of the AI subplugins to generate the media file.
+                // For image files, several variations maybe created, but anyway only the
+                // first one will be returned by the "create_media_file()" method.
                 $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord);
 
                 if (is_object($file)) {
                     $tagparams['src'] = '@@PLUGINFILE@@/'.$file->get_filename();
                     if ($tagname == 'IMAGE') {
-                        $sampleparams = [
-                            'src' => '@@PLUGINFILE@@/a.png',
-                            'width' => '100',
-                            'height' => '100',
-                            'class' => 'img-fluid atto_image_button_text-bottom',
-                        ];
+                        if (empty($tagparams['style'])) {
+                            $tagparams['style'] = 'display: block; height: auto; max-height: 100%; max-width: 100%;';
+                        }
                         $htmltag = \html_writer::empty_tag('img', $tagparams);
                     } else {
                         // AUDIO and VIDEO.
@@ -1264,37 +1264,7 @@ EOD;
             return null; // Invalid mediatype - shouldn't happen !!
         }
 
-        static $fs = null;
-        if ($fs === null) {
-            $fs = get_file_storage();
-        }
- 
-        // How do we set the filename?
-        if ($media = $creator->get_response($prompt)) {
-            if (! empty($media->error)) {
-                return $media->error;
-            }
-            // Note that Dalle always returns PNG.
-            // It can be converted using $fs->convert_image().
-            if (! empty($media->content)) {
-                // Create file from string.
-                return $fs->create_file_from_string($filerecord, $media->content);
-            }
-            if (! empty($media->url)) {
-                // Create file from URL.
-                return $fs->create_file_from_url($filerecord, $media->url);
-            }
-            $file = null; // Shouldn't happen !!
-            if ($file) {
-                $filename = $filerecord['filename'];
-                $filename = pathinfo($filename, PATHINFO_FILENAME);
-                $filerecord['filename'] = "$filename.jpg";
-                return $fs->convert_image($filerecord, $file->get_id(), 640);
-                // It is also possible to reduce the "quality" and so reduce the file size.
-            }
-        }
-
-        return "Oops, {$mediatype} media could not be created.";
+        return $creator->get_media_file($filerecord, $prompt);
     }
 
     /**

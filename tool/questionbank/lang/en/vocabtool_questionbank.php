@@ -243,7 +243,6 @@ $string['truefalseshort'] = 'TF';
 $string['sassessmentshort'] = 'Speak(assessment)';
 
 $string['moodlequestions'] = 'Moodle questions';
-$string['checkingparams'] = '... checking parameters';
+$string['checkingparams'] = '... checking parameters ...';
 $string['generatingquestions'] = '... generating {$a->count} questions for "{$a->word}"';
-$string['importingquestions'] = '... importing {$a->count} questions for "{$a->word}"';
-
+$string['importingquestions'] = '... importing {$a->count} questions for "{$a->word}" ...';

@@ -187,6 +187,9 @@ class form extends \mod_vocab\aiform {
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
+        $name = 'settings';
+        $this->add_heading($mform, $name, true);
+
         // Generate reusable menu of numeric values for "temperature" and "top_p".
         $options = [];
         for ($i = 0.0; $i <= 1; $i += 0.1) {
