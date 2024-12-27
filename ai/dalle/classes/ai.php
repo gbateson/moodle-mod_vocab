@@ -66,7 +66,7 @@ class ai extends \mod_vocab\aibase {
     public $subtype = self::SUBTYPE_IMAGE;
 
     /** @var bool enable or disable trace and debugging messages during development. */
-    const DEBUG = true;
+    const DEBUG = false;
 
     /**
      * Get media files and store them in the specified filearea.
@@ -274,53 +274,48 @@ class ai extends \mod_vocab\aibase {
 
         if ($this->curl === null) {
             // Setup new Moodle curl object (see "lib/filelib.php").
-            $this->curl = new \curl(['debug' => false]); // static::DEBUG
+            $this->curl = new \curl(['debug' => static::DEBUG]);
             $this->curl->setHeader([
                 'Authorization: Bearer '.$this->config->dallekey,
                 'Content-Type: application/json',
             ]);
         }
 
-        if ($this->postparams === null) {
+        // Shorten the prompt if necessary.
+        // Note: shorten_text() is defined in "lib/moodlelib.php".
+        switch ($model) {
+            case 'dall-e-2':
+                // For dall-e-2, the maximum length of prompt is 1000 chars.
+                $prompt = shorten_text($prompt, 1000, true);
+                break;
+            case 'dall-e-3':
+                // For dall-e-3, the maximum length of prompt is 4000 chars.
+                $prompt = shorten_text($prompt, 4000, true);
+                break;
+        }
 
-            // Define the role of the AI assistant.
-            $role = 'Act as an expert creator of images for web-based learning materials.';
+        // Set the required POST fields.
+        $this->postparams = [
+            'model' => $model,
+            'prompt' => $prompt,
+        ];
 
-            // Shorten the prompt if necessary.
-            // Note: shorten_text() is defined in "lib/moodlelib.php".
-            switch ($model) {
-                case 'dall-e-2':
-                    // For dall-e-2, the maximum length of prompt is 1000 chars.
-                    $prompt = shorten_text($prompt, 1000, true);
-                    break;
-                case 'dall-e-3':
-                    // For dall-e-3, the maximum length of prompt is 4000 chars.
-                    $prompt = shorten_text($prompt, 4000, true);
-                    break;
+        // Set optional POST fields.
+        // The "n" parameter is only allowed on dall-e-2.
+        $params = [
+            'response_format' => PARAM_ALPHANUMEXT,
+            'quality' => PARAM_ALPHA,
+            'size' => PARAM_ALPHANUM,
+            'style' => PARAM_ALPHA,
+        ];
+        if ($model == 'dall-e-2') {
+            $params['n'] = PARAM_INT;
+        }
+        foreach ($params as $name => $type) {
+            if (empty($this->config->$name)) {
+                continue;
             }
-
-            // Set the required POST fields.
-            $this->postparams = [
-                'model' => $model,
-                'prompt' => $prompt,
-            ];
-
-            // Set optional POST fields.
-            $params = [
-                'response_format' => PARAM_ALPHANUMEXT,
-                'quality' => PARAM_ALPHA,
-                'size' => PARAM_ALPHANUM,
-                'style' => PARAM_ALPHA,
-            ];
-            if ($model == 'dall-e-2') {
-                $params['n'] = PARAM_INT; // Only allowed on dall-e-2.
-            }
-            foreach ($params as $name => $type) {
-                if (empty($this->config->$name)) {
-                    continue;
-                }
-                $this->postparams[$name] = clean_param($this->config->$name, $type);
-            }
+            $this->postparams[$name] = clean_param($this->config->$name, $type);
         }
 
         // Send the prompt and get the response.

@@ -65,6 +65,46 @@ class ai extends \mod_vocab\aibase {
     const DEBUG = false;
 
     /**
+     * Get media files and store them in the specified filearea.
+     * If several files are generated, they will *all* be converted
+     * and stored, but only the first one will be returned by this method.
+     *
+     * @param array $filerecord
+     * @param string $prompt
+     * @return stored_file or error message as a string.
+     */
+    public function get_media_file($filerecord, $prompt) {
+
+        // Initialize arguments for error strings.
+        $a = (object)[
+            'subplugin' => $this->plugin,
+            'filearea' => $filerecord['filearea'],
+            'itemid' => $filerecord['itemid'],
+        ];
+
+        $media = $this->get_response($prompt);
+
+        if (empty($media)) {
+            return $this->get_string('medianotcreated', $a).' empty(media)';
+        }
+
+        if (! empty($media->error)) {
+            return $media->error;
+        }
+
+        if (empty($media->data)) {
+            return $this->get_string('medianotcreated', $a).' empty(media->data)';
+        }
+
+        $fs = get_file_storage();
+        if (! $file = $fs->create_file_from_string($filerecord, $media->data)) {
+            return $this->get_string('medianotcreated', $a).' empty(file)';
+        }
+
+        return $file;
+    }
+
+    /**
      * Send a prompt to an AI assistant and get the response.
      *
      * @param string $prompt
@@ -102,35 +142,18 @@ class ai extends \mod_vocab\aibase {
             ]);
         }
 
-        if ($this->postparams === null) {
+        // Set the required POST fields.
+        $this->postparams = [
+            'model' => $model,
+            'input' => $prompt,
+        ];
 
-            // Shorten the prompt if necessary.
-            // Note: shorten_text() is defined in "lib/moodlelib.php".
-            switch ($model) {
-                case 'dall-e-2':
-                    // For dall-e-2, the maximum length of prompt is 1000 chars.
-                    $prompt = shorten_text($prompt, 1000, true);
-                    break;
-                case 'dall-e-3':
-                    // For dall-e-3, the maximum length of prompt is 4000 chars.
-                    $prompt = shorten_text($prompt, 4000, true);
-                    break;
+        // Set optional POST fields.
+        foreach (['voice', 'response_format', 'speed'] as $name) {
+            if (empty($this->config->$name)) {
+                continue;
             }
-
-            // Set the required POST fields.
-            $this->postparams = [
-                'model' => $model,
-                'input' => $prompt,
-                'voice' => 'alloy',
-            ];
-
-            // Set optional POST fields.
-            foreach (['voice', 'response_format', 'speed'] as $name) {
-                if (empty($this->config->$name)) {
-                    continue;
-                }
-                $this->postparams[$name] = $this->config->$name;
-            }
+            $this->postparams[$name] = $this->config->$name;
         }
 
         // Send the prompt and get the response.
@@ -139,29 +162,9 @@ class ai extends \mod_vocab\aibase {
         );
 
         if ($this->curl->error) {
-            return (object)['image' => '', 'url' => '', 'prompt' => '', 'error' => $response];
+            return (object)['error' => get_string('error').': '.$response];
+        } else {
+            return (object)['data' => $response, 'error' => ''];
         }
-
-        $response = json_decode($response, true); // Force array structure.
-
-        // We expect an array of image objects,
-        // each of which contains b64_json, url, revised_prompt.
-
-        if (empty($response['data'][0])) {
-            $error = 'Oops, unexpected response from DALL-E.';
-            return (object)['image' => '', 'url' => '', 'prompt' => '', 'error' => $error];
-        }
-
-        $response = $response['data'][0];
-        if ($image = ($response['b64_json'] ?? '')) {
-            $image = base64_decode($image);
-        }
-        $url = ($response['url'] ?? '');
-        $prompt = ($response['revised_prompt'] ?? '');
-
-        return (object)[
-            'image' => $image, 'url' => $url,
-            'prompt' => $prompt, 'error' => '',
-        ];
     }
 }

@@ -117,28 +117,25 @@ class ai extends \mod_vocab\aibase {
             ]);
         }
 
-        if ($this->postparams === null) {
+        // Define the role of the AI assistant.
+        $role = 'Act as an expert creator of online language-learning materials.';
 
-            // Define the role of the AI assistant.
-            $role = 'Act as an expert creator of online language-learning materials.';
+        // Set the required POST fields.
+        $this->postparams = [
+            'model' => $model,
+            'messages' => [
+                (object)['role' => 'system', 'content' => $role],
+                (object)['role' => 'user', 'content' => $prompt],
+            ],
+        ];
 
-            // Set the required POST fields.
-            $this->postparams = [
-                'model' => $model,
-                'messages' => [
-                    (object)['role' => 'system', 'content' => $role],
-                    (object)['role' => 'user', 'content' => $prompt],
-                ],
-            ];
-
-            // Set optional POST fields.
-            foreach (['temperature', 'top_p'] as $name) {
-                if (empty($this->config->$name)) {
-                    continue;
-                }
-                if (is_numeric($this->config->$name)) {
-                    $this->postparams[$name] = (float)$this->config->$name;
-                }
+        // Set optional POST fields.
+        foreach (['temperature', 'top_p'] as $name) {
+            if (empty($this->config->$name)) {
+                continue;
+            }
+            if (is_numeric($this->config->$name)) {
+                $this->postparams[$name] = (float)$this->config->$name;
             }
         }
 

@@ -1204,25 +1204,39 @@ EOD;
                 $filerecord['filename'] = $filename.$filetype;
 
                 // Send the prompt to one of the AI subplugins to generate the media file.
-                // For image files, several variations maybe created, but anyway only the
+                // For image files, several variations maybe created, but only the
                 // first one will be returned by the "create_media_file()" method.
                 $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord);
 
                 if (is_object($file)) {
+
+                    // Remove empty tag params, and add a value for the "src" parameter.
+                    $tagparams = array_filter($tagparams);
                     $tagparams['src'] = '@@PLUGINFILE@@/'.$file->get_filename();
+
                     if ($tagname == 'IMAGE') {
                         if (empty($tagparams['style'])) {
+                            // Add styles to make the image responsive and on its own line.
                             $tagparams['style'] = 'display: block; height: auto; max-height: 100%; max-width: 100%;';
                         }
-                        $htmltag = \html_writer::empty_tag('img', $tagparams);
+                        $html = \html_writer::empty_tag('img', $tagparams);
                     } else {
                         // AUDIO and VIDEO.
-                        $src = $tagparams['src'];
-                        $src = \html_writer::empty_tag('source', ['src' => $src]).$src;
-                        $htmltag = \html_writer::tag(strtolower($tagname), $src, $tagparams);
+                        $html = \html_writer::empty_tag('source', ['src' => $tagparams['src']]);
+                        $html = \html_writer::tag(strtolower($tagname), $html.$tagparams['src'], ['controls' => 'true']);
                     }
-                    $record->$field = substr_replace($record->$field, $htmltag, $tagstart, $taglength);
+
+                    // Update the field value in the Moodle DB.
+                    $record->$field = substr_replace($record->$field, $html, $tagstart, $taglength);
                     $DB->set_field($table, $field, $record->$field, ['id' => $record->id]);
+
+                    // Ensure that its "format" field is set to HTML,
+                    // so that user can easily access embedded files.
+                    $fieldformat = $field.'format';
+                    if (isset($record->$fieldformat) && $record->$fieldformat != FORMAT_HTML) {
+                        $record->$fieldformat = FORMAT_HTML;
+                        $DB->set_field($table, $fieldformat, $record->$fieldformat, ['id' => $record->id]);
+                    }
 
                     // Update the Moodle tags for this question.
                     $moretags[strtolower($tagname)] = true;

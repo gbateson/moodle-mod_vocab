@@ -107,11 +107,11 @@ $string['n_help'] = 'The number of variations of the image to generate. It must 
 All variations will be converted to the required file type, quality and dimensions and stored within Moodle. The first image will be inserted into the question, but the others will remain accessible as "Embedded files".';
 
 $string['keeporiginals'] = 'Keep original images';
-$string['keeporiginals_help'] = '**Yes**  
-The original high-resolution images from DALL-E will always be kept.
+$string['keeporiginals_help'] = '**No**  
+If the file type, quality or dimensions of the image are changed, then the original image will be deleted and only the converted images will kept.
 
-**No**  
-If the file type, dimensions or quality of the image are changed, then only the smaller converted images will be saved.
+**Yes**  
+The original high-resolution images from DALL-E will always be kept.
 
 The original files are typically about 2 ~ 3 MB in size, whereas the converted files are typically about 500 KB in size.';
 $string['deletekey'] = 'Delete API key for DALL-E';

@@ -35,34 +35,207 @@ namespace mod_vocab;
  */
 abstract class aiform extends \mod_vocab\subpluginform {
 
+    /** var string the name of the "name" field from the config record */ 
+    const CONFIG_NAME = '';
+
+    /** var string the name of the "text" field in the config record */ 
+    const CONFIG_TEXT = '';
+
+    /** var string the name of the "key" field in the config record */ 
+    const CONFIG_KEY = '';
+
+    /** var string the name of the "model" field in the config record */ 
+    const CONFIG_MODEL = '';
+
+    /** var string a comma-delimited list of required fields */ 
+    const REQUIRED_FIELDS = '';
+
     /**
-     * Add sharing fields: context, sharedfrom shareduntil.
+     * Format config settings for a ChatGPT key.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param array $default
-     * @return void (but will update $mform)
+     * @param object $config
+     * @param array $actions (optional, default=[])
+     * @param bool $showowner (optional, default=false)
+     * @param bool $showownerpic (optional, default=false)
+     * @return array of availability options [contextlevel => availability description]
      */
-    public function add_sharing_fields($mform, $default) {
+    public function format_config($config, $actions=[], $showowner=false, $showownerpic=false) {
+        global $DB, $OUTPUT, $PAGE, $USER;
 
-        $name = 'sharing';
-        $this->add_heading($mform, $name, $this->get_vocab()->plugin, true);
+        $html = '';
 
-        $name = 'sharingcontext';
-        $options = $this->get_sharingcontext_options();
-        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);
+        // Cache id value. It is used to make field names unique.
+        $id = $config->id;
 
-        // Shared from/until date are both optional.
-        $params = ['optional' => true];
+        // Cache often-used items.
+        $labelsep = get_string('labelsep', 'langconfig');
+        $dl = ['class' => 'row my-0 mx-0'];
+        $dt = ['class' => 'col-6 col-sm-4 col-md-3 col-xl-2 my-1 mx-0'];
+        $dd = ['class' => 'col-6 col-sm-8 col-md-9 col-xl-10 my-1 mx-0'];
 
-        // Shared from date and time (default is start of today).
+        // Show the full name field, if any.
+        $name = static::CONFIG_NAME;
+        if (isset($config->$name)) {
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = $config->$name;
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
+        // Format the text field, if any, to show only the 1st 20 chars and the final 20 chars.
+        $name = static::CONFIG_TEXT;
+        if (isset($config->$name)) {
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = $config->$name;
+            $value = substr($value, 0, 20).' ... '.substr($value, -20);
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
+        // Format the key field to show only the 1st 4 chars and the final 4 chars..
+        $name = static::CONFIG_KEY;
+        if (isset($config->$name)) {
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = $config->$name;
+            $value = substr($value, 0, 4).' ... '.substr($value, -4);
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
+        // Format the owner's name.
+        if ($showowner && isset($config->owneruserid)) {
+            $name = 'owner';
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $user = $DB->get_record('user', ['id' => $config->owneruserid]);
+            $value = fullname($user);
+            if ($showownerpic) {
+                $value = $OUTPUT->user_picture($user).' '.$value;
+            }
+            $url = new \moodle_url('/user/profile.php', ['id' => $user->id]);
+            $value = $OUTPUT->action_link($url, $value, new \component_action(
+                // Since "this" is actually a Y_node, we could use the "set" method,
+                // but "setAttribute" is compatible with normal DOM, so we use that.
+                'click', 'function(){this.setAttribute("target", "CHATGPT")}'
+            ));
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
+        // Shoe the full model field, if any.
+        $name = static::CONFIG_MODEL;
+        if (isset($config->$name)) {
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = $config->$name;
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
         $name = 'sharedfrom';
-        $params['defaulttime'] = $default->$name;
-        $this->add_field_datetime($mform, $name, $params);
+        if (isset($config->$name)) {
+            $value = userdate($config->$name);
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
 
-        // Shared until date and time (default is end of today).
         $name = 'shareduntil';
-        $params['defaulttime'] = $default->$name;
-        $this->add_field_datetime($mform, $name, $params);
+        if (isset($config->$name)) {
+            $value = userdate($config->$name);
+            $label = $this->get_string($name).$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = \html_writer::tag('dd', $value, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
+        // Extract the sharing context id and level.
+        $contextid = (empty($config->contextid) ? 0 : $config->contextid);
+        $contextlevel = (empty($config->contextlevel) ? 0 : $config->contextlevel);
+
+        // Get a descriptor for the sharing context.
+        switch (true) {
+
+            case ($contextid > 0):
+                $context = \context::instance_by_id($contextid);
+                $sharingcontext = $context->get_context_name();
+                break;
+
+            case ($contextlevel == CONTEXT_MODULE):
+                $sharingcontext = $this->get_string('sharedinvocabcontext');
+                break;
+
+            case ($contextlevel == CONTEXT_COURSE):
+                $sharingcontext = $this->get_string('sharedincoursecontext');
+                break;
+
+            case ($contextlevel == CONTEXT_COURSECAT):
+                $sharingcontext = $this->get_string('sharedincoursecatcontext');
+                break;
+
+            case ($contextlevel == CONTEXT_SYSTEM):
+                $sharingcontext = $this->get_string('sharedinsystemcontext');
+                break;
+
+            default:
+                $sharingcontext = $this->get_string('sharedinunknowncontext', $config->contextlevel);
+        }
+
+        // Format the sharing context (= context name or level).
+        if ($sharingcontext) {
+            $label = $this->get_string('sharingcontext').$labelsep;
+            $label = \html_writer::tag('dt', $label, $dt);
+            $value = \html_writer::tag('dd', $sharingcontext, $dd);
+            $html .= \html_writer::tag('dl', $label.$value, $dl);
+        }
+
+        if ($html) {
+            // Convert actions to links that look like buttons.
+            foreach ($actions as $i => $action) {
+                $url = $PAGE->url;
+                $url->param('action', $action);
+                $url->param('cid', $config->id);
+                switch ($action) {
+                    case 'edit':
+                        $btncolor = 'btn-success';
+                        break;
+                    case 'delete':
+                        $btncolor = 'btn-danger';
+                        break;
+                    case 'copy':
+                        $btncolor = 'btn-dark';
+                        break;
+                    default:
+                        // This shouldn't happen !!
+                        $btncolor = 'btn-light';
+                }
+                // ToDo: convert this to ...
+                // $text = $this->get_string('confirm'.$action.'key');
+                // $actionlabel = $this->get_string($action);
+                // $cancellabel = get_string('cancel);
+                // $action = new \confirm_action($text, $callback, $actionlabel, $cancellabel);
+                // $actions[$i] = $OUTPUT->action_link($url, $text, $action); !!
+                $actions[$i] = \html_writer::link(
+                    $url,
+                    $this->get_string($action),
+                    ['class' => "btn $btncolor"]
+                );
+            }
+            if ($actions = implode(' ', $actions)) {
+                $label = \html_writer::tag('dt', '', $dt);
+                $value = \html_writer::tag('dd', $actions, $dd);
+                $html .= \html_writer::tag('dl', $label.$value, $dl);
+            }
+
+            $params = ['class' => 'configinfo'];
+            $html = \html_writer::tag('div', $html, $params);
+        }
+
+        return $html;
     }
 
     /**
@@ -96,5 +269,93 @@ abstract class aiform extends \mod_vocab\subpluginform {
                 $mform->setDefault($name, $draftitemid);
             }
         }
+    }
+
+    /**
+     * Add sharing fields: context, sharedfrom shareduntil.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param array $default
+     * @return void (but will update $mform)
+     */
+    public function add_sharing_fields($mform, $default) {
+
+        $name = 'sharing';
+        $this->add_heading($mform, $name, $this->get_vocab()->plugin, true);
+
+        $name = 'sharingcontext';
+        $options = $this->get_sharingcontext_options();
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->contextlevel);
+
+        // Shared from/until date are both optional.
+        $params = ['optional' => true];
+
+        // Shared from date and time (default is start of today).
+        $name = 'sharedfrom';
+        $params['defaulttime'] = $default->$name;
+        $this->add_field_datetime($mform, $name, $params);
+
+        // Shared until date and time (default is end of today).
+        $name = 'shareduntil';
+        $params['defaulttime'] = $default->$name;
+        $this->add_field_datetime($mform, $name, $params);
+    }
+
+    /**
+     * Get a list of availability options for a DALL-E key.
+     *
+     * @return array of availability options [contextlevel => availability description]
+     */
+    public function get_sharingcontext_options() {
+
+        // Get array of writeable context levels [contextlevel => contextid].
+        $options = $this->get_vocab()->get_writeable_contexts('contextlevel', 'id');
+        foreach ($options as $level => $id) {
+
+            switch ($level) {
+
+                case CONTEXT_MODULE:
+                    $options[$level] = $this->get_string('sharedinvocabcontext');
+                    break;
+
+                case CONTEXT_COURSE:
+                    $options[$level] = $this->get_string('sharedincoursecontext');
+                    break;
+
+                case CONTEXT_COURSECAT:
+                    $options[$level] = $this->get_string('sharedincoursecatcontext');
+                    break;
+
+                case CONTEXT_SYSTEM:
+                    $options[$level] = $this->get_string('sharedinsystemcontext');
+                    break;
+
+                default:
+                    // Unknown context level - shouldn't happen !!
+                    unset($options[$level]);
+            }
+        }
+        return $options;
+    }
+
+    /**
+     * validation
+     *
+     * @uses $USER
+     * @param stdClass $data submitted from the form
+     * @param array $files
+     * @return xxx
+     *
+     * TODO: Finish documenting this function
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        foreach (explode(',', static::REQUIRED_FIELDS) as $name) {
+            if (empty($data[$name])) {
+                $errors[$name] = $this->get_string('addmissingvalue');
+            }
+        }
+
+        return $errors;
     }
 }
