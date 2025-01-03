@@ -701,7 +701,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $output .= $this->heading($heading);
         $output .= $this->box_start();
 
-        if ($version = optional_param('version', 0, PARAM_INT)) {
+        if ($version = \mod_vocab\activity::get_optional_param('version', 0, PARAM_INT)) {
 
             // Format the plugin version.
             if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})/', "$version", $match)) {

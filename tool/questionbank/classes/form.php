@@ -40,14 +40,26 @@ class form extends \mod_vocab\toolform {
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_questionbank';
 
-    /** @var string database value to represent creating no question subcategories */
-    const SUBCAT_NONE = 'none';
+    /** @var int database value to represent creating no new question subcategories */
+    const SUBCAT_NONE = 0x00;
 
-    /** @var string database value to represent the creation of a "single" question subcategory */
-    const SUBCAT_SINGLE = 'single';
+    /** @var string database value to represent creating a question category with a given name */
+    const SUBCAT_CUSTOMNAME = 0x01;
 
-    /** @var string database value to represent the "automatic" creation of question subcategories */
-    const SUBCAT_AUTOMATIC = 'automatic';
+    /** @var int database value to represent creating a question category for the current course section */
+    const SUBCAT_SECTIONNAME = 0x02;
+
+    /** @var int database value to represent creating a question category for the current vocab activity */
+    const SUBCAT_ACTIVITYNAME = 0x04;
+
+    /** @var int database value to represent creating a question category for each word */
+    const SUBCAT_WORD = 0x08;
+
+    /** @var int database value to represent creating a question category for each question type (e.g. "MC") */
+    const SUBCAT_QUESTIONTYPE = 0x10;
+
+    /** @var int database value to represent creating a question category for each vocabulary level (e.g. "A2") */
+    const SUBCAT_VOCABLEVEL = 0x20;
 
     /**
      * definition
@@ -166,7 +178,7 @@ class form extends \mod_vocab\toolform {
         if (empty($files)) {
             $url = new \moodle_url('/mod/vocab/ai/files/index.php', ['id' => $cmid]);
             $msg = \html_writer::link($url, $this->get_string('clicktoaddfiles'));
-            $msg = $this->get_string('nofilesfound', \html_writer::empty_tag('br').$msg);
+            $msg = $this->get_string('nofilesfound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
         } else {
             $this->add_field_select($mform, $name, $files, PARAM_INT);
@@ -176,7 +188,7 @@ class form extends \mod_vocab\toolform {
         if (empty($imageassistants)) {
             $url = new \moodle_url('/mod/vocab/ai/dalle/index.php', ['id' => $cmid]);
             $msg = \html_writer::link($url, $this->get_string('clicktoaddimage'));
-            $msg = $this->get_string('noimagefound', \html_writer::empty_tag('br').$msg);
+            $msg = $this->get_string('noimagesfound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
         } else {
             $this->add_field_select($mform, $name, $imageassistants, PARAM_INT);
@@ -186,7 +198,7 @@ class form extends \mod_vocab\toolform {
         if (empty($audioassistants)) {
             $url = new \moodle_url('/mod/vocab/ai/tts/index.php', ['id' => $cmid]);
             $msg = \html_writer::link($url, $this->get_string('clicktoaddaudio'));
-            $msg = $this->get_string('noaudiofound', \html_writer::empty_tag('br').$msg);
+            $msg = $this->get_string('noaudiofound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
         } else {
             $this->add_field_select($mform, $name, $audioassistants, PARAM_INT);
@@ -196,7 +208,7 @@ class form extends \mod_vocab\toolform {
         if (empty($videoassistants)) {
             $url = new \moodle_url('/mod/vocab/ai/tts/index.php', ['id' => $cmid]);
             $msg = \html_writer::link($url, $this->get_string('clicktoaddvideo'));
-            $msg = $this->get_string('novideofound', \html_writer::empty_tag('br').$msg);
+            $msg = $this->get_string('novideofound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
         } else {
             $this->add_field_select($mform, $name, $videoassistants, PARAM_INT);
@@ -252,8 +264,15 @@ class form extends \mod_vocab\toolform {
         $name = 'categorysettings';
         $this->add_heading($mform, $name, true);
 
-        $this->add_parentcategory($mform);
-        $this->add_subcategories($mform);
+        // Add the parent questions category.
+        $this->add_parentcategory($mform, 'parentcat');
+
+        // Add the question subcategories.
+        $default = self::SUBCAT_ACTIVITYNAME;
+        $default |= self::SUBCAT_WORD;
+        $default |= self::SUBCAT_QUESTIONTYPE;
+        $default |= self::SUBCAT_VOCABLEVEL;
+        $this->add_subcategories($mform, 'subcat', $default);
 
         // Use "Generate questions" as the label for the submit button.
         $label = $this->get_string('generatequestions');
@@ -331,6 +350,7 @@ class form extends \mod_vocab\toolform {
         // Prefix all the plugin names with the $prefix string
         // and get create the sql conditions.
         $plugins = array_keys($plugins);
+
         $plugins = substr_replace($plugins, $prefix, 0, 0);
         list($select, $params) = $DB->get_in_or_equal($plugins);
 
@@ -601,44 +621,47 @@ class form extends \mod_vocab\toolform {
      * add_parentcategory
      *
      * @param moodleform $mform representing the Moodle form
+     * @param string $name
+     * @param int $defaultid (optional, default=0)
      *
      * TODO: Finish documenting this function
      */
-    public function add_parentcategory($mform) {
+    public function add_parentcategory($mform, $name, $defaultid=0) {
 
-        $defaultid = 0;
+        $strname = 'parentcategory';
 
         // Get the course context.
         $courseid = $this->get_vocab()->course->id;
         $context = \context_course::instance($courseid);
 
-        // Get the name of the default question category for this course.
-        $defaultname = $context->get_context_name(false, true);
-        $defaultname = get_string('defaultfor', 'question', $defaultname);
-        $defaultname = shorten_text($defaultname, 255);
-
         // Fetch the list of question categories in this course.
         $categories = $this->get_question_categories();
 
-        // Extract the id of the default question category in this course.
-        $defaultid = array_search($defaultname, $categories);
-        if ($defaultid === false) {
-            $defaultid = 0; // Shouldn't happen !!
+        // Get the name of the default question category for this course.
+        if ($defaultid == 0) {
+            $defaultname = $context->get_context_name(false, true);
+            $defaultname = get_string('defaultfor', 'question', $defaultname);
+            $defaultname = shorten_text($defaultname, 255);
+
+            // Extract the id of the default question category in this course.
+            $defaultid = array_search($defaultname, $categories);
+            if ($defaultid === false) {
+                $defaultid = 0; // Shouldn't happen !!
+            }
         }
 
-        $name = 'parentcategory';
-        $label = $this->get_string($name);
-        $groupname = $name.'elements';
+        $label = $this->get_string($strname);
 
         $elements = [
-            $mform->createElement('select', $name, '', $categories),
+            $mform->createElement('select', 'id', '', $categories),
             $mform->createElement('html', $this->link_to_managequestioncategories()),
         ];
-        $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->subpluginname);
+        $mform->addGroup($elements, $name, $label);
+        $this->add_help_button($mform, $name, $strname);
 
-        $mform->setType($groupname.'['.$name.']', PARAM_TEXT);
-        $mform->setDefault($groupname.'['.$name.']', $defaultid);
+        $elementname = $name.'[id]';
+        $mform->setType($elementname, PARAM_INT);
+        $mform->setDefault($elementname, $defaultid);
     }
 
     /**
@@ -699,31 +722,48 @@ class form extends \mod_vocab\toolform {
      * add_subcategories
      *
      * @param moodleform $mform representing the Moodle form
-     *
-     * TODO: Finish documenting this function
+     * @param string $name either "subcat" or "log[subcat]"
+     * @param int $defaulttypes
+     * @param string $defaultname the default custom name (optional, default='')
+     * @return void, but will add elements to $mform
      */
-    public function add_subcategories($mform) {
-        $name = 'subcategories';
-        $label = $this->get_string($name);
+    public function add_subcategories($mform, $name, $defaulttypes, $defaultname='') {
 
-        $groupname = $name.'elements';
-        $cattype = $groupname.'[cattype]';
-        $catname = $groupname.'[catname]';
+        // The name of the form field containing the "Custom name" string.
+        $catname = $name.'[name]';
+
+        $strname = 'subcategories';
+        $label = $this->get_string($strname);
+
+        // Cache line break element.
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
 
         $options = $this->get_subcategory_types();
-        $elements = [
-            $mform->createElement('select', 'cattype', '', $options),
-            $mform->createElement('text', 'catname', '', ['size' => 20]),
-        ];
-        $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->subpluginname);
-
-        $mform->setType($cattype, PARAM_ALPHA);
-        $mform->setDefault($cattype, self::SUBCAT_AUTOMATIC);
-
-        $mform->setType($catname, PARAM_TEXT);
-        $mform->setDefault($catname, '');
-        $mform->disabledIf($catname, $cattype, 'neq', 'single');
+        foreach ($options as $value => $text) {
+            $elements[] = $mform->createElement('checkbox', $value, $text);
+            if ($value == self::SUBCAT_CUSTOMNAME) {
+                $elements[] = $mform->createElement('text', 'name', '', ['size' => 20]);
+            }
+            $elements[] = $mform->createElement('html', $linebreak);
+        }
+        $mform->addGroup($elements, $name, $label);
+        $this->add_help_button($mform, $name, $strname);
+        $elementnone = $name.'['.self::SUBCAT_NONE.']';
+        foreach ($options as $value => $text) {
+            $elementname = $name.'['.$value.']';
+            $mform->setType($elementname, PARAM_INT);
+            if ($value == self::SUBCAT_CUSTOMNAME) {
+                $mform->setType($catname, PARAM_TEXT);
+                $mform->setDefault($catname, $defaultname);
+                $mform->disabledIf($catname, $elementname, 'notchecked');
+            }
+            if ($defaulttypes & $value) {
+                $mform->setDefault($elementname, 1);
+            }
+            if ($value > 0) {
+                $mform->disabledIf($elementname, $elementnone, 'checked');
+            }
+        }
     }
 
     /**
@@ -734,8 +774,12 @@ class form extends \mod_vocab\toolform {
     public function get_subcategory_types() {
         return [
             self::SUBCAT_NONE => get_string('none'),
-            self::SUBCAT_SINGLE => $this->get_string('singlesubcategory'),
-            self::SUBCAT_AUTOMATIC => $this->get_string('automaticsubcategories'),
+            self::SUBCAT_CUSTOMNAME => $this->get_string('customname'),
+            self::SUBCAT_SECTIONNAME => $this->get_string('sectionname'),
+            self::SUBCAT_ACTIVITYNAME => $this->get_string('activityname'),
+            self::SUBCAT_WORD => $this->get_string('word'),
+            self::SUBCAT_QUESTIONTYPE => $this->get_string('questiontype'),
+            self::SUBCAT_VOCABLEVEL => $this->get_string('vocablevel'),
         ];
     }
 
@@ -775,7 +819,7 @@ class form extends \mod_vocab\toolform {
 
         $names = ['selectedwords', 'questiontypes',
                   'questionlevels', 'questioncount',
-                  'parentcategoryelements', 'subcategorieselements'];
+                  'parentcat', 'subcat'];
 
         foreach ($names as $name) {
             if (empty($data[$name])) {
@@ -910,8 +954,9 @@ class form extends \mod_vocab\toolform {
         $name = 'questionreview';
         $review = (empty($data->$name) ? 0 : $data->$name);
 
-        $name = 'parentcategory';
-        $groupname = $name.'elements';
+        // Extract id of parent question category.
+        $name = 'id';
+        $groupname = 'parentcat';
         if (property_exists($data, $groupname)) {
             if (array_key_exists($name, $data->$groupname)) {
                 $parentcatid = $data->{$groupname}[$name];
@@ -924,28 +969,27 @@ class form extends \mod_vocab\toolform {
             unset($data->$groupname);
         }
 
-        $groupname = 'subcategorieselements';
+        // Extract type and name of question subcategory.
+        $groupname = 'subcat';
         if (property_exists($data, $groupname)) {
 
-            $name = 'cattype';
-            if (array_key_exists($name, $data->$groupname)) {
-                $subcattype = $data->{$groupname}[$name];
-                $types = $this->get_subcategory_types();
-                if (! array_key_exists($subcattype, $types)) {
-                    $subcattype = self::SUBCAT_AUTOMATIC;
+            $types = $this->get_subcategory_types();
+            foreach ($types as $type => $text) {
+                if (! empty($data->{$groupname}[$type])) {
+                    $subcattype |= $type;
                 }
-                unset($types);
             }
 
-            $name = 'catname';
-            if (array_key_exists($name, $data->$groupname)) {
-                $subcatname = $data->{$groupname}[$name];
-            }
-
-            // Sanity check on subcat type and name.
-            if ($subcattype == self::SUBCAT_SINGLE && $subcatname == '') {
-                // Name is missing, so switch type to automatic.
-                $subcattype = self::SUBCAT_AUTOMATIC;
+            if ($subcattype & self::SUBCAT_CUSTOMNAME) {
+                if (array_key_exists('name', $data->$groupname)) {
+                    $subcatname = trim($data->{$groupname}['name']);
+                }
+                if ($subcatname == '') {
+                    $subcatname = get_string('listsep', 'langconfig');
+                    $subcatname = implode($subcatname, $words);
+                    $subcatname = $this->get_string('defaultcustomname', $subcatname);
+                    $subcatname = shorten_text($subcatname); // Shorten to 30 chars.
+                }
             } else if ($subcatname) {
                 // Name given but not needed, so remove it.
                 $subcatname = '';
@@ -962,9 +1006,9 @@ class form extends \mod_vocab\toolform {
         // the success or failure of setting up the adhoc task.
         $a = (object)[
             'word' => '',
-            'type' => '',
-            'level' => '',
-            'count' => $qcount,
+            'qtype' => '',
+            'qlevel' => '',
+            'qcount' => $qcount,
         ];
 
         // Set up one task for each level of
@@ -973,10 +1017,10 @@ class form extends \mod_vocab\toolform {
             $a->word = $word;
 
             foreach ($qtypes as $qtype => $qtypesettings) {
-                $a->type = $qtypesettings->text;
+                $a->qtype = $qtypesettings->text;
 
                 foreach ($qlevels as $qlevel => $qlevelname) {
-                    $a->level = $qlevels[$qlevel];
+                    $a->qlevel = $qlevels[$qlevel];
                     $logid = $tool::insert_log([
                         'userid' => $USER->id,
                         'vocabid' => $vocabid,
@@ -1055,8 +1099,8 @@ class form extends \mod_vocab\toolform {
         $logtable = '';
         $logmessage = '';
 
-        // Get new log values.
-        if ($values = optional_param_array('log', null, PARAM_TEXT)) {
+        // Get array of new log values. Use depth=2 to get array.
+        if ($values = self::get_optional_param('log', null, PARAM_TEXT, 2)) {
 
             $tool = $this->get_subplugin();
             $siteadmin = is_siteadmin();
@@ -1077,14 +1121,40 @@ class form extends \mod_vocab\toolform {
                 }
             }
 
-            // These fields are protected and cannot be updated..
-            // The values in the form should match those in the log.
-            $names = [
-
-            ];
-            foreach ($names as $name) {
-                $values[$name] = $log->$name;
+            // Extract the id of the parent question category.
+            $parentcatid = 0;
+            $name = 'parentcat';
+            if (isset($values[$name])) {
+                if (is_array($values[$name])) {
+                    if (array_key_exists('id', $values[$name])) {
+                        $parentcatid = $values[$name]['id'];
+                    }
+                }
+                unset($values[$name]);
             }
+            $values['parentcatid'] = $parentcatid;
+
+            // Extract the hierarchy of question subcategories.
+            $subcattype = 0;
+            $subcatname = '';
+            $name = 'subcat';
+            if (isset($values[$name])) {
+                if (is_array($values[$name])) {
+                    // Remove empty values.
+                    $values[$name] = array_filter($values[$name]);
+                    // Extract non-empty types.
+                    foreach ($values[$name] as $type => $value) {
+                        if (is_numeric($type)) {
+                            $subcattype |= $type;
+                        } else if ($type == 'name') {
+                            $subcatname = $value;
+                        }
+                    }
+                }
+                unset($values[$name]);
+            }
+            $values['subcattype'] = $subcattype;
+            $values['subcatname'] = $subcatname;
 
             if ($allowupdate) {
 
@@ -1106,7 +1176,7 @@ class form extends \mod_vocab\toolform {
                     'audioid' => PARAM_INT,
                     'videoid' => PARAM_INT,
                     'parentcatid' => PARAM_INT,
-                    'subcattype' => PARAM_TEXT,
+                    'subcattype' => PARAM_INT,
                     'subcatname' => PARAM_TEXT,
                     'maxtries' => PARAM_INT,
                     'tries' => PARAM_INT,
@@ -1148,7 +1218,7 @@ class form extends \mod_vocab\toolform {
             unset($_POST['log']);
         }
 
-        if ($logaction = optional_param_array('logactionelements', '', PARAM_ALPHA)) {
+        if ($logaction = self::get_optional_param('logactionelements', '', PARAM_ALPHA)) {
             if (empty($logaction['logaction'])) {
                 $logaction = ''; // Shouldn't happen !!
             } else {
@@ -1156,13 +1226,13 @@ class form extends \mod_vocab\toolform {
             }
         }
         if ($logaction == '') {
-            $logaction = optional_param('logaction', '', PARAM_ALPHA);
+            $logaction = self::get_optional_param('logaction', '', PARAM_ALPHA);
         }
         if ($logaction) {
-            if ($logids = optional_param('logid', 0, PARAM_INT)) {
+            if ($logids = self::get_optional_param('logid', 0, PARAM_INT)) {
                 $logids = [$logids => $logids];
             } else {
-                $logids = optional_param_array('logids', [], PARAM_INT);
+                $logids = self::get_optional_param('logids', [], PARAM_INT);
             }
             if (count($logids) && confirm_sesskey()) {
                 $logmessage = $this->process_log_records($mform, $logaction, $logids);
@@ -1184,7 +1254,7 @@ class form extends \mod_vocab\toolform {
             // If there is a log message, we expand the logrecords section.
             // If there are any log records, we append how many there are.
             $this->add_heading(
-                $mform, 'logrecords', $this->subpluginname,
+                $mform, 'logrecords',
                 (strlen($logmessage) == 0 ? false : true),
                 ($logcount == 0 ? '' : " ($logcount)")
             );
@@ -1288,17 +1358,17 @@ class form extends \mod_vocab\toolform {
                     $mform->setType('log[id]', PARAM_INT);
 
                     $name = 'taskid';
-                    $a = ['strname' => 'backgroundtask'];
+                    $a = ['strname' => 'adhoctaskid', 'showhelp' => true];
                     $this->add_field_static($mform, "log[$name]", $log->taskid, $a);
 
                     $name = 'userid';
-                    $a = ['strname' => 'taskowner'];
+                    $a = ['strname' => 'taskowner', 'showhelp' => true];
                     $log->$name = $DB->get_record('user', ['id' => $log->userid]);
                     $log->$name = fullname($log->$name);
                     $this->add_field_static($mform, "log[$name]", $log->$name, $a);
 
                     $name = 'wordid';
-                    $a = ['strname' => 'word'];
+                    $a = ['strname' => 'word', 'showhelp' => true];
                     $log->$name = $DB->get_field('vocab_words', 'word', ['id' => $log->wordid]);
                     $log->$name = \html_writer::tag('b', $log->$name);
                     $this->add_field_static($mform, "log[$name]", $log->$name, $a);
@@ -1357,19 +1427,11 @@ class form extends \mod_vocab\toolform {
                     $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_VIDEO, true);
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
-                    $name = 'parentcatid';
-                    $a = ['strname' => 'parentcategory'];
-                    $options = $this->get_question_categories();
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
+                    // The parent category group includes 'log[parentcat][id]'.
+                    $this->add_parentcategory($mform, "log[parentcat]", $log->parentcatid);
 
-                    $name = 'subcattype';
-                    $a = ['strname' => $name];
-                    $options = $this->get_subcategory_types();
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHA, $log->$name, $a);
-
-                    $name = 'subcatname';
-                    $a = ['strname' => $name, 'size' => 20];
-                    $this->add_field_text($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
+                    // The subcategories group includes 'log[subcat][type]' and 'log[subcat][name]'.
+                    $this->add_subcategories($mform, "log[subcat]", $log->subcattype, $log->subcatname);
 
                     $name = 'maxtries';
                     $a = ['strname' => $name, 'size' => 2];
@@ -1403,7 +1465,11 @@ class form extends \mod_vocab\toolform {
 
                     $name = 'questionids';
                     $a = ['strname' => 'moodlequestions'];
-                    $log->$name = $this->format_questionids($log->$name);
+                    if (empty($log->$name)) {
+                        $log->$name = get_string('noquestions', 'quiz');
+                    } else {
+                        $log->$name = $this->format_questionids($log->$name);
+                    }
                     $this->add_field_static($mform, "log[$name]", $log->$name, $a);
 
                     $name = 'savechanges';
@@ -1858,7 +1924,7 @@ class form extends \mod_vocab\toolform {
         $table->head = [
             get_string('select').$checkbox,
             get_string('actions'),
-            $this->get_string('backgroundtask'),
+            $this->get_string('adhoctaskid'),
             $this->get_string('taskowner'),
             $this->get_string('word'),
             $this->get_string('questiontype'),

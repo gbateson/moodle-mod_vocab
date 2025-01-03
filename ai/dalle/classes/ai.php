@@ -48,7 +48,7 @@ class ai extends \mod_vocab\aibase {
         'filetype', 'filetypeconvert',
         'quality', 'qualityconvert',
         'size', 'sizeconvert',
-        'keeporiginals', 'style', 'n', 
+        'keeporiginals', 'style', 'n',
         'sharedfrom', 'shareduntil',
     ];
 
@@ -127,7 +127,7 @@ class ai extends \mod_vocab\aibase {
 
             if (empty($file)) {
                 $errors[] = $this->get_string('medianotcreated', $a).' empty(file)';
-                continue; // Shouldn't happen, but let's try to continue !!
+                continue; // Shouldn't happen, but we can try to continue !!
             }
 
             // Note that Dalle always returns PNG.
@@ -345,7 +345,7 @@ class ai extends \mod_vocab\aibase {
 
         // We expect $response['data'] to be an array of imagess,
         // each of which is an array containing "revised_prompt"
-        // and either "b64_json" or "url"
+        // and either "b64_json" or "url".
 
         if (empty($response['data'])) {
             $error = get_string('error').': Unexpected response from DALL-E. (no data in response)';

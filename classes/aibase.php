@@ -333,7 +333,6 @@ class aibase extends \mod_vocab\subpluginbase {
             }
         }
 
-        
         if ($sortfield) {
             uasort($configs, function($a, $b) use ($sortfield) {
                 if ($a->$sortfield < $b->$sortfield) {
@@ -343,8 +342,8 @@ class aibase extends \mod_vocab\subpluginbase {
                     return 1;
                 }
                 return 0;
-                // Use spaceship operator for comparison in PHP >= 7.x
-                // return $a->$sortfield <=> $b->$sortfield;
+                // We could also use spaceship operator for comparison in PHP >= 7.x
+                // (change # to $) return #a->#sortfield <=> #b->#sortfield.
             });
         }
 
@@ -595,6 +594,148 @@ class aibase extends \mod_vocab\subpluginbase {
         if (isset($_POST[$name])) {
             unset($_POST[$name]);
         }
+    }
+
+    /**
+     * action_cancelled
+     *
+     * @return bool TRUE is user has cancelled an action (add, copy, delete), otherwise FALSE.
+     */
+    public function action_cancelled() {
+        if (empty($this->config) || empty($this->action)) {
+            return false;
+        }
+        $cancelled = $this->action.'cancelled';
+        return self::get_optional_param(['cancel', $cancelled], '', PARAM_TEXT);
+    }
+    /**
+     * action_cancelled
+     *
+     * @return void but will redrect to the main index page for this subplugin.
+     */
+    public function action_cancel() {
+        $cancelled = $this->action.'cancelled';
+        redirect($this->index_url(), $this->get_string($cancelled));
+    }
+
+    /**
+     * action_requested
+     *
+     * @return bool TRUE is user has requested an action (add, copy, delete), otherwise FALSE.
+     */
+    public function action_requested() {
+        // The configid and action are passed via GET from main form to
+        // confirmation form and via POST from when returning to main form.
+        if (empty($this->config) || empty($this->action)) {
+            return false;
+        }
+        return ($this->action == 'copy' || $this->action == 'delete');
+    }
+
+    /**
+     * action_confirmed
+     *
+     * @return bool TRUE is user has confirmed their action (add, copy, delete), otherwise FALSE.
+     */
+    public function action_confirmed() {
+        if (self::get_optional_param($this->action.'confirmed', '', PARAM_TEXT)) {
+            return confirm_sesskey();
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Execute an action that has been requested and confirmed.
+     *
+     * @return void but will redrect to the main index page for this subplugin.
+     */
+    public function action_execute() {
+        $completed = $this->action.'completed';
+
+        // Access to this config and action has already been checked
+        // in "mod_vocab/classes/subpluginbase.php".
+
+        if ($this->action == 'delete') {
+            $this->delete_config();
+            redirect($this->index_url(), $this->get_string($completed));
+        }
+
+        if ($this->action == 'copy') {
+            $this->config->id = $this->copy_config();
+            redirect($this->index_url(), $this->get_string($completed));
+        }
+
+        // This shouldn't happen !!
+        redirect($this->index_url(), 'Unknown action: '.$this->action);
+    }
+
+    /**
+     * Display a form to confirm a requested action.
+     *
+     * @param string $type the type of subplugin item (e.g. key, prompt, format, file)
+     * @return void, but will display confirmation form to user.
+     */
+    public function action_confirm($type) {
+        global $OUTPUT, $PAGE;
+
+        if ($this->action == 'delete') {
+            $btncolor = 'btn-danger';
+        } else if ($this->action == 'copy') {
+            $btncolor = 'btn-dark';
+        } else {
+            // Unknown action - shouldn't happen !!
+            $btncolor = 'btn-light';
+        }
+
+        // Action has not been confirmed, so display confirmation form.
+        $heading = $this->get_string($this->action.$type);
+        $message = $this->get_string('confirm'.$this->action.$type);
+
+        echo $OUTPUT->header();
+        echo $OUTPUT->heading($heading);
+        echo $OUTPUT->box_start('generalbox', 'notice');
+
+        $url = $PAGE->url;
+        $url->param('action', $this->action);
+        $url->param('cid', $this->config->id);
+        echo \html_writer::start_tag('form', ['method' => 'post', 'action' => $url->out(false)]);
+
+        // XHTML strict requires a container for the hidden input elements.
+        echo \html_writer::start_tag('fieldset', ['style' => 'display: none']);
+        echo \html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+        echo \html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $this->action]);
+        echo \html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'configid', 'value' => $this->config->id]);
+        echo \html_writer::end_tag('fieldset');
+
+        // XHTML strict requires a container for the contents of the form.
+        echo \html_writer::start_tag('div');
+
+        echo $this->get_mform()->format_config($this->config, [], true);
+
+        echo \html_writer::start_tag('div', ['class' => 'buttons']);
+        echo \html_writer::tag('p', $message);
+
+        echo \html_writer::empty_tag('input', [
+            'type' => 'submit',
+            'name' => $this->action.'confirmed',
+            'value' => \core_text::strtotitle($this->get_string($this->action)),
+            'class' => 'border rounded btn '.$btncolor.' mr-2',
+        ]);
+        echo \html_writer::empty_tag('input', [
+            'type' => 'submit',
+            'name' => $this->action.'cancelled',
+            'value' => get_string('cancel'),
+            'class' => 'border rounded btn btn-light ml-2',
+        ]);
+        echo \html_writer::end_tag('div');
+
+        echo \html_writer::end_tag('div');
+        echo \html_writer::end_tag('form');
+
+        echo $OUTPUT->box_end();
+        echo $OUTPUT->footer();
+        exit;
     }
 
     /**

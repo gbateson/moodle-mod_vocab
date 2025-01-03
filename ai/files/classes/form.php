@@ -37,10 +37,10 @@ namespace vocabai_files;
  */
 class form extends \mod_vocab\aiform {
 
-    /** var string the name of the "name" field from the config record */ 
+    /** var string the name of the "name" field from the config record */
     const CONFIG_NAME = 'filedescription';
 
-    /** var string a comma-delimited list of required fields */ 
+    /** var string a comma-delimited list of required fields */
     const REQUIRED_FIELDS = 'file';
 
     /**
@@ -95,77 +95,8 @@ class form extends \mod_vocab\aiform {
             ];
         }
 
-        // By default, the "Add a new file" section is expanded,
-        // but if other usable keys exist it will be collapsed.
-        $expanded = true;
-
-        // Display the config settings that apply to this context and are
-        // owned by other users. These are NOT editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id, $sortfield);
-        if (count($configs)) {
-
-            // Collapse the section to add a new key.
-            $expanded = false;
-
-            $name = 'filesownedbyothers';
-            $this->add_heading($mform, $name, true);
-
-            if (is_siteadmin()) {
-                // Site admin can always edit, copy and delete anything.
-                $actions = ['edit', 'copy', 'delete'];
-            } else {
-                $actions = [];
-
-                // Display message to non-admin users (e.g. teachers)
-                // explaining that they cannot edit files owned by other people.
-                $text = $this->get_string('note');
-                $text = \html_writer::tag('span', $text, ['class' => 'text-danger']);
-                $text = $text.get_string('labelsep', 'langconfifg');
-                $text = $text.$this->get_string('cannoteditfiles');
-                $text = \html_writer::tag('h5', $text, ['class' => 'cannotedit']);
-                $mform->addElement('html', $text);
-            }
-            foreach ($configs as $configid => $config) {
-                if ($html = $this->format_config($config, $actions, true)) {
-                    $mform->addElement('html', $html, "config-$configid");
-                }
-            }
-        }
-
-        // Display the config settings that are owned by this user but do not
-        // apply to the current context. These are editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id, $sortfield);
-        if (count($configs)) {
-
-            $name = 'otherfilesownedbyme';
-            $this->add_heading($mform, $name, true);
-
-            $actions = ['edit', 'copy', 'delete'];
-            foreach ($configs as $configid => $config) {
-                if ($html = $this->format_config($config, $actions)) {
-                    $mform->addElement('html', $html, "config-$configid");
-                }
-            }
-        }
-
-        // Display the config settings that owned by this user and apply to
-        // the current context. These are editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id, $sortfield);
-        if (count($configs)) {
-
-            // Collapse the section to add a new key.
-            $expanded = false;
-
-            $name = 'filesownedbyme';
-            $this->add_heading($mform, $name, true);
-
-            $actions = ['edit', 'delete'];
-            foreach ($configs as $configid => $config) {
-                if ($html = $this->format_config($config, $actions)) {
-                    $mform->addElement('html', $html, "config-$configid");
-                }
-            }
-        }
+        // Add configs that are related to this user and/or context.
+        $expanded = $this->add_configs($mform, $default, 'files');
 
         /*////////////////////////////
         // Main form starts here.

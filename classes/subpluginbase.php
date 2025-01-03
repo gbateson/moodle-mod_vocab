@@ -73,7 +73,7 @@ class subpluginbase {
         $this->plugin = 'vocab'.static::SUBPLUGINTYPE.'_'.static::SUBPLUGINNAME;
         $this->pluginpath = $this->vocab->pluginpath.'/'.static::SUBPLUGINTYPE.'/'.static::SUBPLUGINNAME;
 
-        if ($configid = self::optional_param(['c', 'cid', 'configid'], 0, PARAM_INT)) {
+        if ($configid = self::get_optional_param(['c', 'cid', 'configid'], 0, PARAM_INT)) {
 
             // Try to get the config with the required id.
             if ($config = $this->find_config($configid)) {
@@ -83,7 +83,7 @@ class subpluginbase {
 
                 // Get the action (use, edit, copy, delete) and check
                 // this user can do this action to this config record.
-                $action = self::optional_param(['a', 'action'], 'use', PARAM_ALPHA);
+                $action = self::get_optional_param(['a', 'action'], 'use', PARAM_ALPHA);
                 if (in_array($action, ['use', 'edit', 'copy', 'delete'])) {
 
                     // Site admin and owner always have full access to these settings.
@@ -108,13 +108,14 @@ class subpluginbase {
     /**
      * Return the value of an optional script parameter.
      *
-     * @param array $names of possible names for the input parameter
+     * @param mixed $names either the name of a single paramater, of an array of of possible names for the parameter
      * @param mixed $default value
      * @param mixed $type a PARAM_xxx constant value
-     * @return mixed, either an actual value from the form, or a suitable default.
+     * @param int $depth the maximum depth of array parameters
+     * @return mixed, either an actual value from the form, or a suitable default
      */
-    public static function optional_param($names, $default, $type) {
-        return \mod_vocab\activity::optional_param($names, $default, $type);
+    public static function get_optional_param($names, $default, $type, $depth=1) {
+        return \mod_vocab\activity::get_optional_param($names, $default, $type, $depth);
     }
 
     /**

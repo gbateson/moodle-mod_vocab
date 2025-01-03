@@ -35,23 +35,108 @@ namespace mod_vocab;
  */
 abstract class aiform extends \mod_vocab\subpluginform {
 
-    /** var string the name of the "name" field from the config record */ 
+    /** var string the name of the "name" field from the config record */
     const CONFIG_NAME = '';
 
-    /** var string the name of the "text" field in the config record */ 
+    /** var string the name of the "text" field in the config record */
     const CONFIG_TEXT = '';
 
-    /** var string the name of the "key" field in the config record */ 
+    /** var string the name of the "key" field in the config record */
     const CONFIG_KEY = '';
 
-    /** var string the name of the "model" field in the config record */ 
+    /** var string the name of the "model" field in the config record */
     const CONFIG_MODEL = '';
 
-    /** var string a comma-delimited list of required fields */ 
+    /** var string a comma-delimited list of required fields */
     const REQUIRED_FIELDS = '';
 
     /**
-     * Format config settings for a ChatGPT key.
+     * add_configs
+     *
+     * @param object $mform
+     * @param object $default values
+     * @param string $types
+     */
+    public function add_configs($mform, $default, $types='keys') {
+
+        // By default, the "Add a new xxx" section is expanded,
+        // but if other usable keys exist it will be collapsed.
+        $expanded = true;
+
+        // Display the config settings that apply to this context and are
+        // owned by other users. These are NOT editable by the current user.
+        $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id);
+        if (count($configs)) {
+
+            // Collapse the section to add a new key.
+            $expanded = false;
+
+            $name = $types.'ownedbyothers';
+            $this->add_heading($mform, $name, true);
+
+            if (is_siteadmin()) {
+                // Site admin can always edit, copy and delete anything.
+                $actions = ['edit', 'copy', 'delete'];
+            } else {
+                $actions = [];
+
+                // Display message to non-admin users (e.g. teachers)
+                // explaining that they cannot edit keys owned by other people.
+                $text = $this->get_string('note');
+                $text = \html_writer::tag('span', $text, ['class' => 'text-danger']);
+                $text = $text.$labelsep.$this->get_string('cannoteditkeys');
+                $text = \html_writer::tag('h5', $text, ['class' => 'cannotedit']);
+                $mform->addElement('html', $text);
+            }
+            foreach ($configs as $configid => $config) {
+                if ($html = $this->format_config($config, $actions, true)) {
+                    $mform->addElement('html', $html, "config-$configid");
+                }
+            }
+        }
+
+        // Display the config settings that are owned by this user but do not
+        // apply to the current context. These are editable by the current user.
+        $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id);
+        if (count($configs)) {
+            $enableexport = true;
+
+            $name = 'other'.$types.'ownedbyme';
+            $this->add_heading($mform, $name, true);
+
+            $actions = ['edit', 'copy', 'delete'];
+            foreach ($configs as $configid => $config) {
+                if ($html = $this->format_config($config, $actions)) {
+                    $mform->addElement('html', $html, "config-$configid");
+                }
+            }
+        }
+
+        // Display the config settings that owned by this user and apply to
+        // the current context. These are editable by the current user.
+        $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id);
+        if (count($configs)) {
+            $enableexport = true;
+
+            // Collapse the section to add a new key.
+            $expanded = false;
+
+            $name = $types.'ownedbyme';
+            $this->add_heading($mform, $name, true);
+
+            $actions = ['edit', 'delete'];
+            foreach ($configs as $configid => $config) {
+                if ($html = $this->format_config($config, $actions)) {
+                    $mform->addElement('html', $html, "config-$configid");
+                }
+            }
+        }
+
+        return $expanded;
+    }
+
+    /**
+     * Format config settings for an AI sunplugin.
      *
      * @param object $config
      * @param array $actions (optional, default=[])
@@ -125,7 +210,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
-        // Shoe the full model field, if any.
+        // Show the full model field, if any.
         $name = static::CONFIG_MODEL;
         if (isset($config->$name)) {
             $label = $this->get_string($name).$labelsep;
@@ -221,7 +306,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
                 // $actions[$i] = $OUTPUT->action_link($url, $text, $action); !!
                 $actions[$i] = \html_writer::link(
                     $url,
-                    $this->get_string($action),
+                    \core_text::strtotitle($this->get_string($action)),
                     ['class' => "btn $btncolor"]
                 );
             }

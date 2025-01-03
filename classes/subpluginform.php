@@ -150,7 +150,7 @@ abstract class subpluginform extends \moodleform {
      * @param object $mform representing the Moodle form
      * @param string $name the name of this heading
      * @param bool $expanded
-     * @param array $a required for header string (optional, default=null)
+     * @param array $a arguments, if any, required for header string (optional, default=null)
      * @return void (but will update $mform)
      */
     public function add_heading($mform, $name, $expanded, $a=null) {
@@ -190,21 +190,30 @@ abstract class subpluginform extends \moodleform {
         $label = $this->get_string($strname);
         $mform->addElement('static', $name, $label, $value);
 
+        // Extract $showhelp boolean value from $attributes under the following conditions:
+        // [1] $attributes is the boolean flag whose value is TRUE
+        // [2] $attributes is the string whose value is "showhelp"
+        // [3] $attributes is an array with a "showhelp" key whose value is either TRUE or "showhelp"
+        // [4] $attributes is an object with a "showhelp" property whose value is either TRUE or "showhelp".
         $showhelp = '';
         switch (true) {
-            case is_string($attributes):
+            case is_bool($attributes):
                 $showhelp = $attributes;
                 break;
 
-            case is_object($attributes):
-                if (property_exists($attributes, 'showhelp')) {
-                    $showhelp = $attributes->showhelp;
-                }
+            case is_string($attributes):
+                $showhelp = $attributes;
                 break;
 
             case is_array($attributes):
                 if (array_key_exists('showhelp', $attributes)) {
                     $showhelp = $attributes['showhelp'];
+                }
+                break;
+
+            case is_object($attributes):
+                if (property_exists($attributes, 'showhelp')) {
+                    $showhelp = $attributes->showhelp;
                 }
                 break;
         }
@@ -442,5 +451,18 @@ abstract class subpluginform extends \moodleform {
         $mform->addHelpButton($groupname, $name, $vocab->plugin);
         $mform->setDefault($groupname.'['.$name.']', $filename);
         $mform->setType($groupname.'['.$name.']', PARAM_FILE);
+    }
+
+    /**
+     * Return the value of an optional script parameter.
+     *
+     * @param mixed $names either the name of a single paramater, of an array of of possible names for the parameter
+     * @param mixed $default value
+     * @param mixed $type a PARAM_xxx constant value
+     * @param int $depth the maximum depth of array parameters
+     * @return mixed, either an actual value from the form, or a suitable default
+     */
+    public static function get_optional_param($names, $default, $type, $depth=1) {
+        return \mod_vocab\activity::get_optional_param($names, $default, $type, $depth);
     }
 }

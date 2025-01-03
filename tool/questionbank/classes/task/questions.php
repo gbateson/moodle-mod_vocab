@@ -75,27 +75,27 @@ class questions extends \core\task\adhoc_task {
         }
 
         // Extract settings from log.
-        $vocabid = $log->vocabid;
-        $wordid = $log->wordid;
+        $vocabid = (int)$log->vocabid;
+        $wordid = (int)$log->wordid;
 
         $qtype = $log->qtype;
         $qlevel = $log->qlevel;
         $qcount = $log->qcount;
         $qformat = $log->qformat;
 
-        $textid = $log->textid;
-        $promptid = $log->promptid;
-        $formatid = $log->formatid;
-        $fileid = $log->fileid;
+        $textid = (int)$log->textid;
+        $promptid = (int)$log->promptid;
+        $formatid = (int)$log->formatid;
+        $fileid = (int)$log->fileid;
 
-        $imageid = $log->imageid;
-        $audioid = $log->audioid;
-        $videoid = $log->videoid;
+        $imageid = (int)$log->imageid;
+        $audioid = (int)$log->audioid;
+        $videoid = (int)$log->videoid;
 
         $review = $log->review;
 
-        $parentcatid = $log->parentcatid;
-        $subcattype = $log->subcattype;
+        $parentcatid = (int)$log->parentcatid;
+        $subcattype = (int)$log->subcattype;
         $subcatname = $log->subcatname;
 
         $maxtries = $log->maxtries;
@@ -383,19 +383,25 @@ class questions extends \core\task\adhoc_task {
                 $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
             }
 
-            // Format vocab name.
-            $vocabname = $this->tool->vocab->name;
-            $vocabname = format_string($vocabname, true, ['context' => $this->tool->vocab->context]);
+            // Cache activity type (i.e. "Vocabulary activity").
+            $activitytype = $this->tool->vocab->get_string('modulename');
+
+            // Format vocab type and name.
+            $activityname = $this->tool->vocab->name;
+            $activityname = $this->tool->vocab->name;
+            $activityname = format_string($activityname, true, ['context' => $this->tool->vocab->context]);
 
             // Setup arguments for the strings used to create question category names.
             $a = (object)[
+                'customname' => $subcatname,
                 'coursename' => $coursename,
                 'sectiontype' => $sectiontype,
                 'sectionname' => $sectionname,
-                'vocabname' => $vocabname,
+                'activitytype' => $activitytype,
+                'activityname' => $activityname,
                 'word' => $word,
-                'qtype' => $qtypetext,
-                'level' => $qlevel, // Just the code is enough e.g. "A2".
+                'qtype' => $qtypetext, // E.g. "MC".
+                'qlevel' => $qlevel, // E.g. "A2".
             ];
 
             // Cache tags, including the "AI-generated" tag to make
@@ -403,7 +409,7 @@ class questions extends \core\task\adhoc_task {
             $tags = [$this->tool->get_string('ai_generated'), $word, $qtypeshort, $qlevel];
 
             // Ensure that we can get or create a suitable question category.
-            if (! $category = $this->get_question_category($parentcategory, $subcattype, $subcatname, $word, $a)) {
+            if (! $category = $this->get_question_category($parentcategory, $subcattype, $a)) {
                 return $this->report_error($log, 'missingquestioncategory', $word);
             }
 
@@ -618,45 +624,47 @@ EOD;
      *
      * @param object $category the parent category
      * @param string $subcattype
-     * @param string $subcatname
-     * @param string $word
      * @param object $a arguments to get strings used as question category names
      * @return int the category into which these new questions will be put
      */
-    protected function get_question_category($category, $subcattype, $subcatname, $word, $a) {
-        global $DB;
+    protected function get_question_category($category, $subcattype, $a) {
 
         // Cache the DB table name.
         $table = 'question_categories';
 
+        // Shortcut to form class name.
+        $form = '\\vocabtool_questionbank\\form';
+
         // When the cattype is "none", all the questions
         // go into the given parent category.
-        if ($subcattype == \vocabtool_questionbank\form::SUBCAT_NONE) {
+        if ($subcattype == $form::SUBCAT_NONE) {
             return $category;
         }
 
-        // When the cattype is "single", all the questions
-        // go into a category with the given name within
-        // the given parent category.
-        if ($subcattype == \vocabtool_questionbank\form::SUBCAT_SINGLE) {
-            return $this->get_question_subcategory($table, 'singlecategory', $a, $category, $subcatname);
+        $types = [
+            $form::SUBCAT_CUSTOMNAME => 'customname',
+            $form::SUBCAT_SECTIONNAME => 'sectionname',
+            $form::SUBCAT_ACTIVITYNAME => 'activityname',
+            $form::SUBCAT_WORD => 'word',
+            $form::SUBCAT_QUESTIONTYPE => 'questiontype',
+            $form::SUBCAT_VOCABLEVEL => 'vocablevel',
+        ];
+
+        foreach ($types as $type => $strname) {
+            if ($subcattype & $type) {
+                $category = $this->get_question_subcategory(
+                    $table, $strname, $a, $category
+                );
+            }
         }
 
-        // Otherwise, we treat everything else as SUBCAT_AUTOMATIC.
-        // This means creating a hierarchy of question categories:
-        // course -> vocab -> word -> qtype -> qlevel.
-        // 2024-Feb-28 removed 'section' because it usually duplicates 'vocab'.
-        $strnames = ['course', 'vocab', 'word', 'wordtype', 'wordtypelevel'];
-        foreach ($strnames as $strname) {
-            $category = $this->get_question_subcategory($table, $strname, $a, $category);
-        }
         return $category;
     }
 
     /**
      * get_question_subcategory
      *
-     * @param string $table the table to be search in the Moodle $DB
+     * @param string $table the table to be searched in the Moodle $DB
      * @param string $strname string name used to create the subcategory name/info
      * @param object $a arguments to use to make the subcategory name/info
      * @param object $parentcategory the parent category
@@ -838,14 +846,14 @@ EOD;
 
         // Initialize the $filerecord that will be used
         // to store media file in Moodle's file repository.
-        $filerecord = array(
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'question',
             'filearea'  => '', // Set this later.
             'itemid'    => 0, // Set this later.
             'filepath'  => '/', // Always this value.
             'filename'  => '', // Set this later.
-        );
+        ];
 
         $moretags = [];
         foreach ($tables[$qtype] as $table => $fields) {
@@ -961,42 +969,46 @@ EOD;
         $table = "qtype_{$qtype}_options";
         if ($dbman->table_exists($table)) {
             if ($dbman->field_exists($table, $field)) {
+                // These question types:
                 // qtype_essayautograde_options
                 // qtype_match_options
                 // qtype_multichoice_options
                 // qtype_ordering_options
                 // qtype_randomsamatch_options
-                // qtype_speakautograde_options
+                // qtype_speakautograde_options.
                 return [$table, $fields];
             }
             return null;
         }
-    
+
         $table = "qtype_{$qtype}";
         if ($dbman->table_exists($table)) {
             if ($dbman->field_exists($table, $field)) {
+                // These question types:
                 // qtype_ddimageortext
-                // qtype_ddmarker
+                // qtype_ddmarker.
                 return [$table, $fields];
             }
             return null;
         }
-    
+
         $table = "question_{$qtype}";
         if ($dbman->table_exists($table)) {
             if ($dbman->field_exists($table, $field)) {
+                // These question types:
                 // question_ddwtos
                 // question_gapselect
-                // question_order
+                // question_order.
                 return [$table, $fields];
             }
             return null;
         }
-    
+
         $table = "question_{$qtype}_options";
         if ($dbman->table_exists($table)) {
             if ($dbman->field_exists($table, $field)) {
-                // question_calculated_options
+                // These question types:
+                // question_calculated_options.
                 return [$table, $fields];
             }
             return null;
@@ -1037,7 +1049,8 @@ EOD;
                 return null;
             }
 
-            // qtype_match_subquestions
+            // The following question types;
+            // qtype_match_subquestions.
             return [$table, $fields];
         }
 
@@ -1117,20 +1130,20 @@ EOD;
         static $search = null;
         if ($search === null) {
             $search = (object)[
-                // Search string to extract media tags.
-                //   $1: type of media (IMAGE, AUDIO or VIDEO).
-                //   $2: tag attributes and AI prompt.
+                // Search string to extract media tags:
+                // $1: type of media (IMAGE, AUDIO or VIDEO)
+                // $2: tag attributes and AI prompt.
                 'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/',
-                // Search string to extract attributes of media tags.
-                //   $1: name of attribute (alt, width, height, class).
-                //   $2: value of attribute.
+                // Search string to extract attributes of media tags:
+                // $1: name of attribute (alt, width, height, class)
+                // $2: value of attribute.
                 'attributes' => '/(\w+) *= *"(.*?)"/',
             ];
         }
 
         // Initialize the counters used to generate unique filenames.
         $count = (object)array_combine(
-            array_keys($mediatags), 
+            array_keys($mediatags),
             array_fill(0, count($mediatags), 0)
         );
 
@@ -1182,7 +1195,7 @@ EOD;
                 // of this tagname created in this $record->$field.
                 $count->$tagname = ($count->$tagname + 1);
 
-                // Set filename.    
+                // Set filename.
                 if ($filename = $tagparams['filename']) {
                     $filename = clean_param($filename, PARAM_FILE);
                     $filename = preg_replace('/[ \._]+/', '_', $filename);
@@ -1197,9 +1210,15 @@ EOD;
                 }
                 $filetype = '';
                 switch ($tagname) {
-                    case 'IMAGE': $filetype = '.png'; break;
-                    case 'AUDIO': $filetype = '.mp3'; break;
-                    case 'VIDEO': $filetype = '.mp4'; break;
+                    case 'IMAGE':
+                        $filetype = '.png';
+                        break;
+                    case 'AUDIO':
+                        $filetype = '.mp3';
+                        break;
+                    case 'VIDEO':
+                        $filetype = '.mp4';
+                        break;
                 }
                 $filerecord['filename'] = $filename.$filetype;
 

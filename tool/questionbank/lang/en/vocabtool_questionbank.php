@@ -51,15 +51,23 @@ $string['questiontypes'] = 'Question types';
 
 $string['parentcategory_help'] = 'Select the question category in which you wish to add the new questions.';
 $string['parentcategory'] = 'Parent category';
-$string['subcategories_help'] = 'If you wish to put the questions into a subcategories, choose either "single" or "automatic".
+$string['subcategories_help'] = 'Use these checkboxes to specify a hierarchy of subcategories within the parent category into which you wish to put the AI-generated questions.
 
-**None:** no subcategory will be created. All new questions will be put into the "Parent category".
+**None:** No subcategories will be created. All new questions will be put directly into the "Parent category".
 
-**Single subcategory:** enter the name of the subcategory in the box provided. All new questions will be put into this category.
+**Custom name:** If this checkbox is selected, enter the custom name of the question subcategory in the box provided.
 
-**Automatic subcategories:** the questions will be put automatically into a hierarchy of subcategories: Course -> "Vocabulary" -> Activity -> Word -> Question type.
+**Section name:** A question category for the course section (e.g. "topic" or "week") in which the current Vocabulary activity appears.
 
-The subcategories will be created within the "Parent category" selected above.';
+**Activity name:** A question category for the current Vocabulary activity.
+
+**Word name:** A question category for each vocabulary item, or "word".
+
+**Question type:** A question category for each type of question (e.g. "MC", "SA" or "Match").
+
+**Vocabulary level:** A question category for each vocabulary level (e.g. "A1", "TOEFL-30", "TOEIC-300" or "300L").
+
+If any of the specified subcategories do not exist, they will be created automatically as the questions are imported into the question bank.';
 $string['subcategories'] = 'Subcategories';
 
 $string['generatequestions'] = 'Generate questions';
@@ -68,8 +76,7 @@ $string['aisettings'] = 'AI settings';
 $string['questionsettings'] = 'Question settings';
 $string['categorysettings'] = 'Question category settings';
 
-$string['singlesubcategory'] = 'Single subcategory';
-$string['automaticsubcategories'] = 'Automatic subcategories';
+$string['defaultcustomname'] = 'Questions for {$a}';
 
 $string['selectedwords_help'] = 'Select the words for which you wish to generate questions.';
 $string['selectedwords'] = 'Selected words';
@@ -92,12 +99,12 @@ $string['nowordsfound'] = 'In order to generate questions for the question bank,
 
 $string['scheduletaskssuccess'] = 'The following tasks were successfully scheduled and will be run later by the Moodle cron. {$a}';
 $string['scheduletasksfailure'] = 'The following tasks could NOT be scheduled. Please try again later. {$a}';
-$string['taskgeneratequestions'] = 'Task to generate {$a->count} {$a->type} question(s) at level "{$a->level}" for the word "{$a->word}".';
+$string['taskgeneratequestions'] = 'Task to generate {$a->qcount} {$a->qtype} question(s) at level "{$a->qlevel}" for the word "{$a->word}".';
 
 $string['error_emptyresults'] = 'The results from the AI assistant are empty/missing. No questions could be generated/imported.';
 $string['error_failedtoconnect'] = 'Failed to connect to {$a->ai} {$a->configid}';
 $string['error_generatequestions'] = 'Unable to generate questions; {$a}.';
-$string['error_invalidlogid'] = 'Invliad log ({$a}) received from adhoc task';
+$string['error_invalidlogid'] = 'Invalid log ({$a}) received from adhoc task';
 $string['error_invalidquestioncategoryid'] = 'Invalid question category ID ({$a}) sent to adhoc task to generate questions.';
 $string['error_invalidtaskparameters'] = 'Invalid parameter(s) in adhoc task log: {$a}';
 $string['error_invalidteacherid'] = 'User (id={$a->userid}) is not allowed to create questions in course (id={$a->courseid}).';
@@ -112,41 +119,53 @@ $string['error_invalidprompt'] = 'Invalid AI prompt (id={$a->id}): {$a->name}';
 $string['error_invalidformat'] = 'Invalid AI format (id={$a->id}): {$a->name}';
 $string['error_invalidfile'] = 'Invalid AI file (id={$a->id}): {$a->name}';
 
-$string['catname_course'] = 'Vocabulary: {$a->coursename}';
-$string['catname_section'] = '{$a->sectiontype}: {$a->sectionname}';
-$string['catname_vocab'] = '{$a->vocabname}';
-$string['catname_word'] = 'Word: {$a->word}';
-$string['catname_wordtype'] = 'Word: {$a->word} ({$a->qtype})';
-$string['catname_wordtypelevel'] = 'Word: {$a->word} ({$a->qtype}) {$a->level}';
-$string['catname_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
+$string['customname'] = 'Custom name';
+$string['coursename'] = 'Course name';
+$string['sectiontype'] = 'Section type';
+$string['sectionname'] = 'Section name';
+$string['activityname'] = 'Activity name';
+$string['word'] = 'Word';
+$string['questiontype'] = 'Question type';
+$string['vocablevel'] = 'Vocabulary level';
 
-$string['catinfo_course'] = 'Vocabulary questions in course "{$a->coursename}"';
-$string['catinfo_section'] = 'Vocabulary questions in section "{$a->sectionname}" of course "{$a->coursename}"';
-$string['catinfo_vocab'] = 'Vocabulary questions in activity "{$a->vocabname}"';
+$string['catname_customname'] = '{$a->customname}';
+$string['catname_coursename'] = 'Course: {$a->coursename}';
+$string['catname_sectionname'] = '{$a->sectiontype}: {$a->sectionname}';
+$string['catname_activityname'] = '{$a->activitytype}: {$a->activityname}';
+$string['catname_word'] = 'Word: {$a->word}';
+$string['catname_questiontype'] = 'Word: {$a->word} ({$a->qtype})';
+$string['catname_vocablevel'] = 'Word: {$a->word} ({$a->qtype}) {$a->qlevel}';
+
+$string['catinfo_customname'] = 'Vocabulary questions';
+$string['catinfo_coursename'] = 'Vocabulary questions in course "{$a->coursename}"';
+$string['catinfo_sectionname'] = 'Vocabulary questions in {$a->sectiontype} "{$a->sectionname}" of course "{$a->coursename}"';
+$string['catinfo_activityname'] = 'Vocabulary questions in activity "{$a->activityname}"';
 $string['catinfo_word'] = 'Vocabulary questions for the word "{$a->word}"';
-$string['catinfo_wordtype'] = '{$a->qtype} questions for the word "{$a->word}"';
-$string['catinfo_wordtypelevel'] = '{$a->qtype} questions ({$a->level}) for the word "{$a->word}"';
-$string['catinfo_singlecategory'] = 'Vocabulary questions for "{$a->word}"';
+$string['catinfo_questiontype'] = '{$a->qtype} questions for the word "{$a->word}"';
+$string['catinfo_vocablevel'] = '{$a->qtype} questions ({$a->qlevel}) for the word "{$a->word}"';
 
 $string['selectprompt'] = 'Select prompt ...';
 $string['selectformat'] = 'Select format ...';
 
 $string['missingaidetails'] = 'Questions cannot be generated yet because the following settings have not been defined: {$a}';
+
 $string['noassistantsfound'] = '{$a} Access details to an AI assistant';
+
 $string['nopromptsfound'] = '{$a} Prompts for the AI assistants';
+
 $string['noformatsfound'] = '{$a} Output formats for the prompts';
 $string['addaidetails'] = 'Please use the links on the "AI assistants" menu to add the missing details.';
 
-$string['nofilesfound'] = 'No tuning files were found. They are not essential to create questions, but they can improve the quality of questions produced by the AI assistant. {$a}';
+$string['nofilesfound'] = 'No tuning files were found. They are not essential to create questions, but they can improve the quality of questions produced by the AI text assistant.<br>{$a}';
 $string['clicktoaddfiles'] = 'Click here to add tuning files.';
 
-$string['noimagefound'] = '{$a} Prompts for the AI image assistants';
+$string['noimagesfound'] = 'No image assistants were found. They are not essential, but they are necessary if you wish to add images to your questions.<br>{$a}';
 $string['clicktoaddimage'] = 'Click here to add an AI image assistant.';
 
-$string['noaudiofound'] = '{$a} Prompts for the AI audio assistants';
+$string['noaudiofound'] = 'No audio assistants were found. They are not essential, but they are necessary if you wish to add audio to your questions.<br>{$a}';
 $string['clicktoaddaudio'] = 'Click here to add an AI audio assistant.';
 
-$string['novideofound'] = '{$a} Prompts for the AI video assistants';
+$string['novideofound'] = 'No video assistants were found. They are not essential, but they are necessary if you wish to add video to your questions.<br>{$a}';
 $string['clicktoaddvideo'] = 'Click here to add an AI video assistant.';
 
 $string['qformat'] = 'AI output format';
@@ -162,26 +181,28 @@ $string['questionreview_help'] = 'If this setting is enabled, the AI results wil
 $string['questionreview'] = 'Question review';
 
 $string['taskowner'] = 'Task owner';
+$string['taskowner_help'] = 'The owner of the adhoc Moodle task used to generate the questions.';
 $string['word'] = 'Word';
-$string['questiontype_help'] = 'questiontype_help';
+$string['word_help'] = 'The target word or vocabulary item for which the questions were generated.';
 $string['questiontype'] = 'Question type';
-$string['questionlevel_help'] = 'questionlevel_help';
+$string['questiontype_help'] = 'The type of questions that are to be generated by the AI.';
 $string['questionlevel'] = 'Question level';
+$string['questionlevel_help'] = 'The vocabulary level used in the AI-generated questions.';
 $string['promptname'] = 'AI prompt name';
 $string['formatname'] = 'AI format name';
 $string['filedescription'] = 'AI tuning file';
-$string['subcattype_help'] = 'subcattype_help';
 $string['subcattype'] = 'Subcategory type';
-$string['subcatname_help'] = 'subcatname_help';
+$string['subcattype_help'] = 'Define the hierarchy of subcategories within the parent question category.';
 $string['subcatname'] = 'Subcategory name';
-$string['maxtries_help'] = 'maxtries_help';
+$string['subcatname_help'] = 'Specify the name of the custom-named category.';
+$string['maxtries_help'] = 'The maximum number of times to attempt to create the AI-generated questions. Usually one is sufficient.';
 $string['maxtries'] = 'Maximum tries';
-$string['tries_help'] = 'tries_help';
+$string['tries_help'] = 'The number of attempts that were made connect to connect to the AI assistant in order to generate the questions.';
 $string['tries'] = 'Number of tries';
-$string['prompttext_help'] = 'prompttext_help';
 $string['prompttext'] = 'Prompt text';
-$string['resultstext_help'] = 'resultstext_help';
+$string['prompttext_help'] = 'The AI prompt used to generate the questions.';
 $string['resultstext'] = 'Results text';
+$string['resultstext_help'] = 'The raw results receieved from the AI assistant.';
 $string['timecreated'] = 'Time created';
 $string['timemodified'] = 'Time modified';
 
@@ -193,7 +214,7 @@ $string['emptyresults'] = 'Results from AI assistant were empty.';
 $string['logrecords'] = 'Log records {$a}';
 $string['selectedlogrecord'] = 'Selected log record';
 
-$string['taskstatus_help'] = 'taskstatus_help';
+$string['taskstatus_help'] = 'The status of the Moodle adhoc task that generated the questions.';
 $string['taskstatus'] = 'Task status';
 $string['taskstatus_notset'] = 'Not set';
 $string['taskstatus_queued'] = 'Task queued';
@@ -223,15 +244,16 @@ $string['resumetaskresults'] = '{$a->count} tasks will be resumed {$a->ids}';
 $string['deletelogresults'] = '{$a->count} log records were deleted {$a->ids}';
 
 $string['withselected'] = 'With selected';
-$string['backgroundtask'] = 'Background task';
+$string['adhoctaskid'] = 'Adhoc task';
+$string['adhoctaskid_help'] = 'The id of the adhoc Moodle task used to generate the questions.';
 
-$string['taskerror_help'] = 'taskerror_help';
+$string['taskerror_help'] = 'The error message, if any, reported by the Moodle adhoc task.';
 $string['taskerror'] = 'Task error';
 
 $string['ai_generated'] = 'AI';
 $string['descriptionshort'] = 'Desc';
-$string['ddimageortextshort'] = 'DD(image/text)';
-$string['essayautogradeshort'] = 'Essay(auto)';
+$string['ddimageortextshort'] = 'DD (image/text)';
+$string['essayautogradeshort'] = 'Essay (auto)';
 $string['gapselectshort'] = 'Gap';
 $string['matchshort'] = 'Match';
 $string['multianswershort'] = 'Cloze';

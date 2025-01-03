@@ -38,11 +38,12 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
     global $CFG, $DB;
     $result = true;
 
-    // Set the subplugin name, type, fullname and dir.
+    // Set the subplugin name, type, fullname, dir and DB table name.
     $type = 'vocabtool';
     $name = 'questionbank';
     $plugin = "{$type}_{$name}";
     $dir = "mod/vocab/tool/$name";
+    $table = 'vocabtool_questionbank_log';
 
     // Get the upgrade script for the main plugin.
     require_once($CFG->dirroot.'/mod/vocab/db/upgrade.php');
@@ -58,6 +59,31 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
 
     $newversion = 2024121923;
     if ($oldversion < $newversion) {
+        xmldb_vocab_check_structure($dbman, null, $plugin, $plugin, $dir);
+        upgrade_plugin_savepoint($result, $newversion, $type, $name);
+    }
+
+    // Cache class name of questionbank form.
+    $form = '\\vocabtool_questionbank\\form';
+    $newversion = 2025010124;
+    if ($oldversion < $newversion) {
+
+        $value = $form::SUBCAT_NONE;
+        $params = ['subcattype' => 'none']; // SUBCAT_NONE.
+        $DB->set_field($table, 'subcattype', $value, $params);
+
+        $value = $form::SUBCAT_CUSTOMNAME;
+        $params = ['subcattype' => 'single']; // SUBCAT_SINGLE.
+        $DB->set_field('vocabtool_questionbank_log', 'subcattype', $value, $params);
+
+        // Automatic: course, vocab, word, wordtype, wordtypelevel.
+        $value = $form::SUBCAT_ACTIVITYNAME;
+        $value |= $form::SUBCAT_WORD;
+        $value |= $form::SUBCAT_QUESTIONTYPE;
+        $value |= $form::SUBCAT_VOCABLEVEL;
+        $params = ['subcattype' => 'automatic']; // SUBCAT_AUTOMATIC.
+        $DB->set_field('vocabtool_questionbank_log', 'subcattype', $value, $params);
+
         xmldb_vocab_check_structure($dbman, null, $plugin, $plugin, $dir);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }

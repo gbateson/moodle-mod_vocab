@@ -16,7 +16,7 @@
 }
 
 #vocabtool_questionbank_form #questionbanklog_table thead {    
-    background-color: #365;
+    background-color: #664d99; /* 4d0099 365 (bg-info) */
     color: #f8f9fa; /* text-light */
 }
 #vocabtool_questionbank_form #questionbanklog_table th + th {

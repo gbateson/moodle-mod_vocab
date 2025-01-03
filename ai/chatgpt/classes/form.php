@@ -37,13 +37,13 @@ namespace vocabai_chatgpt;
  */
 class form extends \mod_vocab\aiform {
 
-    /** var string the name of the "key" field in the config record */ 
+    /** var string the name of the "key" field in the config record */
     const CONFIG_KEY = 'chatgptkey';
 
-    /** var string the name of the "model" field in the config record */ 
+    /** var string the name of the "model" field in the config record */
     const CONFIG_MODEL = 'chatgptmodel';
 
-    /** var string a comma-delimited list of required fields */ 
+    /** var string a comma-delimited list of required fields */
     const REQUIRED_FIELDS = 'chatgpturl,chatgptkey, chatgptmodel';
     /**
      * Add fields to the main form for this subplugin.
@@ -105,68 +105,8 @@ class form extends \mod_vocab\aiform {
         // Cache the label separator, e.g. ": ".
         $labelsep = get_string('labelsep', 'langconfig');
 
-        // Display the config settings that apply to this context and are
-        // owned by other users. These are NOT editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id);
-        if (count($configs)) {
-
-            $name = 'keysownedbyothers';
-            $this->add_heading($mform, $name, true);
-
-            if (is_siteadmin()) {
-                // Site admin can always edit, copy and delete anything.
-                $actions = ['edit', 'copy', 'delete'];
-            } else {
-                $actions = [];
-
-                // Display message to non-admin users (e.g. teachers)
-                // explaining that they cannot edit keys owned by other people.
-                $text = $this->get_string('note');
-                $text = \html_writer::tag('span', $text, ['class' => 'text-danger']);
-                $text = $text.$labelsep.$this->get_string('cannoteditkeys');
-                $text = \html_writer::tag('h5', $text, ['class' => 'cannotedit']);
-                $mform->addElement('html', $text);
-            }
-            foreach ($configs as $configid => $config) {
-                if ($html = $this->format_config($config, $actions, true)) {
-                    $mform->addElement('html', $html, "config-$configid");
-                }
-            }
-        }
-
-        // Display the config settings that are owned by this user but do not
-        // apply to the current context. These are editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id);
-        if (count($configs)) {
-            $enableexport = true;
-
-            $name = 'otherkeysownedbyme';
-            $this->add_heading($mform, $name, true);
-
-            $actions = ['edit', 'copy', 'delete'];
-            foreach ($configs as $configid => $config) {
-                if ($html = $this->format_config($config, $actions)) {
-                    $mform->addElement('html', $html, "config-$configid");
-                }
-            }
-        }
-
-        // Display the config settings that owned by this user and apply to
-        // the current context. These are editable by the current user.
-        $configs = $this->get_subplugin()->get_configs('thisuser', 'thiscontext', $default->id);
-        if (count($configs)) {
-            $enableexport = true;
-
-            $name = 'keysownedbyme';
-            $this->add_heading($mform, $name, true);
-
-            $actions = ['edit', 'delete'];
-            foreach ($configs as $configid => $config) {
-                if ($html = $this->format_config($config, $actions)) {
-                    $mform->addElement('html', $html, "config-$configid");
-                }
-            }
-        }
+        // Add configs that are related to this user and/or context.
+        $this->add_configs($mform, $default, 'keys');
 
         /*////////////////////////////
         // Main form starts here.

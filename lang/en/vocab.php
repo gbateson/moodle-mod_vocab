@@ -69,16 +69,16 @@ $string['gradecount_help'] = 'The number of words that students are required to 
 $string['gradetype'] = 'Word score type';
 $string['gradetype_help'] = 'The type of word scores to be considered when calculating the activity grade.
 
-**Highest word scores**  
+**Highest word scores**
 The scores of all attempted words will be examined and the highest will be used to calculate the activity grade.
 
-**Lowest word scores**  
+**Lowest word scores**
 The scores of all attempted words will be examined and the lowest will be used to calculate the activity grade.
 
-**Latest word scores**  
+**Latest word scores**
 Only scores for the most recently completed words will be considered.
 
-**Earliest word scores**  
+**Earliest word scores**
 Only scores for the earliest completed words will be considered.';
 
 $string['anywordscores'] = 'Any word scores';
@@ -142,13 +142,13 @@ $string['attemptduration_help'] = 'The maximum total duration for attempts which
 $string['attempttype'] = 'Attempt type';
 $string['attempttype_help'] = 'The type of attempts to be considered by the attempt count condition.
 
-**Any attempts**  
+**Any attempts**
 Any attempts will be considered.
 
-**Most recent attempts**  
+**Most recent attempts**
 Only the most recent attempts will be considered.
 
-**Consecutive attempts**  
+**Consecutive attempts**
 Any block of consecutive attempts will be considered.';
 
 $string['anyattempts'] = 'Any attempts';

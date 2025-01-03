@@ -316,7 +316,7 @@ class activity {
         }
 
         // Course module id.
-        if ($cmid = self::optional_param(['id', 'cmid'], 0, PARAM_INT)) {
+        if ($cmid = self::get_optional_param(['id', 'cmid'], 0, PARAM_INT)) {
             $cm = get_coursemodule_from_id(self::PLUGINNAME, $cmid, 0, false, MUST_EXIST);
             $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
             $instance = $DB->get_record(self::PLUGINNAME, ['id' => $cm->instance], '*', MUST_EXIST);
@@ -324,7 +324,7 @@ class activity {
         }
 
         // Vocab instance id.
-        if ($vocabid = self::optional_param(['v', 'vid', 'vocabid'], 0, PARAM_INT)) {
+        if ($vocabid = self::get_optional_param(['v', 'vid', 'vocabid'], 0, PARAM_INT)) {
             $instance = $DB->get_record('vocab', ['id' => $vocabid], '*', MUST_EXIST);
             $cm = get_coursemodule_from_instance('vocab', $instanceid, 0, false, MUST_EXIST);
             $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
@@ -340,12 +340,69 @@ class activity {
      * @param array $names of possible names for the input parameter
      * @param mixed $default value
      * @param mixed $type a PARAM_xxx constant value
-     * @return mixed, either an actual value from the form, or a suitable default.
+     * @param integer $depth the maximum depth allowed for array parameters
+     * @return mixed, either an actual value from the form, or a suitable default
      */
-    public static function optional_param($names, $default, $type) {
+    public static function get_optional_param($names, $default, $type, $depth=1) {
+        if (is_scalar($names)) {
+            $names = [$names];
+        }
         foreach ($names as $name) {
-            if ($value = optional_param($name, '', $type)) {
+            if ($value = self::get_param($name, '', $type, $depth)) {
                 return $value;
+            }
+        }
+        return $default;
+    }
+
+    /**
+     * get_param
+     *
+     * @param string $name of parameter
+     * @param mixed $default value
+     * @param int $type one of PARAM_xxx constant values
+     * @param int $depth maximum allowable depth of nested arrays
+     * return mixed the cleaned input parameter value, if it exists; otherwise $default value.
+     */
+    public static function get_param($name, $default, $type, $depth=1) {
+        if (isset($_POST[$name])) {
+            return self::clean_param($_POST[$name], $default, $type, $depth);
+        }
+        if (isset($_GET[$name])) {
+            return self::clean_param($_GET[$name], $default, $type, $depth);
+        }
+        return $default;
+    }
+
+    /**
+     * clean_param
+     *
+     * @param string $value of a parameter passed into this script
+     * @param mixed $default value
+     * @param int $type one of PARAM_xxx constant values
+     * @param int $depth maximum allowable depth of nested arrays
+     * return mixed the cleaned input parameter value, if it exists; otherwise $default value.
+     */
+    public static function clean_param($value, $default, $type, $depth=1) {
+        if ($depth == 0) {
+            return $default;
+        }
+        if (is_scalar($value)) {
+            return clean_param($value, $type);
+        }
+        if (is_array($value)) {
+            $array = [];
+            foreach ($value as $key => $value) {
+                if (preg_match('/^[a-z0-9_-]+$/i', $key)) {
+                    if (is_scalar($value)) {
+                        $array[$key] = clean_param($value, $type);
+                    } else {
+                        $array[$key] = self::clean_param($value, $default, $type, $depth - 1);
+                    }
+                }
+            }
+            if (count($array)) {
+                return $array;
             }
         }
         return $default;
@@ -658,7 +715,7 @@ class activity {
      * a string used by mod_vocab (or one of its subplugins).
      *
      * @param string $strname the name of the required string
-     * @param array $componenets array of Moodle components which may define $strname
+     * @param array $components array of Moodle components which may define $strname
      * @return string name of component that defines the required string.
      */
     public function get_string_component($strname, $components) {

@@ -130,14 +130,14 @@ class form extends \mod_vocab\toolform {
 
         // Get a valid form state.
         $states = ['upload', 'preview', 'review', 'import'];
-        $this->formstate = optional_param('formstate', '', PARAM_ALPHA);
+        $this->formstate = self::get_optional_param('formstate', '', PARAM_ALPHA);
         if (in_array($this->formstate, $states) == false) {
             // Use the initial state as the default state.
             $this->formstate = reset($states);
         }
 
         // Detect "Cancel" or "Back" button.
-        if (optional_param('cancel', 0, PARAM_RAW)) {
+        if (self::get_optional_param('cancel', 0, PARAM_RAW)) {
             $i = array_search($this->formstate, $states);
             if ($i >= 2) {
                 $this->formstate = $states[$i - 2];
@@ -342,7 +342,7 @@ class form extends \mod_vocab\toolform {
             } else {
                 $default = '';
             }
-            $value = optional_param($name, $default, $type);
+            $value = self::get_optional_param($name, $default, $type);
             $mform->addElement('hidden', $name, $value);
             $mform->setType($name, $type);
         }
@@ -496,7 +496,7 @@ class form extends \mod_vocab\toolform {
     public function get_datafileinfo($fs, $context, $paramname) {
         $filename = '';
         $filepath = '';
-        if ($draftid = optional_param($paramname, 0, PARAM_INT)) {
+        if ($draftid = self::get_optional_param($paramname, 0, PARAM_INT)) {
             $file = $fs->get_area_files($context->id, 'user', 'draft', $draftid, 'id DESC', false);
             if (count($file)) {
                 $file = reset($file);
@@ -530,7 +530,7 @@ class form extends \mod_vocab\toolform {
     public function get_formatfileinfo($fs, $context, $paramname) {
         $filename = '';
         $filecontent = '';
-        if ($draftid = optional_param($paramname, 0, PARAM_INT)) {
+        if ($draftid = self::get_optional_param($paramname, 0, PARAM_INT)) {
             $file = $fs->get_area_files($context->id, 'user', 'draft', $draftid, 'id DESC', false);
             if (count($file)) {
                 $file = reset($file);
@@ -1070,7 +1070,7 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function get_previewrows() {
-        return optional_param('previewrows', 10, PARAM_INT);
+        return self::get_optional_param('previewrows', 10, PARAM_INT);
     }
 
     /**
@@ -1893,7 +1893,7 @@ class form extends \mod_vocab\toolform {
             $mform = $this->_form;
             // We cannot use $mform->elementExists()
             // because $mform has not been setup yet.
-            if ($this->$name = optional_param($name, '', PARAM_TEXT)) {
+            if ($this->$name = self::get_optional_param($name, '', PARAM_TEXT)) {
                 $this->$name = explode(',', $this->$name);
                 $this->$name = array_map('trim', $this->$name);
                 $this->$name = array_filter($this->$name);
