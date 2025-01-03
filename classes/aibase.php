@@ -98,6 +98,9 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var object to represent a curl object used for connecting to an AI assistant */
     public $curl = null;
 
+    /** @var int the number of requests to send in a single curl request */
+    public $curlcount = 1;
+
     /** @var array of POST parameters to be sent via the curl object */
     public $postparams = null;
 

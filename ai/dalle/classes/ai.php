@@ -105,22 +105,22 @@ class ai extends \mod_vocab\aibase {
             return $media->error;
         }
 
-        if (! isset($media->data)) {
-            return $this->get_string('medianotcreated', $a).' ! isset(media->data)';
+        if (! isset($media->images)) {
+            return $this->get_string('medianotcreated', $a).' ! isset(media->images)';
         }
 
         $files = [];
         $errors = [];
 
         // Main processing loop.
-        foreach ($media->data as $i => $data) {
+        foreach ($media->images as $i => $image) {
 
-            if (! empty($data['content'])) {
+            if (! empty($image['content'])) {
                 // Create file from string.
-                $file = $fs->create_file_from_string($filerecord, $data['content']);
-            } else if (! empty($data['url'])) {
+                $file = $fs->create_file_from_string($filerecord, $image['content']);
+            } else if (! empty($image['url'])) {
                 // Create file from URL.
-                $file = $fs->create_file_from_url($filerecord, $data['url']);
+                $file = $fs->create_file_from_url($filerecord, $image['url']);
             } else {
                 $file = null; // Shouldn't happen !!
             }
@@ -239,7 +239,7 @@ class ai extends \mod_vocab\aibase {
         if (count($errors)) {
             return reset($errors);
         } else {
-            return '[D] '.$this->get_string('medianotcreated', $a);
+            return $this->get_string('medianotcreated', $a);
         }
     }
 
@@ -247,7 +247,7 @@ class ai extends \mod_vocab\aibase {
      * Send a prompt to an AI assistant and get the response.
      *
      * @param string $prompt
-     * @return object containing "text" and "error" properties.
+     * @return object containing "images" and "error" properties.
      */
     public function get_response($prompt) {
 
@@ -318,49 +318,68 @@ class ai extends \mod_vocab\aibase {
             $this->postparams[$name] = clean_param($this->config->$name, $type);
         }
 
-        // Send the prompt and get the response.
-        $response = $this->curl->post(
-            $this->config->dalleurl, json_encode($this->postparams)
-        );
-
-        if ($this->curl->error) {
-            return (object)['error' => get_string('error').': '.$response];
-        }
-
-        // Extract response details (force array structure).
-        $response = json_decode($response, true);
-
-        if (is_array($response) && array_key_exists('error', $response)) {
-            $error = [];
-            foreach (['type', 'code', 'message'] as $name) {
-                if (array_key_exists($name, $response['error'])) {
-                    $error[] = $name.': '.$response['error'][$name];
-                }
+        if ($this->curlcount == 1) {
+            // Send the prompt and get the response.
+            $response = $this->curl->post(
+                $this->config->dalleurl, json_encode($this->postparams)
+            );
+            $responses = [$response];
+        } else {
+            // Send multiple requests and get multiple responses.
+            for ($i = 0; $i < $this->curlcount; $i++) {
+                $requests[] = ['url' => $this->config->dalleurl];
             }
-            if ($error = implode(', ', $error)) {
-                $error = get_string('error').': '.$error;
-                return (object)['error' => $error];
-            }
-        }
-
-        // We expect $response['data'] to be an array of imagess,
-        // each of which is an array containing "revised_prompt"
-        // and either "b64_json" or "url".
-
-        if (empty($response['data'])) {
-            $error = get_string('error').': Unexpected response from DALL-E. (no data in response)';
-            return (object)['error' => $error];
-        }
-
-        // Standardize the response data, prompt and url.
-        foreach ($response['data'] as $i => $data) {
-            $response['data'][$i] = [
-                'revised_prompt' => ($data['revised_prompt'] ?? ''),
-                'content' => base64_decode($data['b64_json'] ?? ''),
-                'url' => ($data['url'] ?? ''),
+            $options = [
+                'CURLOPT_POST' => 1,
+                'CURLOPT_POSTFIELDS' => json_encode($this->postparams),
             ];
+            $responses = $this->curl->multi($requests, $options);
         }
 
-        return (object)['data' => $response['data'], 'error' => ''];
+        if ($error = $this->curl->error) {
+            return (object)['error' => get_string('error').': '.$error];
+        }
+
+        $images = [];
+        $errors = [];
+        foreach ($responses as $response) {
+
+            // Extract result details (force array structure).
+            $response = json_decode($response, true);
+
+            if (is_array($response) && array_key_exists('error', $response)) {
+                $error = [];
+                foreach (['type', 'code', 'message'] as $name) {
+                    if (array_key_exists($name, $response['error'])) {
+                        $error[] = $name.': '.$response['error'][$name];
+                    }
+                }
+                if ($error = implode(', ', $error)) {
+                    $errors[] = get_string('error').': '.$error;
+                }
+                continue;
+            }
+
+            // We expect $response['data'] to be an array of imagess,
+            // each of which is an array containing "revised_prompt"
+            // and either "b64_json" or "url".
+    
+            if (empty($response['data'])) {
+                $error = 'Unexpected response from DALL-E. (no data in response)';
+                $errors[] = get_string('error').': '.$error;
+                continue;
+            }
+
+            // Standardize the response data, prompt and url.
+            foreach ($response['data'] as $i => $data) {
+                $images[] = [
+                    'revised_prompt' => ($data['revised_prompt'] ?? ''),
+                    'content' => base64_decode($data['b64_json'] ?? ''),
+                    'url' => ($data['url'] ?? ''),
+                ];
+            }
+        }
+    
+        return (object)['images' => $images, 'error' => implode("\n", $errors)];
     }
 }

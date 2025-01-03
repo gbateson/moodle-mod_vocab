@@ -92,7 +92,7 @@ class form extends \mod_vocab\aiform {
             // Define default values for new key.
             $default = (object)[
                 'id' => 0,
-                'dalleurl' => 'https://api.openai.com/v1/audio/speech',
+                'dalleurl' => 'https://api.openai.com/v1/images/generations',
                 'dallekey' => '',
                 'dallemodel' => 'dall-e-3',
                 'response_format' => 'b64_json',
