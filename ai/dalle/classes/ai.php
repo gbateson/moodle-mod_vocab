@@ -65,6 +65,9 @@ class ai extends \mod_vocab\aibase {
      */
     public $subtype = self::SUBTYPE_IMAGE;
 
+    /** @var string the name of the field used to sort config records. */
+    const CONFIG_SORTFIELD = 'dallemodel';
+
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
 
@@ -75,9 +78,15 @@ class ai extends \mod_vocab\aibase {
      *
      * @param array $filerecord
      * @param string $prompt
+     * @param integer $questionid
      * @return stored_file or error message as a string.
      */
-    public function get_media_file($filerecord, $prompt) {
+    public function get_media_file($prompt, $filerecord, $questionid) {
+
+        // Cache the filename and filetype.
+        // E.g. questiontext-01-image-01.png.
+        $filename = $filerecord['filename'];
+        $filerecord['filename'] = '';
 
         static $fs = null;
         if ($fs === null) {
@@ -91,7 +100,7 @@ class ai extends \mod_vocab\aibase {
             'itemid' => $filerecord['itemid'],
         ];
 
-        $media = $this->get_response($prompt);
+        $media = $this->get_response($prompt, $questionid);
 
         if (empty($media)) {
             return $this->get_string('medianotcreated', $a).' empty(media)';
@@ -115,6 +124,23 @@ class ai extends \mod_vocab\aibase {
         // Main processing loop.
         foreach ($media->images as $i => $image) {
 
+            if (empty($image['content']) && empty($image['url'])) {
+                $errors[] = $this->get_string('medianotcreated', $a).' empty(content/url)';
+                continue; // Shouldn't happen, but we can try to continue !!
+            }
+
+            // We must give each image variation a separate file name.
+            $suffix = str_pad(($i + 1), 2, '0', STR_PAD_LEFT);
+            $imagefilename = \mod_vocab\activity::modify_filename($filename, '', $suffix);
+
+            // We add random chars to the primt file name to unwanted access.
+            $suffix = \mod_vocab\activity::get_random_chars();
+            $promptfilename = \mod_vocab\activity::modify_filename($imagefilename, '', $suffix, 'txt');
+
+            $filerecord['filename'] = $imagefilename;
+            mtrace('['.get_string('ok').']');
+            mtrace("Saving image to $imagefilename ...", ' ');
+
             if (! empty($image['content'])) {
                 // Create file from string.
                 $file = $fs->create_file_from_string($filerecord, $image['content']);
@@ -130,10 +156,21 @@ class ai extends \mod_vocab\aibase {
                 continue; // Shouldn't happen, but we can try to continue !!
             }
 
-            // Note that Dalle always returns PNG.
+            // Save the prompt in a text file.
+            // E.g. questiontext-01-audio-01-01-xntl.txt
+            // The random string prevents guessing of the prompt filename.
+            if ($prompt = $image['revised_prompt']) {
+                $filerecord['filename'] = $promptfilename;
+
+                mtrace('['.get_string('ok').']');
+                mtrace("Saving image prompt to $promptfilename ...", ' ');
+                $fs->create_file_from_string($filerecord, $prompt);
+            }
+
+            // Note that DALL-E always returns PNG.
             // It can be converted using $fs->convert_image().
             // At the same time, we can also scale the image
-            // and reduce quality, thereby reducing file size.
+            // and reduce quality, and so reduce file size.
 
             // Initialize the adjustable properties.
             $width = $newwidth = 0;
@@ -207,17 +244,23 @@ class ai extends \mod_vocab\aibase {
                 // it later if it is no longer required.
                 $fileid = $file->get_id();
 
-                // Set the new filename.
-                $filename = $filerecord['filename'];
-                $filename = pathinfo($filename, PATHINFO_FILENAME);
-                $filerecord['filename'] = "$filename.$newfiletype";
+                // Set the suffix for the new filename.
+                // Note that if the filetype has changed,
+                // we don't really need a suffix.
+                if ($width != $newwidth || $height != $newheight) {
+                    $suffix = "{$newwidth}x{$newheight}";
+                } else if ($quality != $newquality) {
+                    $suffix = "$newquality";
+                } else {
+                    $suffix = '';
+                }
+                $filerecord['filename'] = \mod_vocab\activity::modify_filename(
+                    $imagefilename, '', $suffix, $newfiletype
+                );
 
-                // Convert the image. Note that
-                // the old image is kept by default.
+                // Convert the image. Note that the old image is kept by default.
                 $file = $fs->convert_image(
-                    $filerecord, $fileid,
-                    $newwidth, $newheight,
-                    true, $newquality
+                    $filerecord, $fileid, $newwidth, $newheight, true, $newquality
                 );
 
                 $name = 'keeporiginals';
@@ -247,9 +290,10 @@ class ai extends \mod_vocab\aibase {
      * Send a prompt to an AI assistant and get the response.
      *
      * @param string $prompt
-     * @return object containing "images" and "error" properties.
+     * @param integer $questionid (optional, default=0)
+     * @return object containing "text" and "error" properties.
      */
-    public function get_response($prompt) {
+    public function get_response($prompt, $questionid=0) {
 
         // Ensure we have the basic settings.
         if (empty($this->config->dalleurl)) {
@@ -308,8 +352,13 @@ class ai extends \mod_vocab\aibase {
             'size' => PARAM_ALPHANUM,
             'style' => PARAM_ALPHA,
         ];
-        if ($model == 'dall-e-2') {
-            $params['n'] = PARAM_INT;
+
+        if (isset($this->config->n) && is_numeric($this->config->n)) {
+            if ($model == 'dall-e-2') {
+                $params['n'] = PARAM_INT;
+            } else {
+                $this->curlcount = max(1, min(5, $this->config->n));
+            }
         }
         foreach ($params as $name => $type) {
             if (empty($this->config->$name)) {
@@ -319,13 +368,13 @@ class ai extends \mod_vocab\aibase {
         }
 
         if ($this->curlcount == 1) {
-            // Send the prompt and get the response.
-            $response = $this->curl->post(
+            // Send a single prompt and get a single response.
+            $responses = [$this->curl->post(
                 $this->config->dalleurl, json_encode($this->postparams)
-            );
-            $responses = [$response];
+            )];
         } else {
-            // Send multiple requests and get multiple responses.
+            // Send multiple requests and get multiple responses
+            // using the "download" method of the curl object.
             for ($i = 0; $i < $this->curlcount; $i++) {
                 $requests[] = ['url' => $this->config->dalleurl];
             }
@@ -333,20 +382,41 @@ class ai extends \mod_vocab\aibase {
                 'CURLOPT_POST' => 1,
                 'CURLOPT_POSTFIELDS' => json_encode($this->postparams),
             ];
-            $responses = $this->curl->multi($requests, $options);
+            // Because we do not specify any filepaths,
+            // the curl responses are sent to STDOUT.
+            // We capture the output using ob_xxx functions.
+            ob_start();
+            $this->curl->download($requests, $options);
+            $responses = trim(ob_get_contents());
+            ob_end_clean();
+            if ($this->is_json($responses)) {
+                // Split into individual objects.
+                $responses = preg_split('/(?<=\})\n(?=\{)/s', $responses);
+            }
         }
 
         if ($error = $this->curl->error) {
             return (object)['error' => get_string('error').': '.$error];
         }
 
+        if (is_string($responses)) {
+            $error = 'Curl response is a string ('.shorten_text($responses).')';
+            return (object)['error' => get_string('error').': '.$error];
+        }
+
         $images = [];
         $errors = [];
-        foreach ($responses as $response) {
+        foreach ($responses as $i => $response) {
 
-            // Extract result details (force array structure).
-            $response = json_decode($response, true);
+            if (is_string($response) && $this->is_json($response)) {
+                // Decode JSON string (force array structure).
+                $response = json_decode($response, true);
+            } else if (is_object($response) || is_array($response)) {
+                // Ensure all objects are converted to arrays.
+                $response = json_decode(json_encode($response), true);
+            }
 
+            // Detect error, if any.
             if (is_array($response) && array_key_exists('error', $response)) {
                 $error = [];
                 foreach (['type', 'code', 'message'] as $name) {
@@ -360,10 +430,15 @@ class ai extends \mod_vocab\aibase {
                 continue;
             }
 
-            // We expect $response['data'] to be an array of imagess,
+            // We expect $response['data'] to be an array of images,
             // each of which is an array containing "revised_prompt"
             // and either "b64_json" or "url".
-    
+
+            if (is_object($response)) {
+                mtrace('Oops, response is an object. Converting to array.');
+                $response = json_decode(json_encode($response), true);
+            }
+
             if (empty($response['data'])) {
                 $error = 'Unexpected response from DALL-E. (no data in response)';
                 $errors[] = get_string('error').': '.$error;
@@ -379,7 +454,7 @@ class ai extends \mod_vocab\aibase {
                 ];
             }
         }
-    
+
         return (object)['images' => $images, 'error' => implode("\n", $errors)];
     }
 }

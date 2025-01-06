@@ -58,6 +58,9 @@ class ai extends \mod_vocab\aibase {
      */
     public $subtype = self::SUBTYPE_INPUT;
 
+    /** @var string the name of the field used to sort config records. */
+    const CONFIG_SORTFIELD = 'filedescription';
+
     /**
      * @var bool to signify whether or not duplicate records,
      * i.e. records with the same owner and context, are allowed.

@@ -459,7 +459,7 @@ abstract class subpluginform extends \moodleform {
      * @param mixed $names either the name of a single paramater, of an array of of possible names for the parameter
      * @param mixed $default value
      * @param mixed $type a PARAM_xxx constant value
-     * @param int $depth the maximum depth of array parameters
+     * @param integer $depth the maximum depth of array parameters
      * @return mixed, either an actual value from the form, or a suitable default
      */
     public static function get_optional_param($names, $default, $type, $depth=1) {

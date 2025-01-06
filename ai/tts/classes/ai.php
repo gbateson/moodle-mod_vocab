@@ -61,6 +61,9 @@ class ai extends \mod_vocab\aibase {
      */
     public $subtype = self::SUBTYPE_AUDIO;
 
+    /** @var string the name of the field used to sort config records. */
+    const CONFIG_SORTFIELD = 'ttsmodel';
+
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
 
@@ -69,11 +72,12 @@ class ai extends \mod_vocab\aibase {
      * If several files are generated, they will *all* be converted
      * and stored, but only the first one will be returned by this method.
      *
-     * @param array $filerecord
      * @param string $prompt
+     * @param array $filerecord
+     * @param integer $questionid
      * @return stored_file or error message as a string.
      */
-    public function get_media_file($filerecord, $prompt) {
+    public function get_media_file($prompt, $filerecord, $questionid) {
 
         // Initialize arguments for error strings.
         $a = (object)[
@@ -82,7 +86,7 @@ class ai extends \mod_vocab\aibase {
             'itemid' => $filerecord['itemid'],
         ];
 
-        $media = $this->get_response($prompt);
+        $media = $this->get_response($prompt, $questionid);
 
         if (empty($media)) {
             return $this->get_string('medianotcreated', $a).' empty(media)';
@@ -108,9 +112,10 @@ class ai extends \mod_vocab\aibase {
      * Send a prompt to an AI assistant and get the response.
      *
      * @param string $prompt
+     * @param integer $questionid (optional, default=0)
      * @return object containing "text" and "error" properties.
      */
-    public function get_response($prompt) {
+    public function get_response($prompt, $questionid=0) {
 
         // Ensure we have the basic settings.
         if (empty($this->config->ttsurl)) {
@@ -148,6 +153,11 @@ class ai extends \mod_vocab\aibase {
             'input' => $prompt,
         ];
 
+        // Select random voice, if necessary.
+        // The same voice will be used for each question,
+        // but different questions may use different voices.
+        $this->select_voice($questionid);
+
         // Set optional POST fields.
         foreach (['voice', 'response_format', 'speed'] as $name) {
             if (empty($this->config->$name)) {
@@ -163,8 +173,55 @@ class ai extends \mod_vocab\aibase {
 
         if ($this->curl->error) {
             return (object)['error' => get_string('error').': '.$response];
-        } else {
-            return (object)['data' => $response, 'error' => ''];
+        }
+
+        if (is_string($response) && $this->is_json($response)) {
+            $response = json_decode($media, true);
+        }
+
+        if (is_array($response)) {
+            return (object)[
+                'data' => ($response['data'] ?? []),
+                'error' => ($response['error']['message'] ?? ''),
+            ];
+        }
+
+        // Usually there are no errors, and the $response is a string.
+        return (object)['data' => $response, 'error' => ''];
+    }
+
+    /**
+     * Select and set voice (possibly chosen at random) for the given question.
+     *
+     * @param integer $questionid
+     * @return void, but will update $this->config->voice once per question.
+     */
+    public function select_voice($questionid) {
+        static $voices = [];
+        if (empty($voices[$questionid])) {
+            $name = 'voice';
+            $form = '\\vocabai_tts\\form';
+            if (empty($this->config->$name)) {
+                $voice = $form::VOICE_RANDOM; // Shouldn't happen !!
+            } else {
+                $voice = $this->config->$name;
+            }
+            switch ($voice) {
+                case $form::VOICE_FEMALE:
+                    $voice = ['nova', 'shimmer'];
+                    break;
+                case $form::VOICE_MALE:
+                    $voice = ['alloy', 'echo', 'fable', 'onyx'];
+                    break;
+                case $form::VOICE_RANDOM:
+                    $voice = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
+                    break;
+            }
+            if (is_array($voice)) {
+                $voice = $voice[array_rand($voice)];
+            }
+            $voices[$questionid] = $voice;
+            $this->config->$name = $voice;
         }
     }
 }

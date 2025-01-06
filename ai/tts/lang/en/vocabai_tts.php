@@ -64,6 +64,10 @@ $string['voiceonyx'] = 'Onyx (male, US)';
 $string['voicenova'] = 'Nova (female, US)';
 $string['voiceshimmer'] = 'Shimmer (female, US)';
 
+$string['voicerandom'] = 'A randomly selected voice';
+$string['voicefemale'] = 'Female (selected at random)';
+$string['voicemale'] = 'Male (selected at random)';
+
 $string['response_format'] = 'Audio format';
 $string['response_format_help'] = 'The file format in which the speech audio will be returned.';
 $string['response_formatmp3'] = 'MP3 format';

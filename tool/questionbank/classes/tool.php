@@ -145,7 +145,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Get a record from the log table using the given $id.
      *
-     * @param int $id
+     * @param integer $id
      * @return object the record form the log table
      */
     public static function get_log($id) {
@@ -156,7 +156,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Update a record in the log table.
      *
-     * @param int $id
+     * @param integer $id
      * @param array $params
      * @return bool, TRUE if log was updated, otherwise FALSE
      */
@@ -186,7 +186,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Get records from the log table using the given $vocabid.
      *
-     * @param int $vocabid
+     * @param integer $vocabid
      * @return array of records from the log table
      */
     public static function get_logs($vocabid) {

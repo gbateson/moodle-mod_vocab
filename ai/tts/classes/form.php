@@ -46,6 +46,15 @@ class form extends \mod_vocab\aiform {
     /** var string a comma-delimited list of required fields */
     const REQUIRED_FIELDS = 'ttsurl, ttskey, ttsmodel';
 
+    /** var string to denote a randomly selected voice */
+    const VOICE_RANDOM = 'random';
+
+    /** var string to denote a randomly selected male voice */
+    const VOICE_MALE = 'male';
+
+    /** var string to denote a randomly selected female voice */
+    const VOICE_FEMALE = 'female';
+
     /**
      * Add fields to the main form for this subplugin.
      */
@@ -95,7 +104,7 @@ class form extends \mod_vocab\aiform {
                 'ttsurl' => 'https://api.openai.com/v1/audio/speech',
                 'ttskey' => '',
                 'ttsmodel' => 'tts-1',
-                'voice' => 'alloy',
+                'voice' => self::VOICE_RANDOM,
                 'response_format' => 'mp3',
                 'speed' => '1.0',
                 'contextlevel' => CONTEXT_MODULE,
@@ -147,6 +156,9 @@ class form extends \mod_vocab\aiform {
             'onyx' => $this->get_string($name.'onyx'),
             'nova' => $this->get_string($name.'nova'),
             'shimmer' => $this->get_string($name.'shimmer'),
+            self::VOICE_MALE => $this->get_string($name.'male'),
+            self::VOICE_FEMALE => $this->get_string($name.'female'),
+            self::VOICE_RANDOM => $this->get_string($name.'random'),
         ];
         $this->add_field_select($mform, $name, $options, PARAM_ALPHA, $default->$name);
 

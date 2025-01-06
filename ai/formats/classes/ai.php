@@ -58,4 +58,7 @@ class ai extends \mod_vocab\aibase {
      * i.e. records with the same owner and context, are allowed.
      */
     const ALLOW_DUPLICATES = true;
+
+    /** @var string the name of the field used to sort config records. */
+    const CONFIG_SORTFIELD = 'formatname';
 }

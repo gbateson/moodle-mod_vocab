@@ -378,7 +378,7 @@ class questions extends \core\task\adhoc_task {
                 $sectionname = '';
             }
             if ($sectionname == '') {
-                // Create a default name for this section e.g. "Topic 1" or "Week 2".
+                // Create a default name for this section e.g. "Topic: 1" or "Week: 2".
                 $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
                 $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
             }
@@ -387,7 +387,6 @@ class questions extends \core\task\adhoc_task {
             $activitytype = $this->tool->vocab->get_string('modulename');
 
             // Format vocab type and name.
-            $activityname = $this->tool->vocab->name;
             $activityname = $this->tool->vocab->name;
             $activityname = format_string($activityname, true, ['context' => $this->tool->vocab->context]);
 
@@ -461,7 +460,7 @@ class questions extends \core\task\adhoc_task {
     /**
      * get_config
      *
-     * @param int $configid
+     * @param integer $configid
      * @return object record from the vocab_config table
      */
     protected function get_config($configid) {
@@ -506,7 +505,7 @@ class questions extends \core\task\adhoc_task {
      * @param string $word
      * @param string $qtype
      * @param string $qlevel
-     * @param int $qcount
+     * @param integer $qcount
      * @param string $qformat
      * @return string a prompt to send to an AI assistant, such as ChatGPT.
      */
@@ -758,6 +757,13 @@ EOD;
         // and create the questions in the question bank.
         $format = new $classname();
 
+        // The AI can sometimes omit crucial "=" and "~" from the content
+        // that it generates, so we try to fix such basic syntax problems.
+        if ($qformat == 'gift') {
+            $text = $this->fix_gift($log->qtype, $text);
+        }
+        // We could also fix xml formats too.
+
         // Initialize the array of questions that will be returned by this method.
         $questions = [];
 
@@ -806,6 +812,73 @@ EOD;
     }
 
     /**
+     * Fix a GIFT formatted question.
+     *
+     * @param string $qtype question type (see "question/type/xxx")
+     * @param string $text containing gift formatted question
+     * @return string
+     */
+    public function fix_gift($qtype, $text) {
+
+        // Escape all equal signs, "=" (important for
+        // MC, SA, matching, missing word, numerical).
+        $text = preg_replace('/(\w+)="([^"]*)"/', '$1\\="$2"', $text);
+
+        // Perform fixes specific to each question type.
+        switch ($qtype) {
+            case 'multichoice':
+                $text = $this->fix_gift_multichoice($text);
+                break;
+            case 'shortanswer':
+                $text = $this->fix_gift_shortanswer($text);
+                break;
+            case 'match':
+                $text = $this->fix_gift_match($text);
+                break;
+        }
+        return $text;
+    }
+
+    /**
+     * Fix a GIFT formatted multichoice (MC) question.
+     *
+     * @param string $text containing gift formatted MC question.
+     * @return string
+     */
+    public function fix_gift_multichoice($text) {
+        if (preg_match('/^(.*?){(.*)}(.*?)$/us', $text, $match, PREG_OFFSET_CAPTURE)) {
+            list($match, $start) = $match[2];
+            $length = strlen($match);
+            $match = ltrim($match);
+            $char = substr($match, 0, 1);
+            if ($char != '=' && $char != '~') {
+                $text = substr_replace($text, ' ='.$match, $start, $length);
+            }
+        }
+        return $text;
+    }
+
+    /**
+     * Fix a GIFT formatted shortanswer (SA) question.
+     *
+     * @param string $text containing gift formatted SA question.
+     * @return string
+     */
+    public function fix_gift_shortanswer($text) {
+        return $text;
+    }
+
+    /**
+     * Fix a GIFT formatted match question.
+     *
+     * @param string $text containing gift formatted match question.
+     * @return string
+     */
+    public function fix_gift_match($text) {
+        return $text;
+    }
+
+    /**
      * Create media (images, audio and video) for the given question.
      *
      * @param object $log record form the "questionbank_log" table.
@@ -849,10 +922,10 @@ EOD;
         $filerecord = [
             'contextid' => $context->id,
             'component' => 'question',
-            'filearea'  => '', // Set this later.
-            'itemid'    => 0, // Set this later.
+            'filearea'  => '', // Set later.
+            'itemid'    => 0, // Set later.
             'filepath'  => '/', // Always this value.
-            'filename'  => '', // Set this later.
+            'filename'  => '', // Set later.
         ];
 
         $moretags = [];
@@ -860,8 +933,8 @@ EOD;
             foreach ($fields as $field => $filearea) {
                 $filerecord['filearea'] = $filearea;
                 $this->create_media_for_field(
-                    $mediatags, $question, $table,
-                    $field, $filerecord, $moretags
+                    $mediatags, $table, $field,
+                    $filerecord, $question->id, $moretags
                 );
             }
         }
@@ -1061,45 +1134,45 @@ EOD;
      * Create media for the given field in the given question.
      *
      * @param object $mediatags
-     * @param object $question
      * @param object $table
      * @param object $field
      * @param array $filerecord
+     * @param integer $questionid
      * @param array $moretags (passed by reference) Moodle tags for media used in this question.
      */
-    public function create_media_for_field($mediatags, $question, $table, $field, $filerecord, &$moretags) {
+    public function create_media_for_field($mediatags, $table, $field, $filerecord, $questionid, &$moretags) {
         global $DB;
 
         // Determine the SQL search values.
         switch ($table) {
             case 'question':
                 $select = 'id = ? AND '.$DB->sql_like($field, '?');
-                $params = [$question->id, '%[[%]]%'];
+                $params = [$questionid, '%[[%]]%'];
                 break;
             case 'question_answers':
                 $select = 'question = ? AND '.$DB->sql_like($field, '?');
-                $params = [$question->id, '%[[%]]%'];
+                $params = [$questionid, '%[[%]]%'];
                 break;
             default: // Question hints and qtype options table.
                 $select = 'questionid = ? AND '.$DB->sql_like($field, '?');
-                $params = [$question->id, '%[[%]]%'];
+                $params = [$questionid, '%[[%]]%'];
         }
         if ($records = $DB->get_records_select($table, $select, $params)) {
 
-            $count = 0;
+            $index = 0;
             foreach ($records as $id => $record) {
                 if ($table == 'question_answers' || $table == 'question_hints') {
                     $filerecord['itemid'] = $id;
                 } else {
-                    $filerecord['itemid'] = $question->id;
+                    $filerecord['itemid'] = $questionid;
                 }
                 $filearea = $filerecord['filearea'];
-                $number = str_pad(++$count, 2, '0', STR_PAD_LEFT);
-                $filerecord['filename'] = "{$filearea}-{$number}";
+                $fileindex = str_pad(++$index, 2, '0', STR_PAD_LEFT);
+                $filerecord['filename'] = "{$filearea}-{$fileindex}";
 
                 // Create the media for this field in this record.
                 $this->create_media_for_record(
-                    $mediatags, $table, $record, $field, $filerecord, $moretags
+                    $mediatags, $table, $record, $field, $filerecord, $questionid, $moretags
                 );
             }
         }
@@ -1113,9 +1186,10 @@ EOD;
      * @param object $record
      * @param string $field
      * @param array $filerecord
+     * @param integer $questionid
      * @param array $moretags (passed by reference) Moodle tags for media used in the current question.
      */
-    public function create_media_for_record($mediatags, $table, $record, $field, $filerecord, &$moretags) {
+    public function create_media_for_record($mediatags, $table, $record, $field, $filerecord, $questionid, &$moretags) {
         global $DB;
 
         // Sanity check on incoming parameters.
@@ -1123,7 +1197,8 @@ EOD;
             return false;
         }
 
-        $filenameprefix = $filerecord['filename'];
+        $filenamebase = pathinfo($filerecord['filename'], PATHINFO_FILENAME);
+        $filetype = pathinfo($filerecord['filename'], PATHINFO_EXTENSION);
         $filerecord['filename'] = '';
 
         // Set up search string for the media tags.
@@ -1142,7 +1217,7 @@ EOD;
         }
 
         // Initialize the counters used to generate unique filenames.
-        $count = (object)array_combine(
+        $index = (object)array_combine(
             array_keys($mediatags),
             array_fill(0, count($mediatags), 0)
         );
@@ -1193,39 +1268,50 @@ EOD;
 
                 // Increament the count of the number of media files
                 // of this tagname created in this $record->$field.
-                $count->$tagname = ($count->$tagname + 1);
+                $index->$tagname = ($index->$tagname + 1);
 
                 // Set filename.
                 if ($filename = $tagparams['filename']) {
                     $filename = clean_param($filename, PARAM_FILE);
                     $filename = preg_replace('/[ \._]+/', '_', $filename);
                     $filename = trim($filename, ' -._');
-                    $filetype = pathinfo($path, PATHINFO_FILENAME);
                 }
                 if ($filename == '') {
-                    // E.g. questiontext-01-image-01.
-                    $filename = $filenameprefix.'-';
-                    $filename .= strtolower($tagname);
-                    $filename .= '-'.$count->$tagname;
+                    // E.g. questiontext-01.
+                    $filename = $filenamebase;
                 }
-                $filetype = '';
-                switch ($tagname) {
-                    case 'IMAGE':
-                        $filetype = '.png';
-                        break;
-                    case 'AUDIO':
-                        $filetype = '.mp3';
-                        break;
-                    case 'VIDEO':
-                        $filetype = '.mp4';
-                        break;
+
+                // Set a new unqie and meaningful suffix for the image file name.
+                $suffix = [
+                    strtolower($tagname),
+                    str_pad($index->$tagname, 2, '0', STR_PAD_LEFT),
+                ];
+
+                // Set the filetype of the image file.
+                if ($filetype == '') {
+                    switch ($tagname) {
+                        case 'IMAGE':
+                            $filetype = 'png';
+                            break;
+                        case 'AUDIO':
+                            $filetype = 'mp3';
+                            break;
+                        case 'VIDEO':
+                            $filetype = 'mp4';
+                            break;
+                        default:
+                            $filetype = ''; // Shouldn't happen !!
+                    }
                 }
-                $filerecord['filename'] = $filename.$filetype;
+
+                // Set the root of the image filename e.g. questiontext-01-image-01.
+                $imagefilename = \mod_vocab\activity::modify_filename($filename, '', $suffix, $filetype);
+                $filerecord['filename'] = $imagefilename;
 
                 // Send the prompt to one of the AI subplugins to generate the media file.
                 // For image files, several variations maybe created, but only the
                 // first one will be returned by the "create_media_file()" method.
-                $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord);
+                $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord, $questionid);
 
                 if (is_object($file)) {
 
@@ -1277,9 +1363,10 @@ EOD;
      * @param string $mediatype IMAGE, AUDIO, VIDEO
      * @param string $prompt
      * @param array $filerecord
+     * @param integer $questionid
      * @return object source_file or error string
      */
-    public function create_media_file($configid, $mediatype, $prompt, $filerecord) {
+    public function create_media_file($configid, $mediatype, $prompt, $filerecord, $questionid) {
 
         static $configs = [];
         if (! array_key_exists($configid, $configs)) {
@@ -1297,7 +1384,7 @@ EOD;
             return null; // Invalid mediatype - shouldn't happen !!
         }
 
-        return $creator->get_media_file($filerecord, $prompt);
+        return $creator->get_media_file($prompt, $filerecord, $questionid);
     }
 
     /**

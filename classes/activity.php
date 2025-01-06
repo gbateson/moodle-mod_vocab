@@ -360,8 +360,8 @@ class activity {
      *
      * @param string $name of parameter
      * @param mixed $default value
-     * @param int $type one of PARAM_xxx constant values
-     * @param int $depth maximum allowable depth of nested arrays
+     * @param integer $type one of PARAM_xxx constant values
+     * @param integer $depth maximum allowable depth of nested arrays
      * return mixed the cleaned input parameter value, if it exists; otherwise $default value.
      */
     public static function get_param($name, $default, $type, $depth=1) {
@@ -379,8 +379,8 @@ class activity {
      *
      * @param string $value of a parameter passed into this script
      * @param mixed $default value
-     * @param int $type one of PARAM_xxx constant values
-     * @param int $depth maximum allowable depth of nested arrays
+     * @param integer $type one of PARAM_xxx constant values
+     * @param integer $depth maximum allowable depth of nested arrays
      * return mixed the cleaned input parameter value, if it exists; otherwise $default value.
      */
     public static function clean_param($value, $default, $type, $depth=1) {
@@ -756,7 +756,7 @@ class activity {
      * get_userids that are accessible to the current user.
      *
      * @uses $DB
-     * @param int $groupid (optional, default=0)
+     * @param integer $groupid (optional, default=0)
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1132,5 +1132,68 @@ class activity {
             }
         }
         return $categories;
+    }
+
+    /**
+     * Modify a file name by prepending one or more prefixes, and/or
+     * appending one or more suffixes, and/or changing the file type.
+     *
+     * @param string $filename
+     * @param mixed $prefix string containing single prefix, or array containing multiple prefixes (optional, default="")
+     * @param mixed $suffix string containing single suffix, or array containing multiple suffixes (optional, default="")
+     * @param string $extension (optional, default="")
+     * @param string $join the join string used to prepend $prefix or append $suffix (optional, default="-")
+     * @return string the modified filename.
+     */
+    public static function modify_filename($filename, $prefix='', $suffix='', $extension='', $join='-') {
+        $pathinfo = pathinfo($filename);
+
+        // If necessary, fix the dirname.
+        $dirname = ($pathinfo['dirname'] ?? '');
+        if ($dirname == '.' || $dirname == '/') {
+            $dirname = ''; // No dirname given.
+        } else {
+            $dirname .= '/'; // Shouldn't happen !!
+        }
+
+        $filename = ($pathinfo['filename'] ?? '');
+
+        if (is_array($prefix)) {
+            $prefix = implode($join, $prefix);
+        }
+        if ($prefix) {
+            $filename = "{$prefix}{$join}{$filename}";
+        }
+
+        if (is_array($suffix)) {
+            $suffix = implode($join, $suffix);
+        }
+        if ($suffix) {
+            $filename = "{$filename}{$join}{$suffix}";
+        }
+
+        // Use the old extension if a new one was not specified.
+        if ($extension == '') {
+            $extension = ($pathinfo['extension'] ?? '');
+        }
+        if ($extension) {
+            $filename = "{$filename}.{$extension}";
+        }
+
+        return $dirname.$filename;
+    }
+
+    /**
+     * get_random_chars
+     *
+     * @param integer $length
+     * @param string $str of chars from which to select randomly
+     * @return string of $length characters selected randomly from $str
+     */
+    public static function get_random_chars($length=4, $str='') {
+        if ($str == '') {
+            $str = implode(range('a', 'z'));
+        }
+        return substr(str_shuffle($str), 0, $length);
     }
 }

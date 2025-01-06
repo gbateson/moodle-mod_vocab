@@ -622,7 +622,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $name
-     * @param int $defaultid (optional, default=0)
+     * @param integer $defaultid (optional, default=0)
      *
      * TODO: Finish documenting this function
      */
@@ -723,7 +723,7 @@ class form extends \mod_vocab\toolform {
      *
      * @param moodleform $mform representing the Moodle form
      * @param string $name either "subcat" or "log[subcat]"
-     * @param int $defaulttypes
+     * @param integer $defaulttypes
      * @param string $defaultname the default custom name (optional, default='')
      * @return void, but will add elements to $mform
      */

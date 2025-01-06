@@ -293,7 +293,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * get_report_remove_fix
      *
-     * @param int $action
+     * @param integer $action
      * @param bool $missing
      * @param bool $incorrect
      * @param moodleform $mform representing the Moodle form
@@ -345,7 +345,7 @@ class tool extends \mod_vocab\toolbase {
      * @param moodleform $mform representing the Moodle form
      * @param stdClass $data submitted from the form
      * @param string $filepath
-     * @param int $action
+     * @param integer $action
      * @param string $contents (passed by reference)
      * @param bool $update (passed by reference)
      * @return xxx
@@ -430,7 +430,7 @@ class tool extends \mod_vocab\toolbase {
      * @param moodleform $mform representing the Moodle form
      * @param stdClass $data submitted from the form
      * @param string $filepath
-     * @param int $action
+     * @param integer $action
      * @param string $contents (passed by reference)
      * @param bool $update (passed by reference)
      *
@@ -461,7 +461,7 @@ class tool extends \mod_vocab\toolbase {
      * @param moodleform $mform representing the Moodle form
      * @param stdClass $data submitted from the form
      * @param string $filepath
-     * @param int $action
+     * @param integer $action
      * @param string $contents (passed by reference)
      * @param bool $update (passed by reference)
      * @param xxx $type
@@ -969,7 +969,7 @@ END;
      *
      * @param string $filepath relative to $CFG->dirroot
      * @param string $contents the content of the file
-     * @param int $start position of the start of this block with the file contents
+     * @param integer $start position of the start of this block with the file contents
      * @param string $indent white space to begin each line of PHPdocs
      * @param string $blockname the function name e.g. "xmldb_vocab_check_structure"
      * @param string $parameters the function parameters e.g. "($dbman, $tablenames=null)"

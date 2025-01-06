@@ -51,21 +51,22 @@ class aibase extends \mod_vocab\subpluginbase {
     const FILESETTINGNAMES = [];
 
     /**
+     * @var string
      * The AI type for subplugins such as "prompts", "formats",
      * and "files" that provide input for other AI plugins.
      */
     const SUBTYPE_INPUT = 'input';
 
-    /** the AI type for subplugins that generate "text" (e.g. chatgpt) */
+    /** @var string the AI type for subplugins that generate "text" (e.g. chatgpt) */
     const SUBTYPE_TEXT = 'text';
 
-    /** the AI type for subplugins that generate "image" (e.g. dalle, midjourney) */
+    /** @var string the AI type for subplugins that generate "image" (e.g. dalle, midjourney) */
     const SUBTYPE_IMAGE = 'image';
 
-    /** the AI type for subplugins that generate "audio" (e.g. openai-tts) */
+    /** @var string the AI type for subplugins that generate "audio" (e.g. openai-tts) */
     const SUBTYPE_AUDIO = 'audio';
 
-    /** the AI type for subplugins that generate "video" (e.g. vyond) */
+    /** @var string the AI type for subplugins that generate "video" (e.g. vyond) */
     const SUBTYPE_VIDEO = 'video';
 
     /** @var bool enable or disable trace and debugging messages during development. */
@@ -79,6 +80,9 @@ class aibase extends \mod_vocab\subpluginbase {
      * i.e. records with the same owner and context, are allowed.
      */
     const ALLOW_DUPLICATES = false;
+
+    /** @var string the name of the field used to sort config records. */
+    const CONFIG_SORTFIELD = '';
 
     /**
      * @var string containing type of this AI subplugin
@@ -163,7 +167,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @uses $DB
      * @uses $USER
      * @param array $contexts of context ids that are relevant to the current vocab activity
-     * @param int $configid (optional, default = 0) a specific configid
+     * @param integer $configid (optional, default = 0) a specific configid
      * @param mixed $user (optional, default = null) an optional user id or record
      * @return mixed array of records from "vocab_config_settings", or FALSE if there are none.
      */
@@ -336,6 +340,9 @@ class aibase extends \mod_vocab\subpluginbase {
             }
         }
 
+        if ($sortfield == '') {
+            $sortfield = static::CONFIG_SORTFIELD;
+        }
         if ($sortfield) {
             uasort($configs, function($a, $b) use ($sortfield) {
                 if ($a->$sortfield < $b->$sortfield) {
@@ -356,7 +363,7 @@ class aibase extends \mod_vocab\subpluginbase {
     /**
      * Find the config with the given id.
      *
-     * @param int $configid The id of the required config record.
+     * @param integer $configid The id of the required config record.
      * @return object The required config record, or NULL if it is not found.
      */
     public function find_config($configid) {
@@ -386,8 +393,8 @@ class aibase extends \mod_vocab\subpluginbase {
      * @uses $DB
      * @uses $USER
      * @param object $settings the form data containing the settings
-     * @param int $contextid (optional, default = 0) a specific contextid
-     * @param int $contextlevel (optional, default = 0) a specific context level
+     * @param integer $contextid (optional, default = 0) a specific contextid
+     * @param integer $contextlevel (optional, default = 0) a specific context level
      * @return int if settings could be found/added the configid; otherwise 0.
      */
     public function save_config_settings($settings, $contextid=0, $contextlevel=0) {
@@ -448,7 +455,7 @@ class aibase extends \mod_vocab\subpluginbase {
             } else {
                 $value = $settings->$name;
 
-                // Special processing for data and file fields.
+                // Special processing for date and file fields.
                 switch (true) {
 
                     case $this->is_date_setting($name):
@@ -821,12 +828,46 @@ class aibase extends \mod_vocab\subpluginbase {
     }
 
     /**
-     * Send a prompt to an AI assistant and get the response.
+     * Get media files and store them in the specified filearea.
+     * If several files are generated, they will *all* be converted
+     * and stored, but only the first one will be returned by this method.
+     * This method is only used by SUBTYPE_IMAGE|AUDIO|VIDEO subplugins.
      *
      * @param string $prompt
+     * @param array $filerecord
+     * @param integer $questionid
+     * @return stored_file or error message as a string.
+     */
+    public function get_media_file($prompt, $filerecord, $questionid) {
+        return null;
+    }
+
+    /**
+     * Send a prompt to an AI assistant and get the response.
+     * This method is only used by SUBTYPE_TEXT|IMAGE|AUDIO|VIDEO subplugins.
+     *
+     * @param string $prompt
+     * @param integer $questionid (optional, default=0)
      * @return object containing "text" and "error" properties.
      */
-    public function get_response($prompt) {
+    public function get_response($prompt, $questionid=0) {
+        return null;
+    }
+
+    /**
+     * Determine if a string contains a JSON encoded object/array
+     *
+     * @param string $str
+     * @return boolean TRUE is $str is a JSON encoded object or array; otherwise FALSE
+     */
+    public function is_json($str) {
+        if (substr($str, 0, 1) == '{' && substr($str, -1) == '}') {
+            return true;
+        }
+        if (substr($str, 0, 1) == '[' && substr($str, -1) == ']') {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -870,7 +911,6 @@ class aibase extends \mod_vocab\subpluginbase {
     public function reschedule_task($promptconfig, $formatconfig, $fileconfig) {
         return false;
     }
-
 
     /**
      * Echo an object to the output stream.

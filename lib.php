@@ -248,7 +248,7 @@ function vocab_grade_item_update($vocab, $grades=null) {
  * vocab_get_grades
  *
  * @param stdclass $vocab object with extra cmidnumber and modname property
- * @param int $userid >0 update grade of specific user only, 0 means all participants
+ * @param integer $userid >0 update grade of specific user only, 0 means all participants
  * @param string $timefield (optional, default="timefinish")
  * @return array of grades
  */
@@ -264,7 +264,7 @@ function vocab_get_grades($vocab, $userid, $timefield='timefinish') {
  * Needed by grade_update_mod_grades() in lib/gradelib.php
  *
  * @param stdclass $vocab instance object with extra cmidnumber and modname property
- * @param int $userid >0 update grade of specific user only, 0 means all participants
+ * @param integer $userid >0 update grade of specific user only, 0 means all participants
  * @param bool $nullifnone TRUE = force creation of NULL grade if this user has no grade
  * @return bool TRUE if successful, FALSE otherwise
  */

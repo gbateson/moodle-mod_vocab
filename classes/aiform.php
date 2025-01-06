@@ -164,7 +164,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
             $value = $config->$name;
-            $value = \html_writer::tag('dd', $value, $dd);
+            $value = \html_writer::tag('dd', htmlspecialchars($value, ENT_COMPAT), $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
@@ -174,8 +174,8 @@ abstract class aiform extends \mod_vocab\subpluginform {
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
             $value = $config->$name;
-            $value = substr($value, 0, 20).' ... '.substr($value, -20);
-            $value = \html_writer::tag('dd', $value, $dd);
+            $value = \core_text::substr($value, 0, 20).' ... '.\core_text::substr($value, -20);
+            $value = \html_writer::tag('dd', htmlspecialchars($value, ENT_COMPAT), $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
@@ -185,8 +185,8 @@ abstract class aiform extends \mod_vocab\subpluginform {
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
             $value = $config->$name;
-            $value = substr($value, 0, 4).' ... '.substr($value, -4);
-            $value = \html_writer::tag('dd', $value, $dd);
+            $value = \core_text::substr($value, 0, 4).' ... '.\core_text::substr($value, -4);
+            $value = \html_writer::tag('dd', htmlspecialchars($value, ENT_COMPAT), $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 
@@ -216,7 +216,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
             $value = $config->$name;
-            $value = \html_writer::tag('dd', $value, $dd);
+            $value = \html_writer::tag('dd', htmlspecialchars($value, ENT_COMPAT), $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
 

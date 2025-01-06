@@ -166,7 +166,7 @@ class mod_vocab_mod_form extends moodleform_mod {
 
         $name = 'gradedesc';
         $html = get_string($name, $plugin);
-        $html = \html_writer::tag('div', $html, ['class' => 'px-2 px-md-4']);
+        $html = \html_writer::tag('div', $html, ['class' => 'mb-2 px-2 px-md-4']);
         $mform->addElement('html', $html);
 
         $this->add_grademax($mform, $plugin);

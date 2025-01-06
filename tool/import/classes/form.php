@@ -116,7 +116,7 @@ class form extends \mod_vocab\toolform {
      * constructor
      *
      * @uses $CFG
-     * @param int $action (optional, default=null)
+     * @param integer $action (optional, default=null)
      * @param array $customdata (optional, default=null)
      * @param string $method (optional, default='post')
      * @param string $target (optional, default='')
@@ -891,7 +891,7 @@ class form extends \mod_vocab\toolform {
      * get_min_max_cols
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param int $r a row number
+     * @param integer $r a row number
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1008,11 +1008,11 @@ class form extends \mod_vocab\toolform {
      * render_caption
      *
      * @param string $datafilename
-     * @param int $totalsheets
-     * @param int $totalrows
+     * @param integer $totalsheets
+     * @param integer $totalrows
      * @param string $formatfilename
-     * @param int $targetsheets
-     * @param int $targetrows
+     * @param integer $targetsheets
+     * @param integer $targetrows
      * @return HTML list of items to show in the table caption
      */
     public function render_caption($datafilename, $totalsheets, $totalrows,
@@ -1785,8 +1785,8 @@ class form extends \mod_vocab\toolform {
      *
      * @param object $item representing an item in the XML file
      * @param string $prefix
-     * @param int $defaultmin
-     * @param int $defaultmax
+     * @param integer $defaultmin
+     * @param integer $defaultmax
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1915,9 +1915,9 @@ class form extends \mod_vocab\toolform {
      * get_row_cells
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param int $r a row number
-     * @param int $cmin the minimum column number
-     * @param int $cmax the maximum column number
+     * @param integer $r a row number
+     * @param integer $cmin the minimum column number
+     * @param integer $cmax the maximum column number
      * @param string $text
      * @param bool $th if TRUE, the 1st cell should be made a TH cell (optional, default=false)
      * @return xxx
@@ -1942,8 +1942,8 @@ class form extends \mod_vocab\toolform {
      * get_singleline_value
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param int $c a column number
-     * @param int $r a row number
+     * @param integer $c a column number
+     * @param integer $r a row number
      * @return xxx
      *
      * TODO: Finish documenting this function
@@ -1957,8 +1957,8 @@ class form extends \mod_vocab\toolform {
      * get_cell_value
      *
      * @param object $worksheet representing a sheet from the data file
-     * @param int $c a column number
-     * @param int $r a row number
+     * @param integer $c a column number
+     * @param integer $r a row number
      * @return xxx
      *
      * TODO: Finish documenting this function

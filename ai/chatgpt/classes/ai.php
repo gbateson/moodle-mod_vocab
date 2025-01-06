@@ -61,6 +61,9 @@ class ai extends \mod_vocab\aibase {
      */
     public $subtype = self::SUBTYPE_TEXT;
 
+    /** @var string the name of the field used to sort config records. */
+    const CONFIG_SORTFIELD = 'chatgptmodel';
+
     /** @var bool enable or disable trace and debugging messages during development. */
     const DEBUG = false;
 
@@ -68,9 +71,10 @@ class ai extends \mod_vocab\aibase {
      * Send a prompt to an AI assistant and get the response.
      *
      * @param string $prompt
+     * @param integer $questionid (optional, default=0)
      * @return object containing "text" and "error" properties.
      */
-    public function get_response($prompt) {
+    public function get_response($prompt, $questionid=0) {
 
         // Ensure we have the basic settings.
         if (empty($this->config->chatgpturl)) {
@@ -315,10 +319,10 @@ class ai extends \mod_vocab\aibase {
      *
      * @param file_storage $fs
      * @param stored_file $file
-     * @param int $contextid
+     * @param integer $contextid
      * @param string $component e.g. vocabai_files
      * @param string $filearea e.g. fileitemid
-     * @param int $itemid
+     * @param integer $itemid
      * @return string the name of the tuning file or empty string if the file was not found.
      */
     public function get_get_chatgpt_filename($fs, $file, $contextid, $component, $filearea, $itemid) {
@@ -349,10 +353,10 @@ class ai extends \mod_vocab\aibase {
      *
      * @param file_storage $fs
      * @param stored_file $file
-     * @param int $contextid
+     * @param integer $contextid
      * @param string $component e.g. vocabai_files
      * @param string $filearea e.g. fileitemid
-     * @param int $itemid
+     * @param integer $itemid
      * @param string $filename
      * @return string ChatGPT file id string or empty string if no file id was returned.
      */
