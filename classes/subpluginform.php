@@ -430,6 +430,8 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_exportfile($mform) {
+        global $DB, $PAGE;
+
         $vocab = $this->get_vocab();
 
         $this->add_heading($mform, 'export', false);
@@ -451,6 +453,45 @@ abstract class subpluginform extends \moodleform {
         $mform->addHelpButton($groupname, $name, $vocab->plugin);
         $mform->setDefault($groupname.'['.$name.']', $filename);
         $mform->setType($groupname.'['.$name.']', PARAM_FILE);
+
+        // Cache line break element.
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
+
+        // Get all relevant contexts (activity, course, coursecat, site).
+        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
+        list($select, $params) = $DB->get_in_or_equal($contexts);
+        $select = "contextid $select AND subplugin = ?";
+        $lastparam = count($params);
+        $params[$lastparam] = '';
+
+        $plugintype = 'vocabai';
+        $plugins = \core_component::get_plugin_list($plugintype);
+        $plugins = array_keys($plugins);
+
+        $groups = ['prompts', 'formats', 'files'];
+        $groups = [
+            'contentplugins' => array_intersect($groups, $plugins),
+            'assistantplugins' => array_diff($plugins, $groups),
+        ];
+
+        foreach ($groups as $name => $plugins) {
+            $elements = [];
+            foreach ($plugins as $plugin) {
+                $params[$lastparam] = "{$plugintype}_{$plugin}";
+                if ($DB->record_exists_select('vocab_config', $select, $params)) {
+                    $label = get_string($plugin, "{$plugintype}_{$plugin}");
+                    $elements[] = $mform->createElement('checkbox', $plugin, $label);
+                    $elements[] = $mform->createElement('html', $linebreak);
+                }
+            }
+            if (count($elements)) {
+                $label = $this->get_string($name);
+                $mform->addGroup($elements, $name, $label, '');
+                $this->add_help_button($mform, $name, $name);
+            }
+        }
+
+        $PAGE->requires->js_call_amd('mod_vocab/export', 'init');
     }
 
     /**

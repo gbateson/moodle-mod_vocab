@@ -95,7 +95,7 @@ class activity {
     /** @var int database value to denote expanding the navigation menu for "no one" */
     const EXPAND_NO_ONE = 3;
 
-    /** @var stdclass vocab config settings */
+    /** @var stdclass vocab activity config settings (from "config_plugins" table) */
     public $config = null;
 
     /** @var stdclass user record of current user */

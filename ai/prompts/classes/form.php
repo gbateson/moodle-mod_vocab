@@ -58,13 +58,8 @@ class form extends \mod_vocab\aiform {
         // The sort field used to sort configs by alphabetically.
         $sortfield = 'promptname';
 
-        // If any of this user's configs are found below,
-        // export will be enabled.
-        $enableexport = false;
-
         // Try and get current config for editing.
         if ($default = $this->get_subplugin()->config) {
-            $enableexport = true;
 
             $name = 'cid';
             $mform->addElement('hidden', $name, $default->id);
@@ -104,7 +99,7 @@ class form extends \mod_vocab\aiform {
         }
 
         // Add configs that are related to this user and/or context.
-        $expanded = $this->add_configs($mform, $default, 'prompts');
+        list($expanded, $enableexport) = $this->add_configs($mform, $default, 'prompts');
 
         /*////////////////////////////
         // Main form starts here.

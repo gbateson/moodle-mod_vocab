@@ -63,18 +63,22 @@ abstract class aiform extends \mod_vocab\subpluginform {
         // but if other usable keys exist it will be collapsed.
         $expanded = true;
 
+        // By default, export is disabled, and will only be
+        // enabled if accessible  configs are found. 
+        $enableexport = false;
+
         // Display the config settings that apply to this context and are
         // owned by other users. These are NOT editable by the current user.
         $configs = $this->get_subplugin()->get_configs('otherusers', 'thiscontext', $default->id);
         if (count($configs)) {
 
-            // Collapse the section to add a new key.
-            $expanded = false;
-
             $name = $types.'ownedbyothers';
             $this->add_heading($mform, $name, true);
 
             if (is_siteadmin()) {
+                // Site admins can always export all keys.
+                $enableexport = true;
+
                 // Site admin can always edit, copy and delete anything.
                 $actions = ['edit', 'copy', 'delete'];
             } else {
@@ -100,6 +104,9 @@ abstract class aiform extends \mod_vocab\subpluginform {
         $configs = $this->get_subplugin()->get_configs('thisuser', 'othercontexts', $default->id);
         if (count($configs)) {
             $enableexport = true;
+
+            // Collapse the section to add a new key.
+            $expanded = false;
 
             $name = 'other'.$types.'ownedbyme';
             $this->add_heading($mform, $name, true);
@@ -132,7 +139,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
             }
         }
 
-        return $expanded;
+        return [$expanded, $enableexport];
     }
 
     /**
@@ -264,12 +271,13 @@ abstract class aiform extends \mod_vocab\subpluginform {
                 $sharingcontext = $this->get_string('sharedincoursecatcontext');
                 break;
 
-            case ($contextlevel == CONTEXT_USER):
-                $sharingcontext = $this->get_string('sharedinusercontext');
-                break;
-
             case ($contextlevel == CONTEXT_SYSTEM):
                 $sharingcontext = $this->get_string('sharedinsystemcontext');
+                break;
+
+            case ($contextlevel == CONTEXT_USER):
+                $fullname = fullname($this->get_vocab()->user);
+                $sharingcontext = $this->get_string('sharedinusercontext', $fullname);
                 break;
 
             default:
@@ -447,7 +455,8 @@ abstract class aiform extends \mod_vocab\subpluginform {
                     break;
 
                 case CONTEXT_USER:
-                    $options[$level] = $this->get_string('sharedinusercontext');
+                    $fullname = fullname($this->get_vocab()->user);
+                    $options[$level] = $this->get_string('sharedinusercontext', $fullname);
                     break;
 
                 default:

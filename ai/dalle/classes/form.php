@@ -115,13 +115,13 @@ class form extends \mod_vocab\aiform {
         $labelsep = get_string('labelsep', 'langconfig');
 
         // Add configs that are related to this user and/or context.
-        $this->add_configs($mform, $default, 'keys');
+        list($expanded, $enableexport) = $this->add_configs($mform, $default, 'keys');
 
         /*////////////////////////////
         // Main form starts here.
         ////////////////////////////*/
 
-        $this->add_heading($mform, $mainheading, true);
+        $this->add_heading($mform, $mainheading, $expanded);
 
         // Cache message that is used for missing form values.
         $addmissingvalue = $this->get_string('addmissingvalue');
@@ -144,7 +144,7 @@ class form extends \mod_vocab\aiform {
         $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
 
         $name = 'settings';
-        $this->add_heading($mform, $name, true);
+        $this->add_heading($mform, $name, $expanded);
 
         $this->add_field_response_format($mform, $default);
         $this->add_field_filetype($mform, $default);

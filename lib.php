@@ -414,13 +414,16 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
 
         foreach ($types as $type => $order) {
 
+            // Cache the plugin type.
+            $plugintype = "vocab{$type}";
+
              // Create the "navigation_node" for this subplugin type.
             $label = get_string($type.'s', 'vocab'); // E.g. "tools".
             $node = navigation_node::create($label);
             $node->force_open();
 
             // Get list of mod_vocab subplugins of this type.
-            $plugins = core_component::get_plugin_list("vocab{$type}");
+            $plugins = core_component::get_plugin_list($plugintype);
 
             if (count($order)) {
                 $order = array_flip($order);
@@ -440,7 +443,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
                 if (file_exists("$dir/lib.php")) {
                     require_once("$dir/lib.php");
                 }
-                $function = "vocab{$type}_{$name}_extend_settings_navigation";
+                $function = "{$plugintype}_{$name}_extend_settings_navigation";
                 if (function_exists($function)) {
                     $function($settings, $node);
                 } else {

@@ -336,7 +336,7 @@ class form extends \mod_vocab\toolform {
         $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
         list($ctxselect, $ctxparams) = $DB->get_in_or_equal($contexts);
 
-        // Get all available AI text assistants.
+        // Get all available AI assistants.
         $type = 'vocabai';
         $plugins = $this->get_subplugins($type, $subtype);
 
@@ -363,7 +363,7 @@ class form extends \mod_vocab\toolform {
                 $name = substr($subplugin, $prefixlen);
                 $options[$id] = get_string($name, $subplugin);
             }
-            $options = array_filter($options);
+            $options = array_filter($options); // Remove blanks.
             asort($options);
             if ($optional) {
                 $options = ([0 => get_string('none')] + $options);

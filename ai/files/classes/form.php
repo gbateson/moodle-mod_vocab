@@ -99,7 +99,7 @@ class form extends \mod_vocab\aiform {
         }
 
         // Add configs that are related to this user and/or context.
-        $expanded = $this->add_configs($mform, $default, 'files');
+        list($expanded, $enableexport) = $this->add_configs($mform, $default, 'files');
 
         /*////////////////////////////
         // Main form starts here.
@@ -126,6 +126,11 @@ class form extends \mod_vocab\aiform {
         $this->add_tuning_models($mform, $default);
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);
+
+        $this->add_importfile($mform);
+        if ($enableexport) {
+            $this->add_exportfile($mform);
+        }
 
         $PAGE->requires->js_call_amd('vocabai_files/form', 'init');
     }

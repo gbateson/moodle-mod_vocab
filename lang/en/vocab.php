@@ -206,7 +206,7 @@ $string['sharing'] = 'Sharing';
 $string['sharingcontext'] = 'Sharing context';
 $string['sharingcontext_help'] = 'The Moodle context in which this item can be shared.';
 
-$string['sharedinusercontext'] = 'Not shared with anyone else. Only you have access.';
+$string['sharedinusercontext'] = 'Not shared. Only accessible to you, {$a}.';
 $string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
 $string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
 $string['sharedincoursecontext'] = 'Shared in all activities in the current course';
@@ -231,3 +231,10 @@ $string['medianotcreated'] = 'Oops, media could not be created by {$a->subplugin
 
 $string['filename'] = 'File name';
 $string['modeltunedbyfile'] = '{$a->model} (tuned by file "{$a->file}")';
+
+$string['contentplugins'] = 'AI content';
+$string['contentplugins_help'] = 'Select the AI content (e.g. prompts, formats, tuning files) whose settings you wish to export.';
+
+$string['assistantplugins'] = 'AI assistants';
+$string['assistantplugins_help'] = 'Select the AI assistants (e.g. ChatGPT, DALL-E, TTS) whose settings you wish to export.';
+

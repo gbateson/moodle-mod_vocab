@@ -64,13 +64,8 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        // If any of this user's configs are found below,
-        // export will be enabled.
-        $enableexport = false;
-
         // Try and get current config for editing.
         if ($default = $this->get_subplugin()->config) {
-            $enableexport = true;
 
             $name = 'cid';
             $mform->addElement('hidden', $name, $default->id);
@@ -117,7 +112,7 @@ class form extends \mod_vocab\aiform {
         $labelsep = get_string('labelsep', 'langconfig');
 
         // Add configs that are related to this user and/or context.
-        $this->add_configs($mform, $default, 'keys');
+        list($expanded, $enableexport) = $this->add_configs($mform, $default, 'keys');
 
         /*////////////////////////////
         // Main form starts here.
