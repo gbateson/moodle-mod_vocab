@@ -44,8 +44,8 @@ $string['questioncategory_help'] = 'The category to which the new questions shou
 $string['questioncategory'] = 'Question category';
 $string['questioncount_help'] = 'The number of new questions to generate at each level.';
 $string['questioncount'] = 'Question count';
-$string['questionlevels_help'] = 'The CEFR levels of the questions to generate.';
-$string['questionlevels'] = 'Question levels';
+$string['questionlevels_help'] = 'The level of vocabulary and grammar to use in the questions.';
+$string['questionlevels'] = 'Language levels';
 $string['questiontypes_help'] = 'The types of questions to generate.';
 $string['questiontypes'] = 'Question types';
 

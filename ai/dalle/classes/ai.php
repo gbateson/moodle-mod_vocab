@@ -76,8 +76,8 @@ class ai extends \mod_vocab\aibase {
      * If several files are generated, they will *all* be converted
      * and stored, but only the first one will be returned by this method.
      *
-     * @param array $filerecord
      * @param string $prompt
+     * @param array $filerecord
      * @param integer $questionid
      * @return stored_file or error message as a string.
      */

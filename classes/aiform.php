@@ -211,11 +211,13 @@ abstract class aiform extends \mod_vocab\subpluginform {
         }
 
         // Show the full model field, if any.
+        // e.g. chatgptmodel.
         $name = static::CONFIG_MODEL;
         if (isset($config->$name)) {
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
             $value = $config->$name;
+            $value = $this->append_tuning_file($name, $value, $config);
             $value = \html_writer::tag('dd', htmlspecialchars($value, ENT_COMPAT), $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);
         }
@@ -260,6 +262,10 @@ abstract class aiform extends \mod_vocab\subpluginform {
 
             case ($contextlevel == CONTEXT_COURSECAT):
                 $sharingcontext = $this->get_string('sharedincoursecatcontext');
+                break;
+
+            case ($contextlevel == CONTEXT_USER):
+                $sharingcontext = $this->get_string('sharedinusercontext');
                 break;
 
             case ($contextlevel == CONTEXT_SYSTEM):
@@ -321,6 +327,31 @@ abstract class aiform extends \mod_vocab\subpluginform {
         }
 
         return $html;
+    }
+
+    /**
+     * Append tuning file name to model name.
+     *
+     * @param string $name of "model" field
+     * @param string $value of "model" field
+     * @param object $config settings for the current config record
+     * @return string
+     */
+    public function append_tuning_file($name, $value, $config) {
+        global $DB;
+        $select = 'vc.id';
+        $from   = '{vocab_config} vc, {vocab_config_settings} vcs';
+        $where = 'vc.contextid = ? AND vc.subplugin = ? AND vc.id = vcs.configid';
+        $where = "$where AND vcs.name = ? AND ".$DB->sql_like('value', '?');
+        $params = [$config->contextid, 'vocabai_files', $name.'id', '%'.$value.'%'];
+        if ($fileconfigid = $DB->get_field_sql("SELECT $select FROM $from WHERE $where", $params)) {
+            $params = ['configid' => $fileconfigid];
+            if ($settings = $DB->get_records_menu('vocab_config_settings', $params, 'name', 'name,value')) {
+                $params = ['model' => $value, 'file' => $settings['filedescription']];
+                $value = $this->get_string('modeltunedbyfile', (object)$params);
+            }
+        }
+        return $value;
     }
 
     /**
@@ -413,6 +444,10 @@ abstract class aiform extends \mod_vocab\subpluginform {
 
                 case CONTEXT_SYSTEM:
                     $options[$level] = $this->get_string('sharedinsystemcontext');
+                    break;
+
+                case CONTEXT_USER:
+                    $options[$level] = $this->get_string('sharedinusercontext');
                     break;
 
                 default:

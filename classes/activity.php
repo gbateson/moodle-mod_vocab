@@ -83,20 +83,23 @@ class activity {
     /** @var int database value to represent an "expanding" delay between attempts */
     const ATTEMPTDELAY_EXPANDING = -2;
 
-    /** @var int database value to denote expanding the navigation for "everyone" */
+    /** @var int database value to denote expanding the navigation menu for "everyone" */
     const EXPAND_EVERYONE = 0;
 
-    /** @var int database value to denote expanding the navigation only for "students" (for teachers, it will be collapsed) */
+    /** @var int database value to denote expanding the navigation menu only for "students" (for teachers, it will be collapsed) */
     const EXPAND_STUDENTS = 1;
 
-    /** @var int database value to denote expanding the navigation only for "teachers" (for students, it will be collapsed) */
+    /** @var int database value to denote expanding the navigation menu only for "teachers" (for students, it will be collapsed) */
     const EXPAND_TEACHERS = 2;
 
-    /** @var int database value to denote expanding the navigation for "no one" */
+    /** @var int database value to denote expanding the navigation menu for "no one" */
     const EXPAND_NO_ONE = 3;
 
     /** @var stdclass vocab config settings */
     public $config = null;
+
+    /** @var stdclass user record of current user */
+    public $user = null;
 
     /** @var stdclass course category record */
     public $coursecat = null;
@@ -197,12 +200,21 @@ class activity {
      * @param string $cm the course module object for the the current vocabulary activity (optional, default=null)
      * @param object $instance a record form the "vocab" table in the Moodle database (optional, default=null)
      * @param object $context a record form the "context" table in the Moodle database (optional, default=null)
+     * @param object $user a record form the "user" table in the Moodle database (optional, default=null)
      */
-    public function __construct($course=null, $cm=null, $instance=null, $context=null) {
-        global $COURSE, $SITE;
+    public function __construct($course=null, $cm=null, $instance=null, $context=null, $user=null) {
+        global $COURSE, $DB, $SITE, $USER;
 
         $this->plugin = self::PLUGINTYPE.'_'.self::PLUGINNAME;
         $this->pluginpath = self::PLUGINTYPE.'/'.self::PLUGINNAME;
+
+        if ($user === null) {
+            $this->user = $USER;
+        } else if (is_object($user)) {
+            $this->user = $user;
+        } else if (is_scalar($user)) {
+            $this->user = $DB->get_record('user', ['id' => $user]);
+        }
 
         if ($instance) {
             $this->instance = $instance;
@@ -696,13 +708,11 @@ class activity {
     ////////////////////////////////////////*/
 
     /**
-     * get a string fro this plugin
+     * Get a string for this plugin or one of its subplugins.
      *
      * @param string $strname
      * @param array $a additional value or values required for the language string (optional, default=null)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string
      */
     public function get_string($strname, $a=null) {
         $components = [$this->plugin, 'moodle'];
@@ -738,7 +748,7 @@ class activity {
     /**
      * get_groupmode
      *
-     * @return xxx
+     * @return integer the groupmode of this cm or course.
      *
      * TODO: Finish documenting this function
      */
@@ -1003,11 +1013,12 @@ class activity {
     public function get_contexts() {
         if ($this->contexts === null) {
             $this->contexts = [
-                // For reference, SYSTEM is 10, COURSECAT is 40, COURSE is 50, MODULE is 70.
+                // For reference, SYSTEM is 10, USER is 30, COURSECAT is 40, COURSE is 50, MODULE is 70.
                 CONTEXT_MODULE => \context_module::instance($this->cm->id),
                 CONTEXT_COURSE => \context_course::instance($this->course->id),
                 CONTEXT_COURSECAT => \context_coursecat::instance($this->course->category),
                 CONTEXT_SYSTEM => \context_system::instance(),
+                CONTEXT_USER => \context_user::instance($this->user->id),
             ];
         }
         return $this->contexts;
@@ -1069,7 +1080,7 @@ class activity {
         $writeable = [];
         foreach ($contexts as $context) {
 
-            // For reference, SYSTEM is 10, COURSECAT is 40, COURSE is 50, MODULE is 70.
+            // For reference, SYSTEM is 10, USER is 30, COURSECAT is 40, COURSE is 50, MODULE is 70.
             switch ($context->contextlevel) {
                 case CONTEXT_MODULE:
                     $capability = 'mod/vocab:manage';
@@ -1082,6 +1093,9 @@ class activity {
                     break;
                 case CONTEXT_SYSTEM:
                     $capability = 'moodle/site:config';
+                    break;
+                case CONTEXT_USER:
+                    $capability = 'moodle/user:manageownfiles';
                     break;
                 default:
                     // Unrecognized context - shouldn't happen !!

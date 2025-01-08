@@ -38,7 +38,10 @@ namespace vocabai_files;
 class form extends \mod_vocab\aiform {
 
     /** var string the name of the "name" field from the config record */
-    const CONFIG_NAME = 'filedescription';
+    const CONFIG_NAME = 'filename';
+
+    /** var string the name of the "name" field from the config record */
+    const CONFIG_TEXT = 'filedescription';
 
     /** var string a comma-delimited list of required fields */
     const REQUIRED_FIELDS = 'file';

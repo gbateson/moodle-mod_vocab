@@ -258,6 +258,7 @@ class questions extends \core\task\adhoc_task {
             // Setup the AI assistant if required.
             if ($ai === null) {
                 $ai = $this->get_ai($textconfig);
+                $ai->use_tuning_file($fileid > 0);
             }
 
             // Ensure sensible values for min/max tries.
@@ -535,7 +536,11 @@ class questions extends \core\task\adhoc_task {
         ]);
 
         // Standardize all whitespace in the prompt.
-        $prompt = preg_replace('/\s+/', ' ', $prompt);
+        // This can mess with the UTF-8 encoding, but
+        // the convert method will fix any broken UTF-8.
+        // Outside Moodle, we could also use mb_convert_encoding().
+        $prompt = preg_replace('/\s+/u', ' ', $prompt);
+        $prompt = \core_text::convert($prompt, 'UTF-8', 'UTF-8');
 
         return $prompt;
     }

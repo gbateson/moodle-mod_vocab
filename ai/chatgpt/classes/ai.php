@@ -102,14 +102,15 @@ class ai extends \mod_vocab\aibase {
                 $maxtokens = 1000;
         }
 
-        // If a base ChatGPT model has been tuned,
-        // a chatgptmodelid will be available.
+        // By default, we use the standard model.
+        $model = $this->config->chatgptmodel;
+
+        // Use a tuned model, if it is available and has been requested.
         $name = 'chatgptmodelid';
-        if (! empty($this->config->$name)) {
-            $model = $this->config->$name;
-        } else {
-            // Otherwise, we use a standard model.
-            $model = $this->config->chatgptmodel;
+        if (isset($this->config->$name) && $this->config->$name) {
+            if ($this->use_tuned_model()) {
+                $model = $this->config->$name;
+            }
         }
 
         if ($this->curl === null) {
@@ -166,7 +167,7 @@ class ai extends \mod_vocab\aibase {
     public function check_file_params($config) {
 
         /*
-        Initially, the config object looks something like this:
+        * Initially, the config object looks something like this:
         * filedescription: TOEIC Part 2: Vocabulary MC
         * fileitemid: 17
         * -------------------
@@ -180,6 +181,7 @@ class ai extends \mod_vocab\aibase {
         */
 
         if (empty($config) || empty($config->configid)) {
+            $this->use_tuning_file(false);
             return true; // No tuning file was specified.
         }
 
@@ -223,6 +225,7 @@ class ai extends \mod_vocab\aibase {
                     mtrace('Tuning file could no be located in the Moodle file system.');
                     mtrace("($a)");
                 }
+                $this->use_tuning_file(false);
                 return false;
             }
 
@@ -249,6 +252,7 @@ class ai extends \mod_vocab\aibase {
                     mtrace('ChatGPT file id could not be created for tuning file.');
                     mtrace("($a)");
                 }
+                $this->use_tuning_file(false);
                 return false;
             }
 
@@ -273,6 +277,7 @@ class ai extends \mod_vocab\aibase {
                     mtrace('ChatGPT model id could no be created for tuning file.');
                     mtrace("($a)");
                 }
+                $this->use_tuning_file(false);
                 return false;
             }
 
@@ -299,6 +304,7 @@ class ai extends \mod_vocab\aibase {
                     mtrace('ChatGPT model id could no be created for tuning file.');
                     mtrace("($a)");
                 }
+                $this->use_tuning_file(false);
                 return false;
             }
 
@@ -311,6 +317,7 @@ class ai extends \mod_vocab\aibase {
             $a .= ", {$name} = {$config->$name}";
             mtrace("{$name}: {$config->$name}");
         }
+        $this->use_tuning_file(true);
         return true;
     }
 

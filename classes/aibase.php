@@ -108,6 +108,9 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var array of POST parameters to be sent via the curl object */
     public $postparams = null;
 
+    /** @var bool flag to denote whether or not we are using a tuning file for this AI assistant. */
+    protected $usetuningfile = null;
+
     /**
      * Get the array containing the names of all the config settings for this subplugin.
      */
@@ -824,6 +827,25 @@ class aibase extends \mod_vocab\subpluginbase {
             if (isset($config->$name)) {
                 $this->config->$name = $config->$name;
             }
+        }
+    }
+
+    /**
+     * Set or get the flag showing whether to use the base model or a tuned model.
+     *
+     * @param mixed $value if the supplied this method sets the flag, otherwise it returns the current value .
+     * @return mixed either the
+     */
+    public function use_tuning_file($value=null) {
+        // If no value is given, we return the current value.
+        if ($value === null) {
+            return $this->usetuningfile;
+        }
+        // Set the flag depending on the $value.
+        if (is_bool($value)) {
+            $this->usetuningfile = $value;
+        } else {
+            $this->usetuningfile = (bool)$value;
         }
     }
 

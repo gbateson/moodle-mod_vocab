@@ -204,8 +204,9 @@ $string['exportfile'] = 'Export file name';
 
 $string['sharing'] = 'Sharing';
 $string['sharingcontext'] = 'Sharing context';
-$string['sharingcontext_help'] = 'The context in which this item can be shared.';
+$string['sharingcontext_help'] = 'The Moodle context in which this item can be shared.';
 
+$string['sharedinusercontext'] = 'Not shared with anyone else. Only you have access.';
 $string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
 $string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
 $string['sharedincoursecontext'] = 'Shared in all activities in the current course';
@@ -227,3 +228,6 @@ $string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
 $string['addmissingvalue'] = 'Please add a value here.';
 
 $string['medianotcreated'] = 'Oops, media could not be created by {$a->subplugin}. [filearea={$a->filearea}, itemid={$a->itemid}]';
+
+$string['filename'] = 'File name';
+$string['modeltunedbyfile'] = '{$a->model} (tuned by file "{$a->file}")';
