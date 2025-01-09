@@ -39,6 +39,11 @@ require_capability('mod/vocab:manage', $ai->vocab->context);
 // collapse navigation and set page layout.
 $ai->setup_page();
 
+if ($ai->fileoperation_requested()) {
+    $ai->fileoperation_execute();
+    // Script stops here.
+}
+
 if ($ai->action_cancelled()) {
     $ai->action_cancel();
     // Script stops here.

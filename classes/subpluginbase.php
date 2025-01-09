@@ -67,42 +67,9 @@ class subpluginbase {
      * @return void, but will initialize this object instance
      */
     public function __construct($vocabinstanceorid=null) {
-        global $USER;
-
         $this->vocab = \mod_vocab\activity::create(null, null, $vocabinstanceorid);
         $this->plugin = 'vocab'.static::SUBPLUGINTYPE.'_'.static::SUBPLUGINNAME;
         $this->pluginpath = $this->vocab->pluginpath.'/'.static::SUBPLUGINTYPE.'/'.static::SUBPLUGINNAME;
-
-        if ($configid = self::get_optional_param(['c', 'cid', 'configid'], 0, PARAM_INT)) {
-
-            // Try to get the config with the required id.
-            if ($config = $this->find_config($configid)) {
-
-                // Assume the current user CANNOT access these config settings.
-                $can = false;
-
-                // Get the action (use, edit, copy, delete) and check
-                // this user can do this action to this config record.
-                $action = self::get_optional_param(['a', 'action'], 'use', PARAM_ALPHA);
-                if (in_array($action, ['use', 'edit', 'copy', 'delete'])) {
-
-                    // Site admin and owner always have full access to these settings.
-                    if (is_siteadmin() || $config->owneruserid == $USER->id) {
-                        $can = true;
-                    } else if ($action == 'use') {
-                        // User is not the owner, but can "use" the settings,
-                        // if they have at least "view" capability in the given context.
-                        $context = context::instance_by_id($config->contextid);
-                        $can = has_capability('mod/vocab:view', $context);
-                    }
-                }
-
-                if ($can) {
-                    $this->config = $config;
-                    $this->action = $action;
-                }
-            }
-        }
     }
 
     /**

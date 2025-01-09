@@ -113,11 +113,11 @@ class form extends \mod_vocab\aiform {
 
         $name = 'promptname';
         $this->add_field_text($mform, $name, PARAM_TEXT, $default->$name, ['size' => '40']);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'prompttext';
         $this->add_field_textarea($mform, $name, PARAM_TEXT, $default->$name, ['rows' => '5', 'cols' => 40]);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);

@@ -50,6 +50,9 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var array the names of file settings that this subplugin maintains. */
     const FILESETTINGNAMES = [];
 
+    /** @var array the names of file settings that can be exported. */
+    const EXPORTSETTINGNAMES = [];
+
     /**
      * @var string
      * The AI type for subplugins such as "prompts", "formats",
@@ -90,13 +93,16 @@ class aibase extends \mod_vocab\subpluginbase {
      */
     public $subtype = '';
 
+    /** @var string an import/export operation on multiple config records */
+    public $fileoperation = '';
+
     /** @var object containing arrays of configs */
     public $configs = null;
 
     /** @var object the config settings object */
     public $config = null;
 
-    /** @var string the optional action to be performed on the $config settings object */
+    /** @var string an action requested on a single config record */
     public $action = '';
 
     /** @var object to represent a curl object used for connecting to an AI assistant */
@@ -110,6 +116,61 @@ class aibase extends \mod_vocab\subpluginbase {
 
     /** @var bool flag to denote whether or not we are using a tuning file for this AI assistant. */
     protected $usetuningfile = null;
+
+    /**
+     * __construct
+     *
+     * @param mixed $vocabinstanceorid (optional, default=null) is a vocab instance or id
+     * @return void, but will initialize this object instance
+     */
+    public function __construct($vocabinstanceorid=null) {
+
+        // Set vocab, plugin and pluginpath.
+        parent::__construct($vocabinstanceorid);
+
+        // Check for import/export fileoperation.
+        foreach (['import', 'export'] as $name) {
+            $groupname = $name.'fileelements';
+            if ($group = self::get_optional_param($groupname, null, PARAM_TEXT)) {
+                $buttonname = $name.'filebutton';
+                if (is_array($group) && array_key_exists($buttonname, $group)) {
+                    $this->fileoperation = $name;
+                }
+            }
+        }
+
+        // Set config and get optional edit/copy/delete action.
+        if ($configid = self::get_optional_param(['c', 'cid', 'configid'], 0, PARAM_INT)) {
+
+            // Try to get the config with the required id.
+            if ($config = $this->find_config($configid)) {
+
+                // Assume the current user CANNOT access these config settings.
+                $can = false;
+
+                // Get the action (use, edit, copy, delete) and check
+                // this user can do this action to this config record.
+                $action = self::get_optional_param(['a', 'action'], 'use', PARAM_ALPHA);
+                if (in_array($action, ['use', 'edit', 'copy', 'delete'])) {
+
+                    // Site admin and owner always have full access to these settings.
+                    if (is_siteadmin() || $config->owneruserid == $USER->id) {
+                        $can = true;
+                    } else if ($action == 'use') {
+                        // User is not the owner, but can "use" the settings,
+                        // if they have at least "view" capability in the given context.
+                        $context = context::instance_by_id($config->contextid);
+                        $can = has_capability('mod/vocab:view', $context);
+                    }
+                }
+
+                if ($can) {
+                    $this->config = $config;
+                    $this->action = $action;
+                }
+            }
+        }
+    }
 
     /**
      * Get the array containing the names of all the config settings for this subplugin.
@@ -170,11 +231,12 @@ class aibase extends \mod_vocab\subpluginbase {
      * @uses $DB
      * @uses $USER
      * @param array $contexts of context ids that are relevant to the current vocab activity
+     * @param mixed $subplugins string or array of specific plugin names (default=null)
      * @param integer $configid (optional, default = 0) a specific configid
      * @param mixed $user (optional, default = null) an optional user id or record
      * @return mixed array of records from "vocab_config_settings", or FALSE if there are none.
      */
-    public function get_config_settings($contexts, $configid=0, $user=null) {
+    public function get_config_settings($contexts, $subplugins=null, $configid=0, $user=null) {
         global $DB, $USER;
 
         if ($user === null) {
@@ -184,7 +246,7 @@ class aibase extends \mod_vocab\subpluginbase {
         }
 
         $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, '.
-                  'vc.owneruserid, vc.contextid, '.
+                  'vc.subplugin, vc.owneruserid, vc.contextid, '.
                   'ctx.contextlevel';
 
         $from = '{vocab_config_settings} vcs '.
@@ -196,8 +258,20 @@ class aibase extends \mod_vocab\subpluginbase {
         // We're interested in config settings for this subplugin
         // that are shared in this context or any parent context.
         // We also want other config settings owned by the current user.
-        $where = "vc.subplugin = ? AND (vc.owneruserid = ? OR vc.contextid $where)";
-        $params = array_merge([$this->plugin, $user->id], $params);
+        $where = "(vc.owneruserid = ? OR vc.contextid $where)";
+        $params = array_merge([$user->id], $params);
+
+        // Limit results to specific plugins.
+        if ($subplugins) {
+            if (is_scalar($subplugins)) {
+                $subplugins = explode(',', $subplugins);
+                $subplugins = array_map('trim', $subplugins);
+                $subplugins = array_filter($subplugins);
+            }
+            list($w, $p) = $DB->get_in_or_equal($subplugins);
+            $where = "vc.subplugin $w AND $where";
+            $params = array_merge($p, $params);
+        }
 
         // Limit results to a specific configid.
         if ($configid) {
@@ -218,10 +292,11 @@ class aibase extends \mod_vocab\subpluginbase {
      * @param string $returnuser (optional, default='') Either "otherusers" or "thisuser"
      * @param string $returncontext (optional, default='') Either "othercontexts" or "thiscontext"
      * @param bool $removeconfigid (optional, default=false)
+     * @param mixed $subplugins string or array of specific plugin names (default=null)
      * @param string $sortfield (optional, default='')
      * @return array
      */
-    public function get_configs($returnuser='', $returncontext='', $removeconfigid=false, $sortfield='') {
+    public function get_configs($returnuser='', $returncontext='', $removeconfigid=false, $subplugins=null, $sortfield='') {
         global $USER;
 
         // Setup the configs object (1st time only).
@@ -242,8 +317,12 @@ class aibase extends \mod_vocab\subpluginbase {
             // Current config record.
             $config = null;
 
+            if ($subplugins === null) {
+                $subplugins = $this->plugin;
+            }
+
             $contexts = $this->vocab->get_readable_contexts('', 'id');
-            if ($settings = $this->get_config_settings($contexts)) {
+            if ($settings = $this->get_config_settings($contexts, $subplugins)) {
 
                 $settingids = array_keys($settings);
                 $smax = count($settingids);
@@ -303,6 +382,7 @@ class aibase extends \mod_vocab\subpluginbase {
                         if ($config === null) {
                             $config = (object)[
                                 'id' => $setting->configid,
+                                'subplugin' => $setting->subplugin,
                                 'contextid' => $setting->contextid,
                                 'contextlevel' => $setting->contextlevel,
                                 'owneruserid' => $setting->owneruserid,
@@ -343,24 +423,54 @@ class aibase extends \mod_vocab\subpluginbase {
             }
         }
 
-        if ($sortfield == '') {
+        if (is_string($subplugins) && $sortfield == '') {
             $sortfield = static::CONFIG_SORTFIELD;
         }
         if ($sortfield) {
-            uasort($configs, function($a, $b) use ($sortfield) {
-                if ($a->$sortfield < $b->$sortfield) {
-                    return -1;
+            if (is_array($configs)) {
+                uasort($configs, function($a, $b) use ($sortfield) {
+                    return $this->uasort_configs($a, $b, $sortfield);
+                });
+            } else if (is_object($configs)) {
+                foreach ($configs as $name => $value) {
+                    if (is_array($value)) {
+                        uasort($value, function($a, $b) use ($sortfield) {
+                            return $this->uasort_configs($a, $b, $sortfield);
+                        });
+                        $configs->$name = $value;
+                    }
                 }
-                if ($a->$sortfield > $b->$sortfield) {
-                    return 1;
-                }
-                return 0;
-                // We could also use spaceship operator for comparison in PHP >= 7.x
-                // (change # to $) return #a->#sortfield <=> #b->#sortfield.
-            });
+            }
         }
 
         return $configs;
+    }
+
+    /**
+     * uasort_configs
+     *
+     * @param object $a
+     * @param object $b
+     * @param string $sortfield
+     * @return integer
+     */
+    public function uasort_configs($a, $b, $sortfield) {
+        if ($a->$sortfield < $b->$sortfield) {
+            return -1;
+        }
+        if ($a->$sortfield > $b->$sortfield) {
+            return 1;
+        }
+        return 0;
+    }
+
+    /**
+     * Find the config with the given id.
+     *
+     * @param integer $configid The id of the required config record.
+     * @return object The required config record, or NULL if it is not found.
+     */
+    public function sort_configs() {
     }
 
     /**
@@ -607,6 +717,155 @@ class aibase extends \mod_vocab\subpluginbase {
         if (isset($_POST[$name])) {
             unset($_POST[$name]);
         }
+    }
+
+    /**
+     * fileoperation_requested
+     *
+     * @return bool TRUE is user has requested an fileoperation (import, export), otherwise FALSE.
+     */
+    public function fileoperation_requested() {
+        if (empty($this->fileoperation)) {
+            return false;
+        }
+        return ($this->fileoperation == 'import' || $this->fileoperation == 'export');
+    }
+
+    /**
+     * Execute an fileoperation that has been requested and confirmed.
+     *
+     * @return void but will redrect to the main index page for this subplugin.
+     */
+    public function fileoperation_execute() {
+        $completed = $this->fileoperation.'completed';
+
+        // Access to this config and fileoperation has already been checked
+        // in the constructor method for this class.
+
+        if ($this->fileoperation == 'import') {
+            $this->import_configs();
+            redirect($this->index_url(), $this->get_string($completed));
+        }
+
+        if ($this->fileoperation == 'export') {
+            $this->export_configs();
+            redirect($this->index_url(), $this->get_string($completed));
+        }
+
+        // This shouldn't happen !!
+        redirect($this->index_url(), 'Unknown fileoperation: '.$this->fileoperation);
+    }
+
+    /**
+     * Export configs in XML format.
+     */
+    public function export_configs() {
+        global $CFG;
+
+        // Fetch class xml_writer.
+        require_once($CFG->dirroot.'/backup/util/xml/xml_writer.class.php');
+        // Fetch class xml_output.
+        require_once($CFG->dirroot.'/backup/util/xml/output/xml_output.class.php');
+        // Fetch class memory_xml_output (extends xml_output).
+        require_once($CFG->dirroot.'/backup/util/xml/output/memory_xml_output.class.php');
+
+        $filename = '';
+        $name = 'exportfile';
+        $elements = self::get_optional_param($name.'elements', [], PARAM_FILE);
+        if (is_array($elements) && array_key_exists($name, $elements)) {
+            $filename = clean_param($elements[$name], PARAM_FILE);
+        }
+        if ($filename == '') {
+            $filename = "$name.xml"; // Default filename.
+        }
+
+        // Get the names of the plugins to export.
+        $plugins = array_merge(
+            self::get_optional_param('contentplugins', [], PARAM_ALPHANUM),
+            self::get_optional_param('assistantplugins', [], PARAM_ALPHANUM)
+        );
+        $plugins = array_keys(array_filter($plugins));
+
+        // Ensure we have some plugins to export.
+        if (empty($plugins)) {
+            return true;
+        }
+
+        // Prepend plugintype to each plugin name.
+        array_walk($plugins, function(&$plugin) {
+            $plugin = 'vocabai_' . $plugin;
+        });
+
+        // Fetch the config records for the required plugins.
+        if (is_siteadmin()) {
+            // Admin can export everything.
+            $returnuser = '';
+        } else {
+            // Teacher only sees their own stuff.
+            $returnuser = 'thisuser';
+        }
+        $configs = $this->get_configs($returnuser, '', false, $plugins);
+
+        // Colect the configs into a one-dimension array.
+        if (is_siteadmin()) {
+            $configs = $configs->otherusers->othercontexts
+                     + $configs->otherusers->thiscontext
+                     + $configs->thisuser->othercontexts
+                     + $configs->thisuser->thiscontext;
+        } else {
+            $configs = $configs->othercontexts
+                     + $configs->thiscontexts;
+        }
+
+        // Ensure we have some configs to export.
+        if (empty($configs)) {
+            return true;
+        }
+
+        // Sort the configs by plugin name.
+        $sortfield = 'subplugin';
+        uasort($configs, function($a, $b) use ($sortfield) {
+            return $this->uasort_configs($a, $b, $sortfield);
+        });
+
+        // Start the xml output file.
+        $xmloutput = new \memory_xml_output();
+        $xmlwriter = new \xml_writer($xmloutput);
+        $xmlwriter->start();
+
+        $xmlwriter->begin_tag('CONFIGS');
+
+        // Export each config.
+        foreach ($configs as $configid => $config) {
+            $attributes = [
+                'subplugin' => $config->subplugin,
+                'contextlevel' => $config->contextlevel,
+            ];
+            $xmlwriter->begin_tag('CONFIG', $attributes);
+            $class = '\\'.$config->subplugin.'\\ai';
+    
+            if (count($class::EXPORTSETTINGNAMES)) {
+                $names = $class::EXPORTSETTINGNAMES;
+            } else {
+                $names = $class::SETTINGNAMES;
+            }
+            foreach ($names as $name) {
+                if (empty($config->$name)) {
+                    continue;
+                }
+                $xmlwriter->full_tag(strtoupper($name), $config->$name);
+            }
+            $xmlwriter->end_tag('CONFIG');
+        }
+        $xmlwriter->end_tag('CONFIGS');
+
+        $xmlwriter->stop();
+        $xmlstr = $xmloutput->get_allcontents();
+
+        // Send the XML to the browser for downloading.
+        send_file($xmlstr, $filename, 0, 0, true, true);
+
+        die; // Processing stops here.
     }
 
     /**

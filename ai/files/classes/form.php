@@ -113,7 +113,7 @@ class form extends \mod_vocab\aiform {
 
         $name = 'filedescription';
         $this->add_field_text($mform, $name, PARAM_TEXT, $default->$name, ['size' => '40']);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         // This field is intended to contain "tuning" samples, which are
         // examples of responses that the AI engine should try to mimic.

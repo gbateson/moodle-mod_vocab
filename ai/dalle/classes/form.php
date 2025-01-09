@@ -128,11 +128,11 @@ class form extends \mod_vocab\aiform {
 
         $name = 'dalleurl';
         $this->add_field_text($mform, $name, PARAM_URL, $default->$name, ['size' => '40']);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'dallekey';
         $this->add_field_text($mform, $name, PARAM_URL, $default->$name, ['size' => '40']);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'dallemodel';
         $options = ['dall-e-2', 'dall-e-3'];
@@ -141,7 +141,7 @@ class form extends \mod_vocab\aiform {
             $options[$option] = strtoupper($option).$labelsep.$this->get_string($option);
         }
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'settings';
         $this->add_heading($mform, $name, $expanded);

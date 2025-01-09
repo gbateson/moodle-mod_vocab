@@ -114,11 +114,11 @@ class form extends \mod_vocab\aiform {
 
         $name = 'chatgpturl';
         $this->add_field_text($mform, $name, PARAM_URL, $default->$name, ['size' => '40']);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'chatgptkey';
         $this->add_field_text($mform, $name, PARAM_URL, $default->$name, ['size' => '40']);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'chatgptmodel';
         $options = ['gpt-3.5-turbo', 'gpt-4o-mini', 'gpt-4o', 'gpt-4'];
@@ -128,7 +128,7 @@ class form extends \mod_vocab\aiform {
         }
 
         $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
-        $mform->addRule($name, $addmissingvalue, 'required', null, 'client');
+        $mform->addRule($name, $addmissingvalue, 'required');
 
         $name = 'settings';
         $this->add_heading($mform, $name, true);

@@ -48,6 +48,15 @@ class ai extends \mod_vocab\aibase {
     ];
 
     /**
+     * @var array the names of config settings that can be exported.
+     */
+    const EXPORTSETTINGNAMES = [
+        'filedescription', 'fileitemid', 'filename',
+        'chatgptfileid', 'chatgptjobid', 'chatgptmodelid',
+        'sharedfrom', 'shareduntil',
+    ];
+
+    /**
      * @var array the names of settings that are files.
      */
     const FILESETTINGNAMES = ['fileitemid'];
