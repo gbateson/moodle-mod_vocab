@@ -64,7 +64,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
         $expanded = true;
 
         // By default, export is disabled, and will only be
-        // enabled if accessible  configs are found. 
+        // enabled if accessible configs are found. 
         $enableexport = false;
 
         // Display the config settings that apply to this context and are
@@ -465,6 +465,65 @@ abstract class aiform extends \mod_vocab\subpluginform {
             }
         }
         return $options;
+    }
+
+    /**
+     * Add export settings to a Moodle form.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @return void (but will update $mform)
+     */
+    public function add_exportfile_settings($mform) {
+        global $DB, $PAGE;
+
+        // Cache line break element.
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
+
+        // Add Export context
+        $contexts = $this->get_vocab()->get_writeable_contexts('id', 'contextlevel');
+        if ($contextid = array_search(CONTEXT_USER, $contexts)) {
+            unset($contexts[$contextid]);
+            $contexts[$contextid] = CONTEXT_USER;
+        }
+        foreach ($contexts as $contextid => $contextlevel) {
+            $contexts[$contextid] = \context::instance_by_id($contextid)->get_context_name();
+        }
+
+        $name = 'exportcontext';
+        $this->add_field_select($mform, $name, $contexts, PARAM_INT);
+
+        // Get all relevant contexts (activity, course, coursecat, site).
+        list($select, $params) = $DB->get_in_or_equal(array_keys($contexts));
+        $select = "contextid $select AND subplugin = ?";
+        $lastparam = count($params);
+        $params[$lastparam] = '';
+
+        $plugintype = 'vocabai';
+        $plugins = \core_component::get_plugin_list($plugintype);
+        $plugins = array_keys($plugins);
+
+        $groups = ['prompts', 'formats', 'files'];
+        $groups = [
+            'contentplugins' => array_intersect($groups, $plugins),
+            'assistantplugins' => array_diff($plugins, $groups),
+        ];
+
+        foreach ($groups as $name => $plugins) {
+            $elements = [];
+            foreach ($plugins as $plugin) {
+                $params[$lastparam] = "{$plugintype}_{$plugin}";
+                if ($DB->record_exists_select('vocab_config', $select, $params)) {
+                    $label = get_string($plugin, "{$plugintype}_{$plugin}");
+                    $elements[] = $mform->createElement('checkbox', $plugin, $label);
+                    $elements[] = $mform->createElement('html', $linebreak);
+                }
+            }
+            if (count($elements)) {
+                $label = $this->get_string($name);
+                $mform->addGroup($elements, $name, $label, '');
+                $this->add_help_button($mform, $name, $name);
+            }
+        }
     }
 
     /**

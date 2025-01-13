@@ -22,32 +22,17 @@
  * @since      Moodle 3.11
  */
 
-define([], function(){
+define(['mod_vocab/lib'], function(LIB){
 
-    let JS = {};
+    let FORM = {};
 
-    JS.add_event_listener = function(obj, evt, fn, useCapture) {
-        if (obj.addEventListener) {
-            obj.addEventListener(evt, fn, (useCapture || false));
-        } else if (obj.attachEvent) {
-            obj.attachEvent('on' + evt, fn);
-        }
-    };
-
-    /*
-     * initialize this AMD module
+    /**
+     * Initializes the module by adjusting input text widths and textarea heights
+     * for specific DOM elements.
      */
-    JS.init = function() {
-        const textarea = document.getElementById('id_formattext');
-        if (textarea) {
-            // Add event listener that adjusts height to accommodate content.
-            JS.add_event_listener(textarea, 'input', function(){
-                this.style.height = 'auto'; // '1px' also works
-                this.style.height = (this.scrollHeight + 6) + 'px';
-            });
-            textarea.dispatchEvent(new Event('input'));
-        }
+    FORM.init = function() {
+        LIB.setup_dimensions(['id_formatname', 'id_formattext']);
     };
 
-    return JS;
+    return FORM;
 });

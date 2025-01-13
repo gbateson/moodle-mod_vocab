@@ -406,21 +406,19 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_importfile($mform) {
-        $vocab = $this->get_vocab();
-
         $this->add_heading($mform, 'import', false);
 
         $name = 'importfile';
         $groupname = $name.'elements';
-        $label = $vocab->get_string($name);
+        $label = $this->get_string($name);
         $options = ['accepted_types' => ['.txt', '.xml']];
         // Perhaps we could also consider csv, xlsx, xls, ods?
         $elements = [
             $mform->createElement('filepicker', $name, $label, '', $options),
-            $mform->createElement('submit', $name.'button', $vocab->get_string('import')),
+            $mform->createElement('submit', $name.'button', $this->get_string('import')),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $vocab->plugin);
+        $this->add_help_button($mform, $groupname, $name);
     }
 
     /**
@@ -430,68 +428,48 @@ abstract class subpluginform extends \moodleform {
      * @return void (but will update $mform)
      */
     public function add_exportfile($mform) {
-        global $DB, $PAGE;
+        $this->add_exportfile_heading($mform);
+        $this->add_exportfile_settings($mform);
+    }
 
-        $vocab = $this->get_vocab();
-
+    /**
+     * Add a export heading and file element to a Moodle form.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @return void (but will update $mform)
+     */
+    public function add_exportfile_heading($mform) {
+        global $PAGE;
         $this->add_heading($mform, 'export', false);
 
-        $filename = $vocab->name;
+        $filename = $this->get_vocab()->name;
         $filename = preg_replace('/[ \._]+/', '_', $filename);
         $filename = trim($filename, ' -._');
-        $filename .= '.'.$this->get_subplugin()::SUBPLUGINNAME;
+        //$filename .= '.'.$this->get_subplugin()::SUBPLUGINNAME;
         $filename = $filename.'.xml';
 
         $name = 'exportfile';
         $groupname = $name.'elements';
-        $label = $vocab->get_string($name);
+        $label = $this->get_string($name);
         $elements = [
             $mform->createElement('text', $name, $label, '', ['size' => 20]),
-            $mform->createElement('submit', $name.'button', $vocab->get_string('export')),
+            $mform->createElement('submit', $name.'button', $this->get_string('export')),
         ];
         $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $vocab->plugin);
+        $this->add_help_button($mform, $groupname, $name);
         $mform->setDefault($groupname.'['.$name.']', $filename);
         $mform->setType($groupname.'['.$name.']', PARAM_FILE);
 
-        // Cache line break element.
-        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
-
-        // Get all relevant contexts (activity, course, coursecat, site).
-        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
-        list($select, $params) = $DB->get_in_or_equal($contexts);
-        $select = "contextid $select AND subplugin = ?";
-        $lastparam = count($params);
-        $params[$lastparam] = '';
-
-        $plugintype = 'vocabai';
-        $plugins = \core_component::get_plugin_list($plugintype);
-        $plugins = array_keys($plugins);
-
-        $groups = ['prompts', 'formats', 'files'];
-        $groups = [
-            'contentplugins' => array_intersect($groups, $plugins),
-            'assistantplugins' => array_diff($plugins, $groups),
-        ];
-
-        foreach ($groups as $name => $plugins) {
-            $elements = [];
-            foreach ($plugins as $plugin) {
-                $params[$lastparam] = "{$plugintype}_{$plugin}";
-                if ($DB->record_exists_select('vocab_config', $select, $params)) {
-                    $label = get_string($plugin, "{$plugintype}_{$plugin}");
-                    $elements[] = $mform->createElement('checkbox', $plugin, $label);
-                    $elements[] = $mform->createElement('html', $linebreak);
-                }
-            }
-            if (count($elements)) {
-                $label = $this->get_string($name);
-                $mform->addGroup($elements, $name, $label, '');
-                $this->add_help_button($mform, $name, $name);
-            }
-        }
-
         $PAGE->requires->js_call_amd('mod_vocab/export', 'init');
+    }
+
+    /**
+     * Add export settings to a Moodle form.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @return void (but will update $mform)
+     */
+    public function add_exportfile_settings($mform) {
     }
 
     /**

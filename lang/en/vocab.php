@@ -213,6 +213,9 @@ $string['sharedincoursecontext'] = 'Shared in all activities in the current cour
 $string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
 $string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
 
+$string['exportcontext'] = 'Export context';
+$string['exportcontext_help'] = 'Specify the context from which you wish to export.';
+
 $string['sharedfrom'] = 'Shared from';
 $string['sharedfrom_help'] = 'This item is shared starting from, and including, this date and time.';
 

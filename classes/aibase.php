@@ -299,6 +299,13 @@ class aibase extends \mod_vocab\subpluginbase {
     public function get_configs($returnuser='', $returncontext='', $removeconfigid=false, $subplugins=null, $sortfield='') {
         global $USER;
 
+        // When exporting, $subplugins will be an array
+        // but usually it is null, in which case we set
+        // it to be the name of the (sub)plugin.
+        if ($subplugins === null) {
+            $subplugins = $this->plugin;
+        }
+
         // Setup the configs object (1st time only).
         if ($this->configs === null) {
 
@@ -316,10 +323,6 @@ class aibase extends \mod_vocab\subpluginbase {
 
             // Current config record.
             $config = null;
-
-            if ($subplugins === null) {
-                $subplugins = $this->plugin;
-            }
 
             $contexts = $this->vocab->get_readable_contexts('', 'id');
             if ($settings = $this->get_config_settings($contexts, $subplugins)) {
@@ -762,12 +765,11 @@ class aibase extends \mod_vocab\subpluginbase {
     public function export_configs() {
         global $CFG;
 
-        // Fetch class xml_writer.
-        require_once($CFG->dirroot.'/backup/util/xml/xml_writer.class.php');
-        // Fetch class xml_output.
-        require_once($CFG->dirroot.'/backup/util/xml/output/xml_output.class.php');
-        // Fetch class memory_xml_output (extends xml_output).
-        require_once($CFG->dirroot.'/backup/util/xml/output/memory_xml_output.class.php');
+        // Fetch xml_writer, xml_output, and memory_xml_output.
+        $xmllib = $CFG->dirroot.'/backup/util/xml';
+        require_once($xmllib.'/xml_writer.class.php');
+        require_once($xmllib.'/output/xml_output.class.php');
+        require_once($xmllib.'/output/memory_xml_output.class.php');
 
         $filename = '';
         $name = 'exportfile';

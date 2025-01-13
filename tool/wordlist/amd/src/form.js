@@ -22,7 +22,7 @@
  * @since      Moodle 3.11
  */
 
-define([], function(){
+define([mod_vocab/lib], function(LIB){
 
     var JS = {};
 
@@ -146,15 +146,7 @@ define([], function(){
      * Setup the textarea to add words.
      */
     JS.setup_addwords = function() {
-        const textarea = document.getElementById('id_addwordselements_addwords');
-        if (textarea) {
-            // Add event listener that adjusts height to accommodate content.
-            JS.add_event_listener(textarea, 'input', function(){
-                this.style.height = 'auto'; // '1px' also works
-                this.style.height = (this.scrollHeight + 6) + 'px';
-            });
-            textarea.dispatchEvent(new Event('input'));
-        }
+        LIB.setup_dimensions(['id_addwordselements_addwords']);
     };
 
     return JS;

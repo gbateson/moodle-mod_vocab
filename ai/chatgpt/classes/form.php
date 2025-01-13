@@ -49,7 +49,7 @@ class form extends \mod_vocab\aiform {
      * Add fields to the main form for this subplugin.
      */
     public function definition() {
-        global $DB, $PAGE, $USER;
+        global $DB, $USER;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
@@ -158,7 +158,5 @@ class form extends \mod_vocab\aiform {
         if ($enableexport) {
             $this->add_exportfile($mform);
         }
-
-        $PAGE->requires->js_call_amd('vocabai_chatgpt/form', 'init');
     }
 }
