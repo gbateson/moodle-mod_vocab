@@ -64,7 +64,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
         $expanded = true;
 
         // By default, export is disabled, and will only be
-        // enabled if accessible configs are found. 
+        // enabled if accessible configs are found.
         $enableexport = false;
 
         // Display the config settings that apply to this context and are
@@ -479,7 +479,7 @@ abstract class aiform extends \mod_vocab\subpluginform {
         // Cache line break element.
         $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
 
-        // Add Export context
+        // Add Export context.
         $contexts = $this->get_vocab()->get_writeable_contexts('id', 'contextlevel');
         if ($contextid = array_search(CONTEXT_USER, $contexts)) {
             unset($contexts[$contextid]);

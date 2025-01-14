@@ -70,7 +70,8 @@ class form extends \mod_vocab\aiform {
             $mform->setType($name, PARAM_ALPHA);
 
             // Check we have expected fields.
-            foreach ($this->get_subplugin()->get_settingnames() as $name) {
+            $ai = '\\'.$this->subpluginname.'\\ai';
+            foreach ($ai::get_settingnames() as $name) {
                 if (empty($default->$name)) {
                     $default->$name = null;
                 }

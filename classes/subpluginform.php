@@ -445,7 +445,6 @@ abstract class subpluginform extends \moodleform {
         $filename = $this->get_vocab()->name;
         $filename = preg_replace('/[ \._]+/', '_', $filename);
         $filename = trim($filename, ' -._');
-        //$filename .= '.'.$this->get_subplugin()::SUBPLUGINNAME;
         $filename = $filename.'.xml';
 
         $name = 'exportfile';

@@ -175,7 +175,7 @@ class aibase extends \mod_vocab\subpluginbase {
     /**
      * Get the array containing the names of all the config settings for this subplugin.
      */
-    public function get_settingnames() {
+    public static function get_settingnames() {
         return static::SETTINGNAMES;
     }
 
@@ -185,7 +185,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @param string $name the name of the setting to be checked.
      * @return bool TRUE if the $name is that of a date settings; otherwise FALSE
      */
-    public function is_date_setting($name) {
+    public static function is_date_setting($name) {
         return in_array($name, static::DATESETTINGNAMES);
     }
 
@@ -195,7 +195,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @param string $name the name of the setting to be checked.
      * @return bool TRUE if the $name is that of a file settings; otherwise FALSE
      */
-    public function is_file_setting($name) {
+    public static function is_file_setting($name) {
         return in_array($name, static::FILESETTINGNAMES);
     }
 
@@ -473,15 +473,6 @@ class aibase extends \mod_vocab\subpluginbase {
      * @param integer $configid The id of the required config record.
      * @return object The required config record, or NULL if it is not found.
      */
-    public function sort_configs() {
-    }
-
-    /**
-     * Find the config with the given id.
-     *
-     * @param integer $configid The id of the required config record.
-     * @return object The required config record, or NULL if it is not found.
-     */
     public function find_config($configid) {
 
         $configs = $this->get_configs('otherusers', 'thiscontext');
@@ -574,11 +565,11 @@ class aibase extends \mod_vocab\subpluginbase {
                 // Special processing for date and file fields.
                 switch (true) {
 
-                    case $this->is_date_setting($name):
+                    case self::is_date_setting($name):
                         $value = $this->get_date_value($value);
                         break;
 
-                    case $this->is_file_setting($name):
+                    case self::is_file_setting($name):
                         // Copy the file to the file area for this field
                         // using the config id as the "itemid" for the file.
                         file_save_draft_area_files($value, $config->contextid, $this->plugin, $name, $config->id);
@@ -700,7 +691,7 @@ class aibase extends \mod_vocab\subpluginbase {
      * @return void (but may remove properties from the form $data)
      */
     public function unset_form_elements($data) {
-        foreach ($this->get_settingnames() as $name) {
+        foreach (self::get_settingnames() as $name) {
             if (isset($data->$name)) {
                 $this->unset_element($name);
             }
@@ -765,7 +756,7 @@ class aibase extends \mod_vocab\subpluginbase {
     public function export_configs() {
         global $CFG;
 
-        // Fetch xml_writer, xml_output, and memory_xml_output.
+        // Get libraries for xml_writer, xml_output, and memory_xml_output.
         $xmllib = $CFG->dirroot.'/backup/util/xml';
         require_once($xmllib.'/xml_writer.class.php');
         require_once($xmllib.'/output/xml_output.class.php');
@@ -824,6 +815,9 @@ class aibase extends \mod_vocab\subpluginbase {
             return true;
         }
 
+        $fs = get_file_storage();
+        $contextids = $this->vocab->get_writeable_contexts('contextlevel', 'id');
+
         // Sort the configs by plugin name.
         $sortfield = 'subplugin';
         uasort($configs, function($a, $b) use ($sortfield) {
@@ -844,18 +838,34 @@ class aibase extends \mod_vocab\subpluginbase {
                 'contextlevel' => $config->contextlevel,
             ];
             $xmlwriter->begin_tag('CONFIG', $attributes);
-            $class = '\\'.$config->subplugin.'\\ai';
-    
-            if (count($class::EXPORTSETTINGNAMES)) {
-                $names = $class::EXPORTSETTINGNAMES;
-            } else {
-                $names = $class::SETTINGNAMES;
+            $ai = '\\'.$config->subplugin.'\\ai';
+
+            $names = $ai::EXPORTSETTINGNAMES;
+            if (empty($names)) {
+                $names = $ai::SETTINGNAMES;
             }
             foreach ($names as $name) {
                 if (empty($config->$name)) {
                     continue;
                 }
-                $xmlwriter->full_tag(strtoupper($name), $config->$name);
+                if ($ai::is_file_setting($name)) {
+                    $contextid = $contextids[$config->contextlevel];
+                    if ($fs->file_exists(
+                        $contextid, $config->subplugin, $name,
+                        $config->$name, '/', $config->filename
+                    )) {
+                        $file = $fs->get_file(
+                            $contextid, $config->subplugin, $name,
+                            $config->$name, '/', $config->filename
+                        );
+                        $content = base64_encode($file->get_content());
+                    } else {
+                        $content = ''; // Shouldn't happen !!
+                    }
+                } else {
+                    $content = $config->$name;
+                }
+                $xmlwriter->full_tag(strtoupper($name), $content);
             }
             $xmlwriter->end_tag('CONFIG');
         }

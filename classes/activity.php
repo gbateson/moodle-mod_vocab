@@ -1043,13 +1043,37 @@ class activity {
         } else if (is_scalar($user)) {
             $user = $DB->get_record('user', ['id' => $user]);
         }
+        $issiteadmin = is_siteadmin();
 
         $readable = [];
         foreach ($this->get_contexts() as $context) {
-            // We should check is this $user has some capability in this $context.
-            $key = ($keyfield ? $context->$keyfield : count($readable));
-            $value = ($valuefield ? $context->$valuefield : $context);
-            $readable[$key] = $value;
+            switch ($context->contextlevel) {
+                case CONTEXT_MODULE:
+                    $capability = 'mod/vocab:view';
+                    break;
+                case CONTEXT_COURSE:
+                    $capability = 'moodle/course:view';
+                    break;
+                case CONTEXT_COURSECAT:
+                    $capability = 'moodle/category:viewcourselist';
+                    break;
+                case CONTEXT_SYSTEM:
+                    $capability = 'moodle/course:view'; // Hmm ...
+                    break;
+                case CONTEXT_USER:
+                    $capability = 'moodle/user:viewdetails';
+                    break;
+                default:
+                    // Unrecognized context - shouldn't happen !!
+                    $capability = '';
+            }
+            if ($capability) {
+                if ($issiteadmin || has_capability($capability, $context, $user)) {
+                    $key = ($keyfield ? $context->$keyfield : count($readable));
+                    $value = ($valuefield ? $context->$valuefield : $context);
+                    $readable[$key] = $value;
+                }
+            }
         }
         return $readable;
     }
