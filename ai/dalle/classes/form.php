@@ -43,8 +43,8 @@ class form extends \mod_vocab\aiform {
     /** var string the name of the "model" field in the config record */
     const CONFIG_MODEL = 'dallemodel';
 
-    /** var string a comma-delimited list of required fields */
-    const REQUIRED_FIELDS = 'dalleurl, dallekey, dallemodel';
+    /** var array containing the names of required fields */
+    const REQUIRED_FIELDS = ['dalleurl', 'dallekey', 'dallemodel'];
 
     /**
      * Add fields to the main form for this subplugin.

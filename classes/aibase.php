@@ -881,6 +881,202 @@ class aibase extends \mod_vocab\subpluginbase {
     }
 
     /**
+     * Import configs in XML format.
+     */
+    public function import_configs() {
+        global $CFG, $DB, $USER;
+
+        // Get Moodle's standard xmlize library.
+        require_once($CFG->dirroot.'/lib/xmlize.php');
+
+        $name = 'importfile';
+        $elements = self::get_optional_param($name.'elements', [], PARAM_FILE);
+        if (is_array($elements) && array_key_exists($name, $elements)) {
+            $draftid = clean_param($elements[$name], PARAM_INT);
+        } else {
+            $draftid = 0;
+        }
+        if (empty($draftid)) {
+            return false;
+        }
+
+        $fs = get_file_storage();
+        $context = \context_user::instance($USER->id);
+        if ($file = $fs->get_area_files($context->id, 'user', 'draft', $draftid, 'id DESC', false)) {
+            $file = reset($file);
+        } else {
+            $file = null;
+        }
+        if (empty($file)) {
+            return false;
+        }
+
+        if ($xml = $file->get_content()) {
+            $xml = xmlize($xml, 0);
+        } else {
+            $xml = [];
+        }
+        if (empty($xml)) {
+            return false;
+        }
+
+        $subplugins = \core_component::get_plugin_list('vocabai');
+        $subplugins = array_keys($subplugins);
+        array_walk($subplugins, function(&$subplugin) {
+            $subplugin = 'vocabai_' . $subplugin;
+        });
+
+        $contextlevels = $this->vocab->get_writeable_contexts('id', 'contextlevel');
+        $contextids = array_keys($contextlevels);
+
+        $configs = $this->get_xml_node($xml, ['CONFIGS', '#', 'CONFIG']);
+        foreach ($configs as $i => $config) {
+
+            // Extract subplugin name and context level.
+            $subplugin = $this->get_xml_node($config, ['@', 'subplugin']);
+            $contextlevel = $this->get_xml_node($config, ['@', 'contextlevel']);
+
+            // Skip if $subplugin is not available.
+            if (in_array($subplugin, $subplugins) === false) {
+                continue;
+            }
+
+            // Skip if $contextlevel is not available.
+            if (in_array($contextlevel, $contextlevels) === false) {
+                continue;
+            }
+            $contextid = array_search($contextlevel, $contextlevels);
+
+            // Fetch list of valid field names.
+            $ai = '\\'.$subplugin.'\\ai';
+            $form = '\\'.$subplugin.'\\form';
+            $fieldnames = $ai::get_settingnames();
+
+            // Initialize new config settings record.
+            $settings = (object)[
+                'subplugin' => $subplugin,
+                'contextid' => $contextid,
+                'contextlevel' => $contextlevel,
+            ];
+            $fieldcount = 0;
+
+            // Extract fields for this config record.
+            $fields = $this->get_xml_node($config, ['#']);
+            foreach ($fields as $fieldname => $fieldvalue) {
+                $fieldname = strtolower($fieldname);
+                if (in_array($fieldname, $fieldnames) === false) {
+                    continue;
+                }
+                $fieldvalue = $this->get_xml_node($fieldvalue, [0, '#']);
+                $settings->$fieldname = $fieldvalue;
+                $fieldcount++;
+            }
+
+            if ($fieldcount) {
+
+                $select = 'vc.id, vc.subplugin';
+                $from = ['{vocab_config} vc'];
+                list($where, $params) = $DB->get_in_or_equal($contextids);
+                $where = ['vc.subplugin = ?', "vc.contextid $where"];
+                $params = array_merge([$subplugin], $params);
+
+                foreach ($form::REQUIRED_FIELDS as $i => $fieldname) {
+                    if ($ai::is_file_setting($fieldname)) {
+                        continue;
+                    }
+                    $vcs = 'vcs'.($i + 1);
+                    $from[] = '{vocab_config_settings} '.$vcs;
+                    $where[] = "$vcs.configid = vc.id";
+                    $where[] = "$vcs.name = ?";
+                    $params[] = $fieldname;
+                    // The matching of text fields containing newlines doesn't seem to work,
+                    // so as a workaround, we can replace the newlines with '%' and use LIKE.
+                    if ($fieldname == 'formattext' || $fieldname == 'prompttext') {
+                        $where[] = $DB->sql_like("$vcs.value", '?');
+                        $params[] = str_replace("\n", '%', $settings->$fieldname);
+                    } else {
+                        $where[] = "$vcs.value = ?";
+                        $params[] = $settings->$fieldname;
+                    }
+                }
+
+                $from = implode(', ', $from);
+                $where = implode(' AND ', $where);
+                $sql = "SELECT $select FROM $from WHERE $where";
+
+                if ($DB->record_exists_sql($sql, $params)) {
+                    $exists = true;
+                } else {
+                    $exists = false;
+
+                    // Save file details, if there are any.
+                    // We'll add the file later,
+                    // after we have a new config id.
+                    $fieldname = 'fileitemid';
+                    $fieldvalue = 0;
+                    $filename = '';
+                    $filecontent = '';
+                    if (isset($settings->$fieldname)) {
+                        if ($filecontent = $settings->$fieldname) {
+                            $filecontent = base64_decode($filecontent);
+                            if (isset($settings->filename)) {
+                                $filename = $settings->filename;
+                            } else {
+                                $settings->filename = '';
+                            }
+                        }
+                        $settings->$fieldname = 0;
+                    }
+
+                    // Save the new config settings.
+                    $configid = $this->save_config_settings($settings);
+
+                    if ($filename && $filecontent) {
+                        $filerecord = [
+                            'contextid' => $contextid,
+                            'component' => $subplugin,
+                            'filearea'  => $fieldname,
+                            'itemid'    => $configid,
+                            'filepath'  => '/',
+                            'filename'  => $filename,
+                        ];
+                        if ($file = $fs->create_file_from_string($filerecord, $filecontent)) {
+                            $settings->fileitemid = $configid;
+                            $params = ['configid' => $configid, 'name' => $fieldname];
+                            $DB->update_field('vocab_config_settings', 'value', $configid, $params);
+                        } else {
+                            // Could not add file - shouldn't happen !!
+                            // Perhaps we should delete the whole record?
+                            $settings->$fieldname = 0;
+                            $settings->filename = '';
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Return the value of a node, given a path to the node
+     * If the path doesn't exist, return the default value.
+     *
+     * @param array $xml data to read
+     * @param array $nodes path to node expressed as array
+     * @param mixed $default value (optional, default=NULL)
+     * @return mixed value of node at the specified path.
+     */
+    public function get_xml_node($xml, $nodes, $default=null) {
+        foreach ($nodes as $node) {
+            if (array_key_exists($node, $xml)) {
+                $xml = $xml[$node];
+            } else {
+                return $default; // Shouldn't happen !!
+            }
+        }
+        return $xml;
+    }
+
+    /**
      * action_cancelled
      *
      * @return bool TRUE is user has cancelled an action (add, copy, delete), otherwise FALSE.

@@ -43,8 +43,8 @@ class form extends \mod_vocab\aiform {
     /** var string the name of the "model" field in the config record */
     const CONFIG_MODEL = 'ttsmodel';
 
-    /** var string a comma-delimited list of required fields */
-    const REQUIRED_FIELDS = 'ttsurl, ttskey, ttsmodel';
+    /** var array containing the names of required fields */
+    const REQUIRED_FIELDS = ['ttsurl', 'ttskey', 'ttsmodel'];
 
     /** var string to denote a randomly selected voice */
     const VOICE_RANDOM = 'random';

@@ -43,8 +43,8 @@ class form extends \mod_vocab\aiform {
     /** var string the name of the "text" field in the config record */
     const CONFIG_TEXT = 'formattext';
 
-    /** var string a comma-delimited list of required fields */
-    const REQUIRED_FIELDS = 'format';
+    /** var array containing the names of required fields */
+    const REQUIRED_FIELDS = ['formatname', 'formattext'];
 
     /**
      * Add fields to the main form for this subplugin.
