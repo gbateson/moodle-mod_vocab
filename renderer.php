@@ -88,7 +88,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 $start = $end = 0;
             }
             if ($start === false || $end === false || $start >= $end) {
-                $header .= \html_writer::tag('h2', $heading);
+                $header .= html_writer::tag('h2', $heading);
             } else {
                 $header = substr_replace($header, $heading, $start, $end - $start);
             }
@@ -778,6 +778,153 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $output .= html_writer::end_tag('div');
             $output .= html_writer::end_tag('form');
         }
+
+        $output .= $this->box_end();
+        $output .= $this->footer();
+        return $output;
+    }
+
+    /**
+     * Reruns a selected adhoc task for a given plugin, optionally using the core lock system.
+     *
+     * This method provides a simple admin interface to manually trigger the execution of a Moodle
+     * adhoc task (e.g., for debugging or development). It can be used with or without locking, and
+     * provides form-based selection of available adhoc tasks belonging to the plugin.
+     *
+     * When a task is run, it is either executed with proper core locking (mimicking Moodle's
+     * cron handling), or in "lockless" mode for testing purposes.
+     *
+     * @param string $plugin The full plugin name (e.g., 'vocabtool_questionbank').
+     * @param bool $uselocks Whether to use Moodle's lock system (recommended in production).
+     *
+     * @return string The rendered HTML page, including status messages and a form for selecting tasks.
+     */
+    public function redo_adhoc_task($plugin, $uselocks=false) {
+        global $CFG, $DB, $FULLME;
+
+        // Set up the heading e.g. Redo upgrade: Vocabulary activity.
+        $heading = get_string('pluginname', $plugin)." ($plugin)";
+        $heading = $this->vocab->get_string('redotask', $heading);
+
+        $output = '';
+        $output .= $this->header();
+        $output .= $this->heading($heading);
+        $output .= $this->box_start();
+
+        if ($taskid = \mod_vocab\activity::get_optional_param('taskid', 0, PARAM_INT)) {
+
+            if ($uselocks) {
+                $cronlockfactory = \core\lock\lock_config::get_lock_factory('cron');
+            } else {
+                $cronlockfactory = false;
+            }
+
+            if ($uselocks) {
+                $lock = $cronlockfactory->get_lock('adhoc_' . $taskid, 0);
+            } else {
+                $lock = true;
+            }
+
+            $msg = '';
+            if ($lock) {
+
+                $record = $DB->get_record('task_adhoc', ['id' => $taskid]);
+                $task = \core\task\manager::adhoc_task_from_record($record);
+
+                if ($uselocks) {
+                    $cronlock = $cronlockfactory->get_lock('core_cron', 10);
+                } else {
+                    $cronlock = true;
+                }
+
+                // The global cron lock.
+                if ($cronlock) {
+
+                    if ($uselocks) {
+                        $task->set_lock($lock);
+                        $task->set_cron_lock($cronlock);
+                    }
+
+                    $task->execute();
+
+                    if ($uselocks) {
+                        \core\task\manager::adhoc_task_complete($task);
+                        $cronlock->release();
+                    } else {
+                        // Mimic "adhoc_task_complete()" without locks.
+                        // We only use this during development.
+                        \core\task\logmanager::finalise_log();
+                        $task->set_timestarted();
+                        $task->set_hostname();
+                        $task->set_pid();
+
+                        // Delete the adhoc task record - it is finished.
+                        $DB->delete_records('task_adhoc', ['id' => $task->get_id()]);
+                    }
+                } else {
+                    $msg = ' Global lock not available.';
+                }
+                if ($uselocks) {
+                    $lock->release();
+                }
+            } else {
+                $msg = ' Record lock not available.';
+            }
+
+            if ($msg) {
+                $msg = get_string('error').get_string('labelsep', 'langconfig').$msg;
+            } else {
+                $msg = get_string('success');
+            }
+            $output .= html_writer::tag('p', $msg);
+
+        } else {
+
+            // Add the form elements.
+            if ($tasks = $DB->get_records_select('task_adhoc', $DB->sql_like('component', '?'), ['vocab%'])) {
+
+                foreach ($tasks as $taskid => $task) {
+                    list($subplugin, $dir, $name) = explode('\\', trim($task->classname, '\\'), 3);
+                    $data = json_decode($task->customdata);
+                    foreach ($data as $name => $value) {
+                        $data->$name = "$name = $value";
+                    }
+                    if ($data = implode(', ', (array)$data)) {
+                        $data = " ($data)";
+                    }
+                    $tasks[$taskid] = str_replace('\\', '/', "$taskid: ".get_string('pluginname', $subplugin).$data);
+                }
+
+                // Start the form.
+                $output .= html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
+                $output .= html_writer::start_tag('div');
+
+                $output .= get_string('adhoctaskid', 'vocabtool_questionbank').' '.
+                           html_writer::select($tasks, 'taskid', '', null).' ';
+                $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
+
+                // Finish the form.
+                $output .= html_writer::end_tag('div');
+                $output .= html_writer::end_tag('form');
+
+                if (strpos($CFG->wwwroot, 'localhost')) {
+                    if ($password = $DB->get_field('config', 'value', ['name' => 'cronremotepassword'])) {
+                        $msg = get_string('redotaskincron', $plugin);
+                        $url = new moodle_url('/admin/cron.php', ['password' => $password]);
+                        $msg = html_writer::link($url, $msg, ['onclick' => "this.target = 'redotask';"]);
+                        $output .= html_writer::tag('p', $msg);
+                    }
+                }
+
+            } else {
+                $msg = $this->vocab->get_string('notasks');
+                $output .= html_writer::tag('p', $msg);
+            }
+        }
+
+        $msg = get_string('refresh');
+        $msg = html_writer::link($FULLME, $msg);
+        $output .= html_writer::tag('p', $msg);
 
         $output .= $this->box_end();
         $output .= $this->footer();

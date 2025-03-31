@@ -34,6 +34,7 @@ namespace vocabtool_questionbank;
  * @since      Moodle 3.11
  */
 class tool extends \mod_vocab\toolbase {
+
     /** @var string holds the name of this plugin */
     const SUBPLUGINNAME = 'questionbank';
 

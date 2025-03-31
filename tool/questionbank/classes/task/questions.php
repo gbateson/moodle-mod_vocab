@@ -441,7 +441,19 @@ class questions extends \core\task\adhoc_task {
         }
 
         // Mark the adhoc task as completed.
-        \core\task\manager::adhoc_task_complete($this);
+        if ($this->get_lock()) {
+            \core\task\manager::adhoc_task_complete($this);
+        } else {
+            // Mimic "adhoc_task_complete()" without locks.
+            // We only use this during development.
+            \core\task\logmanager::finalise_log();
+            $this->set_timestarted();
+            $this->set_hostname();
+            $this->set_pid();
+
+            // Delete the adhoc task record - it is finished.
+            $DB->delete_records('task_adhoc', ['id' => $this->get_id()]);
+        }
     }
 
     /**
@@ -721,14 +733,17 @@ EOD;
     }
 
     /**
-     * parse_questions
+     * Parses questions from a given text input based on the specified question format.
      *
-     * @param string $log
-     * @param string $text
-     * @param string $qformat
-     * @param string $categoryid
-     * @param array $tags Moodle tags to be added for each question
-     * @return object to represent the
+     * This method dynamically loads the required question format class, processes the text input,
+     * and returns an array of parsed questions ready for inclusion in the Moodle question bank.
+     *
+     * @param object $log An object containing log data, including question type details.
+     * @param string $text The raw text containing the questions to be parsed.
+     * @param string $qformat The question format identifier (e.g., "gift", "xml", "multianswer").
+     * @param int $categoryid The ID of the question category in which the parsed questions should be stored.
+     * @param array $tags An array of tags to be assigned to the parsed questions.     *
+     * @return array|false An array of parsed questions if successful, or false if no questions were found.
      */
     protected function parse_questions($log, $text, $qformat, $categoryid, $tags) {
         global $CFG, $DB, $USER;
@@ -736,8 +751,8 @@ EOD;
         require_once("$CFG->dirroot/lib//questionlib.php");
         require_once("$CFG->dirroot/question/format.php");
 
-        // Get the main file for the requested question format.
-        // We expect only "gift" or "xml", but in theory, anything is possible.
+        // Get the main file for the requested question format. We expect
+        // only "gift", "xml" or "multianswer", but anything is possible.
         $filepath = "$CFG->dirroot/question/format/$qformat/format.php";
         if (! file_exists($filepath)) {
             return null;
@@ -762,54 +777,23 @@ EOD;
         // and create the questions in the question bank.
         $format = new $classname();
 
-        // The AI can sometimes omit crucial "=" and "~" from the content
-        // that it generates, so we try to fix such basic syntax problems.
-        if ($qformat == 'gift') {
-            $text = $this->fix_gift($log->qtype, $text);
-        }
-        // We could also fix xml formats too.
-
-        // Initialize the array of questions that will be returned by this method.
-        $questions = [];
-
-        // Parse the text into individual questions.
-        // Match $1 contains the question name.
-        // Match $2 contains the question text.
-        // Match $3 contains the answer details (including weighting and feedback).
-        $search = '/:: *((?:.|\s)*?) *:: *((?:.|\s)*?) *\{ *((?:.|\s)*?) *\}/s';
-        if (preg_match_all($search, $text, $matches)) {
-            for ($i = 0; $i < count($matches[0]); $i++) {
-                $lines = explode("\n", $matches[0][$i]);
-                if ($question = $format->readquestion($lines)) {
-                    if (empty($question->name)) {
-                        $question->name = clean_param($matches[1][$i], PARAM_TEXT);
-                    }
-                    if (empty($question->questiontext)) {
-                        $question->questiontext = clean_param($matches[2][$i], PARAM_TEXT);
-                    }
-                    if (is_scalar($question->questiontext)) {
-                        $question->questiontext = [
-                            'text' => $question->questiontext,
-                            'format' => FORMAT_MOODLE,
-                        ];
-                    }
-                    $question->category = $categoryid;
-                    $question->createdby = $question->modifiedby = $USER->id;
-                    $question->timecreated = $question->timemodified = time();
-                    $qtype = \question_bank::get_qtype($question->qtype);
-                    $qtype->save_question($question, $question);
-                    $questions[$question->id] = $question;
-                    $questiontags = $this->create_media($log, $question, $context, $tags);
-
-                    // Add tags for these question.
-                    // e.g "AI-generated", "newword", "MC", "TOEIC-200".
-                    // Note that all tags are usually displayed in lowercase
-                    // even though the "rawname" field stores the uppercase.
-                    \core_tag_tag::set_item_tags(
-                        'core_question', 'question', $question->id, $context, $questiontags
-                    );
-                }
-            }
+        switch ($qformat) {
+            case 'gift':
+                $text = $this->fix_gift($log->qtype, $text);
+                $questions = $this->parse_questions_gift(
+                    $log, $context, $format, $text, $categoryid, $tags
+                );
+                break;
+            case 'multianswer': // Embedded questions (a.k.a cloze).
+                $questions = $this->parse_questions_multianswer(
+                    $log, $context, $format, $text, $categoryid, $tags
+                );
+                break;
+            case 'xml':
+                $questions = $this->parse_questions_xml(
+                    $log, $context, $format, $text, $categoryid, $tags
+                );
+                break;
         }
 
         // Return either the array of questions, or FALSE if there are no questions.
@@ -817,17 +801,21 @@ EOD;
     }
 
     /**
-     * Fix a GIFT formatted question.
+     * Fixes a GIFT-formatted question by correcting missing syntax elements.
      *
-     * @param string $qtype question type (see "question/type/xxx")
-     * @param string $text containing gift formatted question
-     * @return string
+     * The AI-generated content may sometimes omit crucial symbols like "=" and "~"
+     * in GIFT-formatted questions. This method attempts to fix basic syntax issues
+     * based on the provided question type.
+     *
+     * @param string $qtype The question type identifier (e.g., "multichoice", "shortanswer", "match").
+     * @param string $text The raw GIFT-formatted question content that needs correction.
+     * @return string The corrected GIFT-formatted question text.
      */
     public function fix_gift($qtype, $text) {
 
         // Escape all equal signs, "=" (important for
         // MC, SA, matching, missing word, numerical).
-        $text = preg_replace('/(\w+)="([^"]*)"/', '$1\\="$2"', $text);
+        $text = preg_replace('/(\w+)="([^"]*)"/u', '$1\\="$2"', $text);
 
         // Perform fixes specific to each question type.
         switch ($qtype) {
@@ -884,6 +872,313 @@ EOD;
     }
 
     /**
+     * Parses GIFT-formatted questions and saves them to the question bank.
+     *
+     * This method extracts individual questions from a GIFT-formatted text block,
+     * assigns metadata, and stores them in the Moodle question bank under the specified category.
+     * It also adds relevant tags and media to each parsed question.
+     *
+     * @param object $log An object containing log data, including question type details.
+     * @param \context $context The Moodle context for the specified question category.
+     * @param object $format The question format parser instance responsible for processing the GIFT format.
+     * @param string $rawtext The raw GIFT-formatted text containing multiple questions.
+     * @param int $categoryid The ID of the question category in which the parsed questions should be stored.
+     * @param array $tags An array of tags to be assigned to the parsed questions.
+     * @return array The parsed questions are stored in the Moodle database.
+     */
+    protected function parse_questions_gift($log, $context, $format, $rawtext, $categoryid, $tags) {
+        global $USER;
+        $questions = [];
+
+        // Parse the text into individual questions.
+        // Match $1 contains the question name.
+        // Match $2 contains the question text.
+        // Match $3 contains the answer details (including weighting and feedback).
+        $search = '/:: *((?:.|\s)*?) *:: *((?:.|\s)*?) *\{ *((?:.|\s)*?) *\}/us';
+        if (preg_match_all($search, $rawtext, $matches)) {
+            for ($i = 0; $i < count($matches[0]); $i++) {
+                $lines = explode("\n", $matches[0][$i]);
+                if ($question = $format->readquestion($lines)) {
+                    $name = $matches[1][$i];
+                    $text = $matches[2][$i];
+                    $this->add_question(
+                        $questions, $question, $name, $text,
+                        $log, $context, $categoryid, $tags
+                    );
+                }
+            }
+        }
+
+        return $questions;
+    }
+
+    /**
+     * Parses multianswer-formatted questions and saves them to the question bank.
+     *
+     * This method extracts individual questions from a multianswer-formatted text block,
+     * assigns metadata, and stores them in the Moodle question bank under the specified category.
+     * It also adds relevant tags and media to each parsed question.
+     *
+     * @param object $log An object containing log data, including question type details.
+     * @param \context $context The Moodle context for the specified question category.
+     * @param object $format The question format parser instance responsible for processing the multianswer text.
+     * @param string $rawtext The raw multianswer text containing one or more multianswer questions.
+     * @param int $categoryid The ID of the question category in which the parsed questions should be stored.
+     * @param array $tags An array of tags to be assigned to the parsed questions.
+     * @return void The parsed questions are stored in the Moodle database.
+     */
+    protected function parse_questions_multianswer($log, $context, $format, $rawtext, $categoryid, $tags) {
+        global $USER;
+
+        $rawquestions = [];
+        if ($rawtext = trim($rawtext)) {
+            $search = '/###\s*(.+?)\n([\s\S]*?)(?=###|\z)/u';
+            if (preg_match_all($search, $rawtext, $matches)) {
+                for ($i = 0; $i < count($matches[0]); $i++) {
+                    $name = trim($matches[1][$i]);
+                    $text = trim($matches[2][$i]);
+                    if ($name == 'Explanation') {
+                        continue; // Ignore the helpful explanation from AI.
+                    }
+                    $rawquestions[] = (object)['name' => $name, 'text' => $text];
+                }
+            } else {
+                // No question separator found, so we assume
+                // $rawtext contains a single, unnamed question.
+                $rawquestions[] = (object)['name' => '', 'text' => $rawtext];
+            }
+        }
+
+        $questions = [];
+        foreach ($rawquestions as $rawquestion) {
+            $name = trim($rawquestion->name);
+            $text = trim($rawquestion->text);
+
+            // We should remove excess white space in each embedded question
+            // because it can cause problems for readquestions,
+            // particulary space before the first "=" or "~".
+
+            // Regular expression to match an embedded question.
+            $search = '/(\{)\s*(\d+)\s*(:)\s*([A-Z_]+)\s*(:)\s*(.*?)\s*(\})/us';
+            // Matches the following items:
+            // $1: leading "{"
+            // $2: grade (as a positive integer)
+            // $3: leading ":"
+            // $4: question type (e.g. "MULTICHOICE_VS" or "MCVS")
+            // $5: trailing ":"
+            // $6: answers
+            // $7: trailing "}".
+            if (preg_match_all($search, $text, $matches, PREG_OFFSET_CAPTURE)) {
+                // We go backwards from the last match to the first, so
+                // that the positions of earlier matches are not affected.
+                $imax = count($matches[0]) - 1;
+                for ($i = $imax; $i >= 0; $i--) {
+                    $match = $matches[0][$i][0];
+                    $start = $matches[0][$i][1];
+                    $length = strlen($match);
+                    $replace = '';
+                    for ($ii = 1; $ii < count($matches); $ii++) {
+                        $match = $matches[$ii][$i][0];
+                        if ($ii == 6) {
+                            // Regular expression to match an unescaped "=" followed
+                            // by a double-quoted string e.g. class="multilang".
+                            $search = '/(?<!\\\\)=("[^"]*?")/us';
+                            $match = preg_replace($search, '\=$1', $match);
+                        }
+                        $replace .= trim($match);
+                    }
+                    $text = substr_replace($text, $replace, $start, $length);
+                }
+            }
+
+            $lines = explode("\n", $text);
+            if ($question = $format->readquestions($lines)) {
+                // The readquestions method returns an array of questions.
+                // Since we are confident there is only one question,
+                // we can use just the first question.
+                foreach (array_keys($question) as $q) {
+                    // Clean $question[$q]->name and $question[$q]->options.
+                    // Note, $name will be ignored as a result.
+                    $this->clean_question_name($question[$q]);
+                    $this->clean_question_options($question[$q]);
+                    $this->add_question(
+                        $questions, $question[$q], $name, $text,
+                        $log, $context, $categoryid, $tags, true
+                    );
+                }
+            }
+        }
+        return $questions;
+    }
+
+    /**
+     * Cleans and shortens the question text to generate a simplified name for the question.
+     *
+     * Similar to a combination of "create_default_question_name()" and "clean_question_name()"
+     * in "question/format.php", but additionally removes media prompt tags (e.g., [[AUDIO ... ]]).
+     * Sample result: A=woman (customer calling with complaint) B=male (staff on a customer help ...
+     *
+     * @param object $question A question object containing a 'questiontext' property.
+     * @return string A cleaned version of the question text with tags and excess whitespace removed.
+     */
+    protected function clean_question_name($question) {
+        $search = '/(\s+|<.*?>|(?:\[\[[A-Z]+)|(\w+=".*?")|(?:\]\]))+/us';
+        $name = preg_replace($search, ' ', $question->questiontext);
+        $question->name = shorten_text(trim($name), 80);
+    }
+
+    /**
+     * Cleans escaped equal signs in question subfields for answers and feedback.
+     *
+     * This method searches the answer and feedback fields of each subquestion
+     * within a question's options and replaces escaped equal signs (\=) followed
+     * by a quoted string (e.g., class\="multilang") with a normal equal sign (=).
+     *
+     * @param object $question A question object containing an 'options' property
+     *                         with a 'questions' array of subquestion objects.
+     * @return void This method modifies the $question object directly.
+     */
+    protected function clean_question_options($question) {
+
+        // Sanity checks on the $question object.
+        if (empty($question)) {
+            return false;
+        }
+        if (empty($question->options)) {
+            return false;
+        }
+        if (empty($question->options->questions)) {
+            return false;
+        }
+
+        // These fields in each wrapped question will be searched
+        // for escaped equal signs.
+        $fields = ['answer', 'feedback'];
+
+        // Regular expression to match an escaped "=" followed
+        // by a double-quoted string e.g. class\="multilang".
+        $search = '/\\\\=("[^"]*?")/us';
+
+        // Clean all the "wrapped" questions. A "wrapped" question is an
+        // embedded question, or subquestion, of the main cloze question.
+        // It represents a "gap" in the cloze question.
+        foreach ($question->options->questions as $w => $wrapped) {
+            foreach ($fields as $field) {
+                if (empty($wrapped->$field)) {
+                    continue; // Shouldn't happen !!
+                }
+                foreach ($wrapped->$field as $i => $value) {
+                    if (is_array($value)) {
+                        $value['text'] = preg_replace($search, '=$1', $value['text']);
+                    } else if (is_string($value)) {
+                        $value = preg_replace($search, '=$1', $value);
+                    }
+                    $wrapped->$field[$i] = $value;
+                }
+            }
+            $question->options->questions[$w] = $wrapped;
+        }
+    }
+
+    /**
+     * Adds a parsed question to the Moodle question bank.
+     *
+     * This method stores a parsed question in the Moodle question bank under the specified category.
+     * It also adds relevant tags and media to each parsed question.
+     *
+     * @param array $questions An array (passed by reference) of recently added question objects.
+     * @param object $question A question object derived from the parsed raw text.
+     * @param string $name The question name.
+     * @param string $text The question text.
+     * @param object $log An object containing log data, including question type details.
+     * @param \context $context The Moodle context for the specified question category.
+     * @param int $categoryid The ID of the question category in which the parsed questions should be stored.
+     * @param array $tags An array of tags to be assigned to the parsed questions.
+     * @param boolean $saveoptions TRUE is options are to be saved; otherwise FALSE.
+     * @return void The parsed questions are stored in the Moodle database.
+     */
+    protected function add_question(&$questions, $question, $name, $text, $log, $context, $categoryid, $tags, $saveoptions=false) {
+        global $USER;
+
+        if (empty($question->name)) {
+            $question->name = clean_param($name, PARAM_TEXT);
+        }
+
+        if (empty($question->questiontext)) {
+            $question->questiontext = clean_param($text, PARAM_CLEANHTML);
+        }
+
+        // Ensure questiontext is an array that mimics editor fields.
+        if (is_scalar($question->questiontext)) {
+            $question->questiontext = [
+                'text' => $question->questiontext,
+            ];
+        }
+
+        // Ensure format of questiontext is set correctly.
+        $text = $question->questiontext['text'];
+        $textformat = $this->detect_text_format($text);
+        $question->questiontext['format'] = $textformat;
+
+        // We need to take a clone of the question in order to preserve
+        // the "options", which can be wiped out by "save_question".
+        // In particular, "multianswer" format requires this step.
+        $clone = clone($question);
+
+        $question->category = $categoryid;
+        $question->createdby = $question->modifiedby = $USER->id;
+        $question->timecreated = $question->timemodified = time();
+
+        $qtype = \question_bank::get_qtype($question->qtype);
+        $question = $qtype->save_question($question, $question);
+
+        // Save options, if required (e.g. multianswer needs this).
+        if ($saveoptions) {
+            $question->context = $context;
+            $question->options = $clone->options;
+            $qtype->save_question_options($question);
+        }
+
+        // Add the new question to the $questions array.
+        $questions[$question->id] = $question;
+
+        // Create media (images, audio, video) and add appropriate tags.
+        $tags = $this->create_media($log, $question, $context, $tags);
+
+        // Add Moodle tags for this question.
+        // e.g., "AI-generated", "newword", "MC", "TOEIC-200".
+        // Note that all tags are usually displayed in lowercase
+        // even though the "rawname" field stores the uppercase.
+        \core_tag_tag::set_item_tags(
+            'core_question', 'question', $question->id, $context, $tags
+        );
+    }
+
+    /**
+     * Detects whether a given text is HTML, Markdown, or plain text.
+     *
+     * @param string $text The input text to analyze.
+     * @return string Returns suitable FORMAT_XXX value.
+     */
+    public function detect_text_format($text) {
+        $text = trim($text);
+
+        // Check for HTML (presence of opening or closing tags).
+        if (preg_match('/<\/?[a-zA-Z][\s\S]*>/us', $text)) {
+            return FORMAT_HTML;
+        }
+
+        // Check for Markdown (common symbols).
+        if (preg_match('/(^#{1,6}\s|\*\*|__|[*_\[\]!])/um', $text)) {
+            return FORMAT_MARKDOWN;
+        }
+
+        // Default: Plain Text.
+        return FORMAT_PLAIN;
+        // Could also use FORMAT_MOODLE as default.
+    }
+
+    /**
      * Create media (images, audio and video) for the given question.
      *
      * @param object $log record form the "questionbank_log" table.
@@ -937,7 +1232,7 @@ EOD;
         foreach ($tables[$qtype] as $table => $fields) {
             foreach ($fields as $field => $filearea) {
                 $filerecord['filearea'] = $filearea;
-                $this->create_media_for_field(
+                    $this->create_media_for_field(
                     $mediatags, $table, $field,
                     $filerecord, $question->id, $moretags
                 );
@@ -1213,13 +1508,41 @@ EOD;
                 // Search string to extract media tags:
                 // $1: type of media (IMAGE, AUDIO or VIDEO)
                 // $2: tag attributes and AI prompt.
-                'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/',
+                'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/u',
                 // Search string to extract attributes of media tags:
                 // $1: name of attribute (alt, width, height, class)
                 // $2: value of attribute.
-                'attributes' => '/(\w+) *= *"(.*?)"/',
+                'attributes' => '/(\w+) *= *"(.*?)"/u',
+                // Search string to identify dialog between two or more speakers:
+                // $1: Dialog info
+                // $2: Dialog lines.
+                'dialog' => '/^(.*?)\s*([A-Z]\s*:\s*.*)$/ius',
+                // Search string to extract info about speakers in a dialog:
+                // $1: Speaker letter
+                // $2: Speaker gender
+                // $3: Speaker details (optional).
+                'info' => '/([A-Z])\s*=\s*(\w+)(?:\s*\(([^)]+)\))?/ius',
+                // Search string to extract a line of a dialog:
+                // $1: Speaker letter
+                // $2: Speaker line.
+                'line' => '/([A-Z])\s*:\s*(.*?)(?=\s+[A-Z]\s*:|$)/ius',
             ];
         }
+
+        /* ==========================
+        Sample dialog (conveniently split into lines, but it ain't necessarily so)
+        [[AUDIO
+            A=woman (customer calling with complaint)
+            B=male (staff on a customer help line)
+            A: Hello. I'm calling about a coffee machine I purchased from your website.
+               It has stopped working, even though I haven't had it for very long.
+               I expected it to last much longer than this.
+            B: Oh, I'm sorry to hear that. Our warranty covers products for up to a year. Do you know when you bought it?
+            A: I've had it for over a year so the warranty has probably just expired. This is so disappointing.
+            B: Well, I'll tell you what we can do. Although we can't replace it, since you're a valued customer,
+               I can offer you a coupon for 40% off your next purchase.
+        ]]
+        ========================== */
 
         // Initialize the counters used to generate unique filenames.
         $index = (object)array_combine(
@@ -1227,8 +1550,11 @@ EOD;
             array_fill(0, count($mediatags), 0)
         );
 
+        // Extract all the media tags.
         if (preg_match_all($search->tags, $record->$field, $tags, PREG_OFFSET_CAPTURE)) {
 
+            // We go backwards from the last tag to the first, so that as each tag is
+            // replaced with a player, the positions of earlier tags are not affected.
             $tmax = count($tags[0]) - 1;
             for ($t = $tmax; $t >= 0; $t--) {
 
@@ -1249,6 +1575,9 @@ EOD;
                     'filename' => '',
                 ];
 
+                // Initialize the array of tag specific attributes.
+                $tagattributes = [];
+
                 // Transfer tag attributes (e.g. width, height) from $tagprompt to $tagparams.
                 if (preg_match_all($search->attributes, $tagprompt, $attributes, PREG_OFFSET_CAPTURE)) {
 
@@ -1260,25 +1589,27 @@ EOD;
                         $aname = $attributes[1][$a][0];
                         $avalue = $attributes[2][$a][0];
 
-                        // Check $aname is valid. Otherwise, ignore it.
+                        // Check $aname is recognized. Otherwise, add it to the attributes.
                         if (array_key_exists($aname, $tagparams)) {
                             $tagparams[$aname] = $avalue;
-                            $tagprompt = substr_replace($tagprompt, '', $astart, $alength);
+                        } else {
+                            $tagattributes[$aname] = $avalue;
                         }
+                        $tagprompt = substr_replace($tagprompt, '', $astart, $alength);
                     }
                 }
 
                 // Trim prompt and standardize space and tabs to a single space.
                 $tagprompt = trim(preg_replace('/[ \t]+/', ' ', $tagprompt));
 
-                // Increament the count of the number of media files
+                // Increment the count of the number of media files
                 // of this tagname created in this $record->$field.
                 $index->$tagname = ($index->$tagname + 1);
 
                 // Set filename.
                 if ($filename = $tagparams['filename']) {
                     $filename = clean_param($filename, PARAM_FILE);
-                    $filename = preg_replace('/[ \._]+/', '_', $filename);
+                    $filename = preg_replace('/[ \._]+/u', '_', $filename);
                     $filename = trim($filename, ' -._');
                 }
                 if ($filename == '') {
@@ -1286,7 +1617,7 @@ EOD;
                     $filename = $filenamebase;
                 }
 
-                // Set a new unqie and meaningful suffix for the image file name.
+                // Set a new unique and meaningful suffix for the media file name.
                 $suffix = [
                     strtolower($tagname),
                     str_pad($index->$tagname, 2, '0', STR_PAD_LEFT),
@@ -1309,31 +1640,97 @@ EOD;
                     }
                 }
 
-                // Set the root of the image filename e.g. questiontext-01-image-01.
-                $imagefilename = \mod_vocab\activity::modify_filename($filename, '', $suffix, $filetype);
-                $filerecord['filename'] = $imagefilename;
+                $lines = [];
+                if ($tagname == 'AUDIO') {
 
-                // Send the prompt to one of the AI subplugins to generate the media file.
-                // For image files, several variations maybe created, but only the
-                // first one will be returned by the "create_media_file()" method.
-                $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord, $questionid);
+                    if (preg_match($search->dialog, $tagprompt, $matches)) {
+
+                        $dialoginfo = trim($matches[1]);
+                        $dialoglines = trim($matches[2]);
+
+                        $genders = [];
+                        if (preg_match_all($search->info, $dialoginfo, $matches)) {
+                            foreach (array_keys($matches[0]) as $i) {
+                                $speaker = trim($matches[1][$i]);
+                                $speaker = strtoupper($speaker);
+                                $gender = trim($matches[2][$i]);
+                                $gender = $this->get_valid_gender($gender);
+                                $genders[$speaker] = $gender;
+                            }
+                        }
+
+                        if (preg_match_all($search->line, $dialoglines, $matches)) {
+                            foreach (array_keys($matches[0]) as $i) {
+                                $speaker = trim($matches[1][$i]);
+                                $speaker = strtoupper($speaker);
+                                $line = trim($matches[2][$i]);
+                                if (! array_key_exists($speaker, $genders)) {
+                                    $genders[$speaker] = 'random'; // Shouldn't happen!!
+                                }
+                                // Store the line as [speaker, gender, prompt].
+                                $lines[] = [$speaker, $genders[$speaker], $line];
+                            }
+                        }
+                    }
+                }
+
+                // Set the root of the media filename e.g. questiontext-01-image-01.
+                $mediafilename = \mod_vocab\activity::modify_filename($filename, '', $suffix, $filetype);
+                $filerecord['filename'] = $mediafilename;
+
+                if (count($lines)) {
+                    $file = $this->create_dialog_file($configid, $tagname, $lines, $filerecord, $questionid);
+                } else {
+                    // Send the prompt to one of the AI subplugins to generate the media file.
+                    // For image files, several variations maybe created, but only the
+                    // first one will be returned by the "create_media_file()" method.
+                    $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord, $questionid);
+                }
 
                 if (is_object($file)) {
 
-                    // Remove empty tag params, and add a value for the "src" parameter.
+                    // Determine if the media player (for audio and video) will be permitted.
+                    $mediaplugin = true;
+                    if (in_array('nomediaplugin', explode(' ', $tagparams['class']))) {
+                        // The media tag has specified a class of 'nomediaplugin'
+                        // and so will be ignored by the mediaplugin filter.
+                        // E.g. [[AUDIO class="nomediaplugin" ...]]
+                        $mediaplugin = false;
+                    }
+
+                    // Remove empty tag params, and define value for the "src".
                     $tagparams = array_filter($tagparams);
-                    $tagparams['src'] = '@@PLUGINFILE@@/'.$file->get_filename();
+                    $src = '@@PLUGINFILE@@/'.$file->get_filename();
 
                     if ($tagname == 'IMAGE') {
                         if (empty($tagparams['style'])) {
                             // Add styles to make the image responsive and on its own line.
                             $tagparams['style'] = 'display: block; height: auto; max-height: 100%; max-width: 100%;';
                         }
+                        $tagparams['src'] = $src;
                         $html = \html_writer::empty_tag('img', $tagparams);
                     } else {
-                        // AUDIO and VIDEO.
-                        $html = \html_writer::empty_tag('source', ['src' => $tagparams['src']]);
-                        $html = \html_writer::tag(strtolower($tagname), $html.$tagparams['src'], ['controls' => 'true']);
+                        // AUDIO and VIDEO ... and anything else.
+
+                        // Create the SOURCE tag.
+                        $html = \html_writer::empty_tag('source', ['src' => $src]);
+
+                        // Add subtitles file for audio not played in the mediaplayer.
+                        if ($tagname == 'AUDIO' && $mediaplugin === false) {
+                            $html .= $this->add_html_for_subtitles($file); // Add <track> tag.
+                        }
+
+                        // Create the main AUDIO/VIDEO tag.
+                        $tagparams['controls'] = 'true';
+                        $tagparams['controlslist' => 'nodownload'];
+                        $html = \html_writer::tag(strtolower($tagname), $html.$src, $tagparams);
+
+                        // Add wrapper to prevent mediaplayer filter from positioning this media tag
+                        // in the center of the page caused by the .mediaplugin>div { margin: auto; }.
+                        if ($tagname == 'AUDIO' && $mediaplugin === true) {
+                            $params = ['style' => 'display: inline-block; width: min(400px, 85vw);'];
+                            $html = \html_writer::tag('div', $html, $params);
+                        }
                     }
 
                     // Update the field value in the Moodle DB.
@@ -1362,16 +1759,267 @@ EOD;
     }
 
     /**
-     * create_media_file
+     * Generates an HTML <track> tag for subtitles if a corresponding VTT file exists.
      *
-     * @param integer $configid
-     * @param string $mediatype IMAGE, AUDIO, VIDEO
-     * @param string $prompt
-     * @param array $filerecord
-     * @param integer $questionid
-     * @return object source_file or error string
+     * This method checks whether a subtitle file (with the same base filename as the given media file,
+     * but with a ".vtt" extension) exists in the same filearea. If so, it returns a <track> tag to
+     * include in the <audio> or <video> element.
+     *
+     * @param stored_file $file The main media file (e.g., MP3 or MP4) stored in Moodle's file API.
+     * @param string $srclang The language code for the subtitle track (default: 'en').
+     * @param string $label The label to display in the player for this subtitle track (default: 'English').
+     *
+     * @return string The HTML <track> tag as a string, or an empty string if the subtitle file does not exist.
      */
-    public function create_media_file($configid, $mediatype, $prompt, $filerecord, $questionid) {
+    protected function add_html_for_subtitles($file, $srclang='en', $label='English') {
+
+        $filename = $file->get_filename();
+        $filename = \mod_vocab\activity::modify_filename($filename, '', '', 'vtt');
+
+        $fs = get_file_storage();
+        $exists = $fs->file_exists(
+            $file->get_contextid(),
+            $file->get_component(),
+            $file->get_filearea(),
+            $file->get_itemid(),
+            $file->get_filename(),
+            $filename
+        );
+
+        if ($exists) {
+            $params = [
+                'src' => '@@PLUGINFILE@@/'.$filename,
+                'kind' => 'subtitles',
+                'srclang' => $srclang,
+                'label' => $label,
+                'default' => 'default',
+            ];
+            return \html_writer::empty_tag('track', $params);
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * Determine if the given string holds "man", "woman", "male", "female"
+     * or a localized version of one of those strings.
+     *
+     * @return valid version of gender string, "male", "female" or "random"
+     */
+    protected function get_valid_gender($gender) {
+
+        static $male = null;
+        static $female = null;
+
+        if ($male === null) {
+            $male = ['man', $this->tool->get_string('man'),
+                     'male', $this->tool->get_string('male')];
+            $male = array_map('strtolower', $male);
+            $male = array_unique($male);
+        }
+
+        if ($female === null) {
+            $female = ['woman', $this->tool->get_string('woman'),
+                       'female', $this->tool->get_string('female')];
+            $female = array_map('strtolower', $female);
+            $female = array_unique($female);
+        }
+
+        $gender = trim($gender);
+
+        if (in_array($gender, $male)) {
+            return 'male';
+        }
+        if (in_array($gender, $female)) {
+            return 'female';
+        }
+
+        return 'random'; // Will be assigned later.
+    }
+
+    /**
+     * Creates a media file (e.g. AUDIO) that represents a dialog between two or more speakers.
+     *
+     * This method uses speaker information and dialog lines to generate a media file,
+     * typically via an AI subplugin identified by the given config ID.
+     *
+     * @param int $configid The ID of the AI subplugin configuration to use.
+     * @param string $mediatype The type of media to create (e.g. 'AUDIO').
+     * @param array $lines An array of dialog lines, where each item is a numeric array:
+     *                     [0] = speaker ID (e.g., 'A'),
+     *                     [1] = speaker gender or voice style (e.g., 'female'),
+     *                     [2] = the line of dialog (e.g., 'Hello!').
+     *                     Example: [['A', 'female', 'Hello!'], ['B', 'male', 'Good morning.']]
+     * @param array $filerecord An array of file record information (e.g. filename, filepath, contextid).
+     * @param int $questionid The ID of the Moodle question to which this media file belongs.
+     * @param array $genders An associative array mapping speaker IDs (e.g. 'A') to gender or voice profiles (e.g. 'female').
+     *
+     * @return stored_file|string|null The generated media file object on success,
+     *                                 a string error message on failure,
+     *                                 or null if the media could not be created.
+     */
+    public function create_dialog_file($configid, $mediatype, $lines, $filerecord, $questionid) {
+
+        // Cache the file storage object.
+        $fs = get_file_storage();
+
+        // Cache the base filename.
+        // E.g questiontext-01-audio-01.mp3.
+        $filename = $filerecord['filename'];
+
+        $files = [];
+        foreach ($lines as $i => $line) {
+
+            // Extract the speaker, gender and prompt for this line.
+            list($speaker, $gender, $text) = $line;
+
+            // Ensure media file name is unique by adding unique suffix.
+            // E.g. questiontext-01-audio-01-01-A.mp3.
+            $suffix = [str_pad($i + 1, 2, '0', STR_PAD_LEFT), $speaker];
+            $filerecord['filename'] = \mod_vocab\activity::modify_filename($filename, '', $suffix);
+
+            // Create an audio file for this line of the dialog.
+            $files[] = $this->create_media_file(
+                $configid, $mediatype, $text, $filerecord, $questionid, $speaker, $gender
+            );
+        }
+
+        // Concatenate content of mp3 files. Note that we
+        // strip any mp3 tags on the individual media files
+        // and then add leading ID3v2 tag and trailing ID2v1 tag.
+
+        $starttime = 0;
+        $captions = [];
+        $captions[] = 'WEBVTT';
+        $captions[] = ''; // Blank line after header.
+        $title = '';
+
+        foreach ($files as $i => $file) {
+            // Sample line: A, female, Hello!.
+            list($speaker, $gender, $text) = $lines[$i];
+
+            if (is_object($file)) {
+                $content = $this->strip_mp3_tags($file->get_content());
+                $duration = $this->get_mp3_duration_cbr($content);
+                $endtime = $starttime + $duration;
+
+                // Format milliseconds into hh:mm:ss.mmm.
+                $starttext = $this->format_webvtt_time($starttime);
+                $endtext = $this->format_webvtt_time($endtime);
+                $starttime = $endtime;
+
+                $captions[] = ($i + 1); // Cue identifier.
+                $captions[] = $starttext.' --> '.$endtext;
+                $captions[] = $speaker.': '.$text;
+                $captions[] = ''; // Force exta newline.
+
+                // Add the text from this line to the MP3 title string.
+                $title .= ($title ? ' ' : '').$text;
+
+                $files[$i] = $content;
+                $file->delete();
+            } else {
+                $files[$i] = '';
+            }
+        }
+
+        // Generate file for concatenated audio and return it.
+        if ($captions = implode("\n", $captions)) {
+            $filerecord['filename'] = \mod_vocab\activity::modify_filename($filename, '', '', 'vtt');
+            $this->add_or_update_file_from_string($fs, $filerecord, $captions);
+        }
+
+        // Generate file for concatenated audio and return it.
+        if ($files = implode('', $files)) {
+            $title = shorten_text(strip_tags($title));
+            $artist = $this->tool->get_string('pluginname');
+            $files = $this->mp3_id3v2_tag($title, $artist).
+                     $files. // The concatenated mp3 content.
+                     $this->mp3_id3v1_tag($title, $artist);
+            $filerecord['filename'] = $filename;
+            return $this->add_or_update_file_from_string($fs, $filerecord, $files);
+        }
+
+        // Something went wrong, so abort generation of this audio file.
+        return false;
+    }
+
+    /**
+     * Creates or replaces a stored file in the Moodle file system from a string.
+     *
+     * If a file already exists with the same context, component, filearea, itemid,
+     * filepath, and filename, it will be deleted before creating the new file.
+     *
+     * @param file_storage $fs The Moodle file storage object (from get_file_storage()).
+     * @param array $filerecord An array of file record information, including:
+     *   - contextid: The context ID.
+     *   - component: The component name (e.g., 'mod_vocab').
+     *   - filearea: The file area (e.g., 'media').
+     *   - itemid: The item ID (e.g., question ID).
+     *   - filepath: The file path (e.g., '/').
+     *   - filename: The file name (e.g., 'questiontext.01.audio.01.mp3').
+     * @param string $string The content to write into the file.
+     *
+     * @return stored_file|string The stored_file object on success, or an error message string on failure.
+     */
+    protected function add_or_update_file_from_string($fs, $filerecord, $string) {
+        $pathnamehash = $this->get_pathnamehash($fs, $filerecord);
+        if ($fs->file_exists_by_hash($pathnamehash)) {
+            $fs->get_file_by_hash($pathnamehash)->delete();
+        }
+        if ($file = $fs->create_file_from_string($filerecord, $string)) {
+            return $file;
+        }
+        // Oops, something went wrong and the file could not be created.
+        $a = (object)[
+            'subplugin' => $filearea['component'],
+            'filearea' => $filerecord['filearea'],
+            'itemid' => $filerecord['itemid'],
+        ];
+        return $this->tool->get_string('medianotcreated', $a).': '.$filerecord['filename'];
+    }
+
+    /**
+     * Generates a pathname hash for a file based on its file record.
+     *
+     * This is a wrapper for file_storage::get_pathname_hash(), which creates a unique
+     * identifier for locating a file in Moodle's file storage system.
+     *
+     * @param file_storage $fs The Moodle file storage object (usually from get_file_storage()).
+     * @param array $filerecord An associative array containing the required keys:
+     *   - contextid: The context ID for the file.
+     *   - component: The component name (e.g., 'mod_vocab').
+     *   - filearea: The file area name (e.g., 'questiontext').
+     *   - itemid: The item ID associated with the file.
+     *   - filepath: The file path (e.g., '/').
+     *   - filename: The filename (e.g., 'audio.mp3').
+     *
+     * @return string The generated pathname hash.
+     */
+    protected function get_pathnamehash($fs, $filerecord) {
+        return $fs->get_pathname_hash(
+            $filerecord['contextid'], $filerecord['component'], $filerecord['filearea'],
+            $filerecord['itemid'], $filerecord['filepath'], $filerecord['filename']
+        );
+    }
+
+    /**
+     * Generates a media file (image, audio, or video) using the specified AI configuration and prompt.
+     *
+     * This method retrieves the appropriate AI generator based on the media type and configuration,
+     * then delegates the media creation to that generator.
+     *
+     * @param int $configid The ID of the AI subplugin configuration to use.
+     * @param string $mediatype The type of media to generate (e.g., 'IMAGE', 'AUDIO', 'VIDEO').
+     * @param string $prompt The content or script to send to the media generator.
+     * @param array $filerecord File metadata used to store the generated file in Moodle.
+     * @param int $questionid The ID of the Moodle question associated with the media.
+     * @param string $speaker (Optional) The speaker label (used for audio prompts).
+     * @param string $gender (Optional) The speaker's gender or voice style (used for audio prompts).
+     *
+     * @return stored_file|null The generated media file object, or null on failure.
+     */
+    public function create_media_file($configid, $mediatype, $prompt, $filerecord, $questionid, $speaker='', $gender='') {
 
         static $configs = [];
         if (! array_key_exists($configid, $configs)) {
@@ -1389,7 +2037,173 @@ EOD;
             return null; // Invalid mediatype - shouldn't happen !!
         }
 
-        return $creator->get_media_file($prompt, $filerecord, $questionid);
+        return $creator->get_media_file($prompt, $filerecord, $questionid, $speaker, $gender);
+    }
+
+    /**
+     * Estimates the duration of a CBR MP3 file by parsing the first MPEG audio frame.
+     *
+     * This method assumes the MP3 file uses constant bitrate (CBR) encoding. It searches for
+     * the first valid MPEG frame header, extracts the bitrate and sampling rate, and calculates
+     * the total duration based on the file size.
+     *
+     * @param string $mp3 The raw binary content of the MP3 file (without leading/trailing ID3 tags).
+     *
+     * @return float|null The estimated duration in seconds, or null if a valid frame header could not be found.
+     */
+    protected function get_mp3_duration_cbr($mp3) {
+
+        // Find first frame sync byte.
+        $offset = strpos($mp3, "\xFF");
+        while ($offset !== false && (ord($mp3[$offset + 1]) & 0xE0) !== 0xE0) {
+            $offset = strpos($mp3, "\xFF", $offset + 1);
+        }
+
+        // If no frame was found, we abort.
+        if ($offset === false) {
+            return null;
+        }
+
+        $header = substr($mp3, $offset, 4);
+        $bytes = unpack('N', $header)[1];
+
+        $bitrateindex = ($bytes >> 12) & 0xF;
+        $samplingindex = ($bytes >> 10) & 0x3;
+
+        $bitratetable = [
+            // For MPEG-1 Layer III.
+            null, 32, 40, 48, 56, 64,
+            80, 96, 112, 128, 160, 192,
+            224, 256, 320, null,
+        ];
+        $samplingratetable = [44100, 48000, 32000, null];
+
+        $bitrate = ($bitratetable[$bitrateindex] ?? null);
+        $samplerate = ($samplingratetable[$samplingindex] ?? null);
+
+        if ($bitrate && $samplerate) {
+            $filesize = strlen($mp3); // Bytes.
+            $duration = ($filesize * 8) / ($bitrate * 1000); // Seconds.
+            return (float)$duration;
+        }
+
+        // Bit rate and/or sample rate could not be determined.
+        return null;
+    }
+
+    /**
+     * Converts a duration in milliseconds to WebVTT timestamp format (hh:mm:ss.mmm).
+     *
+     * @param float|int $time Duration in milliseconds.
+     * @return string Formatted time (e.g. 00:01:23.456)
+     */
+    protected function format_webvtt_time($time) {
+        // Cast the time to an integer in order to prevent error:
+        // Implicit conversion from float 12.345 to int loses precision.
+        $time = (int)$time;
+        $h = floor($time / 3600000);
+        $m = floor(($time % 3600000) / 60000);
+        $s = floor(($time % 60000) / 1000);
+        $time = $time % 1000;
+        return sprintf('%02d:%02d:%02d.%03d', $h, $m, $s, $time);
+    }
+
+    /**
+     * Strips the ID3v1 and ID3v2 tags from the MP3 data.
+     * Removes the ID3v1 tag, if present, at the end of the MP3.
+     * Removes the ID3v2 tag, if present, at the start of the MP3.
+     *
+     * @param string $mp3 The raw binary content of an MP3 file.
+     * @return string The MP3 data with ID3 tags removed.
+     */
+    protected function strip_mp3_tags($mp3) {
+        // Remove ID3v1 tag (128 bytes at end).
+        if (substr($mp3, -128, 3) === "TAG") {
+            $mp3 = substr($mp3, 0, -128);
+        }
+
+        // Remove ID3v2 tag (size from bytes 6–10, synchsafe int).
+        if (substr($mp3, 0, 3) === "ID3") {
+            $sizebytes = substr($mp3, 6, 4);
+            $size = (ord($sizebytes[0]) & 0x7F) << 21 |
+                    (ord($sizebytes[1]) & 0x7F) << 14 |
+                    (ord($sizebytes[2]) & 0x7F) << 7 |
+                    (ord($sizebytes[3]) & 0x7F);
+            $mp3 = substr($mp3, 10 + $size);
+        }
+
+        return $mp3;
+    }
+
+    /**
+     * Generates an ID3v1 tag suitable for appending to the end of an MP3 file.
+     *
+     * @param string $file The file path to the MP3 file.
+     * @param string $title The title of the track.
+     * @param string $artist The artist of the track.
+     * @param string $album The album name.
+     * @param int $year The year of the track.
+     * @param string $comment The comment associated with the track.
+     * @param int $genre The genre of the track (0–255). Use 255 for undefined.
+     * @return bool True on success, false on failure.
+     */
+    protected function mp3_id3v1_tag($title = '', $artist = '',
+                                     $album = '', $year = 0,
+                                     $comment = '', $genre = 255) {
+        if ($year == 0) {
+            $year = date('Y');
+        }
+        $tag = 'TAG';
+        $tag .= str_pad(substr($title, 0, 30), 30, "\0");
+        $tag .= str_pad(substr($artist, 0, 30), 30, "\0");
+        $tag .= str_pad(substr($album, 0, 30), 30, "\0");
+        $tag .= str_pad(substr("$year", 0, 4), 4, "\0");
+        $tag .= str_pad(substr($comment, 0, 30), 30, "\0");
+        $tag .= chr($genre); // 1 byte
+        return $tag;
+    }
+
+    /**
+     * Generates a basic ID3v2.3 tag with title and artist
+     * suitable for prepending to the beginning of an MP3 file.
+     *
+     * @param string $title The title of the track.
+     * @param string $artist The artist name.
+     * @return string ID3v2 tag.
+     */
+    protected function mp3_id3v2_tag($title = '', $artist = '') {
+        $frames = '';
+        if ($title) {
+            $frames .= $this->build_mp3_frame('TIT2', $title);
+        }
+        if ($artist) {
+            $frames .= $this->build_mp3_frame('TPE1', $artist);
+        }
+
+        $tagsize = strlen($frames);
+        $sizebytes = pack('C4',
+            ($tagsize >> 21) & 0x7F,
+            ($tagsize >> 14) & 0x7F,
+            ($tagsize >> 7) & 0x7F,
+            ($tagsize) & 0x7F
+        );
+
+        $header = 'ID3'."\x03\x00"."\x00".$sizebytes;
+
+        return $header.$frames;
+    }
+
+    /**
+     * Builds a single ID3v2.3 text frame for an MP3 tag.
+     *
+     * @param string $id   The 4-character frame ID (e.g., 'TIT2', 'TPE1').
+     * @param string $text The text content to encode in the frame.
+     * @return string The binary frame data.
+     */
+    protected function build_mp3_frame($id, $text) {
+        $encoded = "\x00".$text; // 0x00 = ISO-8859-1 encoding.
+        $size = strlen($encoded);
+        return $id.pack('N', $size)."\x00\x00".$encoded;
     }
 
     /**
@@ -1411,9 +2225,6 @@ EOD;
 
         // Print the label with the error.
         mtrace($label.$error);
-
-        // Mark this task as having failed.
-        \core\task\manager::adhoc_task_failed($this);
 
         // Set log status to "Failed" and report $error.
         if ($log) {

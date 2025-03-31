@@ -195,6 +195,10 @@ $string['redoupgrade'] = 'Redo upgrade: {$a}';
 $string['redoversiondate'] = '"Vocab activity module version set to just before {$a->version} - {$a->datetext}"';
 $string['clicktocontinue'] = 'Click here to continue';
 
+$string['redotask'] = 'Redo an adhoc task';
+$string['redotaskincron'] = 'Run task in cron';
+$string['notasks'] = 'There are currently no adhoc tasks awaiting execution.';
+
 $string['import'] = 'Import';
 $string['importfile_help'] = 'Here you can import a word list from a file. You can create your own text file with one word or phrase per line, or you can use a file that has been exported from another Vocabulary activity.';
 $string['importfile'] = 'Import file';
@@ -240,4 +244,3 @@ $string['contentplugins_help'] = 'Select the AI content (e.g. prompts, formats, 
 
 $string['assistantplugins'] = 'AI assistants';
 $string['assistantplugins_help'] = 'Select the AI assistants (e.g. ChatGPT, DALL-E, TTS) whose settings you wish to export.';
-

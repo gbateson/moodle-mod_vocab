@@ -1179,7 +1179,7 @@ class activity {
      * @param string $filename
      * @param mixed $prefix string containing single prefix, or array containing multiple prefixes (optional, default="")
      * @param mixed $suffix string containing single suffix, or array containing multiple suffixes (optional, default="")
-     * @param string $extension (optional, default="")
+     * @param string $extension without leading "." (optional, default="")
      * @param string $join the join string used to prepend $prefix or append $suffix (optional, default="-")
      * @return string the modified filename.
      */

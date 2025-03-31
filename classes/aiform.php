@@ -180,7 +180,8 @@ abstract class aiform extends \mod_vocab\subpluginform {
         if (isset($config->$name)) {
             $label = $this->get_string($name).$labelsep;
             $label = \html_writer::tag('dt', $label, $dt);
-            $value = $config->$name;
+            $search = '/(\s+|<.*?>|(?:\[\[[A-Z]+)|(\w+=".*?")|(?:\]\]))+/u';
+            $value = trim(preg_replace($search, ' ', $config->$name));
             $value = \core_text::substr($value, 0, 20).' ... '.\core_text::substr($value, -20);
             $value = \html_writer::tag('dd', htmlspecialchars($value, ENT_COMPAT), $dd);
             $html .= \html_writer::tag('dl', $label.$value, $dl);

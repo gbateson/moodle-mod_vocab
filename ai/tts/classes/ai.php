@@ -68,16 +68,18 @@ class ai extends \mod_vocab\aibase {
     const DEBUG = false;
 
     /**
-     * Get media files and store them in the specified filearea.
-     * If several files are generated, they will *all* be converted
-     * and stored, but only the first one will be returned by this method.
+     * Generates a media file from the given prompt and stores it in the specified filearea.
+     * If multiple files are generated, all will be stored, but only the first one is returned.
      *
-     * @param string $prompt
-     * @param array $filerecord
-     * @param integer $questionid
-     * @return stored_file or error message as a string.
+     * @param string $prompt The input text or script to generate media from.
+     * @param array $filerecord An associative array containing file metadata
+     * @param int $questionid The ID of the related Moodle question.
+     * @param string $speaker (Optional) The speaker identifier (used for audio prompts).
+     * @param string $gender (Optional) The speaker's gender or voice style (used for audio prompts).
+     *
+     * @return stored_file|string The generated stored_file object on success, or an error message string on failure.
      */
-    public function get_media_file($prompt, $filerecord, $questionid) {
+    public function get_media_file($prompt, $filerecord, $questionid, $speaker='', $gender='') {
 
         // Initialize arguments for error strings.
         $a = (object)[
@@ -86,7 +88,21 @@ class ai extends \mod_vocab\aibase {
             'itemid' => $filerecord['itemid'],
         ];
 
-        $media = $this->get_response($prompt, $questionid);
+        // Cache the file storage object.
+        $fs = get_file_storage();
+
+        // During development, this media file may already have been created.
+        $pathnamehash = $fs->get_pathname_hash(
+            $filerecord['contextid'], $filerecord['component'], $filerecord['filearea'],
+            $filerecord['itemid'], $filerecord['filepath'], $filerecord['filename']
+        );
+        if ($fs->file_exists_by_hash($pathnamehash)) {
+            return $fs->get_file_by_hash($pathnamehash);
+            // Alternatively, the file could be deleted
+            // by adding '->delete()' to the above line.
+        }
+
+        $media = $this->get_response($prompt, $questionid, $speaker, $gender);
 
         if (empty($media)) {
             return $this->get_string('medianotcreated', $a).' empty(media)';
@@ -100,7 +116,6 @@ class ai extends \mod_vocab\aibase {
             return $this->get_string('medianotcreated', $a).' empty(media->data)';
         }
 
-        $fs = get_file_storage();
         if (! $file = $fs->create_file_from_string($filerecord, $media->data)) {
             return $this->get_string('medianotcreated', $a).' empty(file)';
         }
@@ -109,13 +124,22 @@ class ai extends \mod_vocab\aibase {
     }
 
     /**
-     * Send a prompt to an AI assistant and get the response.
+     * Sends a text prompt to the configured TTS (Text-to-Speech) service and returns the response.
      *
-     * @param string $prompt
-     * @param integer $questionid (optional, default=0)
-     * @return object containing "text" and "error" properties.
+     * This method builds a request using the current AI configuration, optionally selecting
+     * a voice model based on the question ID, and submits the request using Moodle's curl wrapper.
+     *
+     * @param string $prompt The input text or script to be converted to speech.
+     * @param int $questionid (Optional) The ID of the question, used to consistently select a voice.
+     * @param string $speaker (Optional) The speaker identifier (not currently used, reserved for future use).
+     * @param string $gender (Optional) The speaker's gender or voice style (not currently used, reserved for future use).
+     *
+     * @return object|null An object with:
+     *   - string $data: The raw audio content or API response (e.g., base64 or binary),
+     *   - string $error: An error message if one occurred (empty string otherwise),
+     * or `null` if configuration settings are missing.
      */
-    public function get_response($prompt, $questionid=0) {
+    public function get_response($prompt, $questionid=0, $speaker='', $gender='') {
 
         // Ensure we have the basic settings.
         if (empty($this->config->ttsurl)) {
@@ -156,7 +180,7 @@ class ai extends \mod_vocab\aibase {
         // Select random voice, if necessary.
         // The same voice will be used for each question,
         // but different questions may use different voices.
-        $this->select_voice($questionid);
+        $this->select_voice($questionid, $speaker, $gender);
 
         // Set optional POST fields.
         foreach (['voice', 'response_format', 'speed'] as $name) {
@@ -191,20 +215,37 @@ class ai extends \mod_vocab\aibase {
     }
 
     /**
-     * Select and set voice (possibly chosen at random) for the given question.
+     * Selects and sets a voice for the given question and speaker.
      *
-     * @param integer $questionid
-     * @return void, but will update $this->config->voice once per question.
+     * If a gender is provided, it takes priority. Otherwise, the method uses the default
+     * configuration or a randomized choice (based on the config or fallback list).
+     * The selected voice is stored statically per question and speaker, and only selected once.
+     * The final voice is assigned to $this->config->voice for use in TTS requests.
+     *
+     * @param int $questionid The ID of the question used to maintain consistent voice assignment.
+     * @param string $speaker (Optional) The speaker identifier (e.g., 'A', 'B') for multi-speaker dialogs.
+     * @param string $gender (Optional) The preferred gender or voice style (e.g., 'male', 'female').
+     *
+     * @return void, but may update
      */
-    public function select_voice($questionid) {
+    public function select_voice($questionid, $speaker='', $gender='') {
         static $voices = [];
         if (empty($voices[$questionid])) {
-            $name = 'voice';
-            $form = '\\vocabai_tts\\form';
-            if (empty($this->config->$name)) {
-                $voice = $form::VOICE_RANDOM; // Shouldn't happen !!
+            $voices[$questionid] = [];
+        }
+        $name = 'voice';
+        $form = '\\vocabai_tts\\form';
+        if (empty($voices[$questionid][$speaker])) {
+            if ($gender) {
+                $voice = $gender;
             } else {
-                $voice = $this->config->$name;
+                if (empty($this->config->$name)) {
+                    // No voice has been set yet.
+                    $voice = $form::VOICE_RANDOM;
+                } else {
+                    // Use the previously selected voice.
+                    $voice = $this->config->$name;
+                }
             }
             switch ($voice) {
                 case $form::VOICE_FEMALE:
@@ -220,8 +261,10 @@ class ai extends \mod_vocab\aibase {
             if (is_array($voice)) {
                 $voice = $voice[array_rand($voice)];
             }
-            $voices[$questionid] = $voice;
-            $this->config->$name = $voice;
+            $voices[$questionid][$speaker] = $voice;
+        } else {
+            $voice = $voices[$questionid][$speaker];
         }
+        $this->config->$name = $voice;
     }
 }

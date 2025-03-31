@@ -30,5 +30,5 @@ $plugin->cron      = 0;
 $plugin->component = 'vocabtool_questionbank';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2025010124;
-$plugin->release   = '2025-01-01 (24)';
+$plugin->version   = 2025011625;
+$plugin->release   = '2025-01-16 (25)';

@@ -57,10 +57,11 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
 
-    // Cache class name of questionbank form.
-    $form = '\\vocabtool_questionbank\\form';
     $newversion = 2025010124;
     if ($oldversion < $newversion) {
+
+        // Cache class name of questionbank form.
+        $form = '\\vocabtool_questionbank\\form';
 
         $value = $form::SUBCAT_NONE;
         $params = ['subcattype' => 'none']; // SUBCAT_NONE.
@@ -78,6 +79,13 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
         $params = ['subcattype' => 'automatic']; // SUBCAT_AUTOMATIC.
         $DB->set_field('vocabtool_questionbank_log', 'subcattype', $value, $params);
 
+        xmldb_vocab_check_structure($dbman, null, $plugin, $plugin, $dir);
+        upgrade_plugin_savepoint($result, $newversion, $type, $name);
+    }
+
+    // Increase length of qformat field to 16 chars, to hold "multianswer" (=cloze).
+    $newversion = 2025011625;
+    if ($oldversion < $newversion) {
         xmldb_vocab_check_structure($dbman, null, $plugin, $plugin, $dir);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }

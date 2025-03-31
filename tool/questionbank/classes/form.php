@@ -418,7 +418,7 @@ class form extends \mod_vocab\toolform {
      */
     public static function get_question_formats() {
         // ToDo: Could include aiken, hotpot, missingword, multianswer.
-        return self::get_question_plugins('qformat', ['gift', 'xml']);
+        return self::get_question_plugins('qformat', ['gift', 'multianswer', 'xml']);
     }
 
     /**
@@ -1100,7 +1100,7 @@ class form extends \mod_vocab\toolform {
         $logmessage = '';
 
         // Get array of new log values. Use depth=2 to get array.
-        if ($values = self::get_optional_param('log', null, PARAM_TEXT, 2)) {
+        if ($values = self::get_optional_param('log', null, PARAM_RAW, 2)) {
 
             $tool = $this->get_subplugin();
             $siteadmin = is_siteadmin();
@@ -1183,8 +1183,8 @@ class form extends \mod_vocab\toolform {
                     'status' => PARAM_INT,
                     'review' => PARAM_INT,
                     'error' => PARAM_TEXT,
-                    'prompt' => PARAM_TEXT,
-                    'results' => PARAM_TEXT,
+                    'prompt' => PARAM_CLEANHTML,
+                    'results' => PARAM_CLEANHTML,
                 ];
 
                 // The $updated array holds the names
@@ -1457,11 +1457,11 @@ class form extends \mod_vocab\toolform {
 
                     $name = 'prompt';
                     $a = ['strname' => 'prompttext', 'rows' => 1];
-                    $this->add_field_textarea($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
+                    $this->add_field_textarea($mform, "log[$name]", PARAM_CLEANHTML, $log->$name, $a);
 
                     $name = 'results';
                     $a = ['strname' => 'resultstext', 'rows' => 1];
-                    $this->add_field_textarea($mform, "log[$name]", PARAM_TEXT, $log->$name, $a);
+                    $this->add_field_textarea($mform, "log[$name]", PARAM_CLEANHTML, $log->$name, $a);
 
                     $name = 'questionids';
                     $a = ['strname' => 'moodlequestions'];

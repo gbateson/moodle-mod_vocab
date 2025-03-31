@@ -284,6 +284,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
     // and the current structure of the Moodle database.
     $errors = $dbman->check_database_schema($structure);
     if ($tablenames) {
+        // We are only interested in specific tables.
         $keys = array_values($tablenames);
     } else {
         $keys = array_keys($errors);
@@ -305,7 +306,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
         $i = $file->findObjectInArray($tablename, $tables);
         if (is_numeric($i)) {
             // A table in the XML file.
-            // It may or may  not exist in the DB.
+            // It may or may not exist in the DB.
             $table = $tables[$i];
         } else {
             // A table that is in the DB but not in the XML file.
@@ -417,7 +418,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
                                 $dropped->indexes[] = $index;
                             }
                         }
-                        // Remove this field from the list of indexfields,
+                        // Remove this field from the list of index fields,
                         // as it will not be needed again.
                         unset($special->indexfields[$name]);
                     }
