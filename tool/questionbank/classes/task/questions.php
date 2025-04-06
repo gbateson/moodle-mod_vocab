@@ -1026,9 +1026,10 @@ EOD;
 
             $lines = explode("\n", $text);
             if ($question = $format->readquestions($lines)) {
-                // The readquestions method returns an array of questions.
-                // Since we are confident there is only one question,
-                // we can use just the first question.
+                // For compatability with other import formats,
+                // the readquestions method of the multianswer
+                // format returns an array of questions.
+                // However, it only ever contains one question.
                 foreach (array_keys($question) as $q) {
                     // Clean $question[$q]->name and $question[$q]->options.
                     // Note, $name will be ignored as a result.
@@ -1727,13 +1728,13 @@ EOD;
 
                 if (is_object($file)) {
 
-                    // Determine if the media player (for audio and video) will be permitted.
-                    $mediaplugin = true;
+                    // Determine if the media player (for audio and video) will be used.
+                    $usemediaplugin = true;
                     if (in_array('nomediaplugin', explode(' ', $tagparams['class']))) {
                         // The media tag has specified a class of 'nomediaplugin'
                         // and so will be ignored by the mediaplugin filter.
                         // E.g. [[AUDIO class="nomediaplugin" ...]]
-                        $mediaplugin = false;
+                        $usemediaplugin = false;
                     }
 
                     // Remove empty tag params, and define value for the "src".
@@ -1754,7 +1755,7 @@ EOD;
                         $html = \html_writer::empty_tag('source', ['src' => $src]);
 
                         // Add subtitles file for audio not played in the mediaplayer.
-                        if ($tagname == 'AUDIO' && $mediaplugin === false) {
+                        if ($tagname == 'AUDIO' && $usemediaplugin === false) {
                             $html .= $this->add_html_for_subtitles($file); // Add <track> tag.
                         }
 
@@ -1765,8 +1766,13 @@ EOD;
 
                         // Add wrapper to prevent mediaplayer filter from positioning this media tag
                         // in the center of the page caused by the .mediaplugin>div { margin: auto; }.
-                        if ($tagname == 'AUDIO' && $mediaplugin === true) {
-                            $params = ['style' => 'display: inline-block; width: min(400px, 85vw);'];
+                        if ($tagname == 'AUDIO' && $usemediaplugin === true) {
+                            $params = [
+                                'class' => 'rounded',
+                                'style' => 'background: black; '.
+                                           'display: inline-block; '.
+                                           'width: min(400px, 85vw);',
+                            ];
                             $html = \html_writer::tag('div', $html, $params);
                         }
                     }
