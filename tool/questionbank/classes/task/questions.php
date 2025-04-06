@@ -416,6 +416,9 @@ class questions extends \core\task\adhoc_task {
             }
             if ($tagtypes & $form::QTAG_PROMPT) {
                 if ($promptname = $promptconfig->promptname) {
+                    if ($pos = strpos($promptname, ':')) {
+                        $promptname = substr($promptname, 0, $pos);
+                    }
                     $promptname = explode(' ', $promptname);
                     $promptname = array_diff($promptname, ['Generate', 'questions']);
                     $tags[] = implode(' ', $promptname);
