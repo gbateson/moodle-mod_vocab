@@ -61,6 +61,30 @@ class form extends \mod_vocab\toolform {
     /** @var int database value to represent creating a question category for each vocabulary level (e.g. "A2") */
     const SUBCAT_VOCABLEVEL = 0x20;
 
+    /** @var int database value to represent adding no new question question tags */
+    const QTAG_NONE = 0x00;
+
+    /** @var string database value to represent adding an "AI" tag */
+    const QTAG_AI = 0x01;
+
+    /** @var int database value to represent adding a question tag derivecd from the prompt name */
+    const QTAG_PROMPT = 0x02;
+
+    /** @var int database value to represent adding a question tag for the media types, if any (e.g. image, audio) */
+    const QTAG_MEDIATYPE = 0x04;
+
+    /** @var string database value to represent adding an "AI" tag */
+    const QTAG_WORD = 0x08;
+
+    /** @var int database value to represent adding a question tag for the question type (e.g. MC) */
+    const QTAG_QUESTIONTYPE = 0x10;
+
+    /** @var int database value to represent adding a question tag for the vocab level (e.g. A2) */
+    const QTAG_VOCABLEVEL = 0x20;
+
+    /** @var int database value to represent adding one or more custom question tags */
+    const QTAG_CUSTOMTAGS = 0x40;
+
     /**
      * definition
      *
@@ -273,6 +297,16 @@ class form extends \mod_vocab\toolform {
         $default |= self::SUBCAT_QUESTIONTYPE;
         $default |= self::SUBCAT_VOCABLEVEL;
         $this->add_subcategories($mform, 'subcat', $default);
+
+        $name = 'questiontags';
+        $this->add_heading($mform, $name, true);
+
+        $default = self::QTAG_AI;
+        $default |= self::QTAG_WORD;
+        $default |= self::QTAG_QUESTIONTYPE;
+        $default |= self::QTAG_VOCABLEVEL;
+        $default |= self::QTAG_MEDIATYPE;
+        $this->add_questiontags($mform, 'qtag', $default);
 
         // Use "Generate questions" as the label for the submit button.
         $label = $this->get_string('generatequestions');
@@ -719,51 +753,112 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * add_subcategories
+     * Adds a group of subcategory checkboxes to a Moodle form.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $name either "subcat" or "log[subcat]"
-     * @param integer $defaulttypes
-     * @param string $defaultname the default custom name (optional, default='')
-     * @return void, but will add elements to $mform
+     * @param MoodleQuickForm $mform The form object to add elements to.
+     * @param string $name The base name for the checkbox group.
+     * @param int $defaultvalue Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional) Default text for the custom name field.
+     *
+     * @return void, but may update $mform
      */
-    public function add_subcategories($mform, $name, $defaulttypes, $defaultname='') {
+    public function add_subcategories($mform, $name, $defaultvalue, $defaultcustomname='') {
+        return $this->add_checkboxes(
+            $mform, $name, 'subcategories',
+            $this->get_subcategory_types(),
+            self::SUBCAT_NONE, self::SUBCAT_CUSTOMNAME,
+            $defaultvalue, $defaultcustomname
+        );
+    }
 
-        // The name of the form field containing the "Custom name" string.
-        $catname = $name.'[name]';
+    /**
+     * Adds a group of question tag checkboxes to a Moodle form.
+     *
+     * @param MoodleQuickForm $mform The form object to add elements to.
+     * @param string $name The base name for the checkbox group.
+     * @param int $defaultvalue Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional) Default text for the custom tag field.
+     *
+     * @return void, but may update $mform
+     */
+    public function add_questiontags($mform, $name, $defaultvalue, $defaultcustomname='') {
+        return $this->add_checkboxes(
+            $mform, $name, 'questiontags',
+            $this->get_questiontag_types(),
+            self::QTAG_NONE, self::QTAG_CUSTOMTAGS,
+            $defaultvalue, $defaultcustomname
+        );
+    }
 
-        $strname = 'subcategories';
+    /**
+     * Adds a custom group of checkboxes with optional text input to a Moodle form.
+     *
+     * @param MoodleQuickForm $mform The form object to add elements to.
+     * @param string $name The base name for the checkbox group.
+     * @param string $strname The string identifier used for the group label and help button.
+     * @param array $options Associative array of checkbox values and their labels.
+     * @param int $valuenone The value representing the 'none' option (disables others).
+     * @param int $valuecustom The value that triggers display of the custom text input.
+     * @param int $defaultvalue Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional) Default text for the custom input field.
+     *
+     * @return void, but may update $mform
+     */
+    public function add_checkboxes($mform, $name, $strname,
+                                   $options, $valuenone, $valuecustom,
+                                   $defaultvalue, $defaultcustomname='') {
+
+        // The name of the form field containing the custom name/tag string.
+        $customname = $name.'[name]';
+
         $label = $this->get_string($strname);
 
         // Cache line break element.
         $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
 
-        $options = $this->get_subcategory_types();
         foreach ($options as $value => $text) {
             $elements[] = $mform->createElement('checkbox', $value, $text);
-            if ($value == self::SUBCAT_CUSTOMNAME) {
+            if ($value == $valuecustom) {
                 $elements[] = $mform->createElement('text', 'name', '', ['size' => 20]);
             }
             $elements[] = $mform->createElement('html', $linebreak);
         }
         $mform->addGroup($elements, $name, $label);
         $this->add_help_button($mform, $name, $strname);
-        $elementnone = $name.'['.self::SUBCAT_NONE.']';
+        $elementnone = $name.'['.$valuenone.']';
         foreach ($options as $value => $text) {
             $elementname = $name.'['.$value.']';
             $mform->setType($elementname, PARAM_INT);
-            if ($value == self::SUBCAT_CUSTOMNAME) {
-                $mform->setType($catname, PARAM_TEXT);
-                $mform->setDefault($catname, $defaultname);
-                $mform->disabledIf($catname, $elementname, 'notchecked');
+            if ($value == $valuecustom) {
+                $mform->setType($customname, PARAM_TEXT);
+                $mform->setDefault($customname, $defaultcustomname);
+                $mform->disabledIf($customname, $elementname, 'notchecked');
             }
-            if ($defaulttypes & $value) {
+            if ($defaultvalue & $value) {
                 $mform->setDefault($elementname, 1);
             }
             if ($value > 0) {
                 $mform->disabledIf($elementname, $elementnone, 'checked');
             }
         }
+    }
+
+    /**
+     * Get questiontag types
+     *
+     * @return array of questiontag types.
+     */
+    public function get_questiontag_types() {
+        return [
+            self::QTAG_NONE => get_string('none'),
+            self::QTAG_AI => $this->get_string('ai_generated'),
+            self::QTAG_PROMPT => $this->get_string('prompt'),
+            self::QTAG_MEDIATYPE => $this->get_string('mediatype'),
+            self::QTAG_WORD => $this->get_string('word'),
+            self::QTAG_QUESTIONTYPE => $this->get_string('questiontype'),
+            self::QTAG_VOCABLEVEL => $this->get_string('vocablevel'),
+            self::QTAG_CUSTOMTAGS => $this->get_string('customtags'),
+        ];
     }
 
     /**
@@ -819,7 +914,7 @@ class form extends \mod_vocab\toolform {
 
         $names = ['selectedwords', 'questiontypes',
                   'questionlevels', 'questioncount',
-                  'parentcat', 'subcat'];
+                  'parentcat', 'subcat', 'qtag'];
 
         foreach ($names as $name) {
             if (empty($data[$name])) {
@@ -858,8 +953,14 @@ class form extends \mod_vocab\toolform {
         $parentcatid = 0;
         $parentcatname = '';
 
-        $subcattype = 0;
+        $subcattype = self::SUBCAT_NONE;
         $subcatname = '';
+
+        $tagtypes = self::QTAG_NONE;
+        $tagnames = '';
+
+        // Cache this list separator (usually a comma ",").
+        $listsep = get_string('listsep', 'langconfig');
 
         // Cache the vocabid.
         $vocabid = $this->get_vocab()->id;
@@ -985,14 +1086,39 @@ class form extends \mod_vocab\toolform {
                     $subcatname = trim($data->{$groupname}['name']);
                 }
                 if ($subcatname == '') {
-                    $subcatname = get_string('listsep', 'langconfig');
-                    $subcatname = implode($subcatname, $words);
+                    $subcatname = implode($listsep, $words);
                     $subcatname = $this->get_string('defaultcustomname', $subcatname);
                     $subcatname = shorten_text($subcatname); // Shorten to 30 chars.
                 }
             } else if ($subcatname) {
                 // Name given but not needed, so remove it.
                 $subcatname = '';
+            }
+
+            unset($data->$groupname);
+        }
+
+        // Extract type and name of question subcategory.
+        $groupname = 'qtag';
+        if (property_exists($data, $groupname)) {
+
+            $types = $this->get_questiontag_types();
+            foreach ($types as $type => $text) {
+                if (! empty($data->{$groupname}[$type])) {
+                    $tagtypes |= $type;
+                }
+            }
+
+            if ($tagtypes & self::QTAG_CUSTOMTAGS) {
+                if (array_key_exists('name', $data->$groupname)) {
+                    $tagnames = trim($data->{$groupname}['name']);
+                    $tagnames = explode($listsep, $tagnames);
+                    $tagnames = array_filter($tagnames);
+                    $tagnames = implode($listsep, $tagnames);
+                }
+            } else if ($tagnames) {
+                // Tag names given but not needed, so remove them.
+                $tagnames = '';
             }
 
             unset($data->$groupname);
@@ -1033,6 +1159,8 @@ class form extends \mod_vocab\toolform {
                         'parentcatid' => $parentcatid,
                         'subcattype' => $subcattype,
                         'subcatname' => $subcatname,
+                        'tagtypes' => $tagtypes,
+                        'tagnames' => $tagnames,
                         'textid' => $textid,
                         'promptid' => $promptid,
                         'formatid' => $qtypesettings->formatid,
@@ -1156,6 +1284,28 @@ class form extends \mod_vocab\toolform {
             $values['subcattype'] = $subcattype;
             $values['subcatname'] = $subcatname;
 
+            // Extract the question tags.
+            $tagtypes = 0;
+            $tagnames = '';
+            $name = 'qtag';
+            if (isset($values[$name])) {
+                if (is_array($values[$name])) {
+                    // Remove empty values.
+                    $values[$name] = array_filter($values[$name]);
+                    // Extract non-empty types.
+                    foreach ($values[$name] as $type => $value) {
+                        if (is_numeric($type)) {
+                            $tagtypes |= $type;
+                        } else if ($type == 'name') {
+                            $tagnames = $value;
+                        }
+                    }
+                }
+                unset($values[$name]);
+            }
+            $values['tagtypes'] = $tagtypes;
+            $values['tagnames'] = $tagnames;
+
             if ($allowupdate) {
 
                 // Define the types of the log fields that can be updated.
@@ -1178,6 +1328,8 @@ class form extends \mod_vocab\toolform {
                     'parentcatid' => PARAM_INT,
                     'subcattype' => PARAM_INT,
                     'subcatname' => PARAM_TEXT,
+                    'tagtypes' => PARAM_INT,
+                    'tagnames' => PARAM_TEXT,
                     'maxtries' => PARAM_INT,
                     'tries' => PARAM_INT,
                     'status' => PARAM_INT,
@@ -1433,6 +1585,9 @@ class form extends \mod_vocab\toolform {
                     // The subcategories group includes 'log[subcat][type]' and 'log[subcat][name]'.
                     $this->add_subcategories($mform, "log[subcat]", $log->subcattype, $log->subcatname);
 
+                    // The subcategories group includes 'log[subcat][type]' and 'log[subcat][name]'.
+                    $this->add_questiontags($mform, "log[qtag]", $log->tagtypes, $log->tagnames);
+
                     $name = 'maxtries';
                     $a = ['strname' => $name, 'size' => 2];
                     $this->add_field_text($mform, "log[$name]", PARAM_INT, $log->$name, $a);
@@ -1660,7 +1815,8 @@ class form extends \mod_vocab\toolform {
         $audionames = [];
         $videonames = [];
         $categorynames = [];
-        $subcattypes = $this->get_subcategory_types();
+        $subcategorytypes = $this->get_subcategory_types();
+        $questiontagtypes = $this->get_questiontag_types();
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
@@ -1783,8 +1939,34 @@ class form extends \mod_vocab\toolform {
                     $qformats[$log->qformat] = $name;
                 }
 
-                if ($log->subcattype && array_key_exists($log->subcattype, $subcattypes)) {
-                    $log->subcattype = $subcattypes[$log->subcattype];
+                $subcattypes = [];
+                foreach ($subcategorytypes as $type => $text) {
+                    if ($log->subcattype & $type) {
+                        $subcattypes[$type] = $text;
+                    }
+                }
+                if (empty($subcattypes)) {
+                    $subcattypes = '';
+                } else {
+                    $subcattypes = \html_writer::alist($subcattypes, ['class' => 'list-unstyled']);
+                }
+
+                $tagtypes = [];
+                foreach ($questiontagtypes as $type => $text) {
+                    if ($log->tagtypes & $type) {
+                        $tagtypes[$type] = $text;
+                    }
+                }
+                if (empty($tagtypes)) {
+                    $tagtypes = '';
+                } else {
+                    $tagtypes = \html_writer::alist($tagtypes, ['class' => 'list-unstyled']);
+                }
+                
+                if ($tagnames = trim($log->tagnames)) {
+                    $tagnames = explode(',', $tagnames);
+                    $tagnames = array_filter($tagnames);
+                    $tagnames = \html_writer::alist($tagnames, ['class' => 'list-unstyled']);
                 }
 
                 if (array_key_exists($log->status, $statusnames)) {
@@ -1870,8 +2052,10 @@ class form extends \mod_vocab\toolform {
                     $audionames[$log->audioid],
                     $videonames[$log->videoid],
                     $categorynames[$log->parentcatid],
-                    $log->subcattype,
+                    $subcattypes,
                     $log->subcatname,
+                    $tagtypes,
+                    $tagnames,
                     $log->maxtries,
                     $log->tries,
                     $log->status,
@@ -1908,16 +2092,16 @@ class form extends \mod_vocab\toolform {
             0 => 'center', // Select.
             6 => 'center', // Question count.
             7 => 'center', // Question level.
-            15 => 'center', // Maxtries.
-            16 => 'center', // Tries.
-            18 => 'center', // Review.
+            21 => 'center', // Maxtries.
+            22 => 'center', // Tries.
+            24 => 'center', // Review.
         ];
 
         // Specify nowrap columns.
         $table->wrap = [
-            19 => 'nowrap', // Error.
-            20 => 'nowrap', // Prompt.
-            21 => 'nowrap', // Results.
+            17 => 'nowrap', // Sub-categories.
+            19 => 'nowrap', // Question tags.
+            20 => 'nowrap', // Custom tags.
         ];
 
         // Define strings for column headings.
@@ -1941,6 +2125,8 @@ class form extends \mod_vocab\toolform {
             $this->get_string('parentcategory'),
             $this->get_string('subcattype'),
             $this->get_string('subcatname'),
+            $this->get_string('questiontags'),
+            $this->get_string('customtags'),
             $this->get_string('maxtries'),
             $this->get_string('tries'),
             get_string('status'),

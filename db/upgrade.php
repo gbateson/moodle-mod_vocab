@@ -434,14 +434,68 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
                     } else {
                         // E.g. column 'xyz' is missing.
                         if ($dbman->field_exists($table, $field)) {
+                            if (substr($text, 0, 18) == 'should be NOT NULL') {
+                                $default = $field->getDefault();
+                                $DB->set_field_select($tablename, $name, $default, "$name IS NULL");
+                                if ($debug) {
+                                    echo "NULL values were set to $default (updating $tablename.$name)<br>";
+                                }
+                            }
                             $dbman->change_field_type($table, $field);
                             if ($debug) {
-                                echo "Field $name was updated<br>";
+                                echo "Field $tablename.$name was updated<br>";
                             }
                         } else {
+
+                            // If field is defined as "NOTNULL" but no default is defined,
+                            // we temporarily setNotNull(false), add the field, set NULL values
+                            // to a sensible default and finally modify the field to be NOTNULL.
+                            $default = $field->getDefault();
+                            if ($notnull = $field->getNotNull()) {
+                                if ($default === null) {
+                                    $field->setNotNull(false);
+                                }
+                            }
+
                             $dbman->add_field($table, $field);
                             if ($debug) {
                                 echo "Field $name was added<br>";
+                            }
+
+                            if ($notnull && $default === null) {
+                                switch ($field->getType()) {
+
+                                    case XMLDB_TYPE_INTEGER: // Value = 1.
+                                    case XMLDB_TYPE_NUMBER: // Value = 2.
+                                        $default = 0;
+                                        break;
+
+                                    case XMLDB_TYPE_FLOAT: // Value = 3.
+                                        $default = 0.0;
+                                        break;
+
+                                    case XMLDB_TYPE_CHAR: // Value = 4.
+                                    case XMLDB_TYPE_TEXT: // Value = 5.
+                                        $default = '';
+                                        break;
+
+                                    case XMLDB_TYPE_DATETIME: // Value = 7.
+                                    case XMLDB_TYPE_TIMESTAMP: // Value = 8.
+                                        $default = 0;
+                                        break;
+                                }
+                                if (is_scalar($default)) {
+                                    $DB->set_field_select($tablename, $name, $default, "$name IS NULL");
+                                    if ($debug) {
+                                        echo "NULL values were set to '$default' (adding $tablename.$name)<br>";
+                                    }
+                                    $field->setDefault($default);
+                                    $field->setNotNull(true);
+                                    $dbman->change_field_type($table, $field);
+                                    if ($debug) {
+                                        echo "Field $tablename.$name was set to NOT NULL (default = '$default')<br>";
+                                    }
+                                }
                             }
                         }
                     }

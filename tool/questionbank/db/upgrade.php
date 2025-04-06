@@ -84,7 +84,8 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
     }
 
     // Increase length of qformat field to 16 chars, to hold "multianswer" (=cloze).
-    $newversion = 2025011625;
+    // Add fields "tagtypes" and "tagnames" to the "vocabtool_questionbank_log" table.
+    $newversion = 2025040626;
     if ($oldversion < $newversion) {
         xmldb_vocab_check_structure($dbman, null, $plugin, $plugin, $dir);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);

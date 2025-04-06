@@ -273,3 +273,9 @@ $string['male'] = 'Male';
 $string['female'] = 'Female';
 $string['man'] = 'Male';
 $string['woman'] = 'Woman';
+
+$string['mediatype'] = 'Media type';
+$string['customtags'] = 'Custom tags';
+$string['questiontags'] = 'Question tags';
+$string['questiontags_help'] = 'If required, you can specify one or more custom tags. When adding more than one tag, use a comma to separate tags.';
+
