@@ -62,9 +62,11 @@ define(['core/str'], function(STR){
         this.init_checkboxes_words();
 
         STR.get_strings([
+            {"key": "addname", "component": "vocabtool_questionbank"},
             {"key": "addtags", "component": "vocabtool_questionbank"},
         ]).done(function(s) {
             var i = 0;
+            JS.str.addname = s[i++];
             JS.str.addtags = s[i++];
             JS.init_custom_names();
         });
@@ -252,8 +254,8 @@ define(['core/str'], function(STR){
      * for subcategory and tag entry fields.
      */
     JS.init_custom_names = function(){
-        JS.init_custom_name("[name='subcat[name]']", ".subcatnames");
-        JS.init_custom_name("[name='qtag[name]']", ".tagnames");
+        JS.init_custom_name("[name='subcat[name]']", ".subcatnames", "addname");
+        JS.init_custom_name("[name='qtag[name]']", ".tagnames", "addtags");
     };
 
     /**
@@ -265,8 +267,9 @@ define(['core/str'], function(STR){
      *
      * @param {string} sourceselector CSS selector for the input[type="text"] element to target.
      * @param {string} targetselector CSS selector for the <ul> elements containing <li> items with previous names.
+     * @param {string} strname the name of the STR item to use as button text.
      */
-    JS.init_custom_name = function(sourceselector, targetselector){
+    JS.init_custom_name = function(sourceselector, targetselector, strname){
         let elm = document.querySelector(sourceselector);
         let fitem = elm.closest(".fitem");
         let table = document.querySelector("#questionbanklog_table");
@@ -280,13 +283,13 @@ define(['core/str'], function(STR){
                     "className": "w-100",
                 });
                 let div = Object.assign(document.createElement("div"), {
-                    "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 addtags",
+                    "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 customnames",
                 });
                 div.appendChild(
                     Object.assign(document.createElement("button"), {
-                        "textContent": JS.str.addtags,
                         "className": "btn btn-warning ml-0 py-1 px-2",
                         "onclick": JS.onclick_add_tags,
+                        "textContent": JS.str[strname],
                     })
                 );
                 div.appendChild(
@@ -315,7 +318,7 @@ define(['core/str'], function(STR){
         evt.preventDefault();
 
         let btn = evt.currentTarget;
-        let div = btn.closest(".addtags");
+        let div = btn.closest(".customnames");
         let span = btn.nextElementSibling;
         if (div && span) {
 

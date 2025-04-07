@@ -279,4 +279,5 @@ $string['customtags'] = 'Custom tags';
 $string['questiontags'] = 'Question tags';
 $string['questiontags_help'] = 'If required, you can specify one or more custom tags. When adding more than one tag, use a comma to separate tags.';
 
-$string['addtags'] = 'Add tags';
+$string['addtags'] = 'Add tag(s)';
+$string['addname'] = 'Add name(s)';
