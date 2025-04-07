@@ -1752,11 +1752,19 @@ class form extends \mod_vocab\toolform {
 
 
     /**
-     * get_log_records_table
+     * Generates an HTML table displaying log records for a vocab activity.
      *
-     * @param string $logaction
-     * @param array $logids of selected log records.
-     * @return array [$logcount, $html] HTML table of log records from vocabtool_questionbank_log table.
+     * This method fetches and formats detailed log data associated with a specific vocab activity,
+     * organizing it into an HTML table for display. The table includes task metadata, user info,
+     * question data, AI assistant types, status, and timestamps. Checkboxes and action links are
+     * also provided for each row to support bulk and individual operations.
+     *
+     * @param string $logaction The current log action to highlight or process (e.g., 'editlog', 'deletelog').
+     * @param array  $logids An associative array of selected log IDs for checkbox state (e.g., [3 => 1, 5 => 1]).
+     *
+     * @return array Returns a two-element array:
+     *               - int: The number of log records displayed.
+     *               - string: The generated HTML for the log table.
      */
     public function get_log_records_table($logaction, $logids) {
         global $DB, $OUTPUT, $PAGE;
@@ -1815,6 +1823,8 @@ class form extends \mod_vocab\toolform {
         $audionames = [];
         $videonames = [];
         $categorynames = [];
+
+        // Cache valid types of subcategory and question tag.
         $subcategorytypes = $this->get_subcategory_types();
         $questiontagtypes = $this->get_questiontag_types();
 
@@ -1831,7 +1841,7 @@ class form extends \mod_vocab\toolform {
                     $params = ['id' => $log->textid];
                     if ($name = $DB->get_field($configtable, 'subplugin', $params)) {
                         // The $name value is something like "vocabai_chatgpt".
-                        // We want to the get_string('chatgpt', 'vocabai_chatgpt').
+                        // We want to use get_string('chatgpt', 'vocabai_chatgpt').
                         $name = get_string(substr($name, strpos($name, '_') + 1), $name);
                     } else {
                         $a = ['configid' => $log->textid, 'type' => 'subplugin'];
@@ -1939,35 +1949,17 @@ class form extends \mod_vocab\toolform {
                     $qformats[$log->qformat] = $name;
                 }
 
-                $subcattypes = [];
-                foreach ($subcategorytypes as $type => $text) {
-                    if ($log->subcattype & $type) {
-                        $subcattypes[$type] = $text;
-                    }
-                }
-                if (empty($subcattypes)) {
-                    $subcattypes = '';
-                } else {
-                    $subcattypes = \html_writer::alist($subcattypes, ['class' => 'list-unstyled']);
-                }
+                // Format list of standard and custom subcategories.
+                $subcattypes = $this->format_types(
+                    $subcategorytypes, $log->subcattype, 'subcattypes'
+                );
+                $subcatnames = $this->format_names($log->subcatname, 'subcatnames');
 
-                $tagtypes = [];
-                foreach ($questiontagtypes as $type => $text) {
-                    if ($log->tagtypes & $type) {
-                        $tagtypes[$type] = $text;
-                    }
-                }
-                if (empty($tagtypes)) {
-                    $tagtypes = '';
-                } else {
-                    $tagtypes = \html_writer::alist($tagtypes, ['class' => 'list-unstyled']);
-                }
-                
-                if ($tagnames = trim($log->tagnames)) {
-                    $tagnames = explode(',', $tagnames);
-                    $tagnames = array_filter($tagnames);
-                    $tagnames = \html_writer::alist($tagnames, ['class' => 'list-unstyled']);
-                }
+                // Format list of standard and custom question tags.
+                $tagtypes = $this->format_types(
+                    $questiontagtypes, $log->tagtypes, 'tagtypes'
+                );
+                $tagnames = $this->format_names($log->tagnames, 'tagnames');
 
                 if (array_key_exists($log->status, $statusnames)) {
                     $log->status = $statusnames[$log->status];
@@ -2053,7 +2045,7 @@ class form extends \mod_vocab\toolform {
                     $videonames[$log->videoid],
                     $categorynames[$log->parentcatid],
                     $subcattypes,
-                    $log->subcatname,
+                    $subcatnames,
                     $tagtypes,
                     $tagnames,
                     $log->maxtries,
@@ -2139,5 +2131,62 @@ class form extends \mod_vocab\toolform {
             $this->get_string('timemodified'),
         ];
         return [$logcount, \html_writer::table($table)];
+    }
+
+    /**
+     * Formats a bitmask of type values into an HTML list of labels.
+     *
+     * @param array $validtypes Associative array of valid type values and their display texts.
+     * @param int $types Bitmask representing selected types.
+     * @param string $cssclass CSS class to apply to the <ul> wrapper.
+     *
+     * @return string HTML string representing the list of types.
+     */
+    protected function format_types($validtypes, $types, $cssclass) {
+        $list = [];
+        foreach ($validtypes as $type => $text) {
+            if ($types & $type) {
+                $params = ['data-type' => $type];
+                $list[] = \html_writer::tag('li', $text, $params);
+            }
+        }
+        return $this->format_list($list, $cssclass);
+    }
+
+    /**
+     * Formats a comma-separated string of names into an HTML list.
+     *
+     * @param string $names Comma-separated string of names.
+     * @param string $cssclass CSS class to apply to the <ul> wrapper.
+     *
+     * @return string|null HTML string representing the list of names, or null if input is empty.
+     */
+    protected function format_names($names, $cssclass) {
+        if ($names = trim($names)) {
+            $names = explode(',', $names);
+            $names = array_map('trim', $names);
+            $names = array_filter($names);
+            $names = array_map(function($name) {
+                return \html_writer::tag('li', $name);
+            }, $names);
+            $names = $this->format_list($names, $cssclass);
+        }
+        return $names;
+    }
+
+    /**
+     * Wraps an array of list items in an unordered HTML list.
+     *
+     * @param array $list Array of list item strings or raw strings.
+     * @param string $cssclass CSS class to apply to the <ul> element.
+     *
+     * @return string|null HTML unordered list, or null if input is empty.
+     */
+    protected function format_list($list, $cssclass) {
+        if ($list = implode("\n", $list)) {
+            $params = ['class' => "list-unstyled $cssclass"];
+            $list = \html_writer::tag('ul', $list, $params);
+        }
+        return $list;
     }
 }

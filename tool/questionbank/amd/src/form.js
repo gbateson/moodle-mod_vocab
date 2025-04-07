@@ -22,12 +22,22 @@
  * @since      Moodle 3.11
  */
 
-define([], function(){
+define(['core/str'], function(STR){
 
     let JS = {};
 
     /*
-     * Add/Attach event listener (cross-browser version).
+     * Initialize the str object to hold language strings.
+     */
+    JS.str = {};
+
+    /**
+     * Adds a cross-browser event listener to the specified element.
+     *
+     * @param {Element}   obj         The DOM element to attach the event to.
+     * @param {string}    evt         The event type (e.g., 'click', 'input').
+     * @param {Function}  fn          The callback function to execute when the event fires.
+     * @param {boolean}   [useCapture=false] Whether to use capture phase (optional).
      */
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {
@@ -37,16 +47,34 @@ define([], function(){
         }
     };
 
-    /*
-     * Initialize this AMD module;
+    /**
+     * Initializes all custom JavaScript enhancements on page load.
+     *
+     * Runs setup functions for log selection checkboxes,
+     * dynamic textareas, word selection, and custom name helpers.
      */
     JS.init = function() {
+
+        // These functions do not need strings from Moodle.
         this.init_selectall_logs();
         this.init_textareas_logs();
         this.init_selectall_words();
         this.init_checkboxes_words();
+
+        STR.get_strings([
+            {"key": "addtags", "component": "vocabtool_questionbank"},
+        ]).done(function(s) {
+            var i = 0;
+            JS.str.addtags = s[i++];
+            JS.init_custom_names();
+        });
     };
 
+    /**
+     * Initializes the "select all logs" checkbox and makes it visible if hidden.
+     *
+     * Attaches a click handler to toggle all checkboxes within the log fieldset.
+     */
     JS.init_selectall_logs = function(){
         const s = 'input[type="checkbox"][name="logids[selectall]"]';
         const selectall = document.querySelector(s);
@@ -58,6 +86,11 @@ define([], function(){
         }
     };
 
+    /**
+     * Automatically resizes textarea elements for log fields as the user types.
+     *
+     * Targets fields such as error, prompt, and results textareas in the log editing form.
+     */
     JS.init_textareas_logs = function(){
         const s = '#id_log_error, #id_log_prompt, #id_log_results';
         document.querySelectorAll(s).forEach(function(textarea){
@@ -70,6 +103,11 @@ define([], function(){
         });
     };
 
+    /**
+     * Initializes the "select all words" checkbox and repositions its label.
+     *
+     * Attaches a click handler and restyles the label to enhance appearance and usability.
+     */
     JS.init_selectall_words = function(){
         const s = 'input[type="checkbox"][name="selectedwords[selectall]"]';
         const selectall = document.querySelector(s);
@@ -93,6 +131,14 @@ define([], function(){
         }
     };
 
+    /**
+     * Handles toggling of all checkboxes in a group when "select all" is clicked.
+     *
+     * Updates the state of checkboxes with the same name prefix and adjusts the label text
+     * based on data attributes (`data-selectall` and `data-deselectall`).
+     *
+     * @returns {boolean} Always returns true.
+     */
     JS.onclick_selectall = function(){
         const checked = this.checked;
 
@@ -129,6 +175,11 @@ define([], function(){
         return true;
     };
 
+    /**
+     * Attaches click event listeners to individual word selection checkboxes.
+     *
+     * Enables shift-click selection and click tracking for batch operations.
+     */
     JS.init_checkboxes_words = function(){
         const s = 'input[type="checkbox"][name^="selectedwords"]';
         document.querySelectorAll(s).forEach(function(cb){
@@ -136,6 +187,14 @@ define([], function(){
         });
     };
 
+    /**
+     * Handles checkbox click events for word selection, including shift-click support.
+     *
+     * Supports selecting a range of checkboxes when holding Shift, and tracks the
+     * last clicked checkbox using a `data-clicked` attribute.
+     *
+     * @param {MouseEvent} evt The click event object.
+     */
     JS.onclick_checkbox = function(evt){
 
         const felement = this.closest('.felement');
@@ -184,6 +243,128 @@ define([], function(){
         if (clickme) {
             evt.currentTarget.setAttribute('data-clicked', '1');
         }
+    };
+
+    /**
+     * Sets up custom name buttons for both subcategory and question tag inputs.
+     *
+     * Calls init_custom_name() with appropriate selectors to initialize UI enhancements
+     * for subcategory and tag entry fields.
+     */
+    JS.init_custom_names = function(){
+        JS.init_custom_name("[name='subcat[name]']", ".subcatnames");
+        JS.init_custom_name("[name='qtag[name]']", ".tagnames");
+    };
+
+    /**
+     * Enhances a custom name input by displaying a list of previously used names with a button.
+     *
+     * This function searches the log table for matching name entries, builds a summary string,
+     * and injects a button + label near the specified input field. Clicking the button inserts
+     * the names into the input and ensures the associated checkbox is checked.
+     *
+     * @param {string} sourceselector CSS selector for the input[type="text"] element to target.
+     * @param {string} targetselector CSS selector for the <ul> elements containing <li> items with previous names.
+     */
+    JS.init_custom_name = function(sourceselector, targetselector){
+        let elm = document.querySelector(sourceselector);
+        let fitem = elm.closest(".fitem");
+        let table = document.querySelector("#questionbanklog_table");
+        table.querySelectorAll(targetselector).forEach(function(ul){
+            let names = [];
+            ul.querySelectorAll("li").forEach(function(li){
+                names.push(li.innerText);
+            });
+            if (names.length) { //
+                let separator = Object.assign(document.createElement("span"), {
+                    "className": "w-100",
+                });
+                let div = Object.assign(document.createElement("div"), {
+                    "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 addtags",
+                });
+                div.appendChild(
+                    Object.assign(document.createElement("button"), {
+                        "textContent": JS.str.addtags,
+                        "className": "btn btn-warning ml-0 py-1 px-2",
+                        "onclick": JS.onclick_add_tags,
+                    })
+                );
+                div.appendChild(
+                    Object.assign(document.createElement("span"), {
+                        "className": "ml-2",
+                        "textContent": names.join(", "),
+                    })
+                );
+
+                fitem.parentNode.insertBefore(separator, fitem.nextSibling);
+                separator.parentNode.insertBefore(div, separator.nextSibling);
+            }
+        });
+    };
+
+    /**
+     * Handles click event on the "Add tags" button.
+     *
+     * Transfers a list of names from the adjacent <span> into the associated text input field
+     * in the same .fitem block. Also locates the previous .fitem containing a checkbox
+     * and ensures it is checked. Finally, the button is blurred to remove focus.
+     *
+     * @param {MouseEvent} evt The click event object.
+     */
+    JS.onclick_add_tags = function(evt) {
+        evt.preventDefault();
+
+        let btn = evt.currentTarget;
+        let div = btn.closest(".addtags");
+        let span = btn.nextElementSibling;
+        if (div && span) {
+
+            let inputfitem = JS.get_previous_sibling(div, ".fitem");
+            if (inputfitem) {
+
+                let input = inputfitem.querySelector("input[type='text']");
+                if (input) {
+
+                    // Transfer previously used names to the input element.
+                    input.value = span.textContent.trim();
+
+                    // Locate previous inputfitem sibling.
+                    let checkboxfitem = JS.get_previous_sibling(inputfitem, ".fitem");
+                    if (checkboxfitem) {
+                        let checkbox = checkboxfitem.querySelector("input[type='checkbox']");
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        btn.blur();
+        return false;
+    };
+
+    /**
+     * Finds the closest previous sibling that matches a given selector.
+     *
+     * If no selector is provided, returns the nearest previous sibling regardless of type.
+     *
+     * @param {Element} elm        The starting element.
+     * @param {string} [selector]  Optional CSS selector to match against.
+     * @returns {Element|null} The matched previous sibling element, or null if none found.
+     */
+    JS.get_previous_sibling = function(elm, selector){
+        if (! selector) {
+            selector = "";
+        }
+        let sibling = elm.previousElementSibling;
+        while (sibling) {
+            if (selector == "" || sibling.matches(selector)) {
+                return sibling;
+            }
+            sibling = sibling.previousElementSibling;
+        }
+        return null;
     };
 
     return JS;
