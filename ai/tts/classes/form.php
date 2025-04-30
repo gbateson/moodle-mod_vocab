@@ -64,8 +64,36 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
+        // Get current year, month and day.
+        list($year, $month, $day) = explode(' ', date('Y m d'));
+
+        // Define default values for new key.
+        $default = (object)[
+            'id' => 0,
+            'ttsurl' => 'https://api.openai.com/v1/audio/speech',
+            'ttskey' => '',
+            'ttsmodel' => 'tts-1',
+            'voice' => self::VOICE_RANDOM,
+            'response_format' => 'mp3',
+            'speed' => '1.0',
+            'contextlevel' => CONTEXT_MODULE,
+            'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
+            'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
+            'itemcount' => 0, // Unlimited.
+            'itemtype' => 0, // Requests.
+            'timecount' => 1,
+            'timeunit' => 2, // Hour(s).
+        ];
+
         // Try and get current config for editing.
-        if ($default = $this->get_subplugin()->config) {
+        if ($config = $this->get_subplugin()->config) {
+
+            // Transfer values form $config record.
+            foreach ($default as $name => $value) {
+                if (isset($config->$name)) {
+                    $default->$name = $config->$name;
+                }
+            }
 
             $name = 'cid';
             $mform->addElement('hidden', $name, $default->id);
@@ -75,38 +103,12 @@ class form extends \mod_vocab\aiform {
             $mform->addElement('hidden', $name, $this->get_subplugin()->action);
             $mform->setType($name, PARAM_ALPHA);
 
-            // Check we have expected fields.
-            $ai = '\\'.$this->subpluginname.'\\ai';
-            foreach ($ai::get_settingnames() as $name) {
-                if (empty($default->$name)) {
-                    $default->$name = null;
-                }
-            }
-
             $mainheading = 'editkey';
             $submitlabel = get_string('save');
 
         } else {
-
             $mainheading = 'addnewkey';
             $submitlabel = get_string('add');
-
-            // Get current year, month and day.
-            list($year, $month, $day) = explode(' ', date('Y m d'));
-
-            // Define default values for new key.
-            $default = (object)[
-                'id' => 0,
-                'ttsurl' => 'https://api.openai.com/v1/audio/speech',
-                'ttskey' => '',
-                'ttsmodel' => 'tts-1',
-                'voice' => self::VOICE_RANDOM,
-                'response_format' => 'mp3',
-                'speed' => '1.0',
-                'contextlevel' => CONTEXT_MODULE,
-                'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
-                'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
-            ];
         }
 
         // Cache the label separator, e.g. ": ".
@@ -191,6 +193,7 @@ class form extends \mod_vocab\aiform {
         // Slovenian, Spanish, Swahili, Swedish, Tagalog, Tamil,
         // Thai, Turkish, Ukrainian, Urdu, Vietnamese, Welsh.
 
+        $this->add_speedlimit_fields($mform, $default);
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);
 

@@ -61,6 +61,12 @@ class form extends \mod_vocab\toolform {
     /** @var int database value to represent creating a question category for each vocabulary level (e.g. "A2") */
     const SUBCAT_VOCABLEVEL = 0x20;
 
+    /** @var int database value to represent creating a question category for each prompt tail (after ":") */
+    const SUBCAT_PROMPTHEAD = 0x80;
+
+    /** @var int database value to represent creating a question category for each prompt tail (after ":") */
+    const SUBCAT_PROMPTTAIL = 0x40;
+
     /** @var int database value to represent adding no new question question tags */
     const QTAG_NONE = 0x00;
 
@@ -68,7 +74,10 @@ class form extends \mod_vocab\toolform {
     const QTAG_AI = 0x01;
 
     /** @var int database value to represent adding a question tag derivecd from the prompt name */
-    const QTAG_PROMPT = 0x02;
+    const QTAG_PROMPTHEAD = 0x02;
+
+    /** @var int database value to represent adding a question tag derivecd from the prompt tail */
+    const QTAG_PROMPTTAIL = 0x80;
 
     /** @var int database value to represent adding a question tag for the media types, if any (e.g. image, audio) */
     const QTAG_MEDIATYPE = 0x04;
@@ -296,6 +305,8 @@ class form extends \mod_vocab\toolform {
         $default |= self::SUBCAT_WORD;
         $default |= self::SUBCAT_QUESTIONTYPE;
         $default |= self::SUBCAT_VOCABLEVEL;
+        $default |= self::SUBCAT_PROMPTHEAD;
+        $default |= self::SUBCAT_PROMPTTAIL;
         $this->add_subcategories($mform, 'subcat', $default);
 
         $name = 'questiontags';
@@ -852,7 +863,8 @@ class form extends \mod_vocab\toolform {
         return [
             self::QTAG_NONE => get_string('none'),
             self::QTAG_AI => $this->get_string('ai_generated'),
-            self::QTAG_PROMPT => $this->get_string('prompt'),
+            self::QTAG_PROMPTHEAD => $this->get_string('prompthead'),
+            self::QTAG_PROMPTTAIL => $this->get_string('prompttail'),
             self::QTAG_MEDIATYPE => $this->get_string('mediatype'),
             self::QTAG_WORD => $this->get_string('word'),
             self::QTAG_QUESTIONTYPE => $this->get_string('questiontype'),
@@ -875,6 +887,8 @@ class form extends \mod_vocab\toolform {
             self::SUBCAT_WORD => $this->get_string('word'),
             self::SUBCAT_QUESTIONTYPE => $this->get_string('questiontype'),
             self::SUBCAT_VOCABLEVEL => $this->get_string('vocablevel'),
+            self::SUBCAT_PROMPTHEAD => $this->get_string('prompthead'),
+            self::SUBCAT_PROMPTTAIL => $this->get_string('prompttail'),
         ];
     }
 
@@ -1312,7 +1326,7 @@ class form extends \mod_vocab\toolform {
                 // Fields that are not in this array cannot be updated.
                 // The includes the folowing fields:
                 // id, taskid, userid, vocabid, wordid, questionids
-                // any new fields that are added to the log table.
+                // and any other fields that not in the list below.
                 $types = [
                     'qtype' => PARAM_TEXT,
                     'qlevel' => PARAM_TEXT,
@@ -1831,6 +1845,40 @@ class form extends \mod_vocab\toolform {
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
 
+            $questionids = [];
+            $name = 'questionids';
+            foreach ($logs as $logid => $log) {
+                if (property_exists($log, $name)) {
+                    foreach (explode(',', $log->$name) as $qid) {
+                        $questionids[$qid] = $logid;
+                    }
+                }
+            }
+            $questionids = explode(',', implode(',', $questionids));
+            $questionids = array_map('trim', $questionids);
+            $questionids = array_filter($questionids);
+            $questionids = array_unique($questionids);
+            if (count($questionids)) {
+                list($select, $params) = $DB->get_in_or_equal(array_keys($questionids));
+                $select = 'id '.$select.' AND ('.
+                    $DB->sql_like('questiontext', '?').' OR '.
+                    $DB->sql_like('questiontext', '?').' OR '.
+                    $DB->sql_like('questiontext', '?').
+                ')';
+                array_push($params, '%[[AUDIO%]]%', '%[[IMAGE%]]%', '%[[VIDEO%]]%');
+                if ($questions = $DB->get_records_select('question', $select, $params, 'id, questiontext')) {
+                    // We should fix the oldest and newest versions of the questions.
+                    foreach ($questions as $qid => $question) {
+                        $logid = $questionids[$qid];
+                        $log = $logs[$logid];
+                        // Get most recent version of this question
+                        // and check that it still hasn't been fixed.
+                        // In "question_versions", find record with highest version
+                        // and same questionbankentryid as this $question->id.
+                    }
+                }
+            }
+
             foreach ($logs as $log) {
 
                 if (empty($users[$log->userid])) {
@@ -1976,6 +2024,14 @@ class form extends \mod_vocab\toolform {
                     if ($log->$name && strlen($log->$name) > 10) {
                         $log->$name = substr($log->$name, 0, 10);
                     }
+                }
+
+                if (is_string($questionids)) {
+                    $ids = explode(',', array_keys($questionids));
+                    $ids = array_map('trim', $ids);
+                    $ids = array_filter($ids);
+                } else {
+                    $ids = array_keys($questionids);
                 }
 
                 $name = 'questionids';

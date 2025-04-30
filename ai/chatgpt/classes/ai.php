@@ -46,6 +46,7 @@ class ai extends \mod_vocab\aibase {
         'chatgpturl', 'chatgptkey', 'chatgptmodel',
         'temperature', 'top_p',
         'sharedfrom', 'shareduntil',
+        'itemcount', 'itemtype', 'timecount', 'timeunit',
     ];
 
     /**
@@ -185,9 +186,13 @@ class ai extends \mod_vocab\aibase {
             return true; // No tuning file was specified.
         }
 
+        // Cache the name of the DB table
+        // that stores config settings.
+        $table = 'vocab_config_settings';
+
         $name = 'fileitemid';
         if (empty($config->$name)) {
-            $config->$name = $config->id;
+            $config->$name = $config->configid;
 
             // Add/update this config settings.
             $params = ['configid' => $config->configid, 'name' => $name];
@@ -208,10 +213,6 @@ class ai extends \mod_vocab\aibase {
              'component = '.$component.', '.
              'filearea = '.$filearea.', '.
              'itemid = '.$itemid;
-
-        // Cache the name of the DB table
-        // that stores config settings.
-        $table = 'vocab_config_settings';
 
         $name = 'filename';
         if (empty($config->$name)) {

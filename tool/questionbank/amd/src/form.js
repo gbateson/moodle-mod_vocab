@@ -25,6 +25,7 @@
 define(['core/str'], function(STR){
 
     let JS = {};
+    window.JS = JS;
 
     /*
      * Initialize the str object to hold language strings.
@@ -273,34 +274,39 @@ define(['core/str'], function(STR){
         let elm = document.querySelector(sourceselector);
         let fitem = elm.closest(".fitem");
         let table = document.querySelector("#questionbanklog_table");
+        let allnames = []; // Cache of customnames.
         table.querySelectorAll(targetselector).forEach(function(ul){
             let names = [];
             ul.querySelectorAll("li").forEach(function(li){
                 names.push(li.innerText);
             });
-            if (names.length) { //
-                let separator = Object.assign(document.createElement("span"), {
-                    "className": "w-100",
-                });
-                let div = Object.assign(document.createElement("div"), {
-                    "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 customnames",
-                });
-                div.appendChild(
-                    Object.assign(document.createElement("button"), {
-                        "className": "btn btn-warning ml-0 py-1 px-2",
-                        "onclick": JS.onclick_add_tags,
-                        "textContent": JS.str[strname],
-                    })
-                );
-                div.appendChild(
-                    Object.assign(document.createElement("span"), {
-                        "className": "ml-2",
-                        "textContent": names.join(", "),
-                    })
-                );
+            if (names.length) {
+                names = names.join(", ");
+                if (allnames.indexOf(names) < 0) {
+                    allnames.push(names);
 
-                fitem.parentNode.insertBefore(separator, fitem.nextSibling);
-                separator.parentNode.insertBefore(div, separator.nextSibling);
+                    let separator = Object.assign(document.createElement("span"), {
+                        "className": "w-100",
+                    });
+                    let div = Object.assign(document.createElement("div"), {
+                        "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 customnames",
+                    });
+                    div.appendChild(
+                        Object.assign(document.createElement("button"), {
+                            "className": "btn btn-warning ml-0 py-1 px-2",
+                            "onclick": JS.onclick_add_tags,
+                            "textContent": JS.str[strname],
+                        })
+                    );
+                    div.appendChild(
+                        Object.assign(document.createElement("span"), {
+                            "className": "ml-2",
+                            "textContent": names,
+                        })
+                    );
+                    fitem.parentNode.insertBefore(separator, fitem.nextSibling);
+                    separator.parentNode.insertBefore(div, separator.nextSibling);
+                }
             }
         });
     };
@@ -330,6 +336,11 @@ define(['core/str'], function(STR){
 
                     // Transfer previously used names to the input element.
                     input.value = span.textContent.trim();
+
+                    // Switch off the disabled flag.
+                    if (input.disabled) {
+                        input.disabled = false;
+                    }
 
                     // Locate previous inputfitem sibling.
                     let checkboxfitem = JS.get_previous_sibling(inputfitem, ".fitem");

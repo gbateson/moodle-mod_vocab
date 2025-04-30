@@ -97,6 +97,8 @@ class tool extends \mod_vocab\toolbase {
             'parentcatid' => 0,
             'subcattype' => '',
             'subcatname' => '',
+            'tagtypes' => '',
+            'tagnames' => '',
             'maxtries' => 0,
             'tries' => 0,
             'status' => 0,

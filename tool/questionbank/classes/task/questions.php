@@ -394,17 +394,35 @@ class questions extends \core\task\adhoc_task {
             $activityname = $this->tool->vocab->name;
             $activityname = format_string($activityname, true, ['context' => $this->tool->vocab->context]);
 
+            // Format prompt name (incl. head and tail).
+            $prompthead = '';
+            $prompttail = '';
+            if ($promptname = $promptconfig->promptname) {
+                $promptname = explode(' ', $promptname);
+                $promptname = array_filter($promptname);
+                $promptname = array_diff($promptname, ['Generate', 'questions']);
+                $promptname = implode(' ', $promptname);
+                if ($pos = strpos($promptname, ':')) {
+                    $prompthead = trim(substr($promptname, 0, $pos));
+                }
+                if ($pos = strrpos($promptname, ':')) {
+                    $prompttail = trim(substr($promptname, $pos + 1));
+                }
+            }
+
             // Setup arguments for the strings used to create question category names.
             $a = (object)[
                 'customname' => $subcatname,
                 'coursename' => $coursename,
-                'sectiontype' => $sectiontype,
+                'sectiontype' => $sectiontype, // Not used.
                 'sectionname' => $sectionname,
-                'activitytype' => $activitytype,
+                'activitytype' => $activitytype, // Not used.
                 'activityname' => $activityname,
                 'word' => $word,
                 'qtype' => $qtypetext, // E.g. "MC".
                 'qlevel' => $qlevel, // E.g. "A2".
+                'prompthead' => $prompthead,
+                'prompttail' => $prompttail,
             ];
 
             // Shortcut to form class name.
@@ -414,15 +432,11 @@ class questions extends \core\task\adhoc_task {
             if ($tagtypes & $form::QTAG_AI) {
                 $tags[] = $this->tool->get_string('ai_generated');
             }
-            if ($tagtypes & $form::QTAG_PROMPT) {
-                if ($promptname = $promptconfig->promptname) {
-                    if ($pos = strpos($promptname, ':')) {
-                        $promptname = substr($promptname, 0, $pos);
-                    }
-                    $promptname = explode(' ', $promptname);
-                    $promptname = array_diff($promptname, ['Generate', 'questions']);
-                    $tags[] = implode(' ', $promptname);
-                }
+            if ($tagtypes & $form::QTAG_PROMPTHEAD) {
+                $tags[] = $prompthead;
+            }
+            if ($tagtypes & $form::QTAG_PROMPTTAIL) {
+                $tags[] = $prompttail;
             }
             if ($tagtypes & $form::QTAG_MEDIATYPE) {
                 $tags[] = 'media';
@@ -700,13 +714,37 @@ EOD;
             $form::SUBCAT_WORD => 'word',
             $form::SUBCAT_QUESTIONTYPE => 'questiontype',
             $form::SUBCAT_VOCABLEVEL => 'vocablevel',
+            $form::SUBCAT_PROMPTHEAD => 'prompthead',
+            $form::SUBCAT_PROMPTTAIL => 'prompttail',
         ];
 
         foreach ($types as $type => $strname) {
             if ($subcattype & $type) {
-                $category = $this->get_question_subcategory(
-                    $table, $strname, $a, $category
-                );
+                if ($type == $form::SUBCAT_CUSTOMNAME) {
+                    $subcatnames = explode(',', $a->$strname);
+                    $subcatnames = array_map('trim', $subcatnames);
+                    $subcatnames = array_filter($subcatnames);
+                    foreach ($subcatnames as $subcatname) {
+                        $a->$strname = $subcatname;
+                        $category = $this->get_question_subcategory(
+                            $table, $strname, $a, $category
+                        );
+                    }
+                    $a->$strname = implode(', ', $subcatnames);
+                } else {
+                    // A single category.
+                    $category = $this->get_question_subcategory(
+                        $table, $strname, $a, $category
+                    );
+                }
+            } else if (isset($a->$strname)) {
+                // This subcat is not required, so
+                // remove it from further consideration.
+                $a->$strname = '';
+            } else if ($strname == 'questiontype') {
+                $a->qtype = '';
+            } else if ($strname == 'vocablevel') {
+                $a->qlevel = '';
             }
         }
 
@@ -734,9 +772,13 @@ EOD;
 
         if (empty($catname)) {
             $catname = $this->tool->get_string("catname_$strname", $a);
+            $catname = str_replace('()', '', $catname);
+            $catname = preg_replace('/\s+/', ' ', $catname);
         }
         if (empty($catinfo)) {
             $catinfo = $this->tool->get_string("catinfo_$strname", $a);
+            $catinfo = str_replace('()', '', $catinfo);
+            $catinfo = preg_replace('/\s+/', ' ', $catname);
         }
 
         // First we check to see if the subcategory already exists.
@@ -751,6 +793,15 @@ EOD;
             return $subcategory;
         }
 
+        // Set sortorder of new subcategory to one more
+        // than the highest currently in the parent category.
+        $params = ['parent' => $parentcategory->id];
+        if ($sortorder = $DB->get_field($table, 'MAX(sortorder)', $params)) {
+            $sortorder ++;
+        } else {
+            $sortorder = 1;
+        }
+
         // No matching subcategory found, so create a new one.
         $subcategory = (object)[
             'name' => $catname,
@@ -758,7 +809,7 @@ EOD;
             'parent' => $parentcategory->id,
             'contextid' => $parentcategory->contextid,
             'stamp' => make_unique_id_code(),
-            'sortorder' => 999,
+            'sortorder' => $sortorder,
         ];
         if ($subcategory->id = $DB->insert_record($table, $subcategory)) {
             return $subcategory;
@@ -978,6 +1029,15 @@ EOD;
                     }
                     $rawquestions[] = (object)['name' => $name, 'text' => $text];
                 }
+            } else if (preg_match('/^ *<[^>]*>/us', $rawtext, $match)) {
+                // Escape any regex characters and convert to search string.
+                // Use a lookahead to split *before* each tag.
+                $search = '/(?='.preg_quote($match[0], '/').')/u';
+                $rawquestions = preg_split($search, $rawtext, -1, PREG_SPLIT_NO_EMPTY);
+                $rawquestions = array_map('trim', $rawquestions);
+                $rawquestions = array_map(function ($text) {
+                    return (object)['name' => '', 'text' => $text];
+                }, $rawquestions);
             } else {
                 // No question separator found, so we assume
                 // $rawtext contains a single, unnamed question.
@@ -1110,7 +1170,7 @@ EOD;
                     } else if (is_string($value)) {
                         $value = preg_replace($search, '=$1', $value);
                     }
-                    $wrapped->$field[$i] = $value;
+                    $wrapped->{$field}[$i] = $value;
                 }
             }
             $question->options->questions[$w] = $wrapped;
@@ -1188,7 +1248,7 @@ EOD;
         }
 
         // Add Moodle tags for this question.
-        // e.g., "AI-generated", "newword", "MC", "TOEIC-200".
+        // e.g., "AI", "newword", "MC", "TOEIC-200".
         // Note that all tags are usually displayed in lowercase
         // even though the "rawname" field stores the uppercase.
         \core_tag_tag::set_item_tags(
@@ -1274,7 +1334,7 @@ EOD;
         foreach ($tables[$qtype] as $table => $fields) {
             foreach ($fields as $field => $filearea) {
                 $filerecord['filearea'] = $filearea;
-                    $this->create_media_for_field(
+                $this->create_media_for_field(
                     $mediatags, $table, $field,
                     $filerecord, $question->id, $moretags
                 );
@@ -1736,7 +1796,7 @@ EOD;
                     if (in_array('nomediaplugin', explode(' ', $tagparams['class']))) {
                         // The media tag has specified a class of 'nomediaplugin'
                         // and so will be ignored by the mediaplugin filter.
-                        // E.g. [[AUDIO class="nomediaplugin" ...]]
+                        // E.g. [[AUDIO class="nomediaplugin" ...]].
                         $usemediaplugin = false;
                     }
 
@@ -1851,7 +1911,8 @@ EOD;
      * Determine if the given string holds "man", "woman", "male", "female"
      * or a localized version of one of those strings.
      *
-     * @return valid version of gender string, "male", "female" or "random"
+     * @param string $gender to idenitify as "male" or "female"
+     * @return string valid version of gender string, "male", "female" or "random"
      */
     protected function get_valid_gender($gender) {
 
@@ -1899,7 +1960,6 @@ EOD;
      *                     Example: [['A', 'female', 'Hello!'], ['B', 'male', 'Good morning.']]
      * @param array $filerecord An array of file record information (e.g. filename, filepath, contextid).
      * @param int $questionid The ID of the Moodle question to which this media file belongs.
-     * @param array $genders An associative array mapping speaker IDs (e.g. 'A') to gender or voice profiles (e.g. 'female').
      *
      * @return stored_file|string|null The generated media file object on success,
      *                                 a string error message on failure,
@@ -2185,7 +2245,6 @@ EOD;
     /**
      * Generates an ID3v1 tag suitable for appending to the end of an MP3 file.
      *
-     * @param string $file The file path to the MP3 file.
      * @param string $title The title of the track.
      * @param string $artist The artist of the track.
      * @param string $album The album name.

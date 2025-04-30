@@ -930,4 +930,201 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $output .= $this->footer();
         return $output;
     }
+
+    /**
+     * Displays a form and optionally sorts language strings in plugin lang files.
+     *
+     * This method renders a form listing available vocab-related plugins with language files
+     * and allows users to select which ones to sort. If the form is submitted, the selected
+     * language files are backed up, cleaned, and rewritten with language strings sorted
+     * alphabetically by key.
+     *
+     * @param string $plugin The plugin name (used for headings and context).
+     * @param boolean $purgecaches Optional flag to trigger cache purging after sorting (Default = true).
+     *
+     * @return string HTML output of the rendered page, including the plugin list form and confirmation message.
+     */
+    public function sort_lang_strings($plugin, $purgecaches=true) {
+        global $CFG, $DB, $FULLME;
+
+        // Get incoming data, if any.
+        $selected = optional_param_array('selected', [], PARAM_INT);
+
+        // Set up the heading e.g. Sort language strings.
+        $heading = get_string('pluginname', $plugin)." ($plugin)";
+        $heading = $this->vocab->get_string('sortstrings', $heading);
+
+        $output = '';
+        $output .= $this->header();
+        $output .= $this->heading($heading);
+        $output .= $this->box_start();
+
+        $dirs = [];
+
+        foreach (['mod', 'report', 'game', 'tool', 'ai'] as $type) {
+            if ($type == 'mod') {
+                $name = 'vocab';
+                $dir = $CFG->dirroot."/$type/$name";
+                $langfile = "$dir/lang/en/$name.php";
+                if (file_exists($langfile)) {
+                    $dirs[$type] = [$name => $dir];
+                }
+            } else {
+                $plugintype = "vocab{$type}";
+                $plugins = core_component::get_plugin_list($plugintype);
+                foreach ($plugins as $name => $dir) {
+                    $langfile = "$dir/lang/en/{$plugintype}_{$name}.php";
+                    if (file_exists($langfile)) {
+                        if (empty($dirs[$type])) {
+                            $dirs[$type] = [];
+                        }
+                        $dirs[$type][$name] = $dir;
+                    }
+                }
+            }
+        }
+
+        // Map chars to their escape/unescape equivalents.
+        $escape = [
+            '\\' => "\\\\",
+            "'" => "\\'",
+        ];
+        $unescape = [
+            '\\\\' => "\\",
+            "\\'" => "'",
+            '\\"' => '"',
+        ];
+
+        $updated = [];
+        foreach ($selected as $pluginname => $value) {
+            // E.g. mod_vocab, vocabtool_dictionary.
+            if (empty($value)) {
+                continue; // Shouldn't happen !!
+            }
+            list($plugintype, $name) = explode('_', $pluginname, 2);
+            $type = str_replace('vocab', '', $plugintype);
+            if (empty($dirs[$type]) || empty($dirs[$type][$name])) {
+                continue; // Shouldn't happen !!
+            }
+            $dir = $dirs[$type][$name];
+            if ($type == 'mod') {
+                $langfile = "$dir/lang/en/$name.php";
+            } else {
+                $langfile = "$dir/lang/en/{$plugintype}_{$name}.php";
+            }
+            if (is_writable($langfile)) {
+                // Get the curent content of the langfile.
+                $oldcontent = file_get_contents($langfile);
+
+                // Make a backup of the langfile, if it hasn't already been done.
+                $langfilebackup = str_replace('.php', '.backup.php', $langfile);
+                if (! file_exists($langfilebackup)) {
+                    file_put_contents($langfilebackup, $oldcontent);
+                }
+
+                // Truncate lang file at first occurrence of '$string'.
+                if (! $pos = core_text::strpos($oldcontent, '$string')) {
+                    continue; // Shouldn't happen !!
+                }
+                $newcontent = core_text::substr($oldcontent, 0, $pos);
+                $newcontent = trim($newcontent)."\n\n";
+
+                // Get all the strings in the langfile, and sort them.
+                $string = [];
+                include($langfile);
+                ksort($string);
+
+                foreach ($string as $strname => $strvalue) {
+                    $strvalue = strtr($strvalue, $unescape);
+                    $strvalue = strtr($strvalue, $escape);
+                    $newcontent .= '$'."string['".$strname."'] = '".$strvalue."';\n";
+                }
+                if ($newcontent != $oldcontent) {
+                    file_put_contents($langfile, $newcontent);
+                    $updated["{$plugintype}_{$name}"] = substr($langfile, strlen($CFG->dirroot));
+                }
+                $newcontent = $oldcontent = ''; // Reclaim memory.
+            }
+        }
+
+        if (count($updated)) {
+            $output .= \html_writer::tag('h5', get_string('updatedlangfiles', $plugin));
+            $output .= \html_writer::start_tag('ul');
+            foreach ($updated as $pluginname => $langfile) {
+                $output .= \html_writer::tag('li', get_string('pluginname', $pluginname));
+            }
+            $output .= \html_writer::end_tag('ul');
+            if ($purgecaches) {
+                $output .= \html_writer::tag('p', get_string('stringcachesreset', $plugin));
+                get_string_manager()->reset_caches(true);
+            }
+        }
+
+        $startedlists = false;
+        foreach ($dirs as $type => $plugindirs) {
+            if ($type == 'mod') {
+                $plugintype = $type;
+            } else {
+                $plugintype = "vocab{$type}";
+            }
+
+            $startedlist = false;
+            foreach ($plugindirs as $name => $dir) {
+
+                if ($startedlists == false) {
+                    $startedlists = true;
+                    $output .= \html_writer::start_tag('form', [
+                        'action' => $FULLME,
+                        'method' => 'post',
+                    ]);
+                    $output .= \html_writer::start_tag('div', [
+                        'class' => 'container ml-0',
+                        'style' => 'max-width: 720px;',
+                    ]);
+                }
+
+                if ($startedlist == false) {
+                    $startedlist = true;
+                    if ($type == 'mod') {
+                        $label = get_string('activitymodules');
+                    } else {
+                        $label = get_string($type.'s', 'vocab');
+                    }
+                    $output .= \html_writer::tag('h5', $label);
+                    $output .= \html_writer::start_tag('dl', ['class' => 'row']);
+                }
+
+                if ($type == 'mod') {
+                    $pluginname = "{$type}_{$name}";
+                    $label = get_string('pluginname', $name);
+                    $langfile = "$dir/lang/en/{$name}.php";
+                } else {
+                    $pluginname = "{$plugintype}_{$name}";
+                    $label = get_string($name, $pluginname);
+                    $langfile = "$dir/lang/en/{$pluginname}.php";
+                }
+                $checkbox = \html_writer::checkbox(
+                    'selected['.$pluginname.']', 1,
+                    array_key_exists($pluginname, $selected),
+                    $label, null, ['class' => 'ml-2']
+                );
+                $output .= \html_writer::tag('dt', $checkbox, ['class' => 'col-md-3']);
+                $output .= \html_writer::tag('dd', $dir, ['class' => 'col-md-9']);
+            }
+
+            if ($startedlist) {
+                $output .= \html_writer::end_tag('dl');
+            }
+        }
+
+        if ($startedlists) {
+            $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('sort')]);
+            $output .= \html_writer::end_tag('div');
+            $output .= \html_writer::end_tag('form');
+        }
+
+        $output .= $this->box_end();
+        $output .= $this->footer();
+        return $output;
+    }
 }

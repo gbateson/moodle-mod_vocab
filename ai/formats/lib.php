@@ -28,5 +28,5 @@
  * Define the icon for this vocab ai
  */
 function vocabai_formats_get_fontawesome_icon_map() {
-    return ['vocabai_formats:formats' => 'fa-solid fa-star-o vocabai_formats_icon'];
+    return ['vocabai_formats:formats' => 'fa-solid fa-star vocabai_formats_icon'];
 }

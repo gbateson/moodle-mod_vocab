@@ -180,6 +180,17 @@ class aibase extends \mod_vocab\subpluginbase {
     }
 
     /**
+     * Get the array containing the names of all the config settings for this subplugin.
+     */
+    public static function get_exportsettingnames() {
+        $names = static::EXPORTSETTINGNAMES;
+        if (empty($names)) {
+            $names = static::SETTINGNAMES;
+        }
+        return $names;
+    }
+
+    /**
      * Is the given setting $name a date setting?
      *
      * @param string $name the name of the setting to be checked.
@@ -521,6 +532,12 @@ class aibase extends \mod_vocab\subpluginbase {
         // Get or create the config record.
         $table = 'vocab_config';
 
+        if ($this->config || empty($settings->subplugin)) {
+            $subplugin = $this->plugin;
+        } else {
+            $subplugin = $settings->subplugin;
+        }
+
         if ($this->config) {
             $config = $this->config;
             $config->contextid = $contextid;
@@ -530,7 +547,7 @@ class aibase extends \mod_vocab\subpluginbase {
             $params = [
                 'owneruserid' => $USER->id,
                 'contextid' => $contextid,
-                'subplugin' => $this->plugin,
+                'subplugin' => $subplugin,
             ];
             // Prompts and formats allow duplicates
             // but keys (e.g. ChatGPT) do not.
@@ -539,16 +556,19 @@ class aibase extends \mod_vocab\subpluginbase {
             } else {
                 $config = $DB->get_record($table, $params);
             }
+
             if (empty($config)) {
                 // Config record does not exist, so create it.
                 $params['id'] = $DB->insert_record($table, $params);
                 $config = (object)$params;
+
             }
         }
 
         // Add or update the settings for this config record.
         $table = 'vocab_config_settings';
-        foreach (static::SETTINGNAMES as $name) {
+        $names = "\\$subplugin\\ai"::SETTINGNAMES;
+        foreach ($names as $name) {
 
             $params = [
                 'configid' => $config->id,
@@ -840,10 +860,7 @@ class aibase extends \mod_vocab\subpluginbase {
             $xmlwriter->begin_tag('CONFIG', $attributes);
             $ai = '\\'.$config->subplugin.'\\ai';
 
-            $names = $ai::EXPORTSETTINGNAMES;
-            if (empty($names)) {
-                $names = $ai::SETTINGNAMES;
-            }
+            $names = $this->get_exportsettingnames();
             foreach ($names as $name) {
                 if (empty($config->$name)) {
                     continue;
@@ -950,7 +967,7 @@ class aibase extends \mod_vocab\subpluginbase {
             // Fetch list of valid field names.
             $ai = '\\'.$subplugin.'\\ai';
             $form = '\\'.$subplugin.'\\form';
-            $fieldnames = $ai::get_settingnames();
+            $fieldnames = $ai::get_exportsettingnames();
 
             // Initialize new config settings record.
             $settings = (object)[
@@ -961,15 +978,16 @@ class aibase extends \mod_vocab\subpluginbase {
             $fieldcount = 0;
 
             // Extract fields for this config record.
-            $fields = $this->get_xml_node($config, ['#']);
-            foreach ($fields as $fieldname => $fieldvalue) {
-                $fieldname = strtolower($fieldname);
-                if (in_array($fieldname, $fieldnames) === false) {
-                    continue;
+            if ($fields = $this->get_xml_node($config, ['#'])) {
+                foreach ($fields as $fieldname => $fieldvalue) {
+                    $fieldname = strtolower($fieldname);
+                    if (in_array($fieldname, $fieldnames) === false) {
+                        continue;
+                    }
+                    $fieldvalue = $this->get_xml_node($fieldvalue, [0, '#']);
+                    $settings->$fieldname = $fieldvalue;
+                    $fieldcount++;
                 }
-                $fieldvalue = $this->get_xml_node($fieldvalue, [0, '#']);
-                $settings->$fieldname = $fieldvalue;
-                $fieldcount++;
             }
 
             if ($fieldcount) {
@@ -982,6 +1000,9 @@ class aibase extends \mod_vocab\subpluginbase {
 
                 foreach ($form::REQUIRED_FIELDS as $i => $fieldname) {
                     if ($ai::is_file_setting($fieldname)) {
+                        continue;
+                    }
+                    if (! isset($settings->$fieldname)) {
                         continue;
                     }
                     $vcs = 'vcs'.($i + 1);
@@ -1010,8 +1031,7 @@ class aibase extends \mod_vocab\subpluginbase {
                     $exists = false;
 
                     // Save file details, if there are any.
-                    // We'll add the file later,
-                    // after we have a new config id.
+                    // We'll add the file later, after we have a new config id.
                     $fieldname = 'fileitemid';
                     $fieldvalue = 0;
                     $filename = '';
@@ -1019,10 +1039,10 @@ class aibase extends \mod_vocab\subpluginbase {
                     if (isset($settings->$fieldname)) {
                         if ($filecontent = $settings->$fieldname) {
                             $filecontent = base64_decode($filecontent);
-                            if (isset($settings->filename)) {
-                                $filename = $settings->filename;
-                            } else {
+                            if (empty($settings->filename)) {
                                 $settings->filename = '';
+                            } else {
+                                $filename = $settings->filename;
                             }
                         }
                         $settings->$fieldname = 0;
@@ -1043,10 +1063,10 @@ class aibase extends \mod_vocab\subpluginbase {
                         if ($file = $fs->create_file_from_string($filerecord, $filecontent)) {
                             $settings->fileitemid = $configid;
                             $params = ['configid' => $configid, 'name' => $fieldname];
-                            $DB->update_field('vocab_config_settings', 'value', $configid, $params);
+                            $DB->set_field('vocab_config_settings', 'value', $configid, $params);
                         } else {
                             // Could not add file - shouldn't happen !!
-                            // Perhaps we should delete the whole record?
+                            // Perhaps we should delete the whole config record?
                             $settings->$fieldname = 0;
                             $settings->filename = '';
                         }
@@ -1350,13 +1370,15 @@ class aibase extends \mod_vocab\subpluginbase {
      * @return boolean TRUE is $str is a JSON encoded object or array; otherwise FALSE
      */
     public function is_json($str) {
+        $str = trim($str);
         if (substr($str, 0, 1) == '{' && substr($str, -1) == '}') {
             return true;
         }
         if (substr($str, 0, 1) == '[' && substr($str, -1) == ']') {
             return true;
         }
-        return false;
+        $json = json_decode($str);
+        return (json_last_error() === JSON_ERROR_NONE);
     }
 
     /**

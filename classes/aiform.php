@@ -50,6 +50,39 @@ abstract class aiform extends \mod_vocab\subpluginform {
     /** var string a comma-delimited list of required fields */
     const REQUIRED_FIELDS = '';
 
+    /** var integer a database value signifying that the speed limit is measured by the number of requests */
+    const ITEMTYPE_REQUESTS = 1;
+
+    /** var integer a database value signifying that the speed limit is measured by the number of tokens */
+    const ITEMTYPE_TOKENS = 2;
+
+    /** var integer a database value signifying that the speed limit is measured by the number of audios */
+    const ITEMTYPE_AUDIOS = 3;
+
+    /** var integer a database value signifying that the speed limit is measured by the number of images */
+    const ITEMTYPE_IMAGES = 4;
+
+    /** var integer a database value signifying that the speed limit is measured by the number of videos */
+    const ITEMTYPE_VIDEOS = 5;
+
+    /** var integer a database value signifying that that the speed limit is measured in seconds */
+    const TIMEUNIT_SECONDS = 1;
+
+    /** var integer a database value signifying that that the speed limit is measured in minutes */
+    const TIMEUNIT_MINUTES = 2;
+
+    /** var integer a database value signifying that that the speed limit is measured in hours */
+    const TIMEUNIT_HOURS = 3;
+
+    /** var integer a database value signifying that that the speed limit is measured in days */
+    const TIMEUNIT_DAYS = 4;
+
+    /** var integer a database value signifying that that the speed limit is measured in weeks */
+    const TIMEUNIT_WEEKS = 5;
+
+    /** var integer a database value signifying that that the speed limit is measured in months */
+    const TIMEUNIT_MONTHS = 6;
+
     /**
      * add_configs
      *
@@ -397,6 +430,57 @@ abstract class aiform extends \mod_vocab\subpluginform {
     }
 
     /**
+     * add_group_menus (vocabai_dalle and vocabai_imagen)
+     *
+     * @param object $mform
+     * @param array $names array of element names.
+     * @param array $menus array of option arrays.
+     * @param array $labels array of label strings.
+     * @param array $types array of PARAM_xxx types.
+     * @param object $defaults the default values.
+     * @return void, but may update $mform.
+     */
+    public function add_group_menus($mform, $names, $menus, $labels, $types, $defaults) {
+        global $OUTPUT;
+        $elements = [];
+
+        // Cache line break element, label separator and subheading style.
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
+        $labelsep = get_string('labelsep', 'langconfig');
+        $subheadingstyle = ['style' => 'min-width: 100px;'];
+        $subplugin = $this->get_subplugin()->plugin;
+
+        $imax = count($names);
+        for ($i = 0; $i < $imax; $i++) {
+            if ($i) {
+                // Add separator to force new line between "rows".
+                $elements[] = $mform->createElement('html', $linebreak);
+            }
+            $name = $names[$i];
+            $menu = $menus[$i];
+            $label = $labels[$i];
+            $helpicon = $OUTPUT->help_icon($name, $subplugin);
+            $subheading = \html_writer::tag('div', $label.$labelsep, $subheadingstyle);
+            $elements[] = $mform->createElement('html', $subheading);
+            $elements[] = $mform->createElement('select', $name, $label, $menu);
+            $elements[] = $mform->createElement('html', $helpicon);
+        }
+
+        $name = reset($names).'_elements';
+        $label = $this->get_string($name);
+        $mform->addGroup($elements, $name, $label, ' ', false);
+        $this->add_help_button($mform, $name, $name);
+
+        for ($i = 0; $i < $imax; $i++) {
+            $name = $names[$i];
+            $type = $types[$i];
+            $default = $defaults[$i];
+            $mform->setType($name, $type);
+            $mform->setDefault($name, $default);
+        }
+    }
+
+    /**
      * Add sharing fields: context, sharedfrom shareduntil.
      *
      * @param moodleform $mform representing the Moodle form
@@ -427,7 +511,87 @@ abstract class aiform extends \mod_vocab\subpluginform {
     }
 
     /**
-     * Get a list of availability options for a DALL-E key.
+     * Add speedlimit fields: item count/type, period type/count.
+     *
+     * @param moodleform $mform representing the Moodle form
+     * @param array $default
+     * @return void (but will update $mform)
+     */
+    public function add_speedlimit_fields($mform, $default) {
+        $name = 'throttling';
+        $this->add_heading($mform, $name, $this->get_vocab()->plugin, true);
+
+        $spacer = '&nbsp; ';
+
+        $elements = [];
+
+        $name = 'enable';
+        $label = $this->get_string($name);
+        $elements[] = $mform->createElement('checkbox', $name, $label);
+        $elements[] = $mform->createElement('html', $spacer);
+
+        if ($text = $this->get_string('speedlimitbefore')) {
+            $elements[] = $mform->createElement('html', $text.$spacer);
+        }
+
+        $name = 'itemcount';
+        $label = $this->get_string('speed'.$name);
+        $elements[] = $mform->createElement('text', $name, $label, ['size' => 4]);
+
+        $name = 'itemtype';
+        $label = $this->get_string('speed'.$name);
+        $options = [
+            self::ITEMTYPE_REQUESTS => $this->get_string('itemtyperequests'),
+            self::ITEMTYPE_TOKENS => $this->get_string('itemtypetokens'),
+            self::ITEMTYPE_AUDIOS => $this->get_string('itemtypeaudios'),
+            self::ITEMTYPE_IMAGES => $this->get_string('itemtypeimages'),
+            self::ITEMTYPE_VIDEOS => $this->get_string('itemtypevideos'),
+        ];
+        $elements[] = $mform->createElement('select', $name, $label, $options);
+        if ($text = $this->get_string('speedlimitduring')) {
+            $elements[] = $mform->createElement('html', $text.$spacer);
+        }
+
+        $name = 'timecount';
+        $label = $this->get_string('speed'.$name);
+        $elements[] = $mform->createElement('text', $name, $label, ['size' => 4]);
+
+        $name = 'timeunit';
+        $label = $this->get_string('speed'.$name);
+        $options = [
+            self::TIMEUNIT_SECONDS => $this->get_string('timeunitseconds'),
+            self::TIMEUNIT_MINUTES => $this->get_string('timeunitminutes'),
+            self::TIMEUNIT_HOURS => $this->get_string('timeunithours'),
+            self::TIMEUNIT_DAYS => $this->get_string('timeunitdays'),
+            self::TIMEUNIT_WEEKS => $this->get_string('timeunitweeks'),
+            self::TIMEUNIT_MONTHS => $this->get_string('timeunitmonths'),
+        ];
+        $elements[] = $mform->createElement('select', $name, $label, $options);
+
+        if ($text = $this->get_string('speedlimitafter')) {
+            $elements[] = $mform->createElement('html', $text.$spacer);
+        }
+
+        $name = 'speedlimit';
+        $label = $this->get_string($name);
+        $mform->addGroup($elements, $name, $label, '');
+        $this->add_help_button($mform, $name, $name);
+
+        $name = 'enable';
+        $mform->setType("speedlimit[$name]", PARAM_INT);
+        $mform->setDefault("speedlimit[$name]", 0);
+
+        // Set param types and default vaules.
+        $names = ['itemcount', 'itemtype', 'timecount', 'timeunit'];
+        foreach ($names as $name) {
+            $mform->setType("speedlimit[$name]", PARAM_INT);
+            $mform->setDefault("speedlimit[$name]", $default->$name);
+            $mform->disabledIf("speedlimit[$name]", 'speedlimit[enable]', 'notchecked');
+        }
+    }
+
+    /**
+     * Get a list of availability options for a AI key and settings.
      *
      * @return array of availability options [contextlevel => availability description]
      */

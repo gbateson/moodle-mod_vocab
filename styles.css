@@ -5,7 +5,7 @@
 /** add bg colors to form headings */
 
 .path-mod-vocab fieldset.collapsible > div:first-of-type:not(.fcontainer) {
-    background-color: #ccebff; /* light blue */ 
+    background-color: #ffd699; /* light orange (old ccebff) */ 
     border-radius: 0.25rem;
     border: 1px solid #666;
 }

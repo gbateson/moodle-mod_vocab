@@ -409,7 +409,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
             'report' => [],
             'game' => [],
             'tool' => ['wordlist', 'dictionary', 'questionbank', 'import', 'phpdocs'],
-            'ai' => ['prompts', 'formats', 'files', 'chatgpt'],
+            'ai' => ['prompts', 'formats', 'files'],
         ];
 
         foreach ($types as $type => $order) {
@@ -425,18 +425,30 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
             // Get list of mod_vocab subplugins of this type.
             $plugins = core_component::get_plugin_list($plugintype);
 
-            if (count($order)) {
-                $order = array_flip($order);
-                foreach (array_keys($order) as $name) {
-                    if (array_key_exists($name, $plugins)) {
-                        $order[$name] = $plugins[$name];
-                        unset($plugins[$name]);
-                    } else {
-                        unset($order[$name]);
-                    }
+            // Sort the unordered items alphabetically.
+            $labels = [];
+            foreach ($plugins as $name => $dir) {
+                if (in_array($name, $order)) {
+                    continue; // Item's position is fixed in $order.
                 }
-                $plugins = $order + $plugins;
+                $labels[$name] = get_string($name, "vocab{$type}_{$name}");
             }
+            asort($labels);
+
+            // Append the sorted labels to the fixed items in $order.
+            $order = array_merge($order, array_keys($labels));
+
+            // Reorder the $plugins accoding to the $order array.
+            $order = array_flip($order);
+            foreach (array_keys($order) as $name) {
+                if (array_key_exists($name, $plugins)) {
+                    $order[$name] = $plugins[$name];
+                    unset($plugins[$name]);
+                } else {
+                    unset($order[$name]);
+                }
+            }
+            $plugins = $order + $plugins;
 
             // Add individual subplugins.
             foreach ($plugins as $name => $dir) {

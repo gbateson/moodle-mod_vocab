@@ -24,43 +24,29 @@
  * @since      Moodle 3.11
  */
 
-$string['pluginname'] = 'AI output formats for a Vocabulary activity.';
-$string['privacy:metadata'] = 'The vocabai_formats plugin does not store any personal data.';
-$string['formats'] = 'Formats';
-
-$string['formatname_help'] = 'The name of the format. This should be short but meaningful, descriptive and unique.';
+$string['addnewformat'] = 'Add a new format';
+$string['cannoteditformats'] = 'You cannot edit these output formats.';
+$string['confirmcopyformat'] = 'Are you sure you want to copy this output format?';
+$string['confirmdeleteformat'] = 'Are you sure you want to delete this output format?';
+$string['copycancelled'] = 'Copying of the format was cancelled.';
+$string['copycompleted'] = 'The format was successfully copied.';
+$string['copyformat'] = 'Copy AI format';
+$string['deletecancelled'] = 'Format deletion was cancelled.';
+$string['deletecompleted'] = 'The format was successfully deleted.';
+$string['deleteformat'] = 'Delete AI format';
+$string['editcancelled'] = 'Editing of the format was cancelled.';
+$string['editcompleted'] = 'The modified format was successfully saved.';
+$string['editformat'] = 'Edit existing format';
 $string['formatname'] = 'Format name';
-
-$string['formattext_help'] = 'The output format text that will be passed to the AI assistant. Placeholders for values are specified using double-braces. e.g. {{num-of-questions}}';
-$string['formattext'] = 'Format text';
-
-$string['formatsownedbyotherusers'] = 'Formats owned by other users';
-$string['formatsownedbyme'] = 'Formats owned by me';
-
+$string['formatname_help'] = 'The name of the format. This should be short but meaningful, descriptive and unique.';
+$string['formats'] = 'Formats';
 $string['formatsownedbyme'] = 'Formats owned by me';
 $string['formatsownedbyothers'] = 'Formats owned by other users';
-$string['otherformatsownedbyme'] = 'Other formats owned by me';
-
-$string['addnewformat'] = 'Add a new format';
-$string['editformat'] = 'Edit existing format';
-$string['owner'] = 'Owner';
-
-$string['deleteformat'] = 'Delete AI format';
-$string['confirmdeleteformat'] = 'Are you sure you want to delete this output format?';
-
-$string['copyformat'] = 'Copy AI format';
-$string['confirmcopyformat'] = 'Are you sure you want to copy this output format?';
-
-$string['editcompleted'] = 'The modified format was successfully saved.';
-$string['editcancelled'] = 'Editing of the format was cancelled.';
-
-$string['copycompleted'] = 'The format was successfully copied.';
-$string['copycancelled'] = 'Copying of the format was cancelled.';
-
-$string['deletecompleted'] = 'The format was successfully deleted.';
-$string['deletecancelled'] = 'Format deletion was cancelled.';
-
+$string['formattext'] = 'Format text';
+$string['formattext_help'] = 'The output format text that will be passed to the AI assistant. Placeholders for values are specified using double-braces. e.g. {{num-of-questions}}';
 $string['noformatsfound'] = 'No output formats found';
-
 $string['note'] = 'Note';
-$string['cannoteditformats'] = 'You cannot edit these output formats.';
+$string['otherformatsownedbyme'] = 'Other formats owned by me';
+$string['owner'] = 'Owner';
+$string['pluginname'] = 'AI output formats for a Vocabulary activity.';
+$string['privacy:metadata'] = 'The vocabai_formats plugin does not store any personal data.';

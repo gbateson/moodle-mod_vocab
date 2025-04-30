@@ -55,13 +55,48 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
+        // Get current year, month and day.
+        list($year, $month, $day) = explode(' ', date('Y m d'));
+
+        // Define default values for new key.
+        $default = (object)[
+            'id' => 0,
+            'dalleurl' => 'https://api.openai.com/v1/images/generations',
+            'dallekey' => '',
+            'dallemodel' => 'dall-e-3',
+            'response_format' => 'b64_json',
+            'filetype' => 'png',
+            'filetypeconvert' => 'jpg',
+            'quality' => 'standard',
+            'qualityconvert' => '75',
+            'size' => '1792x1024',
+            'sizeconvert' => '420x240',
+            'style' => 'natural',
+            'keeporiginals' => 0,
+            'n' => 1, // Number of variarions.
+            'contextlevel' => CONTEXT_MODULE,
+            'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
+            'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
+            'itemcount' => 0, // Unlimited.
+            'itemtype' => 0, // Requests.
+            'timecount' => 1,
+            'timeunit' => 2, // Hour(s).
+        ];
+
         // If any of this user's configs are found below,
         // export will be enabled.
         $enableexport = false;
 
         // Try and get current config for editing.
-        if ($default = $this->get_subplugin()->config) {
+        if ($config = $this->get_subplugin()->config) {
             $enableexport = true;
+
+            // Transfer values form $config record.
+            foreach ($default as $name => $value) {
+                if (isset($config->$name)) {
+                    $default->$name = $config->$name;
+                }
+            }
 
             $name = 'cid';
             $mform->addElement('hidden', $name, $default->id);
@@ -71,45 +106,12 @@ class form extends \mod_vocab\aiform {
             $mform->addElement('hidden', $name, $this->get_subplugin()->action);
             $mform->setType($name, PARAM_ALPHA);
 
-            // Check we have expected fields.
-            $ai = '\\'.$this->subpluginname.'\\ai';
-            foreach ($ai::get_settingnames() as $name) {
-                if (empty($default->$name)) {
-                    $default->$name = null;
-                }
-            }
-
             $mainheading = 'editkey';
             $submitlabel = get_string('save');
 
         } else {
-
             $mainheading = 'addnewkey';
             $submitlabel = get_string('add');
-
-            // Get current year, month and day.
-            list($year, $month, $day) = explode(' ', date('Y m d'));
-
-            // Define default values for new key.
-            $default = (object)[
-                'id' => 0,
-                'dalleurl' => 'https://api.openai.com/v1/images/generations',
-                'dallekey' => '',
-                'dallemodel' => 'dall-e-3',
-                'response_format' => 'b64_json',
-                'filetype' => 'png',
-                'filetypeconvert' => 'jpg',
-                'quality' => 'standard',
-                'qualityconvert' => '75',
-                'size' => '1792x1024',
-                'sizeconvert' => '420x240',
-                'style' => 'natural',
-                'keeporiginals' => 0,
-                'n' => 1, // Number of variarions.
-                'contextlevel' => CONTEXT_MODULE,
-                'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
-                'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
-            ];
         }
 
         // Cache the label separator, e.g. ": ".
@@ -155,6 +157,7 @@ class form extends \mod_vocab\aiform {
         $this->add_field_keeporiginals($mform, $default);
         $this->add_field_n($mform, $default);
 
+        $this->add_speedlimit_fields($mform, $default);
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);
 
@@ -348,56 +351,5 @@ class form extends \mod_vocab\aiform {
         $name = 'n';
         $options = array_combine(range(1, 10), range(1, 10));
         $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name);
-    }
-
-    /**
-     * add_group_menus
-     *
-     * @param object $mform
-     * @param array $names array of element names.
-     * @param array $menus array of option arrays.
-     * @param array $labels array of label strings.
-     * @param array $types array of PARAM_xxx types.
-     * @param object $defaults the default values.
-     * @return void, but may update $mform.
-     */
-    public function add_group_menus($mform, $names, $menus, $labels, $types, $defaults) {
-        global $OUTPUT;
-        $elements = [];
-
-        // Cache line break element, label separator and subheading style.
-        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
-        $labelsep = get_string('labelsep', 'langconfig');
-        $subheadingstyle = ['style' => 'min-width: 100px;'];
-        $subplugin = $this->get_subplugin()->plugin;
-
-        $imax = count($names);
-        for ($i = 0; $i < $imax; $i++) {
-            if ($i) {
-                // Add separator to force new line between "rows".
-                $elements[] = $mform->createElement('html', $linebreak);
-            }
-            $name = $names[$i];
-            $menu = $menus[$i];
-            $label = $labels[$i];
-            $helpicon = $OUTPUT->help_icon($name, $subplugin);
-            $subheading = \html_writer::tag('div', $label.$labelsep, $subheadingstyle);
-            $elements[] = $mform->createElement('html', $subheading);
-            $elements[] = $mform->createElement('select', $name, $label, $menu);
-            $elements[] = $mform->createElement('html', $helpicon);
-        }
-
-        $name = reset($names).'_elements';
-        $label = $this->get_string($name);
-        $mform->addGroup($elements, $name, $label, ' ', false);
-        $this->add_help_button($mform, $name, $name);
-
-        for ($i = 0; $i < $imax; $i++) {
-            $name = $names[$i];
-            $type = $types[$i];
-            $default = $defaults[$i];
-            $mform->setType($name, $type);
-            $mform->setDefault($name, $default);
-        }
     }
 }

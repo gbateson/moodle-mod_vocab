@@ -50,6 +50,7 @@ class ai extends \mod_vocab\aibase {
         'size', 'sizeconvert',
         'keeporiginals', 'style', 'n',
         'sharedfrom', 'shareduntil',
+        'itemcount', 'itemtype', 'timecount', 'timeunit',
     ];
 
     /**

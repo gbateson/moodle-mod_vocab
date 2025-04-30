@@ -46,6 +46,7 @@ class ai extends \mod_vocab\aibase {
         'ttsurl', 'ttskey', 'ttsmodel',
         'voice', 'response_format', 'speed',
         'sharedfrom', 'shareduntil',
+        'itemcount', 'itemtype', 'timecount', 'timeunit',
     ];
 
     /**

@@ -55,11 +55,28 @@ class form extends \mod_vocab\aiform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        // The sort field used to sort configs by alphabetically.
-        $sortfield = 'promptname';
+        // Get current year, month and day.
+        list($year, $month, $day) = explode(' ', date('Y m d'));
+
+        // Define default values for new prompt.
+        $default = (object)[
+            'id' => 0,
+            'promptname' => '',
+            'prompttext' => '',
+            'contextlevel' => CONTEXT_MODULE,
+            'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
+            'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
+        ];
 
         // Try and get current config for editing.
-        if ($default = $this->get_subplugin()->config) {
+        if ($config = $this->get_subplugin()->config) {
+
+            // Transfer values form $config record.
+            foreach ($default as $name => $value) {
+                if (isset($config->$name)) {
+                    $default->$name = $config->$name;
+                }
+            }
 
             $name = 'cid';
             $mform->addElement('hidden', $name, $default->id);
@@ -69,34 +86,12 @@ class form extends \mod_vocab\aiform {
             $mform->addElement('hidden', $name, $this->get_subplugin()->action);
             $mform->setType($name, PARAM_ALPHA);
 
-            // Check we have expected fields.
-            $ai = '\\'.$this->subpluginname.'\\ai';
-            foreach ($ai::get_settingnames() as $name) {
-                if (empty($default->$name)) {
-                    $default->$name = null;
-                }
-            }
-
             $mainheading = 'editprompt';
             $submitlabel = get_string('save');
 
         } else {
-
             $mainheading = 'addnewprompt';
             $submitlabel = get_string('add');
-
-            // Get current year, month and day.
-            list($year, $month, $day) = explode(' ', date('Y m d'));
-
-            // Define default values for new prompt.
-            $default = (object)[
-                'id' => 0,
-                'promptname' => '',
-                'prompttext' => '',
-                'contextlevel' => CONTEXT_MODULE,
-                'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
-                'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
-            ];
         }
 
         // Add configs that are related to this user and/or context.
