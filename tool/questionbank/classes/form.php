@@ -907,6 +907,7 @@ class form extends \mod_vocab\toolform {
             $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
             $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
             $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
+            $tool::TASKSTATUS_ADDING_MULTIMEDIA => $this->get_string('taskstatus_addingmultimedia'),
             $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
             $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
             $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
@@ -1412,8 +1413,18 @@ class form extends \mod_vocab\toolform {
             }
         }
 
+        // Define the strings and icons for log actions.
+        $logactions = [
+            'editlog' => 't/edit',
+            'redotask' => 't/reload',
+            'resumetask' => 't/play',
+            'fixquestions' => 't/preferences',
+            'deletelog' => 't/delete',
+        ];
+
         // Get table of current log records.
-        list($logcount, $logtable) = $this->get_log_records_table($logaction, $logids);
+        $logtable = $this->get_log_records_table($logactions, $logaction, $logids);
+        list($logtable, $logcount, $incomplete) = $logtable;
 
         if ($logtable || $logmessage) {
 
@@ -1436,16 +1447,20 @@ class form extends \mod_vocab\toolform {
                 $mform->addElement('html', $logtable);
 
                 // Add menu for actions on multiple selected logs.
-                $elements = [];
-                $options = [
-                    '' => $this->get_string('withselected'),
-                    'redotask' => $this->get_string('redotask'),
-                    'resumetask' => $this->get_string('resumetask'),
-                    'deletelog' => $this->get_string('deletelog'),
+                $options = ['' => $this->get_string('withselected')];
+                foreach ($logactions as $action => $icon) {
+                    if ($action == 'editlog') {
+                        continue;
+                    }
+                    if ($action == 'fixquestions' && empty($incomplete->log)) {
+                        continue;
+                    }
+                    $options[$action] = $this->get_string($action);
+                }
+                $elements = [
+                    $mform->createElement('select', 'logaction', '', $options),
+                    $mform->createElement('submit', 'logbutton', get_string('go')),
                 ];
-                $elements[] = $mform->createElement('select', 'logaction', '', $options);
-                $elements[] = $mform->createElement('submit', 'logbutton', get_string('go'));
-
                 $mform->addGroup($elements, 'logactionelements', get_string('action'), '');
             }
         }
@@ -1651,6 +1666,8 @@ class form extends \mod_vocab\toolform {
 
                 case 'redotask':
                 case 'resumetask':
+                case 'fixquestions':
+
                     if ($task) {
                         // The "reschedule" method has no return value,
                         // so we just try it and hope that it works.
@@ -1674,11 +1691,17 @@ class form extends \mod_vocab\toolform {
                                 'results' => '',
                                 'status' => $tool::TASKSTATUS_QUEUED,
                             ]);
-                        } else {
+                        } else if ($logaction == 'resumetask') {
                             // Resume task.
                             $tool::update_log($logid, [
                                 'taskid' => $taskid,
                                 'status' => $tool::TASKSTATUS_AWAITING_IMPORT,
+                            ]);
+                        } else if ($logaction == 'fixquestions') {
+                            // Fix questions.
+                            $tool::update_log($logid, [
+                                'taskid' => $taskid,
+                                'status' => $tool::TASKSTATUS_ADDING_MULTIMEDIA,
                             ]);
                         }
                         $ids[] = $logid;
@@ -1732,9 +1755,10 @@ class form extends \mod_vocab\toolform {
      * format_questionids
      *
      * @param string $questionids comma-separated list of question ids.
+     * @param object $incomplete details of incomplete log ids and question ids.
      * @return string containing a list of links to previw pages of the questions.
      */
-    public function format_questionids($questionids) {
+    public function format_questionids($questionids, $incomplete=null) {
         global $OUTPUT;
 
         if (empty($questionids)) {
@@ -1773,14 +1797,16 @@ class form extends \mod_vocab\toolform {
      * question data, AI assistant types, status, and timestamps. Checkboxes and action links are
      * also provided for each row to support bulk and individual operations.
      *
+     * @param array $actions The string names and icons of actions that are avaiable for each log record.
      * @param string $logaction The current log action to highlight or process (e.g., 'editlog', 'deletelog').
      * @param array  $logids An associative array of selected log IDs for checkbox state (e.g., [3 => 1, 5 => 1]).
      *
-     * @return array Returns a two-element array:
-     *               - int: The number of log records displayed.
+     * @return array Returns a three-element array:
      *               - string: The generated HTML for the log table.
+     *               - int: The number of log records displayed.
+     *               - object: Details of incomplete logs and questions.
      */
-    public function get_log_records_table($logaction, $logids) {
+    public function get_log_records_table($actions, $logaction, $logids) {
         global $DB, $OUTPUT, $PAGE;
 
         // Specify a short date/time format.
@@ -1810,14 +1836,6 @@ class form extends \mod_vocab\toolform {
         $settingstable = 'vocab_config_settings';
         $categoriestable = 'question_categories';
 
-        // Cache the action strings and icons.
-        $actions = [
-            'editlog' => 't/edit',
-            'redotask' => 't/reload',
-            'resumetask' => 't/play',
-            'deletelog' => 't/delete',
-        ];
-
         $cssclass = (object)[
             'logactions' => 'd-inline-block border rounded mx-1 my-0 p-1 bg-light logactions',
             'logaction' => 'd-inline-block border-light mx-0 my-0 px-1 py-0 text-nowrap logaction',
@@ -1845,39 +1863,7 @@ class form extends \mod_vocab\toolform {
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
 
-            $questionids = [];
-            $name = 'questionids';
-            foreach ($logs as $logid => $log) {
-                if (property_exists($log, $name)) {
-                    foreach (explode(',', $log->$name) as $qid) {
-                        $questionids[$qid] = $logid;
-                    }
-                }
-            }
-            $questionids = explode(',', implode(',', $questionids));
-            $questionids = array_map('trim', $questionids);
-            $questionids = array_filter($questionids);
-            $questionids = array_unique($questionids);
-            if (count($questionids)) {
-                list($select, $params) = $DB->get_in_or_equal(array_keys($questionids));
-                $select = 'id '.$select.' AND ('.
-                    $DB->sql_like('questiontext', '?').' OR '.
-                    $DB->sql_like('questiontext', '?').' OR '.
-                    $DB->sql_like('questiontext', '?').
-                ')';
-                array_push($params, '%[[AUDIO%]]%', '%[[IMAGE%]]%', '%[[VIDEO%]]%');
-                if ($questions = $DB->get_records_select('question', $select, $params, 'id, questiontext')) {
-                    // We should fix the oldest and newest versions of the questions.
-                    foreach ($questions as $qid => $question) {
-                        $logid = $questionids[$qid];
-                        $log = $logs[$logid];
-                        // Get most recent version of this question
-                        // and check that it still hasn't been fixed.
-                        // In "question_versions", find record with highest version
-                        // and same questionbankentryid as this $question->id.
-                    }
-                }
-            }
+            $incomplete = $this->get_incomplete($logs);
 
             foreach ($logs as $log) {
 
@@ -2026,16 +2012,8 @@ class form extends \mod_vocab\toolform {
                     }
                 }
 
-                if (is_string($questionids)) {
-                    $ids = explode(',', array_keys($questionids));
-                    $ids = array_map('trim', $ids);
-                    $ids = array_filter($ids);
-                } else {
-                    $ids = array_keys($questionids);
-                }
-
                 $name = 'questionids';
-                $log->$name = $this->format_questionids($log->$name);
+                $log->$name = $this->format_questionids($log->$name, $incomplete);
 
                 if ($log->timecreated) {
                     $log->timecreated = userdate($log->timecreated, $datefmt);
@@ -2067,17 +2045,25 @@ class form extends \mod_vocab\toolform {
                 // Define actions allowed on this log record.
                 $logactions = '';
                 foreach ($actions as $action => $icon) {
-                    $text = $tool->get_string($action);
-                    $icon = $OUTPUT->pix_icon($icon, $text);
-                    $url = $PAGE->url;
-                    $url->params([
-                        'logid' => $log->id,
-                        'logaction' => $action,
-                        'sesskey' => sesskey(),
-                    ]);
-                    $text = \html_writer::tag('small', $text);
-                    $logaction = \html_writer::link($url, $icon.' '.$text);
-                    $logactions .= \html_writer::tag('div', $logaction, ['class' => $cssclass->logaction]);
+                    if ($action == 'fixquestions') {
+                        // Only allow this action if the log record has questions to fix.
+                        $allowaction = array_key_exists($log->id, $incomplete->log);
+                    } else {
+                        $allowaction = true;
+                    }
+                    if ($allowaction) {
+                        $text = $tool->get_string($action);
+                        $icon = $OUTPUT->pix_icon($icon, $text);
+                        $url = $PAGE->url;
+                        $url->params([
+                            'logid' => $log->id,
+                            'logaction' => $action,
+                            'sesskey' => sesskey(),
+                        ]);
+                        $text = \html_writer::tag('small', $text);
+                        $logaction = \html_writer::link($url, $icon.' '.$text);
+                        $logactions .= \html_writer::tag('div', $logaction, ['class' => $cssclass->logaction.' '.$action]);
+                    }
                 }
                 $logactions = \html_writer::tag('div', $logactions, ['class' => $cssclass->logactions]);
 
@@ -2186,7 +2172,7 @@ class form extends \mod_vocab\toolform {
             $this->get_string('timecreated'),
             $this->get_string('timemodified'),
         ];
-        return [$logcount, \html_writer::table($table)];
+        return [\html_writer::table($table), $logcount, $incomplete];
     }
 
     /**
@@ -2244,5 +2230,90 @@ class form extends \mod_vocab\toolform {
             $list = \html_writer::tag('ul', $list, $params);
         }
         return $list;
+    }
+
+    /**
+     * Identifies incomplete question records that reference missing media placeholders.
+     *
+     * This function scans a list of log entries, extracts referenced question IDs,
+     * and checks associated question data fields for media placeholders such as
+     * [[AUDIO]], [[IMAGE]], or [[VIDEO]]. It returns a list of log IDs and
+     * question IDs that are considered incomplete.
+     *
+     * @param array $logs Associative array of log records, keyed by log ID.
+     *              Each log contains a questionids field with a comma-separated list of question IDs.
+     * @return \stdClass An object with two properties:
+     *                   - log: array of log IDs containing incomplete questions.
+     *                   - question: array of question IDs flagged as incomplete.
+     */
+    protected function get_incomplete($logs) {
+        global $DB;
+
+        // Initialize the return object.
+        $incomplete = (object)[
+            'log' => [],
+            'question' => [],
+        ];
+
+        $questionids = [];
+        $name = 'questionids';
+        foreach ($logs as $logid => $log) {
+            if (property_exists($log, $name)) {
+                foreach (explode(',', $log->$name) as $qid) {
+                    if ($qid = trim($qid)) {
+                        $questionids[$qid] = $logid;
+                    }
+                }
+            }
+        }
+
+        ksort($questionids);
+        if (count($questionids)) {
+            list($select, $params) = $DB->get_in_or_equal(array_keys($questionids));
+            if ($questions = $DB->get_records_select('question', "id $select", $params)) {
+                $classname = '\\vocabtool_questionbank\\task\\questions';
+                $ids = [];
+                $select = [];
+                $params = [];
+                $tables = [];
+                foreach ($questions as $qid => $question) {
+                    $qtype = $question->qtype;
+                    if (empty($tables[$qtype])) {
+                        $tables[$qtype] = $classname::get_tables($question);
+                        foreach ($tables[$qtype] as $table => $fields) {
+                            if (empty($ids[$table])) {
+                                $ids[$table] = [];
+                            }
+                            if (empty($select[$table])) {
+                                $select[$table] = [];
+                                $params[$table] = [];
+                                foreach ($fields as $field) {
+                                    $sql = $DB->sql_like($field, '?');
+                                    array_push($select[$table], $sql, $sql, $sql);
+                                    array_push($params[$table], '%[[AUDIO%]]%', '%[[IMAGE%]]%', '%[[VIDEO%]]%');
+                                }
+                                $select[$table] = implode(' OR ', $select[$table]);
+                            }
+                        }
+                    }
+                    foreach ($tables[$qtype] as $table => $fields) {
+                        $ids[$table][] = $qid;
+                    }
+                }
+                foreach (array_keys($select) as $table) {
+                    list($s, $p) = $DB->get_in_or_equal($ids[$table]);
+                    $s = 'id '.$s.' AND ('.$select[$table].')';
+                    $p = array_merge($p, $params[$table]);
+                    if ($records = $DB->get_records_select($table, $s, $p)) {
+                        foreach ($records as $qid => $q) {
+                            $logid = $questionids[$qid];
+                            $incomplete->log[$logid] = true;
+                            $incomplete->question[$qid] = true;
+                        }
+                    }
+                }
+            }
+        }
+        return $incomplete;
     }
 }

@@ -62,14 +62,17 @@ class tool extends \mod_vocab\toolbase {
     /** @var int database value signifying the task results are being imported into Moodle */
     const TASKSTATUS_IMPORTING_RESULTS = 6;
 
+    /** @var int database value signifying the media items (image, audio, video) are being created */
+    const TASKSTATUS_ADDING_MULTIMEDIA = 7;
+
     /** @var int database value signifying the task has been completed */
-    const TASKSTATUS_COMPLETED = 7;
+    const TASKSTATUS_COMPLETED = 8;
 
     /** @var int database value signifying the task was cancelled after being reviewed */
-    const TASKSTATUS_CANCELLED = 8;
+    const TASKSTATUS_CANCELLED = 9;
 
     /** @var int database value signifying the task failed for some reason, e.g. a program error or unexpected setting */
-    const TASKSTATUS_FAILED = 9;
+    const TASKSTATUS_FAILED = 10;
 
     /**
      * Return a default log record with values initialized to 0 or "".

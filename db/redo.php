@@ -32,7 +32,7 @@ require_capability('moodle/site:config', context_system::instance());
 $vocab = \mod_vocab\activity::create();
 
 // Set the page url.
-$PAGE->set_url(new moodle_url('/mod/vocab/redo.php'));
+$PAGE->set_url(new moodle_url('/mod/vocab/db/redo.php'));
 
 // Set the page title.
 $title = $vocab->get_string('pluginname');

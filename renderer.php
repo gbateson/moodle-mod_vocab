@@ -811,17 +811,22 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $output .= $this->heading($heading);
         $output .= $this->box_start();
 
-        if ($taskid = \mod_vocab\activity::get_optional_param('taskid', 0, PARAM_INT)) {
+        $taskid = \mod_vocab\activity::get_optional_param('taskid', 0, PARAM_INT);
+        $taskexecutor = optional_param('taskexecutor', 0, PARAM_INT);
 
-            if ($uselocks) {
-                $cronlockfactory = \core\lock\lock_config::get_lock_factory('cron');
-            } else {
-                $cronlockfactory = false;
+        if ($taskid) {
+            if ($taskexecutor == 1) {
+                $url = "/{$CFG->admin}/tool/task/run_adhoctasks.php";
+                $params = ['id' => $taskid, 'confirm' => 1, 'sesskey' => sesskey()];
+                redirect(new moodle_url($url, $params));
+                // Script will stop here.
             }
 
             if ($uselocks) {
+                $cronlockfactory = \core\lock\lock_config::get_lock_factory('cron');
                 $lock = $cronlockfactory->get_lock('adhoc_' . $taskid, 0);
             } else {
+                $cronlockfactory = false;
                 $lock = true;
             }
 
@@ -845,7 +850,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
                         $task->set_cron_lock($cronlock);
                     }
 
-                    $task->execute();
+                    $output .= html_writer::start_tag('pre', ['class' => 'bg-dark text-light py-2 px-3']);
+                    ob_start();
+                    \core\task\manager::run_adhoc_from_cli($taskid);
+                    $output .= ob_get_contents();
+                    $output .= html_writer::end_tag('pre');
 
                     if ($uselocks) {
                         \core\task\manager::adhoc_task_complete($task);
@@ -877,54 +886,77 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 $msg = get_string('success');
             }
             $output .= html_writer::tag('p', $msg);
+        }
+
+        // Add the form elements.
+        if ($tasks = $DB->get_records_select('task_adhoc', $DB->sql_like('component', '?'), ['vocab%'])) {
+
+            // Cache the label seperator, e.g. ": ".
+            $labelsep = get_string('labelsep', 'langconfig');
+
+            foreach ($tasks as $taskid => $task) {
+                list($subplugin, $dir, $name) = explode('\\', trim($task->classname, '\\'), 3);
+                $data = json_decode($task->customdata);
+                foreach ($data as $name => $value) {
+                    $data->$name = "$name = $value";
+                }
+                if ($data = implode(', ', (array)$data)) {
+                    $data = " ($data)";
+                }
+                $tasks[$taskid] = str_replace('\\', '/', "$taskid: ".get_string('pluginname', $subplugin).$data);
+            }
+
+            $taskexecutors = [
+                0 => $this->vocab->get_string('pluginname').$labelsep.
+                     get_string('redotask', $plugin),
+                1 => get_string('server', 'admin').$labelsep.
+                     get_string('taskadmintitle', 'admin').$labelsep.
+                     get_string('adhoctasks', 'tool_task'),
+            ];
+
+            // Start the form.
+            $output .= html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
+            $output .= html_writer::start_tag('div');
+
+            // Menu of tasks.
+            $output .= \html_writer::start_tag('p', ['class' => 'my-2']);
+            $output .= get_string('adhoctaskid', 'vocabtool_questionbank').$labelsep;
+            $output .= html_writer::select($tasks, 'taskid', $taskid, null);
+            $output .= \html_writer::end_tag('p');
+
+            // Menu of task executors.
+            $output .= \html_writer::start_tag('p', ['class' => 'my-2']);
+            $output .= get_string('taskexecutor', 'vocabtool_questionbank').$labelsep;
+            $output .= html_writer::select($taskexecutors, 'taskexecutor', $taskexecutor, null);
+            $output .= \html_writer::end_tag('p');
+
+            // Go button.
+            $output .= \html_writer::start_tag('p', ['class' => 'my-2']);
+            $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
+            $output .= \html_writer::end_tag('p');
+
+            // Finish the form.
+            $output .= html_writer::end_tag('div');
+            $output .= html_writer::end_tag('form');
+
+            // Add a link to run the cron (only available on localhost servers).
+            if (strpos($CFG->wwwroot, '/localhost/')) {
+                if ($password = $DB->get_field('config', 'value', ['name' => 'cronremotepassword'])) {
+                    $msg = get_string('redotaskincron', $plugin);
+                    $url = new moodle_url('/admin/cron.php', ['password' => $password]);
+                    $msg = html_writer::link($url, $msg, ['onclick' => "this.target = 'redotask';"]);
+                    $output .= html_writer::tag('p', $msg, ['class' => 'my-2']);
+                }
+            }
 
         } else {
-
-            // Add the form elements.
-            if ($tasks = $DB->get_records_select('task_adhoc', $DB->sql_like('component', '?'), ['vocab%'])) {
-
-                foreach ($tasks as $taskid => $task) {
-                    list($subplugin, $dir, $name) = explode('\\', trim($task->classname, '\\'), 3);
-                    $data = json_decode($task->customdata);
-                    foreach ($data as $name => $value) {
-                        $data->$name = "$name = $value";
-                    }
-                    if ($data = implode(', ', (array)$data)) {
-                        $data = " ($data)";
-                    }
-                    $tasks[$taskid] = str_replace('\\', '/', "$taskid: ".get_string('pluginname', $subplugin).$data);
-                }
-
-                // Start the form.
-                $output .= html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
-                $output .= html_writer::start_tag('div');
-
-                $output .= get_string('adhoctaskid', 'vocabtool_questionbank').' '.
-                           html_writer::select($tasks, 'taskid', '', null).' ';
-                $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
-
-                // Finish the form.
-                $output .= html_writer::end_tag('div');
-                $output .= html_writer::end_tag('form');
-
-                if (strpos($CFG->wwwroot, 'localhost')) {
-                    if ($password = $DB->get_field('config', 'value', ['name' => 'cronremotepassword'])) {
-                        $msg = get_string('redotaskincron', $plugin);
-                        $url = new moodle_url('/admin/cron.php', ['password' => $password]);
-                        $msg = html_writer::link($url, $msg, ['onclick' => "this.target = 'redotask';"]);
-                        $output .= html_writer::tag('p', $msg);
-                    }
-                }
-
-            } else {
-                $msg = $this->vocab->get_string('notasks');
-                $output .= html_writer::tag('p', $msg);
-            }
+            $msg = $this->vocab->get_string('notasks');
+            $output .= html_writer::tag('p', $msg, ['class' => 'my-2']);
         }
 
         $msg = get_string('refresh');
         $msg = html_writer::link($FULLME, $msg);
-        $output .= html_writer::tag('p', $msg);
+        $output .= html_writer::tag('p', $msg, ['class' => 'my-2']);
 
         $output .= $this->box_end();
         $output .= $this->footer();
@@ -946,11 +978,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
      */
     public function sort_lang_strings($plugin, $purgecaches=true) {
         global $CFG, $DB, $FULLME;
+        $strlen = strlen($CFG->dirroot);
 
         // Get incoming data, if any.
         $selected = optional_param_array('selected', [], PARAM_INT);
+        $backuplangfiles = optional_param('backuplangfiles', 0, PARAM_INT);
 
-        // Set up the heading e.g. Sort language strings.
+        // Set up the heading i.e. Sort strings for selected plugins.
         $heading = get_string('pluginname', $plugin)." ($plugin)";
         $heading = $this->vocab->get_string('sortstrings', $heading);
 
@@ -996,6 +1030,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         ];
 
         $updated = [];
+        $unchanged = [];
         foreach ($selected as $pluginname => $value) {
             // E.g. mod_vocab, vocabtool_dictionary.
             if (empty($value)) {
@@ -1008,52 +1043,93 @@ class mod_vocab_renderer extends plugin_renderer_base {
             }
             $dir = $dirs[$type][$name];
             if ($type == 'mod') {
-                $langfile = "$dir/lang/en/$name.php";
+                $langdirpath = "$dir/lang";
+                $langfilename = "$name.php";
             } else {
-                $langfile = "$dir/lang/en/{$plugintype}_{$name}.php";
+                $langdirpath = "$dir/lang";
+                $langfilename = "{$plugintype}_{$name}.php";
             }
-            if (is_writable($langfile)) {
-                // Get the curent content of the langfile.
-                $oldcontent = file_get_contents($langfile);
 
-                // Make a backup of the langfile, if it hasn't already been done.
-                $langfilebackup = str_replace('.php', '.backup.php', $langfile);
-                if (! file_exists($langfilebackup)) {
-                    file_put_contents($langfilebackup, $oldcontent);
-                }
+            $langdirs = array_filter(glob("$langdirpath/*"), 'is_dir');
+            foreach ($langdirs as $langdir) {
+                $lang = substr($langdir, strrpos($langdir, '/') + 1);
+                $langfile = "$langdir/$langfilename";
+                if (is_writable($langfile)) {
 
-                // Truncate lang file at first occurrence of '$string'.
-                if (! $pos = core_text::strpos($oldcontent, '$string')) {
-                    continue; // Shouldn't happen !!
-                }
-                $newcontent = core_text::substr($oldcontent, 0, $pos);
-                $newcontent = trim($newcontent)."\n\n";
+                    // Get the curent content of the langfile.
+                    $oldcontent = file_get_contents($langfile);
 
-                // Get all the strings in the langfile, and sort them.
-                $string = [];
-                include($langfile);
-                ksort($string);
+                    // Make a backup of the langfile, if requested and required.
+                    if ($backuplangfiles) {
+                        $langfilebackup = str_replace('.php', '.backup.php', $langfile);
+                        if (! file_exists($langfilebackup)) {
+                            file_put_contents($langfilebackup, $oldcontent);
+                        }
+                    }
 
-                foreach ($string as $strname => $strvalue) {
-                    $strvalue = strtr($strvalue, $unescape);
-                    $strvalue = strtr($strvalue, $escape);
-                    $newcontent .= '$'."string['".$strname."'] = '".$strvalue."';\n";
+                    // Truncate lang file at first occurrence of '$string'.
+                    if (! $pos = core_text::strpos($oldcontent, '$string')) {
+                        continue; // Shouldn't happen !!
+                    }
+                    $newcontent = core_text::substr($oldcontent, 0, $pos);
+                    $newcontent = trim($newcontent)."\n\n";
+
+                    // Get all the strings in the langfile, and sort them.
+                    $string = [];
+                    include($langfile);
+                    ksort($string);
+
+                    foreach ($string as $strname => $strvalue) {
+                        $strvalue = strtr($strvalue, $unescape);
+                        $strvalue = strtr($strvalue, $escape);
+                        $newcontent .= '$'."string['".$strname."'] = '".$strvalue."';\n";
+                    }
+                    if ($newcontent == $oldcontent) {
+                        if (empty($unchanged[$pluginname])) {
+                            $unchanged[$pluginname] = [];
+                        }
+                        $unchanged[$pluginname][$lang] = substr($langfile, $strlen);
+                    } else {
+                        file_put_contents($langfile, $newcontent);
+                        if (empty($updated[$pluginname])) {
+                            $updated[$pluginname] = [];
+                        }
+                        $updated[$pluginname][$lang] = substr($langfile, $strlen);
+                    }
+                    $newcontent = $oldcontent = ''; // Reclaim memory.
                 }
-                if ($newcontent != $oldcontent) {
-                    file_put_contents($langfile, $newcontent);
-                    $updated["{$plugintype}_{$name}"] = substr($langfile, strlen($CFG->dirroot));
-                }
-                $newcontent = $oldcontent = ''; // Reclaim memory.
             }
         }
 
+        // Cache attributes classes for output elements.
+        $dl = ['class' => 'row'];
+        $dt = ['class' => 'col-md-3'];
+        $dd = ['class' => 'col-md-9'];
+        $span = ['class' => 'font-weight-normal'];
+
+        if (count($unchanged)) {
+            $output .= \html_writer::tag('h5', get_string('unchangedlangfiles', $plugin));
+            $output .= \html_writer::start_tag('dl', $dl);
+            foreach ($unchanged as $pluginname => $langs) {
+                $strpluginname = get_string('pluginname', $pluginname);
+                $langs = '['.implode(', ', array_keys($langs)).']';
+                $langs = \html_writer::tag('span', $langs, $span);
+                $output .= \html_writer::tag('dt', "$langs $pluginname", $dt);
+                $output .= \html_writer::tag('dd', "$strpluginname", $dd);
+            }
+            $output .= \html_writer::end_tag('dl');
+        }
         if (count($updated)) {
             $output .= \html_writer::tag('h5', get_string('updatedlangfiles', $plugin));
-            $output .= \html_writer::start_tag('ul');
-            foreach ($updated as $pluginname => $langfile) {
-                $output .= \html_writer::tag('li', get_string('pluginname', $pluginname));
+            $output .= \html_writer::start_tag('dl', $dl);
+            foreach ($updated as $pluginname => $langs) {
+                $strpluginname = get_string('pluginname', $pluginname);
+                $langs = '['.implode(', ', array_keys($langs)).']';
+                $langs = \html_writer::tag('span', $langs, $span);
+                $output .= \html_writer::tag('dt', "$langs $pluginname", $dt);
+                $output .= \html_writer::tag('dd', "$strpluginname", $dd);
             }
-            $output .= \html_writer::end_tag('ul');
+            $output .= \html_writer::end_tag('dl');
             if ($purgecaches) {
                 $output .= \html_writer::tag('p', get_string('stringcachesreset', $plugin));
                 get_string_manager()->reset_caches(true);
@@ -1079,7 +1155,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     ]);
                     $output .= \html_writer::start_tag('div', [
                         'class' => 'container ml-0',
-                        'style' => 'max-width: 720px;',
+                        'style' => 'max-width: 840px;',
                     ]);
                 }
 
@@ -1118,7 +1194,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
         }
 
         if ($startedlists) {
-            $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('sort')]);
+            // Backup selector.
+            $name = 'backuplangfiles';
+            $label = get_string($name, $plugin);
+            $helpicon = $this->output->help_icon($name, $plugin);
+            $output .= \html_writer::tag('p', $label.$helpicon.\html_writer::select_yes_no($name, 0));
+            // Sort button.
+            $output .= \html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('sort')]);
             $output .= \html_writer::end_tag('div');
             $output .= \html_writer::end_tag('form');
         }

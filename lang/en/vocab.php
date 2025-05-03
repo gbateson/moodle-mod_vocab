@@ -24,12 +24,10 @@
  * @since      Moodle 3.11
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 $string['activityclose'] = 'Activity closes';
 $string['activityclose_help'] = 'Students can to access this activity up until the date and time specified here. After this date and time, the activity will be closed.';
 $string['activityname'] = 'Activity Name';
-$string['activityname_help'] = 'This is the name of the Vocabulary actvity. The name is is displayed on the course page, and within the activity itself.';
+$string['activityname_help'] = 'This is the name of the Vocabulary activity. The name is displayed on the course page, and within the activity itself.';
 $string['activityopen'] = 'Activity opens';
 $string['activityopen_help'] = 'Students can access this activity starting from this date and time. Before this date and time, the activity will be closed.';
 $string['addmissingvalue'] = 'Please add a value here.';
@@ -42,7 +40,7 @@ $string['assistantplugins_help'] = 'Select the AI assistants (e.g. ChatGPT, DALL
 $string['attemptcount'] = 'Minimum attempt count';
 $string['attemptcount_help'] = 'The number of successful attempts required to demonstrate mastery of a word.';
 $string['attemptdelay'] = 'Minimum delay between attempts';
-$string['attemptdelay_help'] = 'The minimum delay between attempts. This setting can be used to prevent students from cramming their vocbulary study into a short period of time.';
+$string['attemptdelay_help'] = 'The minimum delay between attempts. This setting can be used to prevent students from cramming their vocabulary study into a short period of time.';
 $string['attemptduration'] = 'Maximum total duration of attempts';
 $string['attemptduration_help'] = 'The maximum total duration for attempts which satisfy the score and count conditions.';
 $string['attemptscore'] = 'Minimum attempt score';
@@ -58,6 +56,8 @@ Only the most recent attempts will be considered.
 
 **Consecutive attempts**
 Any block of consecutive attempts will be considered.';
+$string['backuplangfiles'] = 'Backup lang files';
+$string['backuplangfiles_help'] = 'Set to YES to create a backup of each language file before it is sorted.';
 $string['clicktocontinue'] = 'Click here to continue';
 $string['completed'] = 'Completed';
 $string['consecutiveattempts'] = 'Consecutive attempts';
@@ -141,7 +141,7 @@ $string['modeltunedbyfile'] = '{$a->model} (tuned by file "{$a->file}")';
 $string['modulename'] = 'Vocabulary activity';
 $string['modulename_help'] = 'The Vocab module assists students in learning vocabulary through spaced repetition.
 
-A single Vocabulary activity contains a list of vocabulary for student to focus on. The teacher can supply of list of target words, or can allow the software choose words for each student depending on their level.
+A single Vocabulary activity contains a list of vocabulary for student to focus on. The teacher can supply a list of target words, or can allow the software choose words for each student depending on their level.
 
 Students familiarize themselves with the target vocabulary through a variety of game-like activities. Unknown vocabulary is recycled frequently, while known vocabulary is recycled at greater and greater intervals.';
 $string['modulename_link'] = 'mod/vocab/view';
@@ -185,7 +185,7 @@ $string['sharedfromdate'] = 'Shared from {$a}';
 $string['sharedfromuntildate'] = 'Shared from {$a->from} until {$a->until}';
 $string['sharedincoursecatcontext'] = 'Shared in all courses in the current course category';
 $string['sharedincoursecontext'] = 'Shared in all activities in the current course';
-$string['sharedinsystemcontext'] = 'Shared throughout this entire site Moodle site';
+$string['sharedinsystemcontext'] = 'Shared throughout this entire Moodle site';
 $string['sharedinunknowncontext'] = 'Shared in unknown context: {$a}';
 $string['sharedinusercontext'] = 'Not shared. Only accessible to you, {$a}.';
 $string['sharedinvocabcontext'] = 'Shared only in the current Vocabulary activity';
@@ -227,7 +227,8 @@ $string['timeunitmonths'] = 'month(s)';
 $string['timeunitseconds'] = 'second(s)';
 $string['timeunitweeks'] = 'week(s)';
 $string['tools'] = 'Tools';
-$string['updatedlangfiles'] = 'Language files for the following plugins were updated:';
+$string['unchangedlangfiles'] = 'The language file(s) for the following plugins were NOT updated:';
+$string['updatedlangfiles'] = 'The language file(s) for the following plugins were updated:';
 $string['vocab:addinstance'] = 'Add a new Vocabulary activity';
 $string['vocab:attempt'] = 'Attempt a Vocabulary activity';
 $string['vocab:deleteattempts'] = 'Delete attempts at a Vocabulary activity';

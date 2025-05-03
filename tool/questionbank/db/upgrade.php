@@ -46,6 +46,7 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
     $table = 'vocabtool_questionbank_log';
 
     // Get the upgrade script for the main plugin.
+    // Crucially, this contains "xmldb_vocab_check_structure()".
     require_once($CFG->dirroot.'/mod/vocab/db/upgrade.php');
 
     // Get the DB manager.
@@ -91,5 +92,12 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
 
+    $newversion = 2025050129;
+    if ($oldversion < $newversion) {
+        // Increment status TASKSTATUS_COMPLETED (7->8), TASKSTATUS_CANCELLED (8->9),
+        // TASKSTATUS_FAILED (9->10), to make room for TASKSTATUS_ADDING_MULTIMEDIA (7).
+        $DB->execute('UPDATE {'.$table.'} SET status = status + 1 WHERE status IN (?, ?, ?)', [7, 8, 9]);
+        upgrade_plugin_savepoint($result, $newversion, $type, $name);
+    }
     return $result;
 }

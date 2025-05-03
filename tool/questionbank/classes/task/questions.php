@@ -114,6 +114,17 @@ class questions extends \core\task\adhoc_task {
         $prompt = $log->prompt;
         $results = $log->results;
 
+        if ($questionids = $log->questionids) {
+            $questionids = explode(',', $questionids);
+            $questionids = array_map('trim', $questionids);
+            $questionids = array_filter($questionids);
+        } else {
+            $questionids = [];
+        }
+
+        // The questions may be created or fetched later.
+        $questions = null;
+
         // Intialize the vocab activity tool.
         $this->tool = $toolclass::create($vocabid);
 
@@ -141,6 +152,9 @@ class questions extends \core\task\adhoc_task {
             $a = ['userid' => $userid, 'courseid' => $courseid];
             return $this->report_error($log, 'invalidteacherid', $a);
         }
+
+        // Shortcut to form class name.
+        $form = '\\vocabtool_questionbank\\form';
 
         // Check the essential elements (key, prompt, format) are available.
         $a = [];
@@ -314,6 +328,133 @@ class questions extends \core\task\adhoc_task {
             }
         }
 
+        // Get all question categories in the current course.
+        $coursecategory = question_get_top_category($coursecontext->id);
+        $categories = question_categorylist($coursecategory->id);
+
+        // Ensure that the target question category is in the target course.
+        if (! in_array($parentcatid, $categories)) {
+            return $this->report_error($log, 'invalidquestioncategoryid', $parentcatid);
+        }
+
+        // Cache the parent category.
+        $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
+
+        // Determine the human readable text for $qtype e.g. "Multiple choice".
+        $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
+
+        $qtypeshort = $qtype.'short';
+        if (get_string_manager()->string_exists($qtypeshort, $this->tool->plugin)) {
+            $qtypeshort = $this->tool->get_string($qtypeshort); // E.g. "MC".
+        } else {
+            $qtypeshort = $qtypetext; // E.g. "Multiple choice".
+        }
+
+        // Determine the human readable text for $qlevel e.g. "CEFR A2 (Elementary)".
+        $qleveltext = \vocabtool_questionbank\form::get_question_level_text($qlevel);
+
+        // Format course name.
+        $coursename = $this->tool->vocab->course->shortname;
+        $coursename = format_string($coursename, true, ['context' => $coursecontext]);
+
+        // Format section type e.g. "Topic" or "Week".
+        $sectiontype = 'format_'.$this->tool->vocab->course->format;
+        $sectiontype = get_string('sectionname', $sectiontype);
+
+        // Format section name.
+        $sectionid = $this->tool->vocab->cm->section;
+        if ($modinfo = get_fast_modinfo($this->tool->vocab->course)) {
+            $sectionname = $modinfo->get_section_info_by_id($sectionid)->name;
+        } else {
+            // Shouldn't happen - but we can get the section name directly from the $DB.
+            $sectionname = $DB->get_field('course_sections', 'name', ['id' => $sectionid]);
+        }
+        if ($sectionname) {
+            $sectionname = format_string($sectionname, true, ['context' => $coursecontext]);
+            $sectionname = trim($sectionname);
+        } else {
+            $sectionname = '';
+        }
+        if ($sectionname == '') {
+            // Create a default name for this section e.g. "Topic: 1" or "Week: 2".
+            $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
+            $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
+        }
+
+        // Cache activity type (i.e. "Vocabulary activity").
+        $activitytype = $this->tool->vocab->get_string('modulename');
+
+        // Format vocab type and name.
+        $activityname = $this->tool->vocab->name;
+        $activityname = format_string($activityname, true, ['context' => $this->tool->vocab->context]);
+
+        // Format prompt name (incl. head and tail).
+        $prompthead = '';
+        $prompttail = '';
+        if ($promptname = $promptconfig->promptname) {
+            $promptname = explode(' ', $promptname);
+            $promptname = array_filter($promptname);
+            $promptname = array_diff($promptname, ['Generate', 'questions']);
+            $promptname = implode(' ', $promptname);
+            if ($pos = strpos($promptname, ':')) {
+                $prompthead = trim(substr($promptname, 0, $pos));
+            }
+            if ($pos = strrpos($promptname, ':')) {
+                $prompttail = trim(substr($promptname, $pos + 1));
+            }
+        }
+
+        $tags = [];
+        $addmediatags = false;
+        if ($tagtypes & $form::QTAG_AI) {
+            $tags[] = $this->tool->get_string('ai_generated');
+        }
+        if ($tagtypes & $form::QTAG_PROMPTHEAD) {
+            $tags[] = $prompthead;
+        }
+        if ($tagtypes & $form::QTAG_PROMPTTAIL) {
+            $tags[] = $prompttail;
+        }
+        if ($tagtypes & $form::QTAG_MEDIATYPE) {
+            $addmediatags = true;
+        }
+        if ($tagtypes & $form::QTAG_WORD) {
+            $tags[] = $word;
+        }
+        if ($tagtypes & $form::QTAG_QUESTIONTYPE) {
+            $tags[] = $qtypeshort;
+        }
+        if ($tagtypes & $form::QTAG_VOCABLEVEL) {
+            $tags[] = $qlevel;
+        }
+        if ($tagtypes & $form::QTAG_CUSTOMTAGS) {
+            $tagnames = explode(',', $tagnames);
+            $tagnames = array_filter($tagnames);
+            if (count($tagnames)) {
+                $tags = array_merge($tags, $tagnames);
+            }
+        }
+
+        // Setup arguments for the strings used to create question category names.
+        $a = (object)[
+            'customname' => $subcatname,
+            'coursename' => $coursename,
+            'sectiontype' => $sectiontype, // Not used.
+            'sectionname' => $sectionname,
+            'activitytype' => $activitytype, // Not used.
+            'activityname' => $activityname,
+            'word' => $word,
+            'qtype' => $qtypetext, // E.g. "MC".
+            'qlevel' => $qlevel, // E.g. "A2".
+            'prompthead' => $prompthead,
+            'prompttail' => $prompttail,
+        ];
+
+        // Ensure that we can get or create a suitable question category.
+        if (! $category = $this->get_question_category($parentcategory, $subcattype, $a)) {
+            return $this->report_error($log, 'missingquestioncategory', $word);
+        }
+
         /*//////////////////////////////////
         // Create question categories
         // and generate questions.
@@ -334,153 +475,61 @@ class questions extends \core\task\adhoc_task {
             $status = $toolclass::TASKSTATUS_IMPORTING_RESULTS;
             $this->tool->update_log($log->id, ['status' => $status]);
 
-            // Get all question categories in the current course.
-            $coursecategory = question_get_top_category($coursecontext->id);
-            $categories = question_categorylist($coursecategory->id);
-
-            // Ensure that the target question category is in the target course.
-            if (! in_array($parentcatid, $categories)) {
-                return $this->report_error($log, 'invalidquestioncategoryid', $parentcatid);
-            }
-
-            // Cache the parent category.
-            $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
-
-            // Determine the human readable text for $qtype e.g. "Multiple choice".
-            $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
-
-            $qtypeshort = $qtype.'short';
-            if (get_string_manager()->string_exists($qtypeshort, $this->tool->plugin)) {
-                $qtypeshort = $this->tool->get_string($qtypeshort); // E.g. "MC".
-            } else {
-                $qtypeshort = $qtypetext; // E.g. "Multiple choice".
-            }
-
-            // Determine the human readable text for $qlevel e.g. "CEFR A2 (Elementary)".
-            $qleveltext = \vocabtool_questionbank\form::get_question_level_text($qlevel);
-
-            // Format course name.
-            $coursename = $this->tool->vocab->course->shortname;
-            $coursename = format_string($coursename, true, ['context' => $coursecontext]);
-
-            // Format section type e.g. "Topic" or "Week".
-            $sectiontype = 'format_'.$this->tool->vocab->course->format;
-            $sectiontype = get_string('sectionname', $sectiontype);
-
-            // Format section name.
-            $sectionid = $this->tool->vocab->cm->section;
-            if ($modinfo = get_fast_modinfo($this->tool->vocab->course)) {
-                $sectionname = $modinfo->get_section_info_by_id($sectionid)->name;
-            } else {
-                // Shouldn't happen - but we can get the section name directly from the $DB.
-                $sectionname = $DB->get_field('course_sections', 'name', ['id' => $sectionid]);
-            }
-            if ($sectionname) {
-                $sectionname = format_string($sectionname, true, ['context' => $coursecontext]);
-                $sectionname = trim($sectionname);
-            } else {
-                $sectionname = '';
-            }
-            if ($sectionname == '') {
-                // Create a default name for this section e.g. "Topic: 1" or "Week: 2".
-                $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
-                $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
-            }
-
-            // Cache activity type (i.e. "Vocabulary activity").
-            $activitytype = $this->tool->vocab->get_string('modulename');
-
-            // Format vocab type and name.
-            $activityname = $this->tool->vocab->name;
-            $activityname = format_string($activityname, true, ['context' => $this->tool->vocab->context]);
-
-            // Format prompt name (incl. head and tail).
-            $prompthead = '';
-            $prompttail = '';
-            if ($promptname = $promptconfig->promptname) {
-                $promptname = explode(' ', $promptname);
-                $promptname = array_filter($promptname);
-                $promptname = array_diff($promptname, ['Generate', 'questions']);
-                $promptname = implode(' ', $promptname);
-                if ($pos = strpos($promptname, ':')) {
-                    $prompthead = trim(substr($promptname, 0, $pos));
-                }
-                if ($pos = strrpos($promptname, ':')) {
-                    $prompttail = trim(substr($promptname, $pos + 1));
-                }
-            }
-
-            // Setup arguments for the strings used to create question category names.
-            $a = (object)[
-                'customname' => $subcatname,
-                'coursename' => $coursename,
-                'sectiontype' => $sectiontype, // Not used.
-                'sectionname' => $sectionname,
-                'activitytype' => $activitytype, // Not used.
-                'activityname' => $activityname,
-                'word' => $word,
-                'qtype' => $qtypetext, // E.g. "MC".
-                'qlevel' => $qlevel, // E.g. "A2".
-                'prompthead' => $prompthead,
-                'prompttail' => $prompttail,
-            ];
-
-            // Shortcut to form class name.
-            $form = '\\vocabtool_questionbank\\form';
-
-            $tags = [];
-            if ($tagtypes & $form::QTAG_AI) {
-                $tags[] = $this->tool->get_string('ai_generated');
-            }
-            if ($tagtypes & $form::QTAG_PROMPTHEAD) {
-                $tags[] = $prompthead;
-            }
-            if ($tagtypes & $form::QTAG_PROMPTTAIL) {
-                $tags[] = $prompttail;
-            }
-            if ($tagtypes & $form::QTAG_MEDIATYPE) {
-                $tags[] = 'media';
-            }
-            if ($tagtypes & $form::QTAG_WORD) {
-                $tags[] = $word;
-            }
-            if ($tagtypes & $form::QTAG_QUESTIONTYPE) {
-                $tags[] = $qtypeshort;
-            }
-            if ($tagtypes & $form::QTAG_VOCABLEVEL) {
-                $tags[] = $qlevel;
-            }
-            if ($tagtypes & $form::QTAG_CUSTOMTAGS) {
-                $tagnames = explode(',', $tagnames);
-                $tagnames = array_filter($tagnames);
-                if (count($tagnames)) {
-                    $tags = array_merge($tags, $tagnames);
-                }
-            }
-
-            // Ensure that we can get or create a suitable question category.
-            if (! $category = $this->get_question_category($parentcategory, $subcattype, $a)) {
-                return $this->report_error($log, 'missingquestioncategory', $word);
-            }
-
             // At last, we can generate the questions from the results
             // and store them in a suitable question category.
             if ($questions = $this->parse_questions($log, $results, $qformat, $category->id, $tags)) {
-                $status = $toolclass::TASKSTATUS_COMPLETED;
+                $questionids = array_merge($questionids, array_keys($questions));
+                $status = $toolclass::TASKSTATUS_ADDING_MULTIMEDIA;
                 $error = ''; // Unset any previous errors.
-
-                // Create an string of comma-separated question ids.
-                $questionids = array_keys($questions);
-                $questionids = implode(', ', $questionids);
             } else {
-                $questionids = '';
                 $status = $toolclass::TASKSTATUS_FAILED;
                 $error = $this->tool->get_string('resultsnotparsed', $word);
+                // Note: $questionids does not change.
             }
 
-            // Update the questionids, status and errors.
             $this->tool->update_log($log->id, [
                 'questionids' => $questionids,
+                'status' => $status,
+                'error' => $error,
+            ]);
+        }
+
+        /*//////////////////////////////////
+        // Add multimedia to questions
+        // i.e. images, audio, video.
+        //////////////////////////////////*/
+
+        if ($status == $toolclass::TASKSTATUS_ADDING_MULTIMEDIA) {
+            if ($questions === null) {
+                $questions = [];
+                foreach ($questionids as $questionid) {
+                    $questions[$questionid] = \question_bank::load_question($questionid);
+                }
+            }
+            foreach ($questions as $questionid => $question) {
+                // Create media (images, audio, video) and add appropriate tags.
+                $mediatags = [];
+                if (isset($question->context)) {
+                    $context = $question->context;
+                } else if (isset($question->contextid)) {
+                    $context = \context::instance_by_id($question->contextid);
+                } else if (isset($question->category)) {
+                    $context = \context_coursecat::instance($question->category);
+                } else {
+                    $context = null; // Shouldn't happen !!
+                }
+                if ($context) {
+                    $mediatags = $this->create_media($log, $question, $context, $mediatags);
+                    if ($addmediatags && count($mediatags)) {
+                        \core_tag_tag::set_item_tags(
+                            'core_question', 'question', $question->id, $context, $mediatags
+                        );
+                    }
+                }
+            }
+            // The errors from "create_media(...)" go straight to mtrace.
+            $status = $toolclass::TASKSTATUS_COMPLETED;
+            $this->tool->update_log($log->id, [
                 'status' => $status,
                 'error' => $error,
             ]);
@@ -1191,7 +1240,7 @@ EOD;
      * @param \context $context The Moodle context for the specified question category.
      * @param int $categoryid The ID of the question category in which the parsed questions should be stored.
      * @param array $tags An array of tags to be assigned to the parsed questions.
-     * @param boolean $saveoptions TRUE is options are to be saved; otherwise FALSE.
+     * @param boolean $saveoptions TRUE if question options are to be saved; otherwise FALSE.
      * @return void The parsed questions are stored in the Moodle database.
      */
     protected function add_question(&$questions, $question, $name, $text, $log, $context, $categoryid, $tags, $saveoptions=false) {
@@ -1238,14 +1287,6 @@ EOD;
 
         // Add the new question to the $questions array.
         $questions[$question->id] = $question;
-
-        // Create media (images, audio, video) and add appropriate tags.
-        $mediatags = [];
-        $mediatags = $this->create_media($log, $question, $context, $mediatags);
-        $i = array_search('media', $tags);
-        if (is_numeric($i)) {
-            array_splice($tags, $i, 1, $mediatags);
-        }
 
         // Add Moodle tags for this question.
         // e.g., "AI", "newword", "MC", "TOEIC-200".
@@ -1311,12 +1352,15 @@ EOD;
 
         // Cache the question type (e.g. multichoice).
         $qtype = $question->qtype;
+        if (is_object($qtype)) {
+            $qtype = $qtype->name();
+        }
 
         // Initialize the cache of fields and fileareas for this $qtype.
         // Usually we are only generating questions for a single $qtype.
         static $tables = [];
         if (empty($tables[$qtype])) {
-            $tables[$qtype] = $this->get_tables($question);
+            $tables[$qtype] = self::get_tables($question);
         }
 
         // Initialize the $filerecord that will be used
@@ -1357,13 +1401,16 @@ EOD;
      * @param object $question
      * @return array [$table => [$fields]]
      */
-    public function get_tables($question) {
+    public static function get_tables($question) {
 
         // Initialize the array of tables.
         $tables = [];
 
         // Cache the question type.
         $qtype = $question->qtype;
+        if (is_object($qtype)) {
+            $qtype = $qtype->name();
+        }
 
         // Add the question table, if required.
         if (property_exists($question, 'questiontext')) {
@@ -1394,7 +1441,7 @@ EOD;
 
         // Add the combined feedback table, if any.
         // Usually this is "qtype_{$qtype}_options".
-        if ($table = $this->get_feedback_table($qtype)) {
+        if ($table = self::get_feedback_table($qtype)) {
             list($table, $fields) = $table;
             $tables[$table] = $fields;
         }
@@ -1402,7 +1449,7 @@ EOD;
         // Add the subquestions table, if any.
         // This is only used by "qtype_match", in which case
         // the table name is "qtype_{$qtype}_subquestions".
-        if ($table = $this->get_subquestions_table($qtype)) {
+        if ($table = self::get_subquestions_table($qtype)) {
             list($table, $fields) = $table;
             $tables[$table] = $fields;
         }
@@ -1427,7 +1474,7 @@ EOD;
      * @param string $qtype
      * @return array [$table, [$fields]] if feedback table exists, otherwise NULL.
      */
-    public function get_feedback_table($qtype) {
+    public static function get_feedback_table($qtype) {
         global $DB;
 
         // We will use the DB manager to determine which tables exist.
@@ -1499,7 +1546,7 @@ EOD;
      * @param string $qtype
      * @return array [$table, [$fields]] if feedback table exists, otherwise NULL.
      */
-    public function get_subquestions_table($qtype) {
+    public static function get_subquestions_table($qtype) {
         global $DB;
         $dbman = $DB->get_manager();
 
