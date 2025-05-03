@@ -1,4 +1,8 @@
 {
+    "subplugintypes": {
+        "vocabai": "ai",
+        "vocabtool": "tool"
+    },
     "plugintypes": {
         "vocabai": "mod\/vocab\/ai",
         "vocabtool": "mod\/vocab\/tool"

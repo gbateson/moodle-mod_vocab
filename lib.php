@@ -55,6 +55,7 @@ function vocab_supports($feature) {
         'FEATURE_RATE' => false,
         'FEATURE_DESCRIPTION' => true, // Default is FALSE.
         'FEATURE_USES_QUESTIONS' => false,
+        'FEATURE_CAN_DISPLAY' => true, // Available in Moodle >= 5.0
     ];
     if (defined('MOD_ARCHETYPE_OTHER')) {
         $constants['FEATURE_MOD_ARCHETYPE'] = MOD_ARCHETYPE_OTHER; // Available in Moodle >= 2.x.
@@ -67,7 +68,7 @@ function vocab_supports($feature) {
             return $value;
         }
     }
-    return false;
+    return null; // The default value for the FEATURE will be used.
 }
 
 /**
