@@ -744,7 +744,7 @@ class form extends \mod_vocab\toolform {
 
         $courseid = $this->get_vocab()->course->id;
         $coursecontext = \context_course::instance($courseid);
-        $coursecategory = question_get_top_category($coursecontext->id, true); // Create if necessary.
+        $coursecategory = $this->get_top_question_category($coursecontext->id, true);
 
         $categories = question_categorylist($coursecategory->id);
         list($select, $params) = $DB->get_in_or_equal($categories);
@@ -761,6 +761,43 @@ class form extends \mod_vocab\toolform {
         } else {
             return [];
         }
+    }
+
+    /**
+     * Gets the top question category in the given course context.
+     * This function can optionally create the top category if it doesn't exist.
+     *
+     * This function mimics question_get_top_category() in "lib/questionlib.php",
+     * but does not insist on CONTEXT_MODULE.
+     *
+     * @param int $contextid A context id.
+     * @param bool $create Whether create a top category if it doesn't exist.
+     * @return bool|stdClass The top question category for that context, or false if none.
+     */
+    public function get_top_question_category($contextid, $create = false) {
+        global $DB;
+
+        $table = 'question_categories';
+        $params = ['contextid' => $contextid, 'parent' => 0];
+        if ($category = $DB->get_record($table, $params)) {
+            return $category;
+        }
+
+        if ($create) {
+            $category = (object)[
+                'name' => 'top', // Name will be localised at the display time.
+                'contextid' => $contextid,
+                'info' => '',
+                'parent' => 0,
+                'sortorder' => 0,
+                'stamp' => make_unique_id_code(),
+            ];
+            if ($category->id = $DB->insert_record($table, $category)) {
+                return $category;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1775,14 +1812,17 @@ class form extends \mod_vocab\toolform {
         $ids = array_filter($ids);
         foreach ($ids as $i => $id) {
 
+            $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
+            if ($incomplete && array_key_exists($id, $incomplete->question)) {
+                $params['class'] = 'text-danger';
+            }
+
             $url = '/question/bank/editquestion/question.php';
             $url = new \moodle_url($url, ['courseid' => $courseid, 'id' => $id]);
-            $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
             $ids[$i] = ' '.\html_writer::link($url, $id, $params);
 
             $url = '/question/bank/previewquestion/preview.php';
             $url = new \moodle_url($url, ['id' => $id]);
-            $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
             $ids[$i] .= ' '.\html_writer::link($url, $previewicon, $params);
         }
         return implode(', ', $ids);
@@ -1863,7 +1903,7 @@ class form extends \mod_vocab\toolform {
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
 
-            $incomplete = $this->get_incomplete($logs);
+            $incomplete = $this->get_incomplete($tool, $logs);
 
             foreach ($logs as $log) {
 
@@ -2048,8 +2088,10 @@ class form extends \mod_vocab\toolform {
                     if ($action == 'fixquestions') {
                         // Only allow this action if the log record has questions to fix.
                         $allowaction = array_key_exists($log->id, $incomplete->log);
+                        $textparams = ['class' => 'text-danger'];
                     } else {
                         $allowaction = true;
+                        $textparams = null;
                     }
                     if ($allowaction) {
                         $text = $tool->get_string($action);
@@ -2060,7 +2102,7 @@ class form extends \mod_vocab\toolform {
                             'logaction' => $action,
                             'sesskey' => sesskey(),
                         ]);
-                        $text = \html_writer::tag('small', $text);
+                        $text = \html_writer::tag('small', $text, $textparams);
                         $logaction = \html_writer::link($url, $icon.' '.$text);
                         $logactions .= \html_writer::tag('div', $logaction, ['class' => $cssclass->logaction.' '.$action]);
                     }
@@ -2240,13 +2282,14 @@ class form extends \mod_vocab\toolform {
      * [[AUDIO]], [[IMAGE]], or [[VIDEO]]. It returns a list of log IDs and
      * question IDs that are considered incomplete.
      *
+     * @param object $tool the associated vocabtool object (i.e. vocabtool_questionbank).
      * @param array $logs Associative array of log records, keyed by log ID.
      *              Each log contains a questionids field with a comma-separated list of question IDs.
      * @return \stdClass An object with two properties:
      *                   - log: array of log IDs containing incomplete questions.
      *                   - question: array of question IDs flagged as incomplete.
      */
-    protected function get_incomplete($logs) {
+    protected function get_incomplete($tool, $logs) {
         global $DB;
 
         // Initialize the return object.
@@ -2259,10 +2302,20 @@ class form extends \mod_vocab\toolform {
         $name = 'questionids';
         foreach ($logs as $logid => $log) {
             if (property_exists($log, $name)) {
-                foreach (explode(',', $log->$name) as $qid) {
-                    if ($qid = trim($qid)) {
-                        $questionids[$qid] = $logid;
+                $qids = explode(',', $log->$name);
+                $qids = array_map('trim', $qids);
+                $qids = array_filter($qids);
+                if (count($qids) < $log->qcount) {
+                    if ($log->status == $tool::TASKSTATUS_AWAITING_REVIEW || 
+                        $log->status == $tool::TASKSTATUS_COMPLETED || 
+                        $log->status == $tool::TASKSTATUS_CANCELLED ||
+                        $log->status == $tool::TASKSTATUS_FAILED) {
+                        // Not enough questions.
+                        $incomplete->log[$logid] = true;
                     }
+                }
+                foreach ($qids as $qid) {
+                    $questionids[$qid] = $logid;
                 }
             }
         }

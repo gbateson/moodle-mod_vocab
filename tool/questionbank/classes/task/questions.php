@@ -488,7 +488,7 @@ class questions extends \core\task\adhoc_task {
             }
 
             $this->tool->update_log($log->id, [
-                'questionids' => $questionids,
+                'questionids' => implode(', ', $questionids),
                 'status' => $status,
                 'error' => $error,
             ]);
