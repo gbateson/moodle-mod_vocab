@@ -111,6 +111,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
         ];
         $url = new moodle_url('/course/modedit.php', $params);
         $img = $this->pix_icon('t/edit', get_string('edit'));
+        // Add container to restrict width, height and font-size to 16px.
+        $img = \html_writer::tag('span', $img, ['class' => 'icon-size-3']);
         return ' '.html_writer::link($url, $img);
     }
 

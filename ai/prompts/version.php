@@ -30,5 +30,5 @@ $plugin->cron      = 0;
 $plugin->component = 'vocabai_prompts';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2023110100;
-$plugin->release   = '2023-11-01 (00)';
+$plugin->version   = 2025050701;
+$plugin->release   = '2025-05-07 (01)';

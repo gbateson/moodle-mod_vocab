@@ -44,6 +44,9 @@ class ai extends \mod_vocab\aibase {
      */
     const SETTINGNAMES = [
         'promptname', 'prompttext',
+        'prompttextid', 'promptfileid', 'promptqformat',
+        'promptimageid', 'promptaudioid', 'promptvideoid',
+        'promptqcount', 'promptqtypes', // Map qtype to formatid.
         'sharedfrom', 'shareduntil',
     ];
 
@@ -61,4 +64,32 @@ class ai extends \mod_vocab\aibase {
      * i.e. records with the same owner and context, are allowed.
      */
     const ALLOW_DUPLICATES = true;
+
+    /**
+     * Construct a JSON string storing the array of default qtypes for this prompt.
+     *
+     * @param object $settings the form data containing the settings
+     * @return string containing JSON encoded array mapping qtype => formatid
+     */
+    public function get_config_value_promptqtypes($settings) {
+        $promptqtypes = [];
+        $form = '\\vocabai_prompts\\form';
+        $qtypes = $form::get_question_types();
+        foreach ($qtypes as $name => $text) {
+            if (isset($settings->$name) && is_array($settings->$name)) {
+                $values = $settings->$name;
+                if (array_key_exists('enable', $values) && $values['enable']) {
+                    if (array_key_exists('format', $values) && $values['format']) {
+                        $promptqtypes[$name] = $values['format'];
+                    }
+                }
+                unset($settings->$name);
+            }
+        }
+        if (empty($promptqtypes)) {
+            return ''; // No qtypes specified.
+        } else {
+            return json_encode($promptqtypes);
+        }
+    }
 }

@@ -61,8 +61,19 @@ class form extends \mod_vocab\aiform {
         // Define default values for new prompt.
         $default = (object)[
             'id' => 0,
+            // Basic settings.
             'promptname' => '',
             'prompttext' => '',
+            // Template settings.
+            'prompttextid' => 0,
+            'promptfileid' => 0,
+            'promptimageid' => 0,
+            'promptaudioid' => 0,
+            'promptvideoid' => 0,
+            'promptqcount' => 0,
+            'promptqtypes' => [],
+            'promptqformat' => 'gift',
+            // Sharing settings.
             'contextlevel' => CONTEXT_MODULE,
             'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
             'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
@@ -73,7 +84,19 @@ class form extends \mod_vocab\aiform {
 
             // Transfer values form $config record.
             foreach ($default as $name => $value) {
-                if (isset($config->$name)) {
+                if ($name == 'promptqtypes') {
+                    if (isset($config->$name)) {
+                        $value = json_decode($config->$name);
+                        if (json_last_error() == JSON_ERROR_NONE) {
+                            foreach ($value as $qtype => $formatid) {
+                                $default->$qtype = [
+                                    'enable' => 1,
+                                    'format' => $formatid,
+                                ];
+                            }
+                        }
+                    }
+                } else if (isset($config->$name)) {
                     $default->$name = $config->$name;
                 }
             }
@@ -114,6 +137,76 @@ class form extends \mod_vocab\aiform {
         $name = 'prompttext';
         $this->add_field_textarea($mform, $name, PARAM_TEXT, $default->$name, ['rows' => '5', 'cols' => 40]);
         $mform->addRule($name, $addmissingvalue, 'required');
+
+        // Heading for default AI settings.
+        $this->add_heading($mform, 'defaultaisettings', true);
+
+        $name = 'prompttextid';
+        $a = ['strname' => 'textassistant'];
+        $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_TEXT);
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name, $a);
+
+        $name = 'promptfileid';
+        $a = ['strname' => 'file'];
+        $options = $this->get_config_options('files', 'filedescription', 'selectfile', true);
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name, $a);
+
+        // Question import format (e.g. GIFT).
+        $name = 'promptqformat';
+        $a = ['strname' => 'qformat'];
+        $options = self::get_question_formats();
+        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, $default->$name, $a);
+
+        $name = 'promptimageid';
+        $a = ['strname' => 'imageassistant'];
+        $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_IMAGE, true);
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name, $a);
+
+        $name = 'promptaudioid';
+        $a = ['strname' => 'audioassistant'];
+        $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_AUDIO, true);
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name, $a);
+
+        $name = 'promptvideoid';
+        $a = ['strname' => 'videoassistant'];
+        $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_VIDEO, true);
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name, $a);
+
+        // Heading for default question settings.
+        $this->add_heading($mform, 'defaultquestionsettings', true);
+
+        $name = 'promptqcount';
+        $a = ['strname' => 'questioncount', 'size' => 2];
+        $this->add_field_text($mform, $name, PARAM_INT, $default->$name, $a);
+
+        // Cache some field labels.
+        // If we omit the enable label completely, the vertical spacing gets messed up,
+        // so to compensate, we use a non-blank space. Could also use get_string('enable').
+        $enablelabel = '&nbsp;';
+        $promptlabel = get_string('promptname', 'vocabai_prompts');
+        $formatlabel = get_string('formatname', 'vocabai_formats');
+        $formats = $this->get_config_options('formats', 'formatname', 'selectformat');
+
+        $qtypes = self::get_question_types();
+        foreach ($qtypes as $qtype => $label) {
+            // Add the checkbox, prompt menu and format menu for this question type.
+            $elements = [];
+            $elements[] = $mform->createElement('checkbox', 'enable', $enablelabel);
+            $elements[] = $mform->createElement('select', 'format', $formatlabel, $formats);
+            $mform->addGroup($elements, $qtype, $label);
+            $mform->addHelpButton($qtype, 'pluginname', "qtype_$qtype");
+
+            // Set the default format to be the first of any that contain
+            // the question type in their name.
+            if (isset($default->$qtype)) {
+                $mform->setDefault($qtype.'[enable]', $default->$qtype['enable']);
+                $mform->setDefault($qtype.'[format]', $default->$qtype['format']);
+            } else if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $formats)) {
+                $mform->setDefault($qtype.'[format]', key($defaults));
+            }
+            // Disable the format menu until the question type becomes checked.
+            $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
+        }
 
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);

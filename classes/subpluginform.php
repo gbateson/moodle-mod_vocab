@@ -399,6 +399,267 @@ abstract class subpluginform extends \moodleform {
         }
     }
 
+    /*//////////////////////////////
+    // Shared between vocabai_prompt
+    // and vocabtool_questionbank.
+    //////////////////////////////*/
+
+    /**
+     * Get a list of AI assistants that are available to the current user and context.
+     *
+     * @param string $type
+     * @param string $subtype
+     * @return array of AI assistants [config name => path]
+     */
+    public function get_subplugins($type, $subtype) {
+        $plugins = \core_component::get_plugin_list($type);
+        foreach ($plugins as $name => $path) {
+            $ai = "\\vocabai_$name\\ai";
+            if ($ai::create()->subtype == $subtype) {
+                continue;
+            }
+            unset($plugins[$name]);
+        }
+        return $plugins;
+    }
+
+    /**
+     * Get a list of AI assistants that are available to the current user and context.
+     *
+     * @param string $subtype on of the \mod_vocab\aibase::SUBTYPE_XXX constants.
+     * @param boolean $optional TRUE if this field is optional, otherwise FALSE
+     * @return array of AI assistants [config name => localized name]
+     */
+    public function get_assistant_options($subtype, $optional=false) {
+        global $DB;
+
+        // Get all relevant contexts (activity, course, coursecat, site).
+        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
+        list($ctxselect, $ctxparams) = $DB->get_in_or_equal($contexts);
+
+        // Get all available AI assistants.
+        $type = 'vocabai';
+        $plugins = $this->get_subplugins($type, $subtype);
+
+        if (empty($plugins)) {
+            return null;
+        }
+
+        $prefix = $type.'_';
+        $prefixlen = strlen($prefix);
+
+        // Prefix all the plugin names with the $prefix string
+        // and get create the sql conditions.
+        $plugins = array_keys($plugins);
+
+        $plugins = substr_replace($plugins, $prefix, 0, 0);
+        list($select, $params) = $DB->get_in_or_equal($plugins);
+
+        $select = "contextid $ctxselect AND subplugin $select";
+        $params = array_merge($ctxparams, $params);
+
+        if ($options = $DB->get_records_select_menu('vocab_config', $select, $params, 'id', 'id, subplugin')) {
+            $options = array_unique($options); // Remove duplicates.
+            foreach ($options as $id => $subplugin) {
+                $name = substr($subplugin, $prefixlen);
+                $options[$id] = get_string($name, $subplugin);
+            }
+            $options = array_filter($options); // Remove blanks.
+            asort($options);
+            if ($optional) {
+                $options = ([0 => get_string('none')] + $options);
+            }
+        }
+        return $options;
+    }
+
+    /**
+     * Get a list of AI config options that are available to the current user and context.
+     *
+     * @param string $type of config ("prompts" or "formats")
+     * @param mixed $namefields array mapping fields' DB names to their form names.
+     * @param string $selectstring name of string to display as first option
+     * @param boolean $optional TRUE if this field is optional, otherwise FALSE.
+     * @return array of AI config options [config id => config name]
+     */
+    public function get_config_options($type, $namefields, $selectstring='', $optional=false) {
+        global $DB;
+        $options = [];
+
+        // Expand $namefields into a array of $namefields.
+        if (is_string($namefields)) {
+            if ($namefields == '*' || $namefields == 'all') {
+                $namefields = '\\vocabai_'.$type.'\\ai';
+                $namefields = $namefields::get_settingnames();
+            } else {
+                $namefields = explode(',', $namefields);
+                $namefields = array_map('trim', $namefields);
+                $namefields = array_filter($namefields);
+            }
+            // Assume DB field names are the same as form field names.
+            $namefields = array_combine($namefields, $namefields);
+        }
+        $countfields = count($namefields);
+        $namefield = key($namefields);
+
+        // Get all relevant contexts (activity, course, coursecat, site).
+        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
+        list($where, $params) = $DB->get_in_or_equal($contexts);
+
+        // Set up SQL to extract record of the required $type.
+        $select = 'vcs.*';
+        $from = '{vocab_config_settings} vcs '.
+                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
+        $where = "vc.contextid $where AND vc.subplugin = ?";
+        $params[] = "vocabai_$type"; // The AI subplugin type.
+        if ($countfields == 1) {
+            $where .= ' AND vcs.name = ?';
+            $params[] = $namefield;
+        }
+        $sql = "SELECT $select FROM $from WHERE $where";
+        if ($records = $DB->get_records_sql($sql, $params)) {
+            foreach ($records as $record) {
+                $configid = $record->configid;
+                $name = $record->name;
+                $value = $record->value;
+                if ($countfields == 1) {
+                    if ($name == $namefield) {
+                        $options[$configid] = $value;
+                    }
+                } else if (array_key_exists($name, $namefields)) {
+                    if (empty($options[$configid])) {
+                        $options[$configid] = (object)[];
+                    }
+                    $formname = $namefields[$name];
+                    $options[$configid]->$formname = $value;
+                }
+            }
+        }
+        if ($countfields > 1) {
+            ksort($options);
+        } else {
+            asort($options);
+            if ($optional) {
+                $options = ([0 => get_string('none')] + $options);
+            } else if (count($options) > 1) {
+                if ($selectstring) {
+                    $selectstring = $this->get_string($selectstring);
+                }
+                $options = ([0 => $selectstring] + $options);
+            }
+        }
+        return $options;
+    }
+
+    /**
+     * get_question_formats
+     *
+     * @return array $formats of question formats for which we can generate questions.
+     */
+    public static function get_question_formats() {
+        // ToDo: Could include aiken, hotpot, missingword, multianswer.
+        return self::get_question_plugins('qformat', ['gift', 'multianswer', 'xml']);
+    }
+
+    /**
+     * get_question_types
+     *
+     * @return array $types of question types for which we can generate questions.
+     */
+    public static function get_question_types() {
+        // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
+        $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
+        $order = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
+        return self::get_question_plugins('qtype', $include, $order);
+    }
+
+    /**
+     * Get question plugins ("qtype" or "qformat")
+     *
+     * @param string $plugintype
+     * @param array $include (optional, default=null)
+     * @param array $order (optional, default=[])
+     * @return array $plugins of question formats for which we can generate questions.
+     */
+    public static function get_question_plugins($plugintype, $include=null, $order=[]) {
+
+        // Get the full list of plugins of the required type.
+        $plugins = \core_component::get_plugin_list($plugintype);
+
+        // Remove items that are not in the $include array.
+        foreach (array_keys($plugins) as $name) {
+            if ($include === null || in_array($name, $include)) {
+                $plugins[$name] = get_string('pluginname', $plugintype.'_'.$name);
+            } else {
+                unset($plugins[$name]);
+            }
+        }
+
+        // Sort items alphabetically (maintain key association).
+        asort($plugins);
+
+        // Ensure first few items are the common ones.
+        $order = array_flip($order);
+        foreach (array_keys($order) as $name) {
+            if (array_key_exists($name, $plugins)) {
+                $order[$name] = $plugins[$name];
+            } else {
+                unset($order[$name]);
+            }
+        }
+        $plugins = $order + $plugins;
+
+        return $plugins;
+    }
+
+    /**
+     * get_question_type_text
+     *
+     * @param string $qtype a question type e.g. "multichoice", "truefalse"
+     * @return string human readable text version of the given $qtype
+     */
+    public static function get_question_type_text($qtype) {
+        $qtypes = self::get_question_types();
+        if (array_key_exists($qtype, $qtypes)) {
+            return $qtypes[$qtype];
+        } else {
+            // Illegal value - shouldn't happen !!
+            return $qtype;
+        }
+    }
+
+    public function add_field_textassistant($mform, $options) {
+        $this->add_field_ai_assistant($mform, 'textassistant', $options, 'chatgpt');
+    }
+    public function add_field_tuningfile($mform, $options) {
+        $this->add_field_ai_assistant($mform, 'file', $options, 'files');
+    }
+    public function add_field_imageassistant($mform, $options) {
+        $this->add_field_ai_assistant($mform, 'imageassistant', $options, 'dalle');
+    }
+
+    public function add_field_audioassistant($mform, $options) {
+        $this->add_field_ai_assistant($mform, 'audioassistant', $options, 'tts');
+    }
+    public function add_field_videoassistant($mform, $options) {
+        $this->add_field_ai_assistant($mform, 'videoassistant', $options, 'tts');
+    }
+
+    public function add_field_ai_assistant($mform, $name, $options, $default) {
+        // Remove "assistant" from $name to get an AI type.
+        // E.g. file, image, audio, video.
+        $type = str_replace('assistant', '', $name);
+        if (empty($options)) {
+            $cmid = $this->get_vocab()->cm->id;
+            $url = new \moodle_url('/mod/vocab/ai/'.$default.'/index.php', ['id' => $cmid]);
+            $msg = \html_writer::link($url, $this->get_string('clicktoadd'.$type));
+            $msg = $this->get_string('no'.$type.'sfound', $msg);
+            $this->add_field_static($mform, $name, $msg, 'showhelp');
+        } else {
+            $this->add_field_select($mform, $name, $options, PARAM_INT);
+        }
+    }
+
     /**
      * Add a form section to import a file.
      *

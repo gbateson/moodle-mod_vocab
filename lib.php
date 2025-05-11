@@ -60,8 +60,8 @@ function vocab_supports($feature) {
     if (defined('MOD_ARCHETYPE_OTHER')) {
         $constants['FEATURE_MOD_ARCHETYPE'] = MOD_ARCHETYPE_OTHER; // Available in Moodle >= 2.x.
     }
-    if (defined('MOD_PURPOSE_ASSESSMENT')) {
-        $constants['FEATURE_MOD_PURPOSE'] = MOD_PURPOSE_ASSESSMENT; // Available in Moodle >= 4.x.
+    if (defined('MOD_PURPOSE_INTERACTIVECONTENT')) {
+        $constants['FEATURE_MOD_PURPOSE'] = MOD_PURPOSE_INTERACTIVECONTENT; // Available in Moodle >= 4.x.
     }
     foreach ($constants as $constant => $value) {
         if (defined($constant) && $feature == constant($constant)) {

@@ -53,8 +53,10 @@ define(['core/str'], function(STR){
      *
      * Runs setup functions for log selection checkboxes,
      * dynamic textareas, word selection, and custom name helpers.
+     *
+     * @param {object}   defaults         Default values for prompts.
      */
-    JS.init = function() {
+    JS.init = function(defaults) {
 
         // These functions do not need strings from Moodle.
         this.init_selectall_logs();
@@ -62,11 +64,15 @@ define(['core/str'], function(STR){
         this.init_selectall_words();
         this.init_checkboxes_words();
 
+        if (defaults) {
+            JS.init_prompt(defaults);
+        }
+
         STR.get_strings([
             {"key": "addname", "component": "vocabtool_questionbank"},
             {"key": "addtags", "component": "vocabtool_questionbank"},
         ]).done(function(s) {
-            var i = 0;
+            let i = 0;
             JS.str.addname = s[i++];
             JS.str.addtags = s[i++];
             JS.init_custom_names();
@@ -379,6 +385,99 @@ define(['core/str'], function(STR){
             sibling = sibling.previousElementSibling;
         }
         return null;
+    };
+
+    /**
+     * Attaches on change event handler to "textassistant" menu.
+     *
+     * Changing the selected prompt, will set all related settings to defaults.
+     *
+     * @param {Array} defaults        Default values for each promptid.
+     */
+    JS.init_prompt = function(defaults){
+        const p = document.querySelector("select[name='prompt']");
+        if (p) {
+
+            // Collect names of select elements in this section of the form.
+            let selectnames = [];
+            const s = "select:not([name='prompt'])";
+            p.closest(".fcontainer").querySelectorAll(s).forEach(function(select){
+                selectnames.push(select.name);
+            });
+            p.dataset.selectnames = selectnames.join(",");
+
+            // Set up onchange event handler.
+            JS.add_event_listener(p, 'change', function(evt){
+                const elm = evt.target;
+                let selectnames = elm.dataset.selectnames.split(",");
+                const promptid = elm.options[elm.selectedIndex].value;
+                if (promptid && defaults[promptid]) {
+                    let settings = defaults[promptid];
+                    for (let n in settings) {
+                        if (n == "qtypes") {
+                            const s = "#id_questiontypescontainer .felement";
+                            document.querySelectorAll(s).forEach(function(felement){
+                                const enable = felement.querySelector(
+                                    "input[type='checkbox'][name$='[enable]']"
+                                );
+                                const format = felement.querySelector(
+                                    "select[name$='[format]']"
+                                );
+                                if (enable && format) {
+                                    const i = enable.name.indexOf("[");
+                                    const t = enable.name.substr(0, i);
+                                    if (settings[n][t]) {
+                                        // The qtype "n" is required.
+                                        if (enable.checked == false) {
+                                            enable.checked = true;
+                                            enable.dispatchEvent(new Event("click"));
+                                        }
+                                        const formatid = settings[n][t];
+                                        const option = format.querySelector("option[value='" + formatid + "']");
+                                        if (option && option.selected == false) {
+                                            option.selected = true;
+                                        }
+                                    } else {
+                                        // The qtype "n" is NOT required.
+                                        if (enable.checked == true) {
+                                            enable.checked = false;
+                                            enable.dispatchEvent(new Event("click"));
+                                            format.options[0].selected = true;
+                                        }
+                                    }
+                                }
+                            });
+                        } else {
+                            const elm = document.querySelector("[name='" + n + "']");
+                            if (elm) {
+                                if (elm.tagName == "SELECT") {
+                                    const i = selectnames.indexOf(n);
+                                    if (i >= 0) {
+                                        selectnames.splice(i, 1);
+                                    }
+                                    const s = "option[value='" + settings[n] + "']";
+                                    const option = elm.querySelector(s);
+                                    if (option && option.selected == false) {
+                                        option.selected = true;
+                                    }
+                                } else if (elm.tagName == "INPUT" && elm.type == "text") {
+                                    elm.value = settings[n];
+                                }
+                            }
+                        }
+                    }
+                    // Unset any select elements that were not set above.
+                    selectnames.forEach(function(name){
+                        const s = "select[name='" + name + "']";
+                        const select = document.querySelector(s);
+                        if (select) {
+                            select.options[0].selected = true;
+                        }
+                    });
+                }
+            });
+            p.dispatchEvent(new Event("change"));
+        }
     };
 
     return JS;

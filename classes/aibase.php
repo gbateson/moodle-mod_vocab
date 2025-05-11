@@ -469,10 +469,12 @@ class aibase extends \mod_vocab\subpluginbase {
      * @return integer
      */
     public function uasort_configs($a, $b, $sortfield) {
-        if ($a->$sortfield < $b->$sortfield) {
+        $avalue = (isset($a->$sortfield) ? $a->$sortfield : '');
+        $bvalue = (isset($b->$sortfield) ? $b->$sortfield : '');
+        if ($avalue < $bvalue) {
             return -1;
         }
-        if ($a->$sortfield > $b->$sortfield) {
+        if ($avalue > $bvalue) {
             return 1;
         }
         return 0;
@@ -567,8 +569,12 @@ class aibase extends \mod_vocab\subpluginbase {
 
         // Add or update the settings for this config record.
         $table = 'vocab_config_settings';
-        $names = "\\$subplugin\\ai"::SETTINGNAMES;
-        foreach ($names as $name) {
+        foreach (static::SETTINGNAMES as $name) {
+
+            $method = 'get_config_value_'.$name;
+            if (method_exists($this, $method)) {
+                $settings->$name = $this->{$method}($settings);
+            }
 
             $params = [
                 'configid' => $config->id,
@@ -673,7 +679,7 @@ class aibase extends \mod_vocab\subpluginbase {
             }
         }
 
-        // Make sure we have a at least a primary field (e.g. "chatgptkey" or "prompt").
+        // Make sure we have a at least a primary field (e.g. "chatgptkey" or "promptname").
         $name = static::SETTINGNAMES[0];
         if (isset($data->$name) && $data->$name) {
 

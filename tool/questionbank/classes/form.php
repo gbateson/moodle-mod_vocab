@@ -190,15 +190,7 @@ class form extends \mod_vocab\toolform {
         $name = 'aisettings';
         $this->add_heading($mform, $name, true);
 
-        $name = 'textassistant';
-        $this->add_field_select($mform, $name, $textassistants, PARAM_INT);
-
-        // Cache some field labels.
-        // If we omit the enable label completely, the vertical spacing gets messed up,
-        // so to compensate, we use a non-blank space. Could also use get_string('enable').
-        $enablelabel = '&nbsp;';
-        $promptlabel = get_string('promptname', 'vocabai_prompts');
-        $formatlabel = get_string('formatname', 'vocabai_formats');
+        $this->add_field_textassistant($mform, $textassistants);
 
         $name = 'prompt';
         $this->add_field_select($mform, $name, $prompts, PARAM_ALPHANUM);
@@ -207,49 +199,21 @@ class form extends \mod_vocab\toolform {
         $options = self::get_question_formats();
         $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'gift');
 
-        $name = 'file';
-        if (empty($files)) {
-            $url = new \moodle_url('/mod/vocab/ai/files/index.php', ['id' => $cmid]);
-            $msg = \html_writer::link($url, $this->get_string('clicktoaddfiles'));
-            $msg = $this->get_string('nofilesfound', $msg);
-            $this->add_field_static($mform, $name, $msg, 'showhelp');
-        } else {
-            $this->add_field_select($mform, $name, $files, PARAM_INT);
-        }
-
-        $name = 'imageassistant';
-        if (empty($imageassistants)) {
-            $url = new \moodle_url('/mod/vocab/ai/dalle/index.php', ['id' => $cmid]);
-            $msg = \html_writer::link($url, $this->get_string('clicktoaddimage'));
-            $msg = $this->get_string('noimagesfound', $msg);
-            $this->add_field_static($mform, $name, $msg, 'showhelp');
-        } else {
-            $this->add_field_select($mform, $name, $imageassistants, PARAM_INT);
-        }
-
-        $name = 'audioassistant';
-        if (empty($audioassistants)) {
-            $url = new \moodle_url('/mod/vocab/ai/tts/index.php', ['id' => $cmid]);
-            $msg = \html_writer::link($url, $this->get_string('clicktoaddaudio'));
-            $msg = $this->get_string('noaudiofound', $msg);
-            $this->add_field_static($mform, $name, $msg, 'showhelp');
-        } else {
-            $this->add_field_select($mform, $name, $audioassistants, PARAM_INT);
-        }
-
-        $name = 'videoassistant';
-        if (empty($videoassistants)) {
-            $url = new \moodle_url('/mod/vocab/ai/tts/index.php', ['id' => $cmid]);
-            $msg = \html_writer::link($url, $this->get_string('clicktoaddvideo'));
-            $msg = $this->get_string('novideofound', $msg);
-            $this->add_field_static($mform, $name, $msg, 'showhelp');
-        } else {
-            $this->add_field_select($mform, $name, $videoassistants, PARAM_INT);
-        }
+        $this->add_field_tuningfile($mform, $files, $cmid);
+        $this->add_field_imageassistant($mform, $imageassistants);
+        $this->add_field_audioassistant($mform, $audioassistants);
+        $this->add_field_videoassistant($mform, $videoassistants);
 
         // Add a heading for the "Question types".
         $name = 'questiontypes';
         $this->add_heading($mform, $name, true);
+
+        // Cache some field labels.
+        // If we omit the enable label completely, the vertical spacing gets messed up,
+        // so to compensate, we use a non-blank space. Could also use get_string('enable').
+        $enablelabel = '&nbsp;';
+        $promptlabel = get_string('promptname', 'vocabai_prompts');
+        $formatlabel = get_string('formatname', 'vocabai_formats');
 
         $qtypes = self::get_question_types();
         foreach ($qtypes as $qtype => $label) {
@@ -323,11 +287,35 @@ class form extends \mod_vocab\toolform {
         $label = $this->get_string('generatequestions');
         $this->add_action_buttons(true, $label);
 
-        $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
+        // Setup paramters to pass to Javscript AMD.
+        $namefields = [
+            'prompttextid' => 'textassistant',
+            'promptimageid' => 'imageassistant',
+            'promptaudioid' => 'audioassistant',
+            'promptvideoid' => 'videoassistant',
+            'promptfileid' => 'file',
+            'promptqformat' => 'qformat',
+            'promptqcount' => 'questioncount',
+            'promptqtypes' => 'qtypes',
+        ];
+        $options = $this->get_config_options('prompts', $namefields);
+        foreach ($options as $configid => $settings) {
+            if (isset($settings->qtypes)) {
+                $value = $settings->qtypes;
+                $value = json_decode($value);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $settings->qtypes = $value;
+                } else {
+                    unset($settings->qtypes); //Shouldn't happen !!
+                }
+            }
+            $options[$configid] = $settings;
+        }
+        $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init', [$options]);
     }
 
     /**
-     * Get a list of AI assistants that are available to the current user and context.
+     * Add a message at the top of the form.
      *
      * @param object $mform the Moodle form
      * @param string $msg the message to be displayed
@@ -345,192 +333,6 @@ class form extends \mod_vocab\toolform {
         }
         $msg = $OUTPUT->notification($msg, $type, $closebutton);
         $mform->addElement('html', $msg);
-    }
-
-    /**
-     * Get a list of AI assistants that are available to the current user and context.
-     *
-     * @param string $type
-     * @param string $subtype
-     * @return array of AI assistants [config name => path]
-     */
-    public function get_subplugins($type, $subtype) {
-        $plugins = \core_component::get_plugin_list($type);
-        foreach ($plugins as $name => $path) {
-            $ai = "\\vocabai_$name\\ai";
-            if ($ai::create()->subtype == $subtype) {
-                continue;
-            }
-            unset($plugins[$name]);
-        }
-        return $plugins;
-    }
-
-    /**
-     * Get a list of AI assistants that are available to the current user and context.
-     *
-     * @param string $subtype on of the \mod_vocab\aibase::SUBTYPE_XXX constants.
-     * @param boolean $optional TRUE if this field is optional, otherwise FALSE
-     * @return array of AI assistants [config name => localized name]
-     */
-    public function get_assistant_options($subtype, $optional=false) {
-        global $DB;
-        $options = [];
-
-        // Get all relevant contexts (activity, course, coursecat, site).
-        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
-        list($ctxselect, $ctxparams) = $DB->get_in_or_equal($contexts);
-
-        // Get all available AI assistants.
-        $type = 'vocabai';
-        $plugins = $this->get_subplugins($type, $subtype);
-
-        if (empty($plugins)) {
-            return null;
-        }
-
-        $prefix = $type.'_';
-        $prefixlen = strlen($prefix);
-
-        // Prefix all the plugin names with the $prefix string
-        // and get create the sql conditions.
-        $plugins = array_keys($plugins);
-
-        $plugins = substr_replace($plugins, $prefix, 0, 0);
-        list($select, $params) = $DB->get_in_or_equal($plugins);
-
-        $select = "contextid $ctxselect AND subplugin $select";
-        $params = array_merge($ctxparams, $params);
-
-        if ($options = $DB->get_records_select_menu('vocab_config', $select, $params, 'id', 'id, subplugin')) {
-            $options = array_unique($options); // Remove duplicates.
-            foreach ($options as $id => $subplugin) {
-                $name = substr($subplugin, $prefixlen);
-                $options[$id] = get_string($name, $subplugin);
-            }
-            $options = array_filter($options); // Remove blanks.
-            asort($options);
-            if ($optional) {
-                $options = ([0 => get_string('none')] + $options);
-            }
-        }
-        return $options;
-    }
-
-    /**
-     * Get a list of AI config options that are available to the current user and context.
-     *
-     * @param string $type of config ("prompts" or "formats")
-     * @param string $namefield name of setting that holds the name of this config
-     * @param string $selectstring name of string to display as first option
-     * @param boolean $optional TRUE if this field is optional, otherwise FALSE.
-     * @return array of AI config options [config id => config name]
-     */
-    public function get_config_options($type, $namefield, $selectstring, $optional=false) {
-        global $DB;
-        $options = [];
-
-        // Get all relevant contexts (activity, course, coursecat, site).
-        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
-        list($where, $params) = $DB->get_in_or_equal($contexts);
-
-        // Although the "get_records_sql_menu" method is clean and quick,
-        // it may be slightly risky because if the settings get messed up,
-        // there's a chance that configid + $namefield may not be unique.
-        $select = 'vcs.configid, vcs.value';
-        $from = '{vocab_config_settings} vcs '.
-                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
-        $where = "vc.contextid $where AND vc.subplugin = ? AND vcs.name = ?";
-        $params = array_merge($params, ["vocabai_$type", $namefield]);
-
-        $sql = "SELECT $select FROM $from WHERE $where";
-        if ($options = $DB->get_records_sql_menu($sql, $params)) {
-            asort($options);
-            if ($optional) {
-                $options = ([0 => get_string('none')] + $options);
-            } else if (count($options) > 1) {
-                $selectstring = $this->get_string($selectstring);
-                $options = ([0 => $selectstring] + $options);
-            }
-        }
-        return $options;
-    }
-
-    /**
-     * get_question_formats
-     *
-     * @return array $formats of question formats for which we can generate questions.
-     */
-    public static function get_question_formats() {
-        // ToDo: Could include aiken, hotpot, missingword, multianswer.
-        return self::get_question_plugins('qformat', ['gift', 'multianswer', 'xml']);
-    }
-
-    /**
-     * get_question_types
-     *
-     * @return array $types of question types for which we can generate questions.
-     */
-    public static function get_question_types() {
-        // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
-        $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
-        $order = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
-        return self::get_question_plugins('qtype', $include, $order);
-    }
-
-    /**
-     * Get question plugins ("qtype" or "qformat")
-     *
-     * @param string $plugintype
-     * @param array $include (optional, default=null)
-     * @param array $order (optional, default=[])
-     * @return array $plugins of question formats for which we can generate questions.
-     */
-    public static function get_question_plugins($plugintype, $include=null, $order=[]) {
-
-        // Get the full list of plugins of the required type.
-        $plugins = \core_component::get_plugin_list($plugintype);
-
-        // Remove items that are not in the $include array.
-        foreach (array_keys($plugins) as $name) {
-            if ($include === null || in_array($name, $include)) {
-                $plugins[$name] = get_string('pluginname', $plugintype.'_'.$name);
-            } else {
-                unset($plugins[$name]);
-            }
-        }
-
-        // Sort items alphabetically (maintain key association).
-        asort($plugins);
-
-        // Ensure first few items are the common ones.
-        $order = array_flip($order);
-        foreach (array_keys($order) as $name) {
-            if (array_key_exists($name, $plugins)) {
-                $order[$name] = $plugins[$name];
-            } else {
-                unset($order[$name]);
-            }
-        }
-        $plugins = $order + $plugins;
-
-        return $plugins;
-    }
-
-    /**
-     * get_question_type_text
-     *
-     * @param string $qtype a question type e.g. "multichoice", "truefalse"
-     * @return string human readable text version of the given $qtype
-     */
-    public static function get_question_type_text($qtype) {
-        $qtypes = self::get_question_types();
-        if (array_key_exists($qtype, $qtypes)) {
-            return $qtypes[$qtype];
-        } else {
-            // Illegal value - shouldn't happen !!
-            return $qtype;
-        }
     }
 
     /**
@@ -649,7 +451,7 @@ class form extends \mod_vocab\toolform {
     /**
      * get_question_level_text
      *
-     * @param string $qlevel a question level e.g. "multichoice", "truefalse"
+     * @param string $qlevel a question level e.g. "A1", "B2"
      * @return string human readable text version of the given $qlevel
      */
     public static function get_question_level_text($qlevel) {
@@ -1183,6 +985,7 @@ class form extends \mod_vocab\toolform {
         // Initialize arguments for "get_string()" used to report
         // the success or failure of setting up the adhoc task.
         $a = (object)[
+            'taskid' => 0,
             'word' => '',
             'qtype' => '',
             'qlevel' => '',
@@ -1232,9 +1035,9 @@ class form extends \mod_vocab\toolform {
 
                     // If successful, the "queue_adhoc_task()" method
                     // returns a record id from the "task_adhoc" table.
-                    if ($taskid = \core\task\manager::queue_adhoc_task($task)) {
+                    if ($a->taskid = \core\task\manager::queue_adhoc_task($task)) {
                         $tool::update_log($logid, [
-                            'taskid' => $taskid,
+                            'taskid' => $a->taskid,
                             'status' => $tool::TASKSTATUS_QUEUED,
                         ]);
                         $success[] = $this->get_string('taskgeneratequestions', $a);
@@ -2306,8 +2109,8 @@ class form extends \mod_vocab\toolform {
                 $qids = array_map('trim', $qids);
                 $qids = array_filter($qids);
                 if (count($qids) < $log->qcount) {
-                    if ($log->status == $tool::TASKSTATUS_AWAITING_REVIEW || 
-                        $log->status == $tool::TASKSTATUS_COMPLETED || 
+                    if ($log->status == $tool::TASKSTATUS_AWAITING_REVIEW ||
+                        $log->status == $tool::TASKSTATUS_COMPLETED ||
                         $log->status == $tool::TASKSTATUS_CANCELLED ||
                         $log->status == $tool::TASKSTATUS_FAILED) {
                         // Not enough questions.
