@@ -64,15 +64,21 @@ class form extends \mod_vocab\aiform {
             // Basic settings.
             'promptname' => '',
             'prompttext' => '',
-            // Template settings.
+            // Default settings used by vocabtool_questionbank.
             'prompttextid' => 0,
             'promptfileid' => 0,
+            'promptqformat' => 'gift',
             'promptimageid' => 0,
             'promptaudioid' => 0,
             'promptvideoid' => 0,
-            'promptqcount' => 0,
             'promptqtypes' => [],
-            'promptqformat' => 'gift',
+            'promptqcount' => '',
+            'promptreview' => 0,
+            'promptparentcatid' => 0,
+            'promptsubcattype' => 0,
+            'promptsubcatname' => '',
+            'prompttagtypes' => 0,
+            'prompttagnames' => '',
             // Sharing settings.
             'contextlevel' => CONTEXT_MODULE,
             'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
@@ -139,7 +145,7 @@ class form extends \mod_vocab\aiform {
         $mform->addRule($name, $addmissingvalue, 'required');
 
         // Heading for default AI settings.
-        $this->add_heading($mform, 'defaultaisettings', true);
+        $this->add_heading($mform, 'defaultaisettings', false);
 
         $name = 'prompttextid';
         $a = ['strname' => 'textassistant'];
@@ -173,11 +179,7 @@ class form extends \mod_vocab\aiform {
         $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name, $a);
 
         // Heading for default question settings.
-        $this->add_heading($mform, 'defaultquestionsettings', true);
-
-        $name = 'promptqcount';
-        $a = ['strname' => 'questioncount', 'size' => 2];
-        $this->add_field_text($mform, $name, PARAM_INT, $default->$name, $a);
+        $this->add_heading($mform, 'defaultquestiontypes', false);
 
         // Cache some field labels.
         // If we omit the enable label completely, the vertical spacing gets messed up,
@@ -199,14 +201,44 @@ class form extends \mod_vocab\aiform {
             // Set the default format to be the first of any that contain
             // the question type in their name.
             if (isset($default->$qtype)) {
-                $mform->setDefault($qtype.'[enable]', $default->$qtype['enable']);
-                $mform->setDefault($qtype.'[format]', $default->$qtype['format']);
+                $mform->setDefault($qtype.'[enable]', $default->{$qtype}['enable']);
+                $mform->setDefault($qtype.'[format]', $default->{$qtype}['format']);
             } else if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $formats)) {
                 $mform->setDefault($qtype.'[format]', key($defaults));
             }
             // Disable the format menu until the question type becomes checked.
             $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
         }
+
+        // Heading for default question settings.
+        $this->add_heading($mform, 'defaultquestionsettings', false);
+
+        $name = 'promptqcount';
+        $a = ['strname' => 'questioncount', 'size' => 2];
+        $this->add_field_text($mform, $name, PARAM_INT, $default->$name, $a);
+
+        $name = 'promptreview';
+        $a = ['strname' => 'questionreview'];
+        $options = [get_string('no'), get_string('yes')];
+        $this->add_field_select($mform, "$name", $options, PARAM_ALPHANUM, $default->$name, $a);
+
+        // Heading for default question settings.
+        $this->add_heading($mform, 'defaultquestioncategories', false);
+
+        // The parent category group includes 'log[][id]'.
+        $name = 'parentcat';
+        $this->add_parentcategory($mform, $name, $default->promptparentcatid);
+
+        // The subcategories group includes 'subcat[type]' and 'subcat[name]'.
+        $name = 'subcat';
+        $this->add_subcategories($mform, $name, $default->promptsubcattype, $default->promptsubcatname);
+
+        // Heading for default question settings.
+        $this->add_heading($mform, 'defaultquestiontags', false);
+
+        // The subcategories group includes 'qtag[type]' and 'qtag[name]'.
+        $name = 'qtag';
+        $this->add_questiontags($mform, $name, $default->prompttagtypes, $default->prompttagnames);
 
         $this->add_sharing_fields($mform, $default);
         $this->add_action_buttons(true, $submitlabel);

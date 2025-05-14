@@ -290,13 +290,19 @@ class form extends \mod_vocab\toolform {
         // Setup paramters to pass to Javscript AMD.
         $namefields = [
             'prompttextid' => 'textassistant',
+            'promptfileid' => 'file',
+            'promptqformat' => 'qformat',
             'promptimageid' => 'imageassistant',
             'promptaudioid' => 'audioassistant',
             'promptvideoid' => 'videoassistant',
-            'promptfileid' => 'file',
-            'promptqformat' => 'qformat',
-            'promptqcount' => 'questioncount',
             'promptqtypes' => 'qtypes',
+            'promptqcount' => 'questioncount',
+            'promptreview' => 'questionreview',
+            'promptparentcatid' => 'parentcat[id]',
+            'promptsubcattype' => 'subcattypes',
+            'promptsubcatname' => 'subcatname',
+            'prompttagtypes' => 'tagtypes',
+            'prompttagnames' => 'tagnames',
         ];
         $options = $this->get_config_options('prompts', $namefields);
         foreach ($options as $configid => $settings) {
@@ -306,7 +312,7 @@ class form extends \mod_vocab\toolform {
                 if (json_last_error() === JSON_ERROR_NONE) {
                     $settings->qtypes = $value;
                 } else {
-                    unset($settings->qtypes); //Shouldn't happen !!
+                    unset($settings->qtypes); // Shouldn't happen !!
                 }
             }
             $options[$configid] = $settings;
@@ -462,295 +468,6 @@ class form extends \mod_vocab\toolform {
             // Illegal value - shouldn't happen !!
             return $qlevel;
         }
-    }
-
-    /**
-     * add_parentcategory
-     *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $name
-     * @param integer $defaultid (optional, default=0)
-     *
-     * TODO: Finish documenting this function
-     */
-    public function add_parentcategory($mform, $name, $defaultid=0) {
-
-        $strname = 'parentcategory';
-
-        // Get the course context.
-        $courseid = $this->get_vocab()->course->id;
-        $context = \context_course::instance($courseid);
-
-        // Fetch the list of question categories in this course.
-        $categories = $this->get_question_categories();
-
-        // Get the name of the default question category for this course.
-        if ($defaultid == 0) {
-            $defaultname = $context->get_context_name(false, true);
-            $defaultname = get_string('defaultfor', 'question', $defaultname);
-            $defaultname = shorten_text($defaultname, 255);
-
-            // Extract the id of the default question category in this course.
-            $defaultid = array_search($defaultname, $categories);
-            if ($defaultid === false) {
-                $defaultid = 0; // Shouldn't happen !!
-            }
-        }
-
-        $label = $this->get_string($strname);
-
-        $elements = [
-            $mform->createElement('select', 'id', '', $categories),
-            $mform->createElement('html', $this->link_to_managequestioncategories()),
-        ];
-        $mform->addGroup($elements, $name, $label);
-        $this->add_help_button($mform, $name, $strname);
-
-        $elementname = $name.'[id]';
-        $mform->setType($elementname, PARAM_INT);
-        $mform->setDefault($elementname, $defaultid);
-    }
-
-    /**
-     * link_to_managequestioncategories
-     *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
-     */
-    public function link_to_managequestioncategories() {
-        $link = '/question/bank/managecategories/category.php';
-        $params = ['courseid' => $this->get_vocab()->course->id];
-        $link = new \moodle_url($link, $params);
-
-        $text = $this->get_string('managequestioncategories');
-        $params = ['onclick' => "this.target='VOCAB'"];
-        $link = \html_writer::link($link, $text, $params);
-
-        $params = ['class' => 'w-100 pl-1'];
-        return \html_writer::tag('small', $link, $params);
-    }
-
-    /**
-     * get_question_categories
-     *
-     * @uses $CFG
-     * @uses $DB
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
-     */
-    public function get_question_categories() {
-        global $CFG, $DB;
-        require_once($CFG->dirroot.'/lib/questionlib.php');
-
-        $courseid = $this->get_vocab()->course->id;
-        $coursecontext = \context_course::instance($courseid);
-        $coursecategory = $this->get_top_question_category($coursecontext->id, true);
-
-        $categories = question_categorylist($coursecategory->id);
-        list($select, $params) = $DB->get_in_or_equal($categories);
-        if ($categories = $DB->get_records_select_menu('question_categories', "id $select", $params, 'sortorder', 'id, name')) {
-
-            if ($coursecategory->name == 'top') {
-                $name = $coursecontext->get_context_name(false, false, true);
-                $name = get_string('topfor', 'question', $name);
-                if (array_key_exists($coursecategory->id, $categories)) {
-                    $categories[$coursecategory->id] = $name;
-                }
-            }
-            return $categories;
-        } else {
-            return [];
-        }
-    }
-
-    /**
-     * Gets the top question category in the given course context.
-     * This function can optionally create the top category if it doesn't exist.
-     *
-     * This function mimics question_get_top_category() in "lib/questionlib.php",
-     * but does not insist on CONTEXT_MODULE.
-     *
-     * @param int $contextid A context id.
-     * @param bool $create Whether create a top category if it doesn't exist.
-     * @return bool|stdClass The top question category for that context, or false if none.
-     */
-    public function get_top_question_category($contextid, $create = false) {
-        global $DB;
-
-        $table = 'question_categories';
-        $params = ['contextid' => $contextid, 'parent' => 0];
-        if ($category = $DB->get_record($table, $params)) {
-            return $category;
-        }
-
-        if ($create) {
-            $category = (object)[
-                'name' => 'top', // Name will be localised at the display time.
-                'contextid' => $contextid,
-                'info' => '',
-                'parent' => 0,
-                'sortorder' => 0,
-                'stamp' => make_unique_id_code(),
-            ];
-            if ($category->id = $DB->insert_record($table, $category)) {
-                return $category;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Adds a group of subcategory checkboxes to a Moodle form.
-     *
-     * @param MoodleQuickForm $mform The form object to add elements to.
-     * @param string $name The base name for the checkbox group.
-     * @param int $defaultvalue Bitmask representing default checked values.
-     * @param string $defaultcustomname (Optional) Default text for the custom name field.
-     *
-     * @return void, but may update $mform
-     */
-    public function add_subcategories($mform, $name, $defaultvalue, $defaultcustomname='') {
-        return $this->add_checkboxes(
-            $mform, $name, 'subcategories',
-            $this->get_subcategory_types(),
-            self::SUBCAT_NONE, self::SUBCAT_CUSTOMNAME,
-            $defaultvalue, $defaultcustomname
-        );
-    }
-
-    /**
-     * Adds a group of question tag checkboxes to a Moodle form.
-     *
-     * @param MoodleQuickForm $mform The form object to add elements to.
-     * @param string $name The base name for the checkbox group.
-     * @param int $defaultvalue Bitmask representing default checked values.
-     * @param string $defaultcustomname (Optional) Default text for the custom tag field.
-     *
-     * @return void, but may update $mform
-     */
-    public function add_questiontags($mform, $name, $defaultvalue, $defaultcustomname='') {
-        return $this->add_checkboxes(
-            $mform, $name, 'questiontags',
-            $this->get_questiontag_types(),
-            self::QTAG_NONE, self::QTAG_CUSTOMTAGS,
-            $defaultvalue, $defaultcustomname
-        );
-    }
-
-    /**
-     * Adds a custom group of checkboxes with optional text input to a Moodle form.
-     *
-     * @param MoodleQuickForm $mform The form object to add elements to.
-     * @param string $name The base name for the checkbox group.
-     * @param string $strname The string identifier used for the group label and help button.
-     * @param array $options Associative array of checkbox values and their labels.
-     * @param int $valuenone The value representing the 'none' option (disables others).
-     * @param int $valuecustom The value that triggers display of the custom text input.
-     * @param int $defaultvalue Bitmask representing default checked values.
-     * @param string $defaultcustomname (Optional) Default text for the custom input field.
-     *
-     * @return void, but may update $mform
-     */
-    public function add_checkboxes($mform, $name, $strname,
-                                   $options, $valuenone, $valuecustom,
-                                   $defaultvalue, $defaultcustomname='') {
-
-        // The name of the form field containing the custom name/tag string.
-        $customname = $name.'[name]';
-
-        $label = $this->get_string($strname);
-
-        // Cache line break element.
-        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
-
-        foreach ($options as $value => $text) {
-            $elements[] = $mform->createElement('checkbox', $value, $text);
-            if ($value == $valuecustom) {
-                $elements[] = $mform->createElement('text', 'name', '', ['size' => 20]);
-            }
-            $elements[] = $mform->createElement('html', $linebreak);
-        }
-        $mform->addGroup($elements, $name, $label);
-        $this->add_help_button($mform, $name, $strname);
-        $elementnone = $name.'['.$valuenone.']';
-        foreach ($options as $value => $text) {
-            $elementname = $name.'['.$value.']';
-            $mform->setType($elementname, PARAM_INT);
-            if ($value == $valuecustom) {
-                $mform->setType($customname, PARAM_TEXT);
-                $mform->setDefault($customname, $defaultcustomname);
-                $mform->disabledIf($customname, $elementname, 'notchecked');
-            }
-            if ($defaultvalue & $value) {
-                $mform->setDefault($elementname, 1);
-            }
-            if ($value > 0) {
-                $mform->disabledIf($elementname, $elementnone, 'checked');
-            }
-        }
-    }
-
-    /**
-     * Get questiontag types
-     *
-     * @return array of questiontag types.
-     */
-    public function get_questiontag_types() {
-        return [
-            self::QTAG_NONE => get_string('none'),
-            self::QTAG_AI => $this->get_string('ai_generated'),
-            self::QTAG_PROMPTHEAD => $this->get_string('prompthead'),
-            self::QTAG_PROMPTTAIL => $this->get_string('prompttail'),
-            self::QTAG_MEDIATYPE => $this->get_string('mediatype'),
-            self::QTAG_WORD => $this->get_string('word'),
-            self::QTAG_QUESTIONTYPE => $this->get_string('questiontype'),
-            self::QTAG_VOCABLEVEL => $this->get_string('vocablevel'),
-            self::QTAG_CUSTOMTAGS => $this->get_string('customtags'),
-        ];
-    }
-
-    /**
-     * Get subcategory types
-     *
-     * @return array of subcategory types.
-     */
-    public function get_subcategory_types() {
-        return [
-            self::SUBCAT_NONE => get_string('none'),
-            self::SUBCAT_CUSTOMNAME => $this->get_string('customname'),
-            self::SUBCAT_SECTIONNAME => $this->get_string('sectionname'),
-            self::SUBCAT_ACTIVITYNAME => $this->get_string('activityname'),
-            self::SUBCAT_WORD => $this->get_string('word'),
-            self::SUBCAT_QUESTIONTYPE => $this->get_string('questiontype'),
-            self::SUBCAT_VOCABLEVEL => $this->get_string('vocablevel'),
-            self::SUBCAT_PROMPTHEAD => $this->get_string('prompthead'),
-            self::SUBCAT_PROMPTTAIL => $this->get_string('prompttail'),
-        ];
-    }
-
-    /**
-     * Get status types
-     *
-     * @return array of status types.
-     */
-    public function get_status_types() {
-        $tool = $this->get_subplugin();
-        return [
-            $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
-            $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
-            $tool::TASKSTATUS_CHECKING_PARAMS => $this->get_string('taskstatus_checkingparams'),
-            $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
-            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
-            $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
-            $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
-            $tool::TASKSTATUS_ADDING_MULTIMEDIA => $this->get_string('taskstatus_addingmultimedia'),
-            $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
-            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
-            $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
-        ];
     }
 
     /**
@@ -928,7 +645,7 @@ class form extends \mod_vocab\toolform {
         $groupname = 'subcat';
         if (property_exists($data, $groupname)) {
 
-            $types = $this->get_subcategory_types();
+            $types = static::get_subcategory_types();
             foreach ($types as $type => $text) {
                 if (! empty($data->{$groupname}[$type])) {
                     $subcattype |= $type;
@@ -956,7 +673,7 @@ class form extends \mod_vocab\toolform {
         $groupname = 'qtag';
         if (property_exists($data, $groupname)) {
 
-            $types = $this->get_questiontag_types();
+            $types = static::get_questiontag_types();
             foreach ($types as $type => $text) {
                 if (! empty($data->{$groupname}[$type])) {
                     $tagtypes |= $type;
@@ -1473,7 +1190,7 @@ class form extends \mod_vocab\toolform {
                     $name = 'review';
                     $a = ['strname' => 'questionreview'];
                     $options = [get_string('no'), get_string('yes')];
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHA, $log->$name, $a);
+                    $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
 
                     $name = 'error';
                     $a = ['strname' => 'taskerror', 'rows' => 1];
@@ -1700,8 +1417,8 @@ class form extends \mod_vocab\toolform {
         $categorynames = [];
 
         // Cache valid types of subcategory and question tag.
-        $subcategorytypes = $this->get_subcategory_types();
-        $questiontagtypes = $this->get_questiontag_types();
+        $subcategorytypes = static::get_subcategory_types();
+        $questiontagtypes = static::get_questiontag_types();
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {

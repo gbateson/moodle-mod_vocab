@@ -416,6 +416,8 @@ class ai extends \mod_vocab\aibase {
                 // Ensure all objects are converted to arrays.
                 $response = json_decode(json_encode($response), true);
             }
+file_put_contents($CFG->dataroot.'/cron.log', '======='.PHP_EOL.$response.PHP_EOL, FILE_APPEND);
+mtrace('Responese written to cron.log');
 
             // Detect error, if any.
             if (is_array($response) && array_key_exists('error', $response)) {

@@ -30,7 +30,6 @@ $string['addname'] = '名前を追加';
 $string['addtags'] = 'タグを追加';
 $string['adhoctaskid'] = 'アドホックタスク';
 $string['adhoctaskid_help'] = '質問生成に使用されるMoodleのアドホックタスクのIDです。';
-$string['ai_generated'] = 'AI';
 $string['aisettings'] = 'AI設定';
 $string['categorysettings'] = '質問カテゴリ設定';
 $string['catinfo_activityname'] = '活動 "{$a->activityname}" の語彙問題';
@@ -58,9 +57,6 @@ $string['cefr_b2_description'] = 'B2：中上級レベル';
 $string['cefr_c1_description'] = 'C1：上級レベル';
 $string['cefr_c2_description'] = 'C2：熟達レベル';
 $string['checkingparams'] = '... パラメータを確認中 ...';
-$string['coursename'] = 'コース名';
-$string['customname'] = 'カスタム名';
-$string['customtags'] = 'カスタムタグ';
 $string['ddimageortextshort'] = 'DD（画像/テキスト）';
 $string['defaultcustomname'] = '{$a} のための問題';
 $string['deletelog'] = 'ログを削除';
@@ -109,11 +105,9 @@ $string['invalidquestioncategory'] = '無効な質問カテゴリ（ID={$a}）';
 $string['logrecords'] = 'ログ記録 {$a}';
 $string['male'] = '男性';
 $string['man'] = '男性';
-$string['managequestioncategories'] = 'ここをクリックして質問カテゴリを管理';
 $string['matchshort'] = 'マッチ';
 $string['maxtries'] = '最大試行回数';
 $string['maxtries_help'] = 'AIによる質問生成を試みる最大回数。通常は1回で十分です。';
-$string['mediatype'] = 'メディアタイプ';
 $string['missingaidetails'] = '以下の設定が定義されていないため、質問をまだ生成できません：{$a}';
 $string['missingconfigname'] = '設定が見つかりません（ID={$a->configid}, 種類={$a->type}）';
 $string['moodlequestions'] = 'Moodle 質問';
@@ -128,15 +122,11 @@ $string['nopromptsfound'] = '{$a} AIアシスタント用のプロンプトが�
 $string['novideosfound'] = '動画アシスタントが見つかりませんでした。これは必須ではありませんが、質問に動画を追加したい場合には必要です。<br>{$a}';
 $string['nowordsfound'] = '問題集に質問を生成するには、まずこの語彙活動に単語リストを定義する必要があります。「単語リストの編集」ツールを使用してください。';
 $string['orderingshort'] = '並べ替え';
-$string['parentcategory'] = '親カテゴリ';
-$string['parentcategory_help'] = '新しい質問を追加する質問カテゴリを選択してください。';
 $string['pluginname'] = '語彙活動のための質問生成';
 $string['privacy:metadata'] = 'vocabtool_questionbank プラグインは個人データを保存しません。';
 $string['prompt'] = 'AIプロンプト';
 $string['prompt_help'] = '選択したAIアシスタントに送信するAIプロンプトを選択してください。';
-$string['prompthead'] = 'プロンプト名（先頭）';
 $string['promptname'] = 'AIプロンプト名';
-$string['prompttail'] = 'プロンプト名（末尾）';
 $string['prompttext'] = 'プロンプト本文';
 $string['prompttext_help'] = '質問を生成するために使用されるAIプロンプトです。';
 $string['questionbank'] = '問題バンク';
@@ -146,13 +136,7 @@ $string['questionlevel'] = '質問レベル';
 $string['questionlevel_help'] = 'AIが生成する質問に使用する語彙レベルです。';
 $string['questionlevels'] = '言語レベル';
 $string['questionlevels_help'] = '質問に使用される語彙や文法のレベルです。';
-$string['questionreview'] = '質問レビュー';
-$string['questionreview_help'] = 'この設定を有効にすると、AIの結果は教師がレビューするまで問題集にインポートされません。';
 $string['questionsettings'] = '質問設定';
-$string['questiontags'] = '質問タグ';
-$string['questiontags_help'] = '必要であれば、カスタムタグを1つ以上指定できます。複数のタグを追加する場合は、カンマで区切ってください。';
-$string['questiontype'] = '質問タイプ';
-$string['questiontype_help'] = 'AIによって生成される質問のタイプです。';
 $string['questiontypes'] = '質問タイプ';
 $string['questiontypes_help'] = '生成する質問の種類です。';
 $string['redotask'] = 'タスクを再実行';
@@ -167,35 +151,12 @@ $string['resumetaskresults'] = '{$a->count} 件のタスクを再開します {$
 $string['sassessmentshort'] = '話す（評価）';
 $string['scheduletasksfailure'] = '以下のタスクはスケジュールできませんでした。後でもう一度お試しください。{$a}';
 $string['scheduletaskssuccess'] = '以下のタスクは正常にスケジュールされ、Moodle cron によって後で実行されます。{$a}';
-$string['sectionname'] = 'セクション名';
 $string['sectiontype'] = 'セクションタイプ';
 $string['selectedlogrecord'] = '選択されたログレコード';
 $string['selectedwords'] = '選択された単語';
 $string['selectedwords_help'] = '質問を生成したい単語を選択してください。';
 $string['shortanswershort'] = '短答';
 $string['speakautogradeshort'] = '話す（自動）';
-$string['subcategories'] = 'サブカテゴリ';
-$string['subcategories_help'] = 'AIによって生成された質問を格納するための、親カテゴリ内の階層構造をこれらのチェックボックスで指定します。
-
-**なし:** サブカテゴリは作成されません。すべての新しい質問は「親カテゴリ」に直接追加されます。
-
-**カスタム名:** このチェックボックスを選択した場合、指定欄に質問サブカテゴリのカスタム名を入力します。
-
-**セクション名:** この語彙活動が表示されているコースセクション（例:「トピック」「週」）に基づくカテゴリです。
-
-**活動名:** 現在の語彙活動に基づくカテゴリです。
-
-**単語名:** 各語彙アイテム（または「単語」）に基づくカテゴリです。
-
-**質問タイプ:** 各質問タイプ（例:「MC」「短答」「マッチ」）に基づくカテゴリです。
-
-**語彙レベル:** 各語彙レベル（例:「A1」「TOEFL-30」「TOEIC-300」など）に基づくカテゴリです。
-
-**プロンプト名（先頭）:** プロンプト名の「先頭」部分に基づくカテゴリ（例："TOEIC R&L (Part 1): 画像描写" の「TOEIC R&L (Part 1)」）。
-
-**プロンプト名（末尾）:** プロンプト名の「末尾」部分に基づくカテゴリ（例："TOEIC R&L (Part 1): 画像描写" の「画像描写」）。
-
-指定されたサブカテゴリが存在しない場合は、質問のインポート時に自動的に作成されます。';
 $string['subcatname'] = 'サブカテゴリ名';
 $string['subcatname_help'] = 'カスタムカテゴリ名を指定してください。';
 $string['subcattype'] = 'サブカテゴリタイプ';
@@ -225,8 +186,6 @@ $string['timemodified'] = '更新日時';
 $string['tries'] = '試行回数';
 $string['tries_help'] = 'AIアシスタントに接続して質問を生成しようとした試行回数。';
 $string['truefalseshort'] = '正誤';
-$string['vocablevel'] = '語彙レベル';
 $string['withselected'] = '選択済みの項目に対して';
 $string['woman'] = '女性';
-$string['word'] = '単語';
 $string['word_help'] = 'この質問が生成された対象の単語または語彙アイテムです。';

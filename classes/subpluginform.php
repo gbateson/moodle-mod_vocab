@@ -151,7 +151,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $name the name of this heading
      * @param bool $expanded
      * @param array $a arguments, if any, required for header string (optional, default=null)
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_heading($mform, $name, $expanded, $a=null) {
         $component = $this->get_subplugin()->get_string_component($name);
@@ -169,7 +169,7 @@ abstract class subpluginform extends \moodleform {
      * @param object $mform representing the Moodle form
      * @param string $name name of the element to add the item to
      * @param string $strname help string identifier without _help suffix
-     * @return void, but may update $mform
+     * @return void ... but may update $mform.
      */
     public function add_help_button($mform, $name, $strname) {
         $component = $this->get_subplugin()->get_string_component($strname);
@@ -183,7 +183,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $name the name of this static element
      * @param mixed $value the value to be displayed
      * @param array $attributes (optional, default=null)
-     * @return void (but may update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_static($mform, $name, $value, $attributes=null) {
         list($name, $strname) = $this->get_names($name, $attributes);
@@ -233,7 +233,7 @@ abstract class subpluginform extends \moodleform {
      * @param mixed $type a PARAM_xxx constant value
      * @param mixed $default
      * @param array $attributes (optional, default=null)
-     * @return void (but may update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_text($mform, $name, $type, $default, $attributes=null) {
         if ($attributes) {
@@ -266,7 +266,7 @@ abstract class subpluginform extends \moodleform {
      * @param mixed $type a PARAM_xxx constant value
      * @param mixed $default
      * @param array $attributes (optional, default=null)
-     * @return void (but may update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_textarea($mform, $name, $type, $default, $attributes=null) {
         if (is_array($attributes)) {
@@ -289,7 +289,7 @@ abstract class subpluginform extends \moodleform {
      * @param mixed $type a PARAM_xxx constant value
      * @param mixed $default (optional, default=null)
      * @param array $attributes (optional, default=null)
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_selectgroups($mform, $name, $options, $type, $default=null, $attributes=null) {
         $this->add_field_select($mform, $name, $options, $type, $default, $attributes, 'selectgroups');
@@ -305,7 +305,7 @@ abstract class subpluginform extends \moodleform {
      * @param mixed $default (optional, default=null)
      * @param array $attributes (optional, default=null)
      * @param string $elementtype (optional, default="select")
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_select($mform, $name, $options, $type, $default=null, $attributes=null, $elementtype='select') {
         if ($attributes) {
@@ -333,7 +333,7 @@ abstract class subpluginform extends \moodleform {
      * @param moodleform $mform representing the Moodle form
      * @param string $name the name of this date_time element
      * @param array $attributes (optional, default=null)
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_datetime($mform, $name, $attributes=null) {
         list($name, $strname) = $this->get_names($name, $attributes);
@@ -350,7 +350,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $name
      * @param array $attributes (optional, default=null)
      * @param array $options (optional, default=null)
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_filemanager($mform, $name, $attributes=null, $options=null) {
         $this->add_field_file('filemanager', $mform, $name, $attributes, $options);
@@ -364,7 +364,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $name
      * @param array $attributes (optional, default=null)
      * @param array $options (optional, default=null)
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
         $this->add_field_file('filepicker', $mform, $name, $attributes, $options);
@@ -378,7 +378,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $name
      * @param array $attributes (optional, default=null)
      * @param array $options (optional, default=null)
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_field_file($type, $mform, $name, $attributes=null, $options=null) {
         list($name, $strname) = $this->get_names($name, $attributes);
@@ -628,30 +628,77 @@ abstract class subpluginform extends \moodleform {
         }
     }
 
+    /**
+     * Adds a form field for selecting an AI text assistant.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param array $options The available AI text assistants.
+     * @return void ... but may update $mform.
+     */
     public function add_field_textassistant($mform, $options) {
         $this->add_field_ai_assistant($mform, 'textassistant', $options, 'chatgpt');
     }
+
+    /**
+     * Adds a form field for selecting a tuning file.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param array $options The available tuning files.
+     * @return void ... but may update $mform.
+     */
     public function add_field_tuningfile($mform, $options) {
         $this->add_field_ai_assistant($mform, 'file', $options, 'files');
     }
+
+    /**
+     * Adds a form field for selecting an AI audio assistant.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param array $options The available AI audio assistants.
+     * @return void ... but may update $mform.
+     */
+    public function add_field_audioassistant($mform, $options) {
+        $this->add_field_ai_assistant($mform, 'audioassistant', $options, 'tts');
+    }
+
+    /**
+     * Adds a form field for selecting an AI image assistant.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param array $options The available AI image assistants.
+     * @return void ... but may update $mform.
+     */
     public function add_field_imageassistant($mform, $options) {
         $this->add_field_ai_assistant($mform, 'imageassistant', $options, 'dalle');
     }
 
-    public function add_field_audioassistant($mform, $options) {
-        $this->add_field_ai_assistant($mform, 'audioassistant', $options, 'tts');
-    }
+    /**
+     * Adds a form field for selecting an AI video assistant.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param array $options The available AI video assistants.
+     * @return void ... but may update $mform.
+     */
     public function add_field_videoassistant($mform, $options) {
         $this->add_field_ai_assistant($mform, 'videoassistant', $options, 'tts');
     }
 
-    public function add_field_ai_assistant($mform, $name, $options, $default) {
+    /**
+     * Adds a form field for selecting an AI assistant.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param string $name Full form field name e.g. "textassistant".
+     * @param array $options The available AI assistants.
+     * @param string $defaulttype the name of the default AI type.
+     * @return void ... but may update $mform.
+     */
+    public function add_field_ai_assistant($mform, $name, $options, $defaulttype) {
         // Remove "assistant" from $name to get an AI type.
         // E.g. file, image, audio, video.
         $type = str_replace('assistant', '', $name);
         if (empty($options)) {
             $cmid = $this->get_vocab()->cm->id;
-            $url = new \moodle_url('/mod/vocab/ai/'.$default.'/index.php', ['id' => $cmid]);
+            $url = new \moodle_url('/mod/vocab/ai/'.$defaulttype.'/index.php', ['id' => $cmid]);
             $msg = \html_writer::link($url, $this->get_string('clicktoadd'.$type));
             $msg = $this->get_string('no'.$type.'sfound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
@@ -661,10 +708,295 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
+     * Adds a form field for selecting a parent question category.
+     *
+     * @param MoodleQuickForm $mform The form to which the field should be added.
+     * @param string $name of the form field.
+     * @param int $defaultid the id of the default parent category (optional, default=0.
+     * @return void ... but may update $mform.
+     */
+    public function add_parentcategory($mform, $name, $defaultid=0) {
+
+        // Get the course context.
+        $courseid = $this->get_vocab()->course->id;
+        $context = \context_course::instance($courseid);
+
+        // Fetch the list of question categories in this course.
+        $categories = $this->get_question_categories();
+
+        // Get the name of the default question category for this course.
+        if ($defaultid == 0) {
+            $defaultname = $context->get_context_name(false, true);
+            $defaultname = get_string('defaultfor', 'question', $defaultname);
+            $defaultname = shorten_text($defaultname, 255);
+
+            // Extract the id of the default question category in this course.
+            $defaultid = array_search($defaultname, $categories);
+            if ($defaultid === false) {
+                $defaultid = 0; // Shouldn't happen !!
+            }
+        }
+
+        $strname = 'parentcategory';
+        $label = $this->get_string($strname);
+
+        $elements = [
+            $mform->createElement('select', 'id', '', $categories),
+            $mform->createElement('html', $this->link_to_managequestioncategories()),
+        ];
+        $mform->addGroup($elements, $name, $label);
+        $this->add_help_button($mform, $name, $strname);
+
+        $elementname = $name.'[id]';
+        $mform->setType($elementname, PARAM_INT);
+        $mform->setDefault($elementname, $defaultid);
+    }
+
+    /**
+     * Generates a link to the "Manage question categories" page.
+     *
+     * @return string HTML link to the question category management page.
+     */
+    public function link_to_managequestioncategories() {
+        $link = '/question/bank/managecategories/category.php';
+        $params = ['courseid' => $this->get_vocab()->course->id];
+        $link = new \moodle_url($link, $params);
+
+        $text = $this->get_string('managequestioncategories');
+        $params = ['onclick' => "this.target='VOCAB'"];
+        $link = \html_writer::link($link, $text, $params);
+
+        $params = ['class' => 'w-100 pl-1'];
+        return \html_writer::tag('small', $link, $params);
+    }
+
+    /**
+     * Retrieves the list of question categories for the current course.
+     *
+     * @return array An array of question categories.
+     */
+    public function get_question_categories() {
+        global $CFG, $DB;
+        require_once($CFG->dirroot.'/lib/questionlib.php');
+
+        $courseid = $this->get_vocab()->course->id;
+        $coursecontext = \context_course::instance($courseid);
+        $coursecategory = $this->get_top_question_category($coursecontext->id, true);
+
+        $categories = question_categorylist($coursecategory->id);
+        list($select, $params) = $DB->get_in_or_equal($categories);
+        if ($categories = $DB->get_records_select_menu('question_categories', "id $select", $params, 'sortorder', 'id, name')) {
+
+            if ($coursecategory->name == 'top') {
+                $name = $coursecontext->get_context_name(false, false, true);
+                $name = get_string('topfor', 'question', $name);
+                if (array_key_exists($coursecategory->id, $categories)) {
+                    $categories[$coursecategory->id] = $name;
+                }
+            }
+            return $categories;
+        } else {
+            return [];
+        }
+    }
+
+    /**
+     * Gets the top question category in the given course context.
+     * This function can optionally create the top category if it doesn't exist.
+     *
+     * This function mimics question_get_top_category() in "lib/questionlib.php",
+     * but does not insist on CONTEXT_MODULE.
+     *
+     * @param int $contextid A context id.
+     * @param bool $create Whether create a top category if it doesn't exist.
+     * @return bool|stdClass The top question category for that context, or false if none.
+     */
+    public function get_top_question_category($contextid, $create = false) {
+        global $DB;
+
+        $table = 'question_categories';
+        $params = ['contextid' => $contextid, 'parent' => 0];
+        if ($category = $DB->get_record($table, $params)) {
+            return $category;
+        }
+
+        if ($create) {
+            $category = (object)[
+                'name' => 'top', // Name will be localised at the display time.
+                'contextid' => $contextid,
+                'info' => '',
+                'parent' => 0,
+                'sortorder' => 0,
+                'stamp' => make_unique_id_code(),
+            ];
+            if ($category->id = $DB->insert_record($table, $category)) {
+                return $category;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Adds a group of subcategory checkboxes to a Moodle form.
+     *
+     * @param MoodleQuickForm $mform The form object to add elements to.
+     * @param string $name The base name for the checkbox group.
+     * @param int $defaultvalue Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional) Default text for the custom name field.
+     *
+     * @return void ... but may update $mform.
+     */
+    public function add_subcategories($mform, $name, $defaultvalue, $defaultcustomname='') {
+        $form = '\\vocabtool_questionbank\\form';
+        return $this->add_checkboxes(
+            $mform, $name, 'subcategories',
+            self::get_subcategory_types(),
+            $form::SUBCAT_NONE, $form::SUBCAT_CUSTOMNAME,
+            $defaultvalue, $defaultcustomname
+        );
+    }
+
+    /**
+     * Adds a group of question tag checkboxes to a Moodle form.
+     *
+     * @param MoodleQuickForm $mform The form object to add elements to.
+     * @param string $name The base name for the checkbox group.
+     * @param int $defaultvalue Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional) Default text for the custom tag field.
+     *
+     * @return void ... but may update $mform.
+     */
+    public function add_questiontags($mform, $name, $defaultvalue, $defaultcustomname='') {
+        $form = '\\vocabtool_questionbank\\form';
+        return $this->add_checkboxes(
+            $mform, $name, 'questiontags',
+            $this->get_questiontag_types(),
+            $form::QTAG_NONE, $form::QTAG_CUSTOMTAGS,
+            $defaultvalue, $defaultcustomname
+        );
+    }
+
+    /**
+     * Adds a custom group of checkboxes with optional text input to a Moodle form.
+     *
+     * @param MoodleQuickForm $mform The form object to add elements to.
+     * @param string $name The base name for the checkbox group.
+     * @param string $strname The string identifier used for the group label and help button.
+     * @param array $options Associative array of checkbox values and their labels.
+     * @param int $valuenone The value representing the 'none' option (disables others).
+     * @param int $valuecustom The value that triggers display of the custom text input.
+     * @param int $defaultvalue Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional) Default text for the custom input field.
+     *
+     * @return void ... but may update $mform.
+     */
+    public function add_checkboxes($mform, $name, $strname,
+                                   $options, $valuenone, $valuecustom,
+                                   $defaultvalue, $defaultcustomname='') {
+
+        // The name of the form field containing the custom name/tag string.
+        $customname = $name.'[name]';
+
+        $label = $this->get_string($strname);
+
+        // Cache line break element.
+        $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
+
+        foreach ($options as $value => $text) {
+            $elements[] = $mform->createElement('checkbox', $value, $text);
+            if ($value == $valuecustom) {
+                $elements[] = $mform->createElement('text', 'name', '', ['size' => 20]);
+            }
+            $elements[] = $mform->createElement('html', $linebreak);
+        }
+        $mform->addGroup($elements, $name, $label, '');
+        $this->add_help_button($mform, $name, $strname);
+        $elementnone = $name.'['.$valuenone.']';
+        foreach ($options as $value => $text) {
+            $elementname = $name.'['.$value.']';
+            $mform->setType($elementname, PARAM_INT);
+            if ($value == $valuecustom) {
+                $mform->setType($customname, PARAM_TEXT);
+                $mform->setDefault($customname, $defaultcustomname);
+                $mform->disabledIf($customname, $elementname, 'notchecked');
+            }
+            if ($defaultvalue & $value) {
+                $mform->setDefault($elementname, 1);
+            }
+            if ($value > 0) {
+                $mform->disabledIf($elementname, $elementnone, 'checked');
+            }
+        }
+    }
+
+    /**
+     * Get questiontag types
+     *
+     * @return array of questiontag types.
+     */
+    public static function get_questiontag_types() {
+        $form = '\\vocabtool_questionbank\\form';
+        return [
+            $form::QTAG_NONE => get_string('none'),
+            $form::QTAG_AI => get_string('ai_generated', 'mod_vocab'),
+            $form::QTAG_PROMPTHEAD => get_string('prompthead', 'mod_vocab'),
+            $form::QTAG_PROMPTTAIL => get_string('prompttail', 'mod_vocab'),
+            $form::QTAG_MEDIATYPE => get_string('mediatype', 'mod_vocab'),
+            $form::QTAG_WORD => get_string('word', 'mod_vocab'),
+            $form::QTAG_QUESTIONTYPE => get_string('questiontype', 'mod_vocab'),
+            $form::QTAG_VOCABLEVEL => get_string('vocablevel', 'mod_vocab'),
+            $form::QTAG_CUSTOMTAGS => get_string('customtags', 'mod_vocab'),
+        ];
+    }
+
+    /**
+     * Get subcategory types
+     *
+     * @return array of subcategory types.
+     */
+    public static function get_subcategory_types() {
+        $form = '\\vocabtool_questionbank\\form';
+        return [
+            $form::SUBCAT_NONE => get_string('none'),
+            $form::SUBCAT_CUSTOMNAME => get_string('customname', 'mod_vocab'),
+            $form::SUBCAT_SECTIONNAME => get_string('sectionname', 'mod_vocab'),
+            $form::SUBCAT_ACTIVITYNAME => get_string('activityname', 'mod_vocab'),
+            $form::SUBCAT_WORD => get_string('word', 'mod_vocab'),
+            $form::SUBCAT_QUESTIONTYPE => get_string('questiontype', 'mod_vocab'),
+            $form::SUBCAT_VOCABLEVEL => get_string('vocablevel', 'mod_vocab'),
+            $form::SUBCAT_PROMPTHEAD => get_string('prompthead', 'mod_vocab'),
+            $form::SUBCAT_PROMPTTAIL => get_string('prompttail', 'mod_vocab'),
+        ];
+    }
+
+    /**
+     * Get status types
+     *
+     * @return array of status types.
+     */
+    public function get_status_types() {
+        $tool = $this->get_subplugin();
+        return [
+            $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
+            $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
+            $tool::TASKSTATUS_CHECKING_PARAMS => $this->get_string('taskstatus_checkingparams'),
+            $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
+            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
+            $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
+            $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
+            $tool::TASKSTATUS_ADDING_MULTIMEDIA => $this->get_string('taskstatus_addingmultimedia'),
+            $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
+            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
+            $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
+        ];
+    }
+
+    /**
      * Add a form section to import a file.
      *
      * @param moodleform $mform representing the Moodle form
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_importfile($mform) {
         $this->add_heading($mform, 'import', false);
@@ -686,7 +1018,7 @@ abstract class subpluginform extends \moodleform {
      * Add a form section to export a file.
      *
      * @param moodleform $mform representing the Moodle form
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_exportfile($mform) {
         $this->add_exportfile_heading($mform);
@@ -727,7 +1059,7 @@ abstract class subpluginform extends \moodleform {
      * Add export settings to a Moodle form.
      *
      * @param moodleform $mform representing the Moodle form
-     * @return void (but will update $mform)
+     * @return void ... but may update $mform.
      */
     public function add_exportfile_settings($mform) {
     }

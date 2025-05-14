@@ -521,8 +521,14 @@ class questions extends \core\task\adhoc_task {
                 if ($context) {
                     $mediatags = $this->create_media($log, $question, $context, $mediatags);
                     if ($addmediatags && count($mediatags)) {
+                        $alltags = \core_tag_tag::get_item_tags_array(
+                            'core_question', 'question', $question->id
+                        );
+                        $alltags = array_values($alltags); // Remove tagids.
+                        $alltags = array_merge($alltags, $mediatags);
+                        $alltags = array_filter($alltags); // Remove blanks.
                         \core_tag_tag::set_item_tags(
-                            'core_question', 'question', $question->id, $context, $mediatags
+                            'core_question', 'question', $question->id, $context, $alltags
                         );
                     }
                 }

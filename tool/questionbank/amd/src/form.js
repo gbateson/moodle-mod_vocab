@@ -7,19 +7,19 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * mod/vocab/tool/questionbank/amd/src/form.js
  *
- * @module     vocabtool_questionbank
- * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since      Moodle 3.11
+ * @module vocabtool_questionbank
+ * @copyright 2023 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since Moodle 3.11
  */
 
 define(['core/str'], function(STR){
@@ -35,10 +35,10 @@ define(['core/str'], function(STR){
     /**
      * Adds a cross-browser event listener to the specified element.
      *
-     * @param {Element}   obj         The DOM element to attach the event to.
-     * @param {string}    evt         The event type (e.g., 'click', 'input').
-     * @param {Function}  fn          The callback function to execute when the event fires.
-     * @param {boolean}   [useCapture=false] Whether to use capture phase (optional).
+     * @param {Element} obj The DOM element to attach the event to.
+     * @param {string} evt The event type (e.g., 'click', 'input').
+     * @param {Function} fn The callback function to execute when the event fires.
+     * @param {boolean} [useCapture=false] Whether to use capture phase (optional).
      */
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {
@@ -54,7 +54,7 @@ define(['core/str'], function(STR){
      * Runs setup functions for log selection checkboxes,
      * dynamic textareas, word selection, and custom name helpers.
      *
-     * @param {object}   defaults         Default values for prompts.
+     * @param {object} defaults Default values for prompts.
      */
     JS.init = function(defaults) {
 
@@ -365,13 +365,11 @@ define(['core/str'], function(STR){
     };
 
     /**
-     * Finds the closest previous sibling that matches a given selector.
+     * Retrieves the previous sibling element that matches the specified selector.
      *
-     * If no selector is provided, returns the nearest previous sibling regardless of type.
-     *
-     * @param {Element} elm        The starting element.
-     * @param {string} [selector]  Optional CSS selector to match against.
-     * @returns {Element|null} The matched previous sibling element, or null if none found.
+     * @param {Element} elm - The element to start searching from.
+     * @param {string} selector - The CSS selector to match the sibling against.
+     * @returns {Element|null} The matching previous sibling, or null if none is found.
      */
     JS.get_previous_sibling = function(elm, selector){
         if (! selector) {
@@ -388,11 +386,9 @@ define(['core/str'], function(STR){
     };
 
     /**
-     * Attaches on change event handler to "textassistant" menu.
+     * Initializes the prompt dropdown menu with default settings and event listeners.
      *
-     * Changing the selected prompt, will set all related settings to defaults.
-     *
-     * @param {Array} defaults        Default values for each promptid.
+     * @param {object} defaults - An object containing default settings for the prompt.
      */
     JS.init_prompt = function(defaults){
         const p = document.querySelector("select[name='prompt']");
@@ -415,57 +411,46 @@ define(['core/str'], function(STR){
                     let settings = defaults[promptid];
                     for (let n in settings) {
                         if (n == "qtypes") {
-                            const s = "#id_questiontypescontainer .felement";
-                            document.querySelectorAll(s).forEach(function(felement){
-                                const enable = felement.querySelector(
-                                    "input[type='checkbox'][name$='[enable]']"
-                                );
-                                const format = felement.querySelector(
-                                    "select[name$='[format]']"
-                                );
-                                if (enable && format) {
-                                    const i = enable.name.indexOf("[");
-                                    const t = enable.name.substr(0, i);
-                                    if (settings[n][t]) {
-                                        // The qtype "n" is required.
-                                        if (enable.checked == false) {
-                                            enable.checked = true;
-                                            enable.dispatchEvent(new Event("click"));
-                                        }
-                                        const formatid = settings[n][t];
-                                        const option = format.querySelector("option[value='" + formatid + "']");
-                                        if (option && option.selected == false) {
-                                            option.selected = true;
-                                        }
-                                    } else {
-                                        // The qtype "n" is NOT required.
-                                        if (enable.checked == true) {
-                                            enable.checked = false;
-                                            enable.dispatchEvent(new Event("click"));
-                                            format.options[0].selected = true;
-                                        }
-                                    }
-                                }
-                            });
+                            JS.set_qtypes(settings[n]);
+                        } else if (n == "subcattypes") {
+                            JS.set_checkboxes("subcat", settings[n]);
+                        } else if (n == "subcatname") {
+                            JS.set_customname("subcat", settings[n]);
+                        } else if (n == "tagtypes") {
+                            JS.set_checkboxes("qtag", settings[n]);
+                        } else if (n == "tagnames") {
+                            JS.set_customname("qtag", settings[n]);
                         } else {
+                            // Locate the target form element.
                             const elm = document.querySelector("[name='" + n + "']");
                             if (elm) {
+
+                                // The target is a <select> element.
                                 if (elm.tagName == "SELECT") {
+
+                                    // Remove the element's name from the selectnames array.
                                     const i = selectnames.indexOf(n);
                                     if (i >= 0) {
                                         selectnames.splice(i, 1);
                                     }
+
+                                    // Locate the option with the matching value.
                                     const s = "option[value='" + settings[n] + "']";
                                     const option = elm.querySelector(s);
+
+                                    // If the option exists and is not already selected, select it.
                                     if (option && option.selected == false) {
                                         option.selected = true;
                                     }
+
+                                // The target is a text input element.
                                 } else if (elm.tagName == "INPUT" && elm.type == "text") {
                                     elm.value = settings[n];
                                 }
                             }
                         }
                     }
+
                     // Unset any select elements that were not set above.
                     selectnames.forEach(function(name){
                         const s = "select[name='" + name + "']";
@@ -478,6 +463,100 @@ define(['core/str'], function(STR){
             });
             p.dispatchEvent(new Event("change"));
         }
+    };
+
+    /**
+     * Sets the state of question type checkboxes based on the provided configuration.
+     *
+     * @param {object} qtypes - An object mapping question type names to format IDs.
+     */
+    JS.set_qtypes = function(qtypes){
+        const s = "#id_questiontypescontainer .felement";
+        document.querySelectorAll(s).forEach(function(felement){
+            const enable = felement.querySelector(
+                "input[type='checkbox'][name$='[enable]']"
+            );
+            const format = felement.querySelector(
+                "select[name$='[format]']"
+            );
+            if (enable && format) {
+                const i = enable.name.indexOf("[");
+                const t = enable.name.substr(0, i);
+                if (qtypes[t]) {
+                    // The qtype "n" is required.
+                    if (enable.checked == false) {
+                        enable.checked = true;
+                        enable.dispatchEvent(new Event("click"));
+                    }
+                    const formatid = qtypes[t];
+                    const option = format.querySelector("option[value='" + formatid + "']");
+                    if (option && option.selected == false) {
+                        option.selected = true;
+                    }
+                } else {
+                    // The qtype "n" is NOT required.
+                    if (enable.checked == true) {
+                        enable.checked = false;
+                        enable.dispatchEvent(new Event("click"));
+                        format.options[0].selected = true;
+                    }
+                }
+            }
+        });
+    };
+
+    /**
+     * Sets the checked state of checkboxes matching the specified name prefix.
+     *
+     * @param {string} name - The name prefix to match checkboxes against.
+     * @param {number} value - The bitwise value to use for determining the checked state.
+     */
+    JS.set_checkboxes = function(name, value){
+        const r = new RegExp("^" + name + "\\[(\\d+)\\]$");
+        const s = "input[type='checkbox'][name^='" + name + "['][name$=']']";
+        document.querySelectorAll(s).forEach(function(cb){
+            const m = cb.name.match(r);
+            if (m && m[0]) {
+                const i = (value & parseInt(m[1])); // eslint-disable-line no-bitwise
+                cb.checked = (i ? true : false);
+            }
+        });
+    };
+
+
+    /**
+     * Sets the value of a custom name input and checks the corresponding checkbox.
+     *
+     * @param {string} name - The name prefix for the input and checkbox elements.
+     * @param {string} value - The value to set in the input field.
+     * @returns {boolean} True if the custom name was successfully set, false otherwise.
+     */
+    JS.set_customname = function(name, value){
+        const s = {
+            "checkbox": "input[type='checkbox'][name^='" + name + "']",
+            "input": "input[type='text'][name='" + name + "[name]']",
+            "fitem": ".fitem",
+        };
+        const input = document.querySelector(s.input);
+        if (input === null) {
+            return false;
+        }
+
+        const fitem = JS.get_previous_sibling(input.closest(s.fitem), s.fitem);
+        if (fitem === null) {
+            return false;
+        }
+
+        const cb = fitem.querySelector(s.checkbox);
+        if (cb === null) {
+            return false;
+        }
+
+        if (cb.checked == false) {
+            cb.checked = true;
+            cb.dispatchEvent(new Event("click"));
+        }
+        input.value = value;
     };
 
     return JS;

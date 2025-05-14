@@ -44,9 +44,13 @@ class ai extends \mod_vocab\aibase {
      */
     const SETTINGNAMES = [
         'promptname', 'prompttext',
+        // Default settings used by vocabtool_questionbank.
         'prompttextid', 'promptfileid', 'promptqformat',
         'promptimageid', 'promptaudioid', 'promptvideoid',
-        'promptqcount', 'promptqtypes', // Map qtype to formatid.
+        'promptqtypes', 'promptqcount', 'promptreview',
+        'promptparentcatid', 'promptsubcattype', 'promptsubcatname',
+        'prompttagtypes', 'prompttagnames',
+        // Sharing settings.
         'sharedfrom', 'shareduntil',
     ];
 
@@ -91,5 +95,68 @@ class ai extends \mod_vocab\aibase {
         } else {
             return json_encode($promptqtypes);
         }
+    }
+
+    /**
+     * Merge the default subcat settings to a single integer value.
+     * If a custom name is defined, it will be set in the $settings object.
+     *
+     * @param object $settings the form data containing the settings
+     * @return int representing the merged sub category types.
+     */
+    public function get_config_value_promptsubcattype($settings) {
+        $form = '\\vocabai_prompts\\form';
+        $types = $form::get_subcategory_types();
+        return $this->get_config_value_prompttypes(
+            $settings, 'subcat', 'promptsubcatname', $types
+        );
+    }
+
+    /**
+     * Merge the default tag settings to a single integer value.
+     * If a custom name is defined, it will be set in the $settings object.
+     *
+     * @param object $settings the form data containing the settings
+     * @return int representing the merged tag types.
+     */
+    public function get_config_value_prompttagtypes($settings) {
+        $form = '\\vocabai_prompts\\form';
+        $types = $form::get_questiontag_types();
+        return $this->get_config_value_prompttypes(
+            $settings, 'qtag', 'prompttagnames', $types
+        );
+    }
+
+    /**
+     * Merge the default settings to a single integer value.
+     * If a custom name is defined, it will be set in the $settings object.
+     *
+     * @param object $settings the form data containing the settings.
+     * @param object $name the name of the setting to be merged.
+     * @param object $customnames the name of the setting that stores the custom names.
+     * @param object $types array of valid values for the $setting.
+     * @return int representing the merged types.
+     */
+    public function get_config_value_prompttypes($settings, $name, $customnames, $types) {
+        $returnvalue = 0;
+        if (isset($settings->$name)) {
+            if (is_array($settings->$name)) {
+                foreach ($settings->$name as $type => $value) {
+                    if (array_key_exists($type, $types)) {
+                        if ($value = intval($value)) {
+                            $returnvalue |= $type;
+                        }
+                    } else if ($type == 'name') {
+                        $value = explode(',', $value);
+                        $value = array_map('trim', $value);
+                        $value = array_filter($value);
+                        $value = implode(', ', $value);
+                        $settings->$customnames = $value;
+                    }
+                }
+            }
+            unset($settings->$name);
+        }
+        return $returnvalue;
     }
 }

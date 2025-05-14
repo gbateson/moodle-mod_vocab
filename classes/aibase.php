@@ -580,14 +580,19 @@ class aibase extends \mod_vocab\subpluginbase {
                 'configid' => $config->id,
                 'name' => $name,
             ];
+
+            if (isset($settings->$name)) {
+                $value = $settings->$name;
+            } else {
+                $value = null;
+            }
+
             if (empty($settings->$name)) {
                 // Remove previous value, if there was one.
                 if ($DB->record_exists($table, $params)) {
                     $DB->delete_records($table, $params);
                 }
             } else {
-                $value = $settings->$name;
-
                 // Special processing for date and file fields.
                 switch (true) {
 
@@ -602,7 +607,7 @@ class aibase extends \mod_vocab\subpluginbase {
                         $value = $config->id;
                         break;
                 }
-
+                // Now we can save this value.
                 $config->$name = $value;
                 $this->save_config_setting($table, $params, $value);
             }

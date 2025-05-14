@@ -34,6 +34,7 @@ $string['activityopen'] = '活動の開始日時';
 $string['activityopen_help'] = '学生は、この日時以降にこの活動へアクセスできます。この日時以前は、活動は利用できません。';
 $string['addmissingvalue'] = 'ここに値を入力してください。';
 $string['addnewkey'] = '新しいキーを追加';
+$string['ai_generated'] = 'AI';
 $string['ais'] = 'AIアシスタント';
 $string['anyattempts'] = 'すべての試行';
 $string['anywordscores'] = 'すべての語彙スコア';
@@ -72,6 +73,9 @@ $string['consecutiveattempts'] = '連続した試行';
 $string['contentplugins'] = 'AIコンテンツ';
 $string['contentplugins_help'] = 'エクスポート対象のAIコンテンツ（例：プロンプト、形式、チューニングファイル）を選択してください。';
 $string['convertto'] = '変換先';
+$string['coursename'] = 'コース名';
+$string['customname'] = 'カスタム名';
+$string['customtags'] = 'カスタムタグ';
 $string['defaultregion'] = 'デフォルトのページ領域';
 $string['demonstrationmode'] = 'デモモード';
 $string['editkey'] = '既存のキーを編集';
@@ -147,8 +151,10 @@ $string['layoutsecure'] = 'セキュアレイアウト';
 $string['layoutstandard'] = '標準レイアウト';
 $string['livemode'] = 'ライブモード';
 $string['lowestwordscores'] = '最低語彙スコア';
+$string['managequestioncategories'] = 'ここをクリックして質問カテゴリを管理';
 $string['masteryconditions'] = '習得条件';
 $string['medianotcreated'] = 'メディアの作成に失敗しました：{$a->subplugin}。 [filearea={$a->filearea}, itemid={$a->itemid}]';
+$string['mediatype'] = 'メディアタイプ';
 $string['modeltunedbyfile'] = '{$a->model}（ファイル "{$a->file}" によりチューニング済）';
 $string['modulename'] = '語彙活動';
 $string['modulename_help'] = 'Vocabモジュールは、間隔反復を通して学生の語彙習得を支援します。
@@ -178,10 +184,22 @@ $string['owner'] = '所有者';
 $string['pagelayout'] = 'ページレイアウト';
 $string['pagelayout_help'] = 'この語彙活動のメイン表示ページに使用するレイアウトを指定できます。';
 $string['pagelayouts'] = 'ページレイアウト一覧';
+$string['parentcategory'] = '親カテゴリ';
+$string['parentcategory_help'] = '新しい質問を追加する質問カテゴリを選択してください。';
 $string['pluginadministration'] = 'Vocab 管理';
 $string['pluginname'] = 'Vocab';
+$string['prompthead'] = 'プロンプト名（先頭）';
+$string['prompttail'] = 'プロンプト名（末尾）';
 $string['qformat'] = 'AI出力形式';
 $string['qformat_help'] = 'AI出力をMoodleの問題集にインポートできる形式に変換するための出力形式を選択してください。';
+$string['questioncount'] = '質問数';
+$string['questioncount_help'] = '各レベルで生成する新しい質問の数です。';
+$string['questionreview'] = '質問レビュー';
+$string['questionreview_help'] = 'この設定を有効にすると、AIの結果は教師がレビューするまで問題集にインポートされません。';
+$string['questiontags'] = '質問タグ';
+$string['questiontags_help'] = '必要であれば、カスタムタグを1つ以上指定できます。複数のタグを追加する場合は、カンマで区切ってください。';
+$string['questiontype'] = '質問タイプ';
+$string['questiontype_help'] = 'AIによって生成される質問のタイプです。';
 $string['recentattempts'] = '最新の試行';
 $string['redotask'] = 'アドホックタスクを再実行';
 $string['redotaskincron'] = 'cronでタスクを実行';
@@ -192,6 +210,7 @@ $string['reports'] = 'レポート';
 $string['resultdesc'] = '{$a->label}{$a->delimiter} {$a->number}/{$a->total} ({$a->percent}%)';
 $string['resultsdesc'] = '{$a->completed}, {$a->inprogress}, {$a->notstarted}';
 $string['resultstitle'] = '{$a} の語彙結果';
+$string['sectionname'] = 'セクション名';
 $string['selectformat'] = '形式を選択 …';
 $string['selectprompt'] = 'プロンプトを選択 …';
 $string['sharedanydate'] = '無期限で共有';
@@ -227,6 +246,28 @@ $string['speedtimecount_help'] = '1つの時間期間を構成する時間単位
 $string['speedtimeunit'] = '時間単位';
 $string['speedtimeunit_help'] = '時間期間を測定するために使用される時間単位の種類です。';
 $string['stringcachesreset'] = '文字列キャッシュがリセットされました。';
+$string['subcategories'] = 'サブカテゴリ';
+$string['subcategories_help'] = 'AIによって生成された質問を格納するための、親カテゴリ内の階層構造をこれらのチェックボックスで指定します。
+
+**なし:** サブカテゴリは作成されません。すべての新しい質問は「親カテゴリ」に直接追加されます。
+
+**カスタム名:** このチェックボックスを選択した場合、指定欄に質問サブカテゴリのカスタム名を入力します。
+
+**セクション名:** この語彙活動が表示されているコースセクション（例:「トピック」「週」）に基づくカテゴリです。
+
+**活動名:** 現在の語彙活動に基づくカテゴリです。
+
+**単語名:** 各語彙アイテム（または「単語」）に基づくカテゴリです。
+
+**質問タイプ:** 各質問タイプ（例:「MC」「短答」「マッチ」）に基づくカテゴリです。
+
+**語彙レベル:** 各語彙レベル（例:「A1」「TOEFL-30」「TOEIC-300」など）に基づくカテゴリです。
+
+**プロンプト名（先頭）:** プロンプト名の「先頭」部分に基づくカテゴリ（例："TOEIC R&L (Part 1): 画像描写" の「TOEIC R&L (Part 1)」）。
+
+**プロンプト名（末尾）:** プロンプト名の「末尾」部分に基づくカテゴリ（例："TOEIC R&L (Part 1): 画像描写" の「画像描写」）。
+
+指定されたサブカテゴリが存在しない場合は、質問のインポート時に自動的に作成されます。';
 $string['subplugintype_vocabai'] = 'AIアシスタント';
 $string['subplugintype_vocabai_plural'] = 'AIアシスタント';
 $string['subplugintype_vocabgame'] = '語彙ゲーム';
@@ -257,9 +298,8 @@ $string['vocab:preview'] = '語彙活動をプレビュー';
 $string['vocab:reviewmyattempts'] = '自分の語彙活動試行を確認';
 $string['vocab:view'] = '語彙活動を表示';
 $string['vocab:viewreports'] = '語彙活動のレポートを表示';
+$string['vocablevel'] = '語彙レベル';
+$string['word'] = '単語';
 $string['wordlist'] = '単語リスト';
 $string['wordlistcontainingnwords'] = '単語リスト（{$a} 語を含む）';
 $string['youneedtoenrol'] = 'この語彙活動にアクセスするには、このコースに登録する必要があります。';
-
-$string['questioncount'] = '質問数';
-$string['questioncount_help'] = '各レベルで生成する新しい質問の数です。';
