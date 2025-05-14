@@ -570,7 +570,6 @@ class aibase extends \mod_vocab\subpluginbase {
         // Add or update the settings for this config record.
         $table = 'vocab_config_settings';
         foreach (static::SETTINGNAMES as $name) {
-
             $method = 'get_config_value_'.$name;
             if (method_exists($this, $method)) {
                 $settings->$name = $this->{$method}($settings);

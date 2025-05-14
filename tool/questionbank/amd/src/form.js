@@ -53,20 +53,15 @@ define(['core/str'], function(STR){
      *
      * Runs setup functions for log selection checkboxes,
      * dynamic textareas, word selection, and custom name helpers.
-     *
-     * @param {object} defaults Default values for prompts.
      */
-    JS.init = function(defaults) {
+    JS.init = function() {
 
         // These functions do not need strings from Moodle.
-        this.init_selectall_logs();
-        this.init_textareas_logs();
-        this.init_selectall_words();
-        this.init_checkboxes_words();
-
-        if (defaults) {
-            JS.init_prompt(defaults);
-        }
+        JS.init_selectall_logs();
+        JS.init_textareas_logs();
+        JS.init_selectall_words();
+        JS.init_checkboxes_words();
+        JS.init_prompt();
 
         STR.get_strings([
             {"key": "addname", "component": "vocabtool_questionbank"},
@@ -365,37 +360,14 @@ define(['core/str'], function(STR){
     };
 
     /**
-     * Retrieves the previous sibling element that matches the specified selector.
-     *
-     * @param {Element} elm - The element to start searching from.
-     * @param {string} selector - The CSS selector to match the sibling against.
-     * @returns {Element|null} The matching previous sibling, or null if none is found.
-     */
-    JS.get_previous_sibling = function(elm, selector){
-        if (! selector) {
-            selector = "";
-        }
-        let sibling = elm.previousElementSibling;
-        while (sibling) {
-            if (selector == "" || sibling.matches(selector)) {
-                return sibling;
-            }
-            sibling = sibling.previousElementSibling;
-        }
-        return null;
-    };
-
-    /**
      * Initializes the prompt dropdown menu with default settings and event listeners.
-     *
-     * @param {object} defaults - An object containing default settings for the prompt.
      */
-    JS.init_prompt = function(defaults){
+    JS.init_prompt = function(){
         const p = document.querySelector("select[name='prompt']");
         if (p) {
 
             // Collect names of select elements in this section of the form.
-            let selectnames = [];
+            let selectnames = ["questionreview"];
             const s = "select:not([name='prompt'])";
             p.closest(".fcontainer").querySelectorAll(s).forEach(function(select){
                 selectnames.push(select.name);
@@ -405,61 +377,43 @@ define(['core/str'], function(STR){
             // Set up onchange event handler.
             JS.add_event_listener(p, 'change', function(evt){
                 const elm = evt.target;
-                let selectnames = elm.dataset.selectnames.split(",");
-                const promptid = elm.options[elm.selectedIndex].value;
-                if (promptid && defaults[promptid]) {
-                    let settings = defaults[promptid];
-                    for (let n in settings) {
-                        if (n == "qtypes") {
-                            JS.set_qtypes(settings[n]);
-                        } else if (n == "subcattypes") {
-                            JS.set_checkboxes("subcat", settings[n]);
-                        } else if (n == "subcatname") {
-                            JS.set_customname("subcat", settings[n]);
-                        } else if (n == "tagtypes") {
-                            JS.set_checkboxes("qtag", settings[n]);
-                        } else if (n == "tagnames") {
-                            JS.set_customname("qtag", settings[n]);
-                        } else {
-                            // Locate the target form element.
-                            const elm = document.querySelector("[name='" + n + "']");
-                            if (elm) {
 
-                                // The target is a <select> element.
-                                if (elm.tagName == "SELECT") {
-
-                                    // Remove the element's name from the selectnames array.
-                                    const i = selectnames.indexOf(n);
-                                    if (i >= 0) {
-                                        selectnames.splice(i, 1);
-                                    }
-
-                                    // Locate the option with the matching value.
-                                    const s = "option[value='" + settings[n] + "']";
-                                    const option = elm.querySelector(s);
-
-                                    // If the option exists and is not already selected, select it.
-                                    if (option && option.selected == false) {
-                                        option.selected = true;
-                                    }
-
-                                // The target is a text input element.
-                                } else if (elm.tagName == "INPUT" && elm.type == "text") {
-                                    elm.value = settings[n];
-                                }
-                            }
-                        }
-                    }
-
-                    // Unset any select elements that were not set above.
-                    selectnames.forEach(function(name){
-                        const s = "select[name='" + name + "']";
-                        const select = document.querySelector(s);
-                        if (select) {
-                            select.options[0].selected = true;
-                        }
-                    });
+                let selectnames = elm.dataset.selectnames;
+                if (selectnames) {
+                    selectnames = selectnames.split(",");
                 }
+
+                let option = elm.options[elm.selectedIndex];
+                let defaults = option.dataset.defaults;
+                if (defaults) {
+                    defaults = JSON.parse(defaults);
+                }
+
+                for (let n in defaults) {
+                    let v = defaults[n];
+                    if (n == "qtypes") {
+                        JS.set_qtypes(v);
+                    } else if (n == "subcattypes") {
+                        JS.set_checkboxes("subcat", v);
+                    } else if (n == "subcatname") {
+                        JS.set_customname("subcat", v);
+                    } else if (n == "tagtypes") {
+                        JS.set_checkboxes("qtag", v);
+                    } else if (n == "tagnames") {
+                        JS.set_customname("qtag", v);
+                    } else {
+                        JS.set_promptfield(n, v, selectnames);
+                    }
+                }
+
+                // Unset any select elements that were not set above.
+                selectnames.forEach(function(name){
+                    const s = "select[name='" + name + "']";
+                    const select = document.querySelector(s);
+                    if (select) {
+                        select.options[0].selected = true;
+                    }
+                });
             });
             p.dispatchEvent(new Event("change"));
         }
@@ -517,8 +471,26 @@ define(['core/str'], function(STR){
         document.querySelectorAll(s).forEach(function(cb){
             const m = cb.name.match(r);
             if (m && m[0]) {
+                // Determine whether or not this CB should be checked.
                 const i = (value & parseInt(m[1])); // eslint-disable-line no-bitwise
-                cb.checked = (i ? true : false);
+                let checked = (i == 0 ? false : true);
+
+                // For the "Custom name" checkbox, we ignore the default and set the
+                // checked flag depending on whether or not the custom field has a value.
+                const fitem = JS.get_next_sibling(cb.closest(".fitem"), ".fitem");
+                if (fitem) {
+                    const input = fitem.querySelector("input[type='text']");
+                    if (input) {
+                        checked = (input.value ? true : false);
+                    }
+                }
+
+                if (cb.checked == checked) {
+                    return; // No change required.
+                }
+
+                cb.checked = checked;
+                cb.dispatchEvent(new Event("click"));
             }
         });
     };
@@ -552,11 +524,98 @@ define(['core/str'], function(STR){
             return false;
         }
 
-        if (cb.checked == false) {
-            cb.checked = true;
-            cb.dispatchEvent(new Event("click"));
+        // Don't override any existing name in the custom name field.
+        if (input.value == "") {
+            input.value = value;
+            if (cb.checked == false) {
+                cb.checked = true;
+                cb.dispatchEvent(new Event("click"));
+            }
         }
-        input.value = value;
+    };
+
+    /**
+     * Sets the value of a prompt field based on the provided name and value.
+     *
+     * This function locates the target form element by its name attribute,
+     * sets the value for text inputs, and selects the appropriate option
+     * for select elements. If the element is a select, its name is removed
+     * from the selectnames array to avoid being processed later.
+     *
+     * @param {string} name - The name attribute of the target form element.
+     * @param {string} value - The value to set for the target element.
+     * @param {string[]} selectnames - An array of select element names that still need processing.
+     */
+    JS.set_promptfield = function(name, value, selectnames){
+        // Locate the target form element.
+        const elm = document.querySelector("[name='" + name + "']");
+        if (elm) {
+
+            // The target is a <select> element.
+            if (elm.tagName == "SELECT") {
+
+                // Remove the element's name from the selectnames array.
+                const i = selectnames.indexOf(name);
+                if (i >= 0) {
+                    selectnames.splice(i, 1);
+                }
+
+                // Locate the option with the matching value.
+                const s = "option[value='" + value + "']";
+                const option = elm.querySelector(s);
+
+                // If the option exists and is not already selected, select it.
+                if (option && option.selected == false) {
+                    option.selected = true;
+                }
+
+            // The target is a text input element.
+            } else if (elm.tagName == "INPUT" && elm.type == "text") {
+                elm.value = value;
+            }
+        }
+    };
+
+    /**
+     * Retrieves the previous sibling element that matches the specified selector.
+     *
+     * @param {Element} elm - The element to start searching from.
+     * @param {string} selector - The CSS selector to match the sibling against.
+     * @returns {Element|null} The matching previous sibling, or null if none is found.
+     */
+    JS.get_previous_sibling = function(elm, selector){
+        if (! selector) {
+            selector = "";
+        }
+        let sibling = elm.previousElementSibling;
+        while (sibling) {
+            if (selector == "" || sibling.matches(selector)) {
+                return sibling;
+            }
+            sibling = sibling.previousElementSibling;
+        }
+        return null;
+    };
+
+    /**
+     * Retrieves the next sibling element that matches the specified selector.
+     *
+     * @param {Element} elm - The element to start searching from.
+     * @param {string} selector - The CSS selector to match the sibling against.
+     * @returns {Element|null} The matching next sibling, or null if none is found.
+     */
+    JS.get_next_sibling = function(elm, selector){
+        if (! selector) {
+            selector = "";
+        }
+        let sibling = elm.nextElementSibling;
+        while (sibling) {
+            if (selector == "" || sibling.matches(selector)) {
+                return sibling;
+            }
+            sibling = sibling.nextElementSibling;
+        }
+        return null;
     };
 
     return JS;

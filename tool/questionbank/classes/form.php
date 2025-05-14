@@ -304,20 +304,30 @@ class form extends \mod_vocab\toolform {
             'prompttagtypes' => 'tagtypes',
             'prompttagnames' => 'tagnames',
         ];
+
         $options = $this->get_config_options('prompts', $namefields);
-        foreach ($options as $configid => $settings) {
-            if (isset($settings->qtypes)) {
-                $value = $settings->qtypes;
-                $value = json_decode($value);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $settings->qtypes = $value;
-                } else {
-                    unset($settings->qtypes); // Shouldn't happen !!
-                }
+        foreach ($options as $configid => $defaults) {
+            if (empty($defaults->qtypes)) {
+                continue;
             }
-            $options[$configid] = $settings;
+            $qtypes = json_decode($defaults->qtypes);
+            if (json_last_error() == JSON_ERROR_NONE) {
+                $defaults->qtypes = $qtypes;
+                $options[$configid] = $defaults;
+            }
         }
-        $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init', [$options]);
+
+        $prompt = $mform->getElement('prompt');
+        foreach ($prompt->_options as $i => $option) {
+            $configid = $option['attr']['value'];
+            if (array_key_exists($configid, $options)) {
+                $defaults = json_encode($options[$configid]);
+                $option['attr']['data-defaults'] = $defaults;
+                $prompt->_options[$i] = $option;
+            }
+        }
+
+        $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
     }
 
     /**
