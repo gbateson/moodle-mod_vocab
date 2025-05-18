@@ -54,6 +54,12 @@ class ai extends \mod_vocab\aibase {
         'sharedfrom', 'shareduntil',
     ];
 
+    /** @var array the names of config settings that this subplugin maintains. */
+    const CONFIGSETTINGNAMES = [
+        'prompttextid', 'promptfileid', 'promptqtypes',
+        'promptimageid', 'promptaudioid', 'promptvideoid',
+    ];
+
     /**
      * @var string containing type of this AI subplugin
      * (see SUBTYPE_XXX constants in mod/vocab/classes/aibase.php)
@@ -158,5 +164,55 @@ class ai extends \mod_vocab\aibase {
             unset($settings->$name);
         }
         return $returnvalue;
+    }
+
+    /**
+     * Extract the formatids from promptqtypes and prepare them export
+     *
+     * @param object $vocab representing the current vocab activity.
+     * @param string $value a JSON-encoded string containing an object mapping $qtype to $formatid.
+     * @return string a JSON-encoded string  the subplugin type and a unique field value.
+     */
+    public function export_config_content_promptqtypes($vocab, $value) {
+        $value = json_decode($value);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            if (is_object($value)) {
+                foreach ($value as $qtype => $formatid) {
+                    $format = $this->export_config_content($vocab, $formatid);
+                    $value->$qtype = $format;
+                }
+                return json_encode($value);
+            }
+        }
+        return ''; // Invalid or unexpected JSON - shouldn't happen !!
+    }
+
+    /**
+     * Find the configid to match the information contained in the given $value,
+     * where $value is expected to contain "subplugin.fieldname: fieldvalue".
+     *
+     * @param object $vocab representing the current vocab activity.
+     * @param string $value a value from the import XML file.
+     * @return int an ID from the vocab_config table.
+     */
+    public function import_config_content_promptqtypes($vocab, $value) {
+        $value = json_decode($value);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            if (is_object($value)) {
+                foreach ($value as $qtype => $format) {
+                    // Get the ID of a format config with the same name and
+                    // in a context that is writeable for the current $USER.
+                    if ($formatid = $this->import_config_content($vocab, $format)) {
+                        $value->$qtype = $formatid;
+                    } else {
+                        unset($value->$qtype);
+                    }
+                }
+                if ($value->count()) {
+                    return json_encode($value);
+                }
+            }
+        }
+        return ''; // Invalid or unexpected JSON, or missing config - shouldn't happen !!
     }
 }

@@ -50,6 +50,9 @@ class aibase extends \mod_vocab\subpluginbase {
     /** @var array the names of file settings that this subplugin maintains. */
     const FILESETTINGNAMES = [];
 
+    /** @var array the names of config id settings that this subplugin maintains. */
+    const CONFIGSETTINGNAMES = [];
+
     /** @var array the names of file settings that can be exported. */
     const EXPORTSETTINGNAMES = [];
 
@@ -194,20 +197,10 @@ class aibase extends \mod_vocab\subpluginbase {
      * Is the given setting $name a date setting?
      *
      * @param string $name the name of the setting to be checked.
-     * @return bool TRUE if the $name is that of a date settings; otherwise FALSE
+     * @return bool TRUE if the $name is that of a date setting; otherwise FALSE
      */
     public static function is_date_setting($name) {
         return in_array($name, static::DATESETTINGNAMES);
-    }
-
-    /**
-     * Is the given setting $name a file setting?
-     *
-     * @param string $name the name of the setting to be checked.
-     * @return bool TRUE if the $name is that of a file settings; otherwise FALSE
-     */
-    public static function is_file_setting($name) {
-        return in_array($name, static::FILESETTINGNAMES);
     }
 
     /**
@@ -235,7 +228,27 @@ class aibase extends \mod_vocab\subpluginbase {
     }
 
     /**
-     * Get a config settings relevant to this context and user.
+     * Is the given setting $name a file setting?
+     *
+     * @param string $name the name of the setting to be checked.
+     * @return bool TRUE if the $name is that of a file setting; otherwise FALSE
+     */
+    public static function is_file_setting($name) {
+        return in_array($name, static::FILESETTINGNAMES);
+    }
+
+    /**
+     * Is the given setting $name an config ID setting?
+     *
+     * @param string $name the name of the setting to be checked.
+     * @return bool TRUE if the $name is that of an ID setting; otherwise FALSE
+     */
+    public static function is_config_setting($name) {
+        return in_array($name, static::CONFIGSETTINGNAMES);
+    }
+
+    /**
+     * Get config settings relevant to this context and user.
      * If the optional "configid" parameter is set,
      * then only settings for that configid will be returned
      *
@@ -867,10 +880,10 @@ class aibase extends \mod_vocab\subpluginbase {
                 'subplugin' => $config->subplugin,
                 'contextlevel' => $config->contextlevel,
             ];
-            $xmlwriter->begin_tag('CONFIG', $attributes);
+            $startedconfig = false;
             $ai = '\\'.$config->subplugin.'\\ai';
-
             $names = $this->get_exportsettingnames();
+    
             foreach ($names as $name) {
                 if (empty($config->$name)) {
                     continue;
@@ -889,12 +902,28 @@ class aibase extends \mod_vocab\subpluginbase {
                     } else {
                         $content = ''; // Shouldn't happen !!
                     }
+                } else if ($ai::is_config_setting($name)) {
+                    // Use custom method if available ...
+                    $method = 'export_config_content_'.$name;
+                    if (method_exists($ai, $method) == false) {
+                        // Otherwise, use standard method.
+                        $method = 'export_config_content';
+                    }
+                    $content = $this->$method(
+                        $this->vocab, $config->$name
+                    );
                 } else {
                     $content = $config->$name;
                 }
+                if ($startedconfig == false) {
+                    $startedconfig = true;
+                    $xmlwriter->begin_tag('CONFIG', $attributes);
+                }
                 $xmlwriter->full_tag(strtoupper($name), $content);
             }
-            $xmlwriter->end_tag('CONFIG');
+            if ($startedconfig) {
+                $xmlwriter->end_tag('CONFIG');
+            }
         }
         $xmlwriter->end_tag('CONFIGS');
 
@@ -905,6 +934,47 @@ class aibase extends \mod_vocab\subpluginbase {
         send_file($xmlstr, $filename, 0, 0, true, true);
 
         die; // Processing stops here.
+    }
+
+    /**
+     * Convert the $configid ID to a format that is suitable for export,
+     * by converting it to a string containing the subplugin type, the
+     * sort field name and value. (e.g. vocabai_tts.ttsmodel: tts-1)
+     *
+     * @param object $vocab representing the current vocab activity.
+     * @param string $configid an ID in the vocab_config table.
+     * @return string containing the subplugin type and a unique field value.
+     */
+    public function export_config_content($vocab, $configid) {
+        global $DB;
+
+        $contextids = $vocab->get_readable_contexts('', 'id');
+        list($where, $params) = $DB->get_in_or_equal($contextids);
+        $select = 'vcs.*, vc.subplugin';
+        $from = '{vocab_config_settings} vcs, {vocab_config} vc';
+        $where = 'vcs.configid = vc.id AND vc.id = ? AND vc.contextid '.$where;
+        $params = array_merge([$configid], $params);
+        $sql = "SELECT $select FROM $from WHERE $where";
+
+        $subplugin = '';
+        $config = (object)[];
+        if ($settings = $DB->get_records_sql($sql, $params)) {
+            foreach($settings as $setting) {
+                $subplugin = $setting->subplugin;
+                $config->{$setting->name} = $setting->value;
+            }
+        }
+
+        if ($subplugin) {
+            $classname = '\\'.$subplugin.'\\ai';
+            $sortfield = $classname::CONFIG_SORTFIELD;
+            if (property_exists($config, $sortfield)) {
+                return "$subplugin.$sortfield: {$config->$sortfield}";
+            }
+        }
+
+        // Invalid configid or missing sortfield.
+        return null;        
     }
 
     /**
@@ -995,6 +1065,16 @@ class aibase extends \mod_vocab\subpluginbase {
                         continue;
                     }
                     $fieldvalue = $this->get_xml_node($fieldvalue, [0, '#']);
+                    if ($ai::is_config_setting($fieldname)) {
+                        $method = 'import_config_content_'.$fieldname;
+                        if (method_exists($ai, $method) == false) {
+                            // Otherwise, use standard method.
+                            $method = 'import_config_content';
+                        }
+                        $fieldvalue = $this->$method(
+                            $this->vocab, $fieldvalue
+                        );
+                    }
                     $settings->$fieldname = $fieldvalue;
                     $fieldcount++;
                 }
@@ -1084,6 +1164,49 @@ class aibase extends \mod_vocab\subpluginbase {
                 }
             }
         }
+    }
+
+    /**
+     * Find the configid to match the information contained in the given $value,
+     * where $value is expected to contain "subplugin.fieldname: fieldvalue".
+     *
+     * @param object $vocab representing the current vocab activity.
+     * @param string $value a value from the import XML file.
+     * @return int an ID from the vocab_config table.
+     */
+    public function import_config_content($vocab, $value) {
+        global $DB;
+
+        $search = '/^(\w+)\.(\w+): *(.*?) *$/';
+        if (preg_match($search, $value, $match)) {
+            list($match, $subplugin, $fieldname, $fieldvalue) = $match;
+
+            $contextids = $vocab->get_writeable_contexts('', 'id');
+            list($where, $params) = $DB->get_in_or_equal($contextids);
+
+            $select = 'vc.*, vcs.configid, vcs.name, vcs.value';
+            $from = '{vocab_config} vc, {vocab_config_settings} vcs';
+            $where = implode(' AND ', [
+                'vc.subplugin = ?',
+                "vc.contextid $where",
+                'vc.id =  vcs.configid',
+                'vcs.name = ?',
+                'vcs.value = ?',
+            ]);
+            $params = array_merge(
+                [$subplugin],
+                $params,
+                [$fieldname, $fieldvalue]
+            );
+            $sql = "SELECT $select FROM $from WHERE $where";
+            if ($records = $DB->get_records_sql($sql, $params)) {
+                return reset($records)->id;
+            }
+            
+        }
+
+        // Invalid configid or missing sortfield.
+        return null;        
     }
 
     /**
