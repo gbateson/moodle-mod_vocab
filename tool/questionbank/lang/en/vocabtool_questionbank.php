@@ -60,6 +60,7 @@ $string['cefr_b2_description'] = 'B2: Upper-intermediate';
 $string['cefr_c1_description'] = 'C1: Advanced';
 $string['cefr_c2_description'] = 'C2: Proficient';
 $string['checkingparams'] = '... checking parameters ...';
+$string['creatingmedia'] = '... creating multimedia ({$a->media}) for "{$a->word} ..."';
 $string['ddimageortextshort'] = 'DD (image/text)';
 $string['defaultcustomname'] = 'Questions for {$a}';
 $string['deletelog'] = 'Delete log';

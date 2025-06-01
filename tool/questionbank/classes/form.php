@@ -1677,14 +1677,13 @@ class form extends \mod_vocab\toolform {
                     $log->timemodified = userdate($log->timemodified, $datefmt);
                 }
                 if ($log->nextruntime) {
-                    $log->nextruntime = get_string('nextruntime', 'tool_task');
-                    $log->nextruntime += get_string('labelsep', 'langconfig');
-                    $log->nextruntime += userdate($log->nextruntime, $datefmt);
+                    $log->nextruntime = get_string('nextruntime', 'tool_task').
+                                        get_string('labelsep', 'langconfig').
+                                        userdate($log->nextruntime, $datefmt);
                 } else {
                     $log->nextruntime = get_string('completed');
                     if ($log->timemodified) {
-                        $log->nextruntime .= get_string('labelsep', 'langconfig');
-                        $log->nextruntime .= $log->timemodified;
+                        $log->nextruntime .= get_string('labelsep', 'langconfig').$log->timemodified;
                     }
                     if ($siteadmin) {
                         $msg = get_string('adhoctaskid', 'tool_task', $log->taskid);
@@ -2015,10 +2014,12 @@ class form extends \mod_vocab\toolform {
                 foreach ($questions as $qid => $question) {
                     $qtype = $question->qtype;
                     if (empty($tables[$qtype])) {
-                        $tables[$qtype] = $classname::get_tables($question);
+                        $tables[$qtype] = $classname::get_tables($question, true);
                         foreach ($tables[$qtype] as $table => $fields) {
+                            $field = $fields['questionid'];
+                            unset($fields['questionid']);
                             if (empty($ids[$table])) {
-                                $ids[$table] = [];
+                                $ids[$table] = [$field];
                             }
                             if (empty($select[$table])) {
                                 $select[$table] = [];
@@ -2037,14 +2038,21 @@ class form extends \mod_vocab\toolform {
                     }
                 }
                 foreach (array_keys($select) as $table) {
+                    // Get the name of the field that holds the question id.
+                    $field = array_shift($ids[$table]);
+                    // Get the select and param values for these questionids.
                     list($s, $p) = $DB->get_in_or_equal($ids[$table]);
-                    $s = 'id '.$s.' AND ('.$select[$table].')';
+                    $s = $field.' '.$s.' AND ('.$select[$table].')';
                     $p = array_merge($p, $params[$table]);
+                    // Find any records in this table that are incomplete.
                     if ($records = $DB->get_records_select($table, $s, $p)) {
-                        foreach ($records as $qid => $q) {
-                            $logid = $questionids[$qid];
-                            $incomplete->log[$logid] = true;
-                            $incomplete->question[$qid] = true;
+                        foreach ($records as $id => $record) {
+                            $qid = $record->$field;
+                            if (array_key_exists($qid, $questionids)) {
+                                $logid = $questionids[$qid];
+                                $incomplete->log[$logid] = true;
+                                $incomplete->question[$qid] = true;
+                            }
                         }
                     }
                 }

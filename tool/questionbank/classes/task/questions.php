@@ -189,7 +189,7 @@ class questions extends \core\task\adhoc_task {
                 $status = $toolclass::TASKSTATUS_QUEUED;
             } else {
                 // Try to create questions.
-                $status = $toolclass::RESUMED;
+                $status = $toolclass::TASKSTATUS_IMPORTING_RESULTS;
             }
             $this->tool->update_log($log->id, ['status' => $status]);
         }
@@ -513,6 +513,23 @@ class questions extends \core\task\adhoc_task {
                     $questions[$questionid] = \question_bank::load_question($questionid);
                 }
             }
+
+            // Report status to cron job.
+            $mediatags = [
+                'IMAGE' => $log->imageid,
+                'AUDIO' => $log->audioid,
+                'VIDEO' => $log->videoid,
+            ];
+            $mediatags = array_filter($mediatags);
+            if ($mediatags = implode(', ', $mediatags)) {
+                $a = (object)['media' => $mediatags, 'word' => $word];
+                mtrace($this->tool->get_string('creatingmedia', $a));
+            }
+
+            // The cache of question data will be
+            // setup the first time it is required.
+            $cache = null;
+
             foreach ($questions as $questionid => $question) {
                 // Create media (images, audio, video) and add appropriate tags.
                 $mediatags = [];
@@ -527,19 +544,26 @@ class questions extends \core\task\adhoc_task {
                 }
                 if ($context) {
                     $mediatags = $this->create_media($log, $question, $context, $mediatags);
-                    if ($addmediatags && count($mediatags)) {
-                        $alltags = \core_tag_tag::get_item_tags_array(
-                            'core_question', 'question', $question->id
-                        );
-                        $alltags = array_values($alltags); // Remove tagids.
-                        $alltags = array_merge($alltags, $mediatags);
-                        $alltags = array_filter($alltags); // Remove blanks.
-                        \core_tag_tag::set_item_tags(
-                            'core_question', 'question', $question->id, $context, $alltags
-                        );
+                    if (count($mediatags)) {
+                        if ($cache === null) {
+                            $cache = \cache::make('core', 'questiondata');
+                        }
+                        $cache->delete($question->id);
+                        if ($addmediatags) {
+                            $alltags = \core_tag_tag::get_item_tags_array(
+                                'core_question', 'question', $question->id
+                            );
+                            $alltags = array_values($alltags); // Remove tagids.
+                            $alltags = array_merge($alltags, $mediatags);
+                            $alltags = array_filter($alltags); // Remove blanks.
+                            \core_tag_tag::set_item_tags(
+                                'core_question', 'question', $question->id, $context, $alltags
+                            );
+                        }
                     }
                 }
             }
+
             // The errors from "create_media(...)" go straight to mtrace.
             $status = $toolclass::TASKSTATUS_COMPLETED;
             $this->tool->update_log($log->id, [
@@ -1373,7 +1397,7 @@ EOD;
         // Usually we are only generating questions for a single $qtype.
         static $tables = [];
         if (empty($tables[$qtype])) {
-            $tables[$qtype] = self::get_tables($question);
+            $tables[$qtype] = self::get_tables($question, false);
         }
 
         // Initialize the $filerecord that will be used
@@ -1412,9 +1436,11 @@ EOD;
      * Get tables for the specified $qtype.
      *
      * @param object $question
+     * @param boolean $returnquestionid
      * @return array [$table => [$fields]]
      */
-    public static function get_tables($question) {
+    public static function get_tables($question, $returnquestionid) {
+        global $DB;
 
         // Initialize the array of tables.
         $tables = [];
@@ -1432,16 +1458,36 @@ EOD;
                 'questiontext' => 'questiontext',
                 'generalfeedback' => 'generalfeedback',
             ];
+            if ($returnquestionid) {
+                $fields['questionid'] = 'id';
+            }
             $tables[$table] = $fields;
         }
 
         // Add the answer table, if required.
         if (property_exists($question, 'answer')) {
+            $answersexist = true;
+        } else if (in_array($qtype, [
+            // These question types use the question_answers table.
+            'calculated', 'calculatedmulti', 'calculatedsimple',
+            'multichoice', 'numerical', 'shortanswer', 'truefalse',
+            'ordering', 'essayautograde', 'speakautograde',
+        ])) {
+            $answersexist = true;
+        } else if (property_exists($question, 'id')) {
+            $answersexist = $DB->record_exists('question_answers', ['id' => $question->id]);
+        } else {
+            $answersexist = false;
+        }
+        if ($answersexist) {
             $table = 'question_answers';
             $fields = [
                 'answer' => 'answer',
-                'feedback' => 'answerfeedback',
+                'feedback' => 'feedback',
             ];
+            if ($returnquestionid) {
+                $fields['questionid'] = 'question';
+            }
             $tables[$table] = $fields;
         }
 
@@ -1449,12 +1495,15 @@ EOD;
         if (property_exists($question, 'hint')) {
             $table = 'question_hints';
             $fields = ['hint' => 'hint'];
+            if ($returnquestionid) {
+                $fields['questionid'] = 'questionid';
+            }
             $tables[$table] = $fields;
         }
 
         // Add the combined feedback table, if any.
         // Usually this is "qtype_{$qtype}_options".
-        if ($table = self::get_feedback_table($qtype)) {
+        if ($table = self::get_feedback_table($qtype, $returnquestionid)) {
             list($table, $fields) = $table;
             $tables[$table] = $fields;
         }
@@ -1462,7 +1511,7 @@ EOD;
         // Add the subquestions table, if any.
         // This is only used by "qtype_match", in which case
         // the table name is "qtype_{$qtype}_subquestions".
-        if ($table = self::get_subquestions_table($qtype)) {
+        if ($table = self::get_subquestions_table($qtype, $returnquestionid)) {
             list($table, $fields) = $table;
             $tables[$table] = $fields;
         }
@@ -1485,9 +1534,10 @@ EOD;
      * ORDER BY TABLE_NAME, COLUMN_NAME.
      *
      * @param string $qtype
+     * @param boolean $returnquestionid
      * @return array [$table, [$fields]] if feedback table exists, otherwise NULL.
      */
-    public static function get_feedback_table($qtype) {
+    public static function get_feedback_table($qtype, $returnquestionid) {
         global $DB;
 
         // We will use the DB manager to determine which tables exist.
@@ -1499,6 +1549,12 @@ EOD;
             'incorrectfeedback' => 'incorrectfeedback',
             'partiallycorrectfeedback' => 'partiallycorrectfeedback',
         ];
+        if ($returnquestionid) {
+            $fields['questionid'] = 'questionid';
+        }
+
+        // A representative feedback field.
+        // If this exists, we assume they all exist.
         $field = 'correctfeedback';
 
         $table = "qtype_{$qtype}_options";
@@ -1533,7 +1589,6 @@ EOD;
                 // These question types:
                 // question_ddwtos
                 // question_gapselect
-                // question_order.
                 return [$table, $fields];
             }
             return null;
@@ -1544,6 +1599,9 @@ EOD;
             if ($dbman->field_exists($table, $field)) {
                 // These question types:
                 // question_calculated_options.
+                if ($returnquestionid) {
+                    $fields['questionid'] = 'question';
+                }
                 return [$table, $fields];
             }
             return null;
@@ -1557,9 +1615,10 @@ EOD;
      * such as the left/right items in a qtype_match question.
      *
      * @param string $qtype
+     * @param boolean $returnquestionid
      * @return array [$table, [$fields]] if feedback table exists, otherwise NULL.
      */
-    public static function get_subquestions_table($qtype) {
+    public static function get_subquestions_table($qtype, $returnquestionid) {
         global $DB;
         $dbman = $DB->get_manager();
 
@@ -1582,6 +1641,10 @@ EOD;
 
             if (empty($fields)) {
                 return null;
+            }
+
+            if ($returnquestionid) {
+                $fields['questionid'] = 'questionid';
             }
 
             // The following question types;
