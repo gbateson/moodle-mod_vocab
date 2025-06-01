@@ -47,32 +47,35 @@ class tool extends \mod_vocab\toolbase {
     /** @var int database value signifying the task has been queued */
     const TASKSTATUS_QUEUED = 1;
 
+    /** @var int database value signifying the task has been delayed by the speed limit */
+    const TASKSTATUS_DELAYED = 2;
+
     /** @var int database value signifying that task parameters are being checked */
-    const TASKSTATUS_CHECKING_PARAMS = 2;
+    const TASKSTATUS_CHECKING_PARAMS = 3;
 
     /** @var int database value signifying the task results are being fetched */
-    const TASKSTATUS_FETCHING_RESULTS = 3;
+    const TASKSTATUS_FETCHING_RESULTS = 4;
 
     /** @var int database value signifying the task results are awaiting review by a teacher or admin */
-    const TASKSTATUS_AWAITING_REVIEW = 4;
+    const TASKSTATUS_AWAITING_REVIEW = 5;
 
     /** @var int database value signifying the task results are ready to be imported into Moodle */
-    const TASKSTATUS_AWAITING_IMPORT = 5;
+    const TASKSTATUS_AWAITING_IMPORT = 6;
 
     /** @var int database value signifying the task results are being imported into Moodle */
-    const TASKSTATUS_IMPORTING_RESULTS = 6;
+    const TASKSTATUS_IMPORTING_RESULTS = 7;
 
     /** @var int database value signifying the media items (image, audio, video) are being created */
-    const TASKSTATUS_ADDING_MULTIMEDIA = 7;
+    const TASKSTATUS_ADDING_MULTIMEDIA = 8;
 
     /** @var int database value signifying the task has been completed */
-    const TASKSTATUS_COMPLETED = 8;
+    const TASKSTATUS_COMPLETED = 9;
 
     /** @var int database value signifying the task was cancelled after being reviewed */
-    const TASKSTATUS_CANCELLED = 9;
+    const TASKSTATUS_CANCELLED = 10;
 
     /** @var int database value signifying the task failed for some reason, e.g. a program error or unexpected setting */
-    const TASKSTATUS_FAILED = 10;
+    const TASKSTATUS_FAILED = 11;
 
     /**
      * Return a default log record with values initialized to 0 or "".
@@ -168,14 +171,28 @@ class tool extends \mod_vocab\toolbase {
      */
     public static function update_log($id, $params) {
         global $DB;
-        $update = null;
         if ($log = $DB->get_record(self::LOGTABLE, ['id' => $id])) {
-            if ($update = self::add_log_params($log, $params)) {
-                $log->timemodified = time();
-                $update = $DB->update_record(self::LOGTABLE, $log);
-            }
+            $update = self::update_log_record($log, $params);
+        } else {
+            $update = null;
         }
         return ($update === null ? false : $update);
+    }
+
+    /**
+     * Update a record in the log table.
+     *
+     * @param integer $id
+     * @param array $params
+     * @return bool, TRUE if log was updated, otherwise FALSE
+     */
+    public static function update_log_record($log, $params) {
+        global $DB;
+        if ($update = self::add_log_params($log, $params)) {
+            $log->timemodified = time();
+            $update = $DB->update_record(self::LOGTABLE, $log);
+        }
+        return $update;
     }
 
     /**

@@ -582,7 +582,7 @@ class mod_vocab_mod_form extends moodleform_mod {
                     $i = substr_count($key, '_');
                     $key = explode('_', $key)[$i];
 
-                    $cell = new html_table_cell();
+                    $cell = new \html_table_cell();
                     $cell->header = true;
                     if ($strman->string_exists($key, $plugin)) {
                         $cell->text = get_string($key, $plugin);

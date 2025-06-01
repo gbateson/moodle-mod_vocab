@@ -96,9 +96,14 @@ abstract class aiform extends \mod_vocab\subpluginform {
         // but if other usable keys exist it will be collapsed.
         $expanded = true;
 
-        // By default, export is disabled, and will only be
-        // enabled if accessible configs are found.
-        $enableexport = false;
+        // If a config record is being edited, export is enabled.
+        // Otherwise, it is set to false, but may be enabled if
+        // accessible (i.e. readable) config records are found.
+        if ($this->get_subplugin()->config) {
+            $enableexport = true;
+        } else {
+            $enableexport = false;
+        }
 
         // Display the config settings that apply to this context and are
         // owned by other users. These are NOT editable by the current user.

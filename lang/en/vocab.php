@@ -298,6 +298,7 @@ $string['vocab:view'] = 'View a Vocabulary activity';
 $string['vocab:viewreports'] = 'View reports for a Vocabulary activity';
 $string['vocablevel'] = 'Vocabulary level';
 $string['word'] = 'Word';
+$string['word_help'] = 'The target word or vocabulary item for which the questions were generated.';
 $string['wordlist'] = 'Word list';
 $string['wordlistcontainingnwords'] = 'Word list (containing {$a} words)';
 $string['youneedtoenrol'] = 'You need to enrol in this course before you can access this Vocabulary activity.';

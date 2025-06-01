@@ -99,5 +99,12 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
         $DB->execute('UPDATE {'.$table.'} SET status = status + 1 WHERE status IN (?, ?, ?)', [7, 8, 9]);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
+
+    $newversion = 2025051931;
+    if ($oldversion < $newversion) {
+        // Increment status (2-10 => 3-11) to make room for TASKSTATUS_DELAYED (2).
+        $DB->execute('UPDATE {'.$table.'} SET status = status + 1 WHERE status >= ?', [2]);
+        upgrade_plugin_savepoint($result, $newversion, $type, $name);
+    }
     return $result;
 }

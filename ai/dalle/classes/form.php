@@ -60,10 +60,12 @@ class form extends \mod_vocab\aiform {
 
         // Define default values for new key.
         $default = (object)[
+            // Basic settings.
             'id' => 0,
             'dalleurl' => 'https://api.openai.com/v1/images/generations',
             'dallekey' => '',
             'dallemodel' => 'dall-e-3',
+            // Detailed settings.
             'response_format' => 'b64_json',
             'filetype' => 'png',
             'filetypeconvert' => 'jpg',
@@ -73,14 +75,16 @@ class form extends \mod_vocab\aiform {
             'sizeconvert' => '420x240',
             'style' => 'natural',
             'keeporiginals' => 0,
-            'n' => 1, // Number of variarions.
+            'n' => 1, // Number of variations.
+            // Sharing settings.
             'contextlevel' => CONTEXT_MODULE,
             'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
             'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
-            'itemcount' => 0, // Unlimited.
-            'itemtype' => 0, // Requests.
+            // Speed limit settings.
+            'itemcount' => '', // Unlimited.
+            'itemtype' => static::ITEMTYPE_REQUESTS,
             'timecount' => 1,
-            'timeunit' => 2, // Hour(s).
+            'timeunit' => static::TIMEUNIT_HOURS,
         ];
 
         // If any of this user's configs are found below,

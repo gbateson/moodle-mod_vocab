@@ -60,9 +60,15 @@ class form extends \mod_vocab\aiform {
 
         // Define default values for new file.
         $default = (object)[
+            // Basic settings.
             'id' => 0,
             'filedescription' => '',
             'fileitemid' => '',
+            // Once used for tuning in ChatGPT, the following settings become available.
+            'chatgptmodelid' => 0, // E.g. ft:gpt-4o-mini-2024-07-18:research::BX5V0gNf.
+            'chatgptfileid' => 0, // E.g. file-AixNbSJqw1m5oaETQUmNiz.
+            'chatgptjobid' => 0, // E.g. ftjob-8iKOg8fc5RJiwomeAiPTVne3.
+            // Sharing settings.
             'contextlevel' => CONTEXT_MODULE,
             'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
             'shareduntil' => mktime(23, 59, 59, $month, $day, $year),

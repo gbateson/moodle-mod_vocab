@@ -457,7 +457,6 @@ abstract class subpluginform extends \moodleform {
 
         $select = "contextid $ctxselect AND subplugin $select";
         $params = array_merge($ctxparams, $params);
-
         if ($options = $DB->get_records_select_menu('vocab_config', $select, $params, 'id', 'id, subplugin')) {
             $options = array_unique($options); // Remove duplicates.
             foreach ($options as $id => $subplugin) {
@@ -977,19 +976,24 @@ abstract class subpluginform extends \moodleform {
      */
     public function get_status_types() {
         $tool = $this->get_subplugin();
-        return [
-            $tool::TASKSTATUS_NOTSET => $this->get_string('taskstatus_notset'),
-            $tool::TASKSTATUS_QUEUED => $this->get_string('taskstatus_queued'),
-            $tool::TASKSTATUS_CHECKING_PARAMS => $this->get_string('taskstatus_checkingparams'),
-            $tool::TASKSTATUS_FETCHING_RESULTS => $this->get_string('taskstatus_fetchingresults'),
-            $tool::TASKSTATUS_AWAITING_REVIEW => $this->get_string('taskstatus_awaitingreview'),
-            $tool::TASKSTATUS_AWAITING_IMPORT => $this->get_string('taskstatus_awaitingimport'),
-            $tool::TASKSTATUS_IMPORTING_RESULTS => $this->get_string('taskstatus_importingresults'),
-            $tool::TASKSTATUS_ADDING_MULTIMEDIA => $this->get_string('taskstatus_addingmultimedia'),
-            $tool::TASKSTATUS_COMPLETED => $this->get_string('taskstatus_completed'),
-            $tool::TASKSTATUS_CANCELLED => $this->get_string('taskstatus_cancelled'),
-            $tool::TASKSTATUS_FAILED => $this->get_string('taskstatus_failed'),
+        $types = [
+            $tool::TASKSTATUS_NOTSET => 'taskstatus_notset',
+            $tool::TASKSTATUS_QUEUED => 'taskstatus_queued',
+            $tool::TASKSTATUS_DELAYED => 'taskstatus_delayed',
+            $tool::TASKSTATUS_CHECKING_PARAMS => 'taskstatus_checkingparams',
+            $tool::TASKSTATUS_FETCHING_RESULTS => 'taskstatus_fetchingresults',
+            $tool::TASKSTATUS_AWAITING_REVIEW => 'taskstatus_awaitingreview',
+            $tool::TASKSTATUS_AWAITING_IMPORT => 'taskstatus_awaitingimport',
+            $tool::TASKSTATUS_IMPORTING_RESULTS => 'taskstatus_importingresults',
+            $tool::TASKSTATUS_ADDING_MULTIMEDIA => 'taskstatus_addingmultimedia',
+            $tool::TASKSTATUS_COMPLETED => 'taskstatus_completed',
+            $tool::TASKSTATUS_CANCELLED => 'taskstatus_cancelled',
+            $tool::TASKSTATUS_FAILED => 'taskstatus_failed',
         ];
+        foreach ($types as $type => $strname) {
+            $types[$type] = $this->get_string($strname, $type);
+        }
+        return $types;
     }
 
     /**
@@ -1036,7 +1040,8 @@ abstract class subpluginform extends \moodleform {
         $this->add_heading($mform, 'export', false);
 
         $filename = $this->get_vocab()->name;
-        $filename = preg_replace('/[ \._]+/', '_', $filename);
+        $filename = $this->fullwidth_to_halfwidth($filename);
+        $filename = preg_replace('/([[:punct:]]|[[:space:]]|\s)+/u', '_', $filename);
         $filename = trim($filename, ' -._');
         $filename = $filename.'.xml';
 
@@ -1053,6 +1058,39 @@ abstract class subpluginform extends \moodleform {
         $mform->setType($groupname.'['.$name.']', PARAM_FILE);
 
         $PAGE->requires->js_call_amd('mod_vocab/export', 'init');
+    }
+
+    /**
+     * Converts fullwidth (zenkaku) characters to halfwidth (hankaku) equivalents.
+     *
+     * This function handles:
+     * - Fullwidth ASCII (U+FF01 to U+FF5E)
+     * - Multibyte alphabets (A-Z, a-z)
+     * - Numbers (0-9)
+     * - Punctuation
+     *
+     * @param string $text The input string containing fullwidth characters.
+     * @return string The converted string with fullwidth characters replaced by halfwidth equivalents.
+     */
+    public function fullwidth_to_halfwidth($text) {
+        // Prefer the faster mb_convert_kana if available.
+        if (function_exists('mb_convert_kana')) {
+            // Note:
+            // 'a' converts fullwidth alphanumeric,
+            // 's' converts spaces,
+            // 'p' handles punctuation.
+            return mb_convert_kana($text, 'as', 'UTF-8');
+        }
+
+        // Fallback for older PHP versions without mb_convert_kana.
+        $search = '/[\x{FF01}-\x{FF5E}]/u';
+        $callback = function($m) {
+            // Manual conversion without mb_ord (PHP 5.6 compatible).
+            $code = unpack('N', mb_convert_encoding($m[0], 'UCS-4BE', 'UTF-8'))[1];
+            return chr($code - 0xFEE0);
+        };
+
+        return preg_replace_callback($search, $callback, $text);
     }
 
     /**

@@ -52,7 +52,9 @@ class ai extends \mod_vocab\aibase {
      */
     const EXPORTSETTINGNAMES = [
         'filedescription', 'fileitemid', 'filename',
+        // ChatGPT file tuning settings.
         'chatgptfileid', 'chatgptjobid', 'chatgptmodelid',
+        // Sharing settings.
         'sharedfrom', 'shareduntil',
     ];
 

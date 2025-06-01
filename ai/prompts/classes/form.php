@@ -60,8 +60,8 @@ class form extends \mod_vocab\aiform {
 
         // Define default values for new prompt.
         $default = (object)[
-            'id' => 0,
             // Basic settings.
+            'id' => 0,
             'promptname' => '',
             'prompttext' => '',
             // Default settings used by vocabtool_questionbank.

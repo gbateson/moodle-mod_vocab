@@ -300,6 +300,7 @@ $string['vocab:view'] = '語彙活動を表示';
 $string['vocab:viewreports'] = '語彙活動のレポートを表示';
 $string['vocablevel'] = '語彙レベル';
 $string['word'] = '単語';
+$string['word_help'] = 'この質問が生成された対象の単語または語彙アイテムです。';
 $string['wordlist'] = '単語リスト';
 $string['wordlistcontainingnwords'] = '単語リスト（{$a} 語を含む）';
 $string['youneedtoenrol'] = 'この語彙活動にアクセスするには、このコースに登録する必要があります。';

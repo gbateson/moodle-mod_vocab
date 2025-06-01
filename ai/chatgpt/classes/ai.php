@@ -46,6 +46,7 @@ class ai extends \mod_vocab\aibase {
         'chatgpturl', 'chatgptkey', 'chatgptmodel',
         'temperature', 'top_p',
         'sharedfrom', 'shareduntil',
+        // Speed limit settings.
         'itemcount', 'itemtype', 'timecount', 'timeunit',
     ];
 

@@ -60,19 +60,23 @@ class form extends \mod_vocab\aiform {
 
         // Define default values for new key.
         $default = (object)[
+            // Basic settings.
             'id' => 0,
             'chatgpturl' => 'https://api.openai.com/v1/chat/completions',
             'chatgptkey' => '',
+            // Detailed settings.
             'chatgptmodel' => 'gpt-4o-mini',
             'temperature' => 0.2,
             'top_p' => 0.1,
+            // Sharing settings.
             'contextlevel' => CONTEXT_MODULE,
             'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
             'shareduntil' => mktime(23, 59, 59, $month, $day, $year),
-            'itemcount' => 0, // Unlimited.
-            'itemtype' => 0, // Requests.
+            // Speed limit settings.
+            'itemcount' => '', // Unlimited.
+            'itemtype' => static::ITEMTYPE_REQUESTS,
             'timecount' => 1,
-            'timeunit' => 2, // Hour(s).
+            'timeunit' => static::TIMEUNIT_HOURS,
         ];
 
         // Try and get current config for editing.

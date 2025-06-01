@@ -806,6 +806,9 @@ class form extends \mod_vocab\toolform {
         $logids = [];
         $logaction = '';
 
+        $defaultlogid = 0;
+        $defaultfields = [];
+
         $logtable = '';
         $logmessage = '';
 
@@ -969,7 +972,12 @@ class form extends \mod_vocab\toolform {
                 $logids = self::get_optional_param('logids', [], PARAM_INT);
             }
             if (count($logids) && confirm_sesskey()) {
-                $logmessage = $this->process_log_records($mform, $logaction, $logids);
+                $defaultlogid = self::get_optional_param('defaultlogid', 0, PARAM_INT);
+                $defaultfields = self::get_optional_param('defaultfields', [], PARAM_INT);
+                $logmessage = $this->process_log_records(
+                    $mform, $logaction, $logids,
+                    $defaultlogid, $defaultfields
+                );
             }
         }
 
@@ -982,6 +990,7 @@ class form extends \mod_vocab\toolform {
 
         // Define the strings and icons for log actions.
         $logactions = [
+            'applydefaults' => 't/check',
             'editlog' => 't/edit',
             'redotask' => 't/reload',
             'resumetask' => 't/play',
@@ -990,7 +999,10 @@ class form extends \mod_vocab\toolform {
         ];
 
         // Get table of current log records.
-        $logtable = $this->get_log_records_table($logactions, $logaction, $logids);
+        $logtable = $this->get_log_records_table(
+            $logactions, $logaction, $logids,
+            $defaultlogid, $defaultfields
+        );
         list($logtable, $logcount, $incomplete) = $logtable;
 
         if ($logtable || $logmessage) {
@@ -1039,9 +1051,11 @@ class form extends \mod_vocab\toolform {
      * @param moodleform $mform representing the Moodle form
      * @param string $logaction
      * @param array $logids
+     * @param int $defaultlogid The id of the log selected as the default log record.
+     * @param array  $defaultfields The names of log fields whose values are to be applied.
      * @return void, but may update vocabtool_questionbank_log table in DB.
      */
-    public function process_log_records($mform, $logaction, $logids) {
+    public function process_log_records($mform, $logaction, $logids, $defaultlogid, $defaultfields) {
         global $DB, $USER;
 
         // Cache reference to this questionbank tool object.
@@ -1053,6 +1067,22 @@ class form extends \mod_vocab\toolform {
 
         // Cache the siteadmin flag.
         $siteadmin = is_siteadmin();
+
+        $defaultvalues = [];
+        if ($defaultlogid && count($defaultfields)) {
+            $defaultlog = $tool::get_log($defaultlogid);
+            foreach ($defaultfields as $name => $checked) {
+                if ($checked == 0) {
+                    continue; // Shouldn't happen !!
+                }
+                if (property_exists($defaultlog, $name)) {
+                    $defaultvalues[$name] = $defaultlog->$name;
+                }
+            }
+        }
+        if (empty($defaultvalues)) {
+            $defaultvalues = null;
+        }
 
         $ids = [];
         foreach ($logids as $logid => $value) {
@@ -1097,6 +1127,14 @@ class form extends \mod_vocab\toolform {
 
             // Now we are ready to perform the requested action.
             switch ($logaction) {
+
+                case 'applydefaults':
+                    if ($defaultvalues) {
+                        if ($tool::update_log_record($log, $defaultvalues)) {
+                            $ids[] = $logid;
+                        }
+                    }
+                    break;
 
                 case 'editlog':
                     $this->add_heading($mform, 'selectedlogrecord', true);
@@ -1250,6 +1288,7 @@ class form extends \mod_vocab\toolform {
                     }
                     if ($taskid) {
                         if ($logaction == 'redotask') {
+                            // Redo task.
                             $tool::update_log($logid, [
                                 'taskid' => $taskid,
                                 'tries' => 0,
@@ -1335,16 +1374,42 @@ class form extends \mod_vocab\toolform {
         // Cache the courseid and edit/preview icons.
         $courseid = $this->get_vocab()->course->id;
         $editicon = $OUTPUT->pix_icon('t/edit', get_string('editsettings'));
+        $deleteicon = $OUTPUT->pix_icon('t/delete', get_string('delete'));
         $previewicon = $OUTPUT->pix_icon('t/preview', get_string('preview'));
+
+        // Append, Bootstrap class to remove right (and left) margin on icons.
+        $search = '/class="([^"]*?) *"/';
+        $replace = 'class="$1 mx-0"';
+        $editicon = preg_replace($search, $replace, $editicon, 1);
+        $deleteicon = preg_replace($search, $replace, $deleteicon, 1);
+        $previewicon = preg_replace($search, $replace, $previewicon, 1);
+
+        // Cache URL of question edit page.
+        // This is used as the "returnurl" when deleting questions.
+        $params = ['courseid' => $courseid];
+        $returnurl = new \moodle_url('/question/edit.php', $params);
 
         $ids = explode(',', $questionids);
         $ids = array_map('trim', $ids);
         $ids = array_filter($ids);
+
+        if (function_exists('array_key_last')) {
+            // PHP >= 7.3
+            $lastkey = array_key_last($ids);
+        } else {
+            // PHP <= 7.2
+            end($ids);
+            $lastkey = key($ids);
+            reset($ids);
+        }
+
         foreach ($ids as $i => $id) {
 
+            // Set params for links.
             $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
             if ($incomplete && array_key_exists($id, $incomplete->question)) {
-                $params['class'] = 'text-danger';
+                // Use red text for links to incomplete questions.
+                $params['class'] = ' text-danger';
             }
 
             $url = '/question/bank/editquestion/question.php';
@@ -1354,8 +1419,26 @@ class form extends \mod_vocab\toolform {
             $url = '/question/bank/previewquestion/preview.php';
             $url = new \moodle_url($url, ['id' => $id]);
             $ids[$i] .= ' '.\html_writer::link($url, $previewicon, $params);
+
+            $url = '/question/bank/deletequestion/delete.php';
+            $url = new \moodle_url($url, [
+                'deleteselected' => $id,
+                'deleteall' => 1,
+                "q$id" => 1,
+                'courseid' => $courseid,
+                'returnurl' => $returnurl,
+            ]);
+            $ids[$i] .= ' '.\html_writer::link($url, $deleteicon, $params);
+
+            // Add comma separator, if this is not the last item in the array.
+            if ($i != $lastkey) {
+                $ids[$i] .= ',';
+            }
+
+            // We want to contain the links in a <span> that does not wrap.
+            $ids[$i] = \html_writer::tag('span', $ids[$i], ['class' => 'text-nowrap']);
         }
-        return implode(', ', $ids);
+        return implode(' ', $ids);
     }
 
 
@@ -1370,13 +1453,15 @@ class form extends \mod_vocab\toolform {
      * @param array $actions The string names and icons of actions that are avaiable for each log record.
      * @param string $logaction The current log action to highlight or process (e.g., 'editlog', 'deletelog').
      * @param array  $logids An associative array of selected log IDs for checkbox state (e.g., [3 => 1, 5 => 1]).
+     * @param int $defaultlogid The id of the log selected as the default log record.
+     * @param array  $defaultfields The names of log fields whose values are to be applied.
      *
      * @return array Returns a three-element array:
      *               - string: The generated HTML for the log table.
-     *               - int: The number of log records displayed.
+     *               - int: The number of log records affected by the log action.
      *               - object: Details of incomplete logs and questions.
      */
-    public function get_log_records_table($actions, $logaction, $logids) {
+    public function get_log_records_table($actions, $logaction, $logids, $defaultlogid, $defaultfields) {
         global $DB, $OUTPUT, $PAGE;
 
         // Specify a short date/time format.
@@ -1592,9 +1677,9 @@ class form extends \mod_vocab\toolform {
                     $log->timemodified = userdate($log->timemodified, $datefmt);
                 }
                 if ($log->nextruntime) {
-                    $log->nextruntime = get_string('nextruntime', 'tool_task').
-                                        get_string('labelsep', 'langconfig').
-                                        userdate($log->nextruntime, $datefmt);
+                    $log->nextruntime = get_string('nextruntime', 'tool_task');
+                    $log->nextruntime += get_string('labelsep', 'langconfig');
+                    $log->nextruntime += userdate($log->nextruntime, $datefmt);
                 } else {
                     $log->nextruntime = get_string('completed');
                     if ($log->timemodified) {
@@ -1611,6 +1696,21 @@ class form extends \mod_vocab\toolform {
                 $name = 'logids';
                 $checked = array_key_exists($log->id, $logids);
                 $checkbox = \html_writer::checkbox($name.'['.$log->id.']', $log->id, $checked);
+
+                // Define radio btn to set this log as the default.
+                $name = 'defaultlogid';
+                $radiobutton = \html_writer::empty_tag('input', [
+                    'type' => 'radio',
+                    'value' => $log->id,
+                    'name' => $name,
+                    'id' => 'id_'.$name.'_'.$log->id,
+                    'checked' => ($defaultlogid == $log->id ? 'checked' : null),
+                ]);
+                // Maybe we should add a "label" too?
+                $label = \html_writer::tag(
+                    'label', $tool->get_string('default', $log->id),
+                    array('for' => "id_$name", 'class' => 'ms-1')
+                );
 
                 // Define actions allowed on this log record.
                 $logactions = '';
@@ -1646,6 +1746,7 @@ class form extends \mod_vocab\toolform {
                     $log->nextruntime,
                     fullname($users[$log->userid]),
                     \html_writer::tag('b', $log->word),
+                    $radiobutton,
                     self::get_question_type_text($log->qtype),
                     $log->qcount,
                     $log->qlevel,
@@ -1680,7 +1781,7 @@ class form extends \mod_vocab\toolform {
         }
 
         if (empty($table->data)) {
-            return [0, ''];
+            return [0, '', null];
         }
 
         // Define the "Select all" checkbox for the log records.
@@ -1696,55 +1797,107 @@ class form extends \mod_vocab\toolform {
         // Specify centrally aligned columns.
         $table->align = [
             0 => 'center', // Select.
-            6 => 'center', // Question count.
-            7 => 'center', // Question level.
-            21 => 'center', // Maxtries.
-            22 => 'center', // Tries.
-            24 => 'center', // Review.
+            5 => 'center', // Default.
+            7 => 'center', // Question count.
+            8 => 'center', // Question level.
+            22 => 'center', // Maxtries.
+            23 => 'center', // Tries.
+            25 => 'center', // Review.
         ];
 
         // Specify nowrap columns.
         $table->wrap = [
-            17 => 'nowrap', // Sub-categories.
-            19 => 'nowrap', // Question tags.
-            20 => 'nowrap', // Custom tags.
+            18 => 'nowrap', // Sub-categories.
+            20 => 'nowrap', // Question tags.
+            21 => 'nowrap', // Custom tags.
         ];
 
         // Define strings for column headings.
-        $table->head = [
-            get_string('select').$checkbox,
-            get_string('actions'),
-            $this->get_string('adhoctaskid'),
-            $this->get_string('taskowner'),
-            $this->get_string('word'),
-            $this->get_string('questiontype'),
-            $this->get_string('questioncount'),
-            $this->get_string('questionlevel'),
-            $this->get_string('qformat'),
-            $this->get_string('textassistant'),
-            $this->get_string('promptname'),
-            $this->get_string('formatname'),
-            $this->get_string('filedescription'),
-            $this->get_string('imageassistant'),
-            $this->get_string('audioassistant'),
-            $this->get_string('videoassistant'),
-            $this->get_string('parentcategory'),
-            $this->get_string('subcattype'),
-            $this->get_string('subcatname'),
-            $this->get_string('questiontags'),
-            $this->get_string('customtags'),
-            $this->get_string('maxtries'),
-            $this->get_string('tries'),
-            get_string('status'),
-            $this->get_string('questionreview'),
-            get_string('error'),
-            $this->get_string('prompttext'),
-            $this->get_string('resultstext'),
-            $this->get_string('moodlequestions'),
-            $this->get_string('timecreated'),
-            $this->get_string('timemodified'),
+        $head = [
+            'logids' => get_string('select'),
+            'logactions' => get_string('actions'),
+            'taskid' => $this->get_string('adhoctaskid'),
+            'userid' => $this->get_string('taskowner'),
+            'wordid' => $this->get_string('word'),
+            'defaultlogid' => get_string('default'),
+            'qtype' => $this->get_string('questiontype'),
+            'qcount' => $this->get_string('questioncount'),
+            'qlevel' => $this->get_string('questionlevel'),
+            'qformat' => $this->get_string('qformat'),
+            'textid' => $this->get_string('textassistant'),
+            'promptid' => $this->get_string('promptname'),
+            'formatid' => $this->get_string('formatname'),
+            'fileid' => $this->get_string('filedescription'),
+            'imageid' => $this->get_string('imageassistant'),
+            'audioid' => $this->get_string('audioassistant'),
+            'videoid' => $this->get_string('videoassistant'),
+            'parentcatid' => $this->get_string('parentcategory'),
+            'subcattype' => $this->get_string('subcattype'),
+            'subcatname' => $this->get_string('subcatname'),
+            'tagtypes' => $this->get_string('questiontags'),
+            'tagnames' => $this->get_string('customtags'),
+            'maxtries' => $this->get_string('maxtries'),
+            'tries' => $this->get_string('tries'),
+            'status' => get_string('status'),
+            'review' => $this->get_string('questionreview'),
+            'error' => get_string('error'),
+            'prompt' => $this->get_string('prompttext'),
+            'results' => $this->get_string('resultstext'),
+            'questionids' => $this->get_string('moodlequestions'),
+            'timecreated' => $this->get_string('timecreated'),
+            'timemodified' => $this->get_string('timemodified'),
         ];
-        return [\html_writer::table($table), $logcount, $incomplete];
+        foreach ($head as $name => $text) {
+            $head[$name] = new \html_table_cell($text);
+        }
+        $table->head = array_values($head);
+        $table = \html_writer::table($table);
+
+        $excludednames = [
+            'logactions', 'taskid', 'userid', 'wordid',
+            'error', 'prompt', 'results', 'questionids',
+            'timecreated', 'timemodified',
+        ];
+        foreach ($head as $name => $cell) {
+            if (in_array($name, $excludednames)) {
+                $cell->text = '';
+            } else if ($name == 'logids') {
+                // Add the checkbox to select all logs.
+                $cell->text = \html_writer::empty_tag('input', [
+                    'type' => 'checkbox',
+                    'value' => 1,
+                    'name' => $name.'[0]',
+                    'id' => 'id_'.$name.'_0',
+                    'class' => 'd-none',
+                    'checked' => (in_array(0, $logids) ? 'checked' : null),
+                ]);
+            } else if ($name == 'defaultlogid') {
+                // Add the radio button to select all logs.
+                $cell->text = \html_writer::empty_tag('input', [
+                    'type' => 'radio',
+                    'value' => '0',
+                    'name' => $name,
+                    'id' => 'id_'.$name.'_0',
+                    'checked' => ($defaultlogid == 0 ? 'checked' : null),
+                ]);
+            } else {
+                $cell->text = \html_writer::empty_tag('input', [
+                    'type' => 'checkbox',
+                    'value' => 1,
+                    'name' => 'defaultfields['.$name.']',
+                    'id' => 'id_defaultfields_'.$name,
+                    'checked' => (in_array($name, $defaultfields) ? 'checked' : null),
+                ]);
+            }
+            if ($cell->text) {
+                $cell->attributes['style'] = 'text-align:center;';
+            }
+            $head[$name] = \html_writer::tag('th', $cell->text, $cell->attributes);
+        }
+        $head = \html_writer::tag('tr', implode('', array_values($head)));
+        $table = substr_replace($table, $head, strpos($table, '</thead>'), 0);
+
+        return [$table, $logcount, $incomplete];
     }
 
     /**

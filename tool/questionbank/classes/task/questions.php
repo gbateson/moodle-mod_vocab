@@ -213,6 +213,7 @@ class questions extends \core\task\adhoc_task {
 
         if ($status == $toolclass::TASKSTATUS_NOTSET ||
             $status == $toolclass::TASKSTATUS_QUEUED ||
+            $status == $toolclass::TASKSTATUS_DELAYED ||
             $status == $toolclass::TASKSTATUS_CHECKING_PARAMS) {
 
             // Report start of checking params.
@@ -224,6 +225,12 @@ class questions extends \core\task\adhoc_task {
             // Setup the AI assistant if required.
             if ($ai === null) {
                 $ai = $this->get_ai($textconfig);
+            }
+
+            if ($ai->delay_task($log)) {
+                mtrace(' - task has been delayed and will run again later.');
+                \core\task\manager::reschedule_or_queue_adhoc_task($this);
+                return;
             }
 
             if (! $ai->check_prompt_params($promptconfig)) {
@@ -616,7 +623,7 @@ class questions extends \core\task\adhoc_task {
     }
 
     /**
-     * get questions
+     * get prompt
      *
      * @param object $promptconfig
      * @param object $formatconfig
@@ -1370,7 +1377,7 @@ EOD;
         }
 
         // Initialize the $filerecord that will be used
-        // to store media file in Moodle's file repository.
+        // to store media files in Moodle's file repository.
         $filerecord = [
             'contextid' => $context->id,
             'component' => 'question',

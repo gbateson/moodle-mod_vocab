@@ -416,8 +416,6 @@ class ai extends \mod_vocab\aibase {
                 // Ensure all objects are converted to arrays.
                 $response = json_decode(json_encode($response), true);
             }
-file_put_contents($CFG->dataroot.'/cron.log', '======='.PHP_EOL.$response.PHP_EOL, FILE_APPEND);
-mtrace('Responese written to cron.log');
 
             // Detect error, if any.
             if (is_array($response) && array_key_exists('error', $response)) {
@@ -459,5 +457,15 @@ mtrace('Responese written to cron.log');
         }
 
         return (object)['images' => $images, 'error' => implode("\n", $errors)];
+    }
+
+    /**
+     * Determine the items per request to this AI assistant.
+     */
+    protected function items_per_request() {
+        if (empty($this->config) || empty($this->config->n)) {
+            return parent::items_per_request(); // Use default.
+        }
+        return min(5, max(1, intval($this->config->n)));
     }
 }

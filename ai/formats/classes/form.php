@@ -60,9 +60,11 @@ class form extends \mod_vocab\aiform {
 
         // Define default values for new format.
         $default = (object)[
+            // Basic settings.
             'id' => 0,
             'formatname' => '',
             'formattext' => '',
+            // Sharing settings.
             'contextlevel' => CONTEXT_MODULE,
             'sharedfrom' => mktime(0, 0, 0, $month, $day, $year),
             'shareduntil' => mktime(23, 59, 59, $month, $day, $year),

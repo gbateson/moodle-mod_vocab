@@ -113,7 +113,7 @@ define(['mod_vocab/lib', 'core/str'], function(LIB, STR) {
      * onclick event handler for selectall/none
      */
     EXPORT.onclick_selectallnone = function(elm, checked) {
-        const fgroup = elm.closest('.form-group.fitem');
+        const fgroup = elm.closest('.fitem[id^="fgroup_id_"]');
         if (fgroup) {
             const s = 'input[type="checkbox"]';
             fgroup.querySelectorAll(s).forEach(function(cb){

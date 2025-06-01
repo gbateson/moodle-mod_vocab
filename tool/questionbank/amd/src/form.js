@@ -58,29 +58,34 @@ define(['core/str'], function(STR){
 
         // These functions do not need strings from Moodle.
         JS.init_selectall_logs();
+        JS.init_select_subset_logs();
+        JS.init_select_subset_defaults();
         JS.init_textareas_logs();
         JS.init_selectall_words();
         JS.init_checkboxes_words();
         JS.init_prompt();
 
         STR.get_strings([
+            {"key": "default", "component": "moodle"},
             {"key": "addname", "component": "vocabtool_questionbank"},
             {"key": "addtags", "component": "vocabtool_questionbank"},
         ]).done(function(s) {
             let i = 0;
+            JS.str.default = s[i++];
             JS.str.addname = s[i++];
             JS.str.addtags = s[i++];
+            JS.init_bulk_edit();
             JS.init_custom_names();
         });
     };
 
     /**
-     * Initializes the "select all logs" checkbox and makes it visible if hidden.
+     * Initializes the  checkbox to select all logs and makes it visible if hidden.
      *
      * Attaches a click handler to toggle all checkboxes within the log fieldset.
      */
     JS.init_selectall_logs = function(){
-        const s = 'input[type="checkbox"][name="logids[selectall]"]';
+        const s = 'input[type="checkbox"][name="logids[0]"]';
         const selectall = document.querySelector(s);
         if (selectall) {
             JS.add_event_listener(selectall, 'click', JS.onclick_selectall);
@@ -88,6 +93,67 @@ define(['core/str'], function(STR){
                 selectall.classList.remove("d-none");
             }
         }
+    };
+
+    /**
+     * Enables user to select/deselect a subset of log records.
+     */
+    JS.init_select_subset_logs = function(){
+        JS.init_select_subset_table("logids[", "]");
+    };
+
+    /**
+     * Enables user to select/deselect a subset of default values.
+     */
+    JS.init_select_subset_defaults = function(){
+        JS.init_select_subset_table("defaultfields[", "]");
+    };
+
+    /**
+     * Enables user to select/deselect a subset of checkboxes for log records.
+     *
+     * @param {string} prefix for checkbox elements.
+     * @param {string} suffix for checkbox elements.
+     */
+    JS.init_select_subset_table = function(prefix, suffix){
+        const table = document.getElementById("questionbanklog_table");
+        if (table) {
+            let s = 'input[type="checkbox"]';
+            if (prefix) {
+                s += '[name^="' + prefix + '"]';
+            }
+            if (suffix) {
+                s += '[name$="' + suffix + '"]';
+            }
+            JS.init_select_subset(table, s);
+        }
+    };
+
+    /**
+     * Enables the user to select or deselect a contiguous subset of checkboxes
+     * by clicking one checkbox and then Shift-clicking another. All checkboxes
+     * in between will adopt the checked state of the second (Shift-clicked) checkbox.
+     *
+     * @param {object} elm DOM element containing the checkboxes.
+     * @param {string} s Selector string to extract checkboxes.
+     */
+    JS.init_select_subset = function(elm, s){
+        let lastClickedIndex = null;
+        const checkboxes = Array.from(elm.querySelectorAll(s));
+        checkboxes.forEach((checkbox, index) => {
+            checkbox.addEventListener("click", function (event) {
+                if (event.shiftKey && lastClickedIndex !== null) {
+                    const currentIndex = index;
+                    const mini = Math.min(lastClickedIndex, currentIndex);
+                    const maxi = Math.max(lastClickedIndex, currentIndex);
+                    const newState = this.checked;
+                    for (let i = mini; i <= maxi; i++) {
+                        checkboxes[i].checked = newState;
+                    }
+                }
+                lastClickedIndex = index;
+            });
+        });
     };
 
     /**
@@ -249,6 +315,87 @@ define(['core/str'], function(STR){
         }
     };
 
+    /*
+     * Setup radio buttons and checkboxes to allow bulk editing of multiple logs.
+     */
+    JS.init_bulk_edit = function(){
+        return false;
+        const logrecords = document.querySelector("#id_logrecords");
+        if (logrecords === null) {
+            return false;
+        }
+        const h3 = logrecords.querySelector("h3");
+        if (h3 === null) {
+            return false;
+        }
+        const tbl = logrecords.querySelector("#questionbanklog_table");
+        if (tbl === null) {
+            return false;
+        }
+        const thead = tbl.querySelector("thead");
+        const tbody = tbl.querySelector("tbody");
+        if (thead === null || tbody === null) {
+            return false;
+        }
+
+        const tr1 = thead.querySelector("tr");
+        if (tr1 === null) {
+            return false;
+        }
+
+        const tr2 = document.createElement("tr");
+        //tr2.classList.add("d-none");
+
+        let wordcol = -1;
+        tr1.querySelectorAll("th").forEach(function(th1, col) {
+            const th2 = th1.cloneNode(false);
+            const fieldname = (th1.dataset.fieldname || "");
+            if (fieldname == "" || fieldname == "wordid") {
+                // Append non-breaking space.
+                th2.appendChild(document.createTextNode('\xA0'));
+                if (fieldname == "wordid") {
+                    wordcol = col;
+                }
+            } else {
+                th2.classList.add("text-center");
+                const cb = Object.assign(document.createElement("input"), {
+                    type: "checkbox",
+                    name: "bulkselect[" + fieldname + "]",
+                    value: "1",
+                    className: "bulk-checkbox",
+                });
+                th2.appendChild(cb);
+            }
+            tr2.appendChild(th2);
+        });
+
+        thead.appendChild(tr2);
+
+        if (wordcol >= 0) {
+            // Insert an empty <th> after wordcol in each <tr> in <thead>
+            thead.querySelectorAll("tr").forEach(function(tr, i) {
+                const th = document.createElement("th");
+                th.appendChild(document.createTextNode(i ? "" : JS.str.default));
+                tr.insertBefore(th, tr.children[wordcol + 1] || null);
+            });
+
+            // Insert an empty <td> after wordcol in each <tr> in <tbody>
+            tbody.querySelectorAll("tr").forEach(function(tr) {
+                const logid = tr.querySelector('input[type="checkbox"]').value;
+                const radio = Object.assign(document.createElement("input"), {
+                    "type": "radio",
+                    "value": logid,
+                    "name": "defaultlogid",
+                });
+                const td = Object.assign(document.createElement("td"), {
+                    "className": "text-center",
+                });
+                td.appendChild(radio);
+                tr.insertBefore(td, tr.children[wordcol + 1] || null);
+            });
+        }
+    };
+
     /**
      * Sets up custom name buttons for both subcategory and question tag inputs.
      *
@@ -275,41 +422,42 @@ define(['core/str'], function(STR){
         let elm = document.querySelector(sourceselector);
         let fitem = elm.closest(".fitem");
         let table = document.querySelector("#questionbanklog_table");
-        let allnames = []; // Cache of customnames.
-        table.querySelectorAll(targetselector).forEach(function(ul){
-            let names = [];
-            ul.querySelectorAll("li").forEach(function(li){
-                names.push(li.innerText);
-            });
-            if (names.length) {
-                names = names.join(", ");
-                if (allnames.indexOf(names) < 0) {
-                    allnames.push(names);
-
-                    let separator = Object.assign(document.createElement("span"), {
-                        "className": "w-100",
-                    });
-                    let div = Object.assign(document.createElement("div"), {
-                        "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 customnames",
-                    });
-                    div.appendChild(
-                        Object.assign(document.createElement("button"), {
-                            "className": "btn btn-warning ml-0 py-1 px-2",
-                            "onclick": JS.onclick_add_tags,
-                            "textContent": JS.str[strname],
-                        })
-                    );
-                    div.appendChild(
-                        Object.assign(document.createElement("span"), {
-                            "className": "ml-2",
-                            "textContent": names,
-                        })
-                    );
-                    fitem.parentNode.insertBefore(separator, fitem.nextSibling);
-                    separator.parentNode.insertBefore(div, separator.nextSibling);
+        if (table) {
+            let allnames = []; // Cache of customnames.
+            table.querySelectorAll(targetselector).forEach(function(ul){
+                let names = [];
+                ul.querySelectorAll("li").forEach(function(li){
+                    names.push(li.innerText);
+                });
+                if (names.length) {
+                    names = names.join(", ");
+                    if (allnames.indexOf(names) < 0) {
+                        allnames.push(names);
+                        let separator = Object.assign(document.createElement("span"), {
+                            "className": "w-100",
+                        });
+                        let div = Object.assign(document.createElement("div"), {
+                            "className": "rounded border border-warning bg-light ml-4 my-1 pr-2 customnames",
+                        });
+                        div.appendChild(
+                            Object.assign(document.createElement("button"), {
+                                "className": "btn btn-warning ml-0 py-1 px-2",
+                                "onclick": JS.onclick_add_tags,
+                                "textContent": JS.str[strname],
+                            })
+                        );
+                        div.appendChild(
+                            Object.assign(document.createElement("span"), {
+                                "className": "ml-2",
+                                "textContent": names,
+                            })
+                        );
+                        fitem.parentNode.insertBefore(separator, fitem.nextSibling);
+                        separator.parentNode.insertBefore(div, separator.nextSibling);
+                    }
                 }
-            }
-        });
+            });
+        }
     };
 
     /**

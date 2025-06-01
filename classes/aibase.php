@@ -765,7 +765,7 @@ class aibase extends \mod_vocab\subpluginbase {
         if (empty($this->fileoperation)) {
             return false;
         }
-        return ($this->fileoperation == 'import' || $this->fileoperation == 'export');
+        return ($this->fileoperation == 'export' || $this->fileoperation == 'import');
     }
 
     /**
@@ -779,13 +779,13 @@ class aibase extends \mod_vocab\subpluginbase {
         // Access to this config and fileoperation has already been checked
         // in the constructor method for this class.
 
-        if ($this->fileoperation == 'import') {
-            $this->import_configs();
+        if ($this->fileoperation == 'export') {
+            $this->export_configs();
             redirect($this->index_url(), $this->get_string($completed));
         }
 
-        if ($this->fileoperation == 'export') {
-            $this->export_configs();
+        if ($this->fileoperation == 'import') {
+            $this->import_configs();
             redirect($this->index_url(), $this->get_string($completed));
         }
 
@@ -876,14 +876,13 @@ class aibase extends \mod_vocab\subpluginbase {
 
         // Export each config.
         foreach ($configs as $configid => $config) {
-            $attributes = [
-                'subplugin' => $config->subplugin,
-                'contextlevel' => $config->contextlevel,
-            ];
+
+            // Boolean flag to denote if CONFIG tag was started.
             $startedconfig = false;
+
+            // Create tags only for valid tag names.
             $ai = '\\'.$config->subplugin.'\\ai';
-            $names = $this->get_exportsettingnames();
-    
+            $names = $ai::get_exportsettingnames();
             foreach ($names as $name) {
                 if (empty($config->$name)) {
                     continue;
@@ -917,7 +916,10 @@ class aibase extends \mod_vocab\subpluginbase {
                 }
                 if ($startedconfig == false) {
                     $startedconfig = true;
-                    $xmlwriter->begin_tag('CONFIG', $attributes);
+                    $xmlwriter->begin_tag('CONFIG', [
+                        'subplugin' => $config->subplugin,
+                        'contextlevel' => $config->contextlevel,
+                    ]);
                 }
                 $xmlwriter->full_tag(strtoupper($name), $content);
             }
@@ -959,7 +961,7 @@ class aibase extends \mod_vocab\subpluginbase {
         $subplugin = '';
         $config = (object)[];
         if ($settings = $DB->get_records_sql($sql, $params)) {
-            foreach($settings as $setting) {
+            foreach ($settings as $setting) {
                 $subplugin = $setting->subplugin;
                 $config->{$setting->name} = $setting->value;
             }
@@ -974,7 +976,7 @@ class aibase extends \mod_vocab\subpluginbase {
         }
 
         // Invalid configid or missing sortfield.
-        return null;        
+        return null;
     }
 
     /**
@@ -1202,11 +1204,11 @@ class aibase extends \mod_vocab\subpluginbase {
             if ($records = $DB->get_records_sql($sql, $params)) {
                 return reset($records)->id;
             }
-            
+
         }
 
         // Invalid configid or missing sortfield.
-        return null;        
+        return null;
     }
 
     /**
@@ -1546,6 +1548,8 @@ class aibase extends \mod_vocab\subpluginbase {
 
     /**
      * Should we reschedule the Moodle adhoc_task to run again later?
+     * For example, if the ChatGPT prompt requires a tuning file, we
+     * need to check that the tuning file is ready.
      *
      * @param object $promptconfig the config settings for the prompt
      * @param object $formatconfig the config settings for the output format
@@ -1554,6 +1558,122 @@ class aibase extends \mod_vocab\subpluginbase {
      */
     public function reschedule_task($promptconfig, $formatconfig, $fileconfig) {
         return false;
+    }
+
+    /**
+     * Should we delay the Moodle adhoc_task? For example, if running this
+     * task would break the speed limit, we should delay it until later.
+     *
+     * @param object $log the log file associated with the adhoc task.
+     * @return bool TRUE if the adhoc task should be rescheduled; otherwise FALSE.
+     */
+    public function delay_task($log) {
+        global $DB;
+
+        // Sanity check on the config record for this AI assistant.
+        if (empty($this->config)) {
+            return false;
+        }
+
+        // Check all the necessary delay settings exist.
+        $names = ['itemcount', 'itemtype', 'timecount', 'timetype'];
+        foreach ($names as $name) {
+            if (empty($this->config->$name)) {
+                return false;
+            }
+        }
+
+        // Determine the log field that contains the config id.
+        $field = '';
+        switch ($this->subtype) {
+
+            case self::SUBTYPE_TEXT:
+                $field = 'textid';
+                break;
+
+            case self::SUBTYPE_IMAGE:
+                $field = 'imageid';
+                break;
+
+            case self::SUBTYPE_AUDIO:
+                $field = 'audioid';
+                break;
+
+            case self::SUBTYPE_VIDEO:
+                $field = 'videoid';
+                break;
+        }
+
+        // Sanity check on the config id field.
+        if ($field == '' || empty($log->$field)) {
+            return false; // Shouldn't happen !!
+        }
+
+        // Shortcut to the form class.
+        $form = '\\'.$this->plugin.'\\form';
+
+        $itemcount = intval($this->config->itemcount);
+        $itemtype = intval($this->config->itemtype);
+
+        $timecount = intval($this->config->timecount);
+        $timetype = intval($this->config->timetype);
+        $timeunit = 1;
+
+        // Determine the timeunit for this timetype.
+        switch ($timetype) {
+
+            case $form::TIMEUNIT_MINUTES:
+                $timeunit = MINSECS;
+                break;
+
+            case $form::TIMEUNIT_HOURS:
+                $timeunit = HOURSECS;
+                break;
+
+            case $form::TIMEUNIT_DAYS:
+                $timeunit = DAYSECS;
+                break;
+
+            case $form::TIMEUNIT_WEEKS:
+                $timeunit = WEEKSECS;
+                break;
+
+            case $form::TIMEUNIT_MONTHS:
+                $timeunit = (WEEKSECS * 4);
+                break;
+        }
+
+        // The number of items generated by a single request.
+        // Usualy, this is 1, but can be more for image generatation.
+        $itemperrequest = $this->items_per_request();
+
+        // Count the number of items generated by this AI assistant
+        // in recently completed log records.
+        $table = 'vocabtool_questionbank_log';
+        $select = "$field = ? AND timemodifed >= ? AND status = ?";
+        $params = [
+            $log->$field, // This configid.
+            time() - ($timecount * $timeunit),
+            \vocabtool_questionbank\tool::TASKSTATUS_COMPLETED,
+        ];
+        if ($recentitemcount = $DB->count_records_select($table, $select, $params)) {
+            $recentitemcount *= $itemperrequest;
+        }
+
+        // Ensure there are no more than the maximum allowable number
+        // of items since the beginning of the current time window.
+        if (($recentitemcount + $itemsperrequest) > $itemcount) {
+            return true; // Request a delay.
+        } else {
+            return false; // No delay.
+        }
+    }
+
+    /**
+     * Determine the items per request to this AI assistant.
+     */
+    protected function items_per_request() {
+        return 1;
     }
 
     /**
