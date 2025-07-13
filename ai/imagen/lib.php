@@ -15,32 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Redo an upgrade. This script is intended only for development purposes.
+ * mod/vocab/ai/imagen/lib.php
  *
- * @package    mod_vocab
- * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
+ * @package    vocabai_imagen
+ * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
 
-/** Include required files */
-require_once('../../../config.php');
-
-require_login($SITE);
-require_capability('moodle/site:config', context_system::instance());
-
-$vocab = \mod_vocab\activity::create();
-
-// Set the page url.
-$PAGE->set_url(new moodle_url('/mod/vocab/db/redo.php'));
-
-// Set the page title.
-$title = $vocab->get_string('pluginname');
-$PAGE->set_title($title);
-$PAGE->set_heading($title);
-$PAGE->set_pagelayout('admin');
-
-$renderer = $PAGE->get_renderer($vocab->plugin);
-$renderer->attach_activity($vocab);
-
-echo $renderer->redo_upgrade($vocab->plugin, $vocab->pluginpath);
+/**
+ * Define the icon for this vocab ai
+ */
+function vocabai_imagen_get_fontawesome_icon_map() {
+    return ['vocabai_imagen:imagen' => 'fa-solid fa-image vocabai_imagen_icon'];
+}

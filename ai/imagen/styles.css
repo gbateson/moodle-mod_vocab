@@ -1,0 +1,10 @@
+/** Set background color on headings and subheadings. */
+.path-mod-vocab-ai-imagen fieldset.collapsible > div:first-of-type:not(.fcontainer) {
+    background-color: #c7e4ff;
+}
+.path-mod-vocab-ai-imagen .configinfo dl:first-of-type {
+    background-color: #086eff;
+}
+.icon.vocabai_imagen_icon {
+    color: #086eff;
+}

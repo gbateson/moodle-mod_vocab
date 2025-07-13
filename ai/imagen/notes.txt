@@ -1,0 +1,152 @@
+==========
+ai.php
+==========
+
+language, enhanceprompt, safetysetting, sampleimagestyle 
+
+            //'language' => PARAM_ALPHANUM,
+            //'enhancePrompt' => PARAM_BOOL,
+            //'safetySetting' => PARAM_TEXT,
+            //'sampleImageStyle' => PARAM_TEXT,
+
+==========
+form.php
+==========
+            // Prompt settings.
+            //'language' => 'auto',
+            //'enhanceprompt' => 1,
+            //'safetysetting' => 'block_only_high',
+
+            // Image settings.
+            //'sampleimagestyle' => 'photograph',
+
+        //$name = 'promptsettings';
+        //$this->add_heading($mform, $name, false);
+
+        //$this->add_field_language($mform, $default);
+        //$this->add_field_enhanceprompt($mform, $default);
+        //$this->add_field_safetysetting($mform, $default);
+
+    /**
+     * Add field enhanceprompt (enhancePrompt)
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_enhanceprompt($mform, $default) {
+        $name = 'enhanceprompt';
+        $options = [get_string('no'), get_string('yes')];
+        $this->add_field_select($mform, $name, $options, PARAM_INT, $default->$name);
+    }
+
+    /**
+     * add_field_language
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_language($mform, $default) {
+        $name = 'language';
+
+        // Google Imagen requies iso6391 (2-letter) codes, whereas Moodle
+        // contain localized language names for iso6392 (3-letter) codes.
+
+        $options = [
+            'auto' => $this->get_string('languageauto'),
+            'en' => get_string('eng', 'iso6392'),
+            'es' => get_string('spa', 'iso6392'),
+            'hi' => get_string('hin', 'iso6392'),
+            'ja' => get_string('jpn', 'iso6392'),
+            'ko' => get_string('kor', 'iso6392'),
+            'pt' => get_string('por', 'iso6392'),
+            'zh' => get_string('zho', 'iso6392'),
+            // There is no 3-letter code for 'zh-tw'.
+            'zh-TW' => 'Chinese (Traditional)'; // 中国語（台湾）
+        ];
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+    }
+
+    /**
+     * add_field_safetysetting
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_safetysetting($mform, $default) {
+        $name= 'safetysetting';
+        $options = [
+            'block_none' => $this->get_string('safetysetting_none'),
+            'block_only_high' => $this->get_string('safetysetting_onlyhigh'),
+            'block_medium_and_above' => $this->get_string('safetysetting_mediumandabove'),
+            'block_low_and_above' => $this->get_string('safetysetting_lowandabove'),
+        ];
+        unset($options['block_none']); // Not usually available.
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+    }
+
+    /**
+     * add_field_sampleimagestyle (sampleImageStyle)
+     *
+     * @param object $mform
+     * @param array $default values for new record.
+     * @return void, but may update $mform.
+     */
+    public function add_field_sampleimagestyle($mform, $default) {
+        $name = 'sampleimagestyle';
+        $options = [
+            'photograph',
+            'digital_art',
+            'landscape',
+            'sketch',
+            'watercolor',
+            'cyberpunk',
+            'pop_art',
+        ];
+        $options = array_flip($options);
+        foreach ($options as $option => $i) {
+            $text = str_replace('_', ' ', $option);
+            $options[$option] = \core_text::strtotitle($text);
+        }
+        $this->add_field_select($mform, $name, $options, PARAM_TEXT, $default->$name);
+    }
+
+===========
+lang/en/vocabai_imagen.php
+===========
+
+$string['promptsettings'] = 'Prompt settings';
+$string['imagesettings'] = 'Image settings';
+
+$string['sampleimagestyle'] = 'Image style';
+$string['sampleimagestyle_help'] = 'Choose the required style for the generated image.';
+
+$string['enhanceprompt'] = 'Enhance prompt';
+$string['enhanceprompt_help'] = 'If set to "yes", the prompt may be rewritten
+ by the Imagen AI assistant to deliver higher quality images.';
+
+$string['language'] = 'Prompt language';
+$string['language_help'] = 'The language of the prompt used to generate the image.';
+$string['languageauto'] = 'Auto-detect';
+
+$string['safetysetting'] = 'Safety filter';
+$string['safetysetting_help'] = 'This setting determines how strictly to apply filters
+ that block problematic prompts. Strong filtering will reduce the generatation of images
+  containing objectionable content, while weak filtering may allow it.';
+$string['safetysetting_lowandabove'] = 'Strong filter';
+$string['safetysetting_mediumandabove'] = 'Medium filter';
+$string['safetysetting_onlyhigh'] = 'Weak filter';
+$string['safetysetting_none'] = 'No filter';
+
+=============
+tool/questionbank/classes/task/questions.php
+=============
+        // TODO: Use sort to set question name.
+        //$params = ['xxx' => $categoryid];
+        //if ($sortorder = $DB->get_field('question', 'MAX(sortorder)', $params)) {
+        //    $sortorder ++;
+        //} else {
+        //    $sortorder = 1;
+        //}

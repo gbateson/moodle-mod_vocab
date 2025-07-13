@@ -15,32 +15,34 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Redo an upgrade. This script is intended only for development purposes.
+ * db/upgrade.php: Upgrade code for mod_vocab
  *
- * @package    mod_vocab
- * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
+ * @package    vocabtool_sortstrings
+ * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
 
-/** Include required files */
-require_once('../../../config.php');
+/**
+ * xmldb_vocabtool_sortstrings_upgrade
+ *
+ * @uses $CFG
+ * @uses $DB
+ * @param xxx $oldversion
+ * @return xxx
+ *
+ * TODO: Finish documenting this function
+ */
+function xmldb_vocabtool_sortstrings_upgrade($oldversion) {
+    global $CFG, $DB;
+    $result = true;
 
-require_login($SITE);
-require_capability('moodle/site:config', context_system::instance());
+    $newversion = 2023080104;
+    if ($oldversion < $newversion) {
+        update_capabilities('vocabtool/sortstrings');
+        upgrade_plugin_savepoint($result, $newversion, 'vocabtool', 'sortstrings');
+    }
 
-$vocab = \mod_vocab\activity::create();
-
-// Set the page url.
-$PAGE->set_url(new moodle_url('/mod/vocab/db/sortstrings.php'));
-
-// Set the page title.
-$title = $vocab->get_string('pluginname');
-$PAGE->set_title($title);
-$PAGE->set_heading($title);
-$PAGE->set_pagelayout('admin');
-
-$renderer = $PAGE->get_renderer($vocab->plugin);
-$renderer->attach_activity($vocab);
-
-echo $renderer->sort_lang_strings($vocab->plugin, true);
+    return $result;
+}

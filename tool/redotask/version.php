@@ -15,32 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Redo an upgrade. This script is intended only for development purposes.
+ * tool/import/version.php
  *
- * @package    mod_vocab
- * @copyright  2023 Gordon Bateson (gordon.bateson@gmail.com)
+ * @package    vocabtool_redotask
+ * @copyright  2023 Gordon BATESON
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
 
-/** Include required files */
-require_once('../../../config.php');
+defined('MOODLE_INTERNAL') || die;
 
-require_login($SITE);
-require_capability('moodle/site:config', context_system::instance());
-
-$vocab = \mod_vocab\activity::create();
-
-// Set the page url.
-$PAGE->set_url(new moodle_url('/mod/vocab/db/redotask.php'));
-
-// Set the page title.
-$title = $vocab->get_string('pluginname');
-$PAGE->set_title($title);
-$PAGE->set_heading($title);
-$PAGE->set_pagelayout('admin');
-
-$renderer = $PAGE->get_renderer($vocab->plugin);
-$renderer->attach_activity($vocab);
-
-echo $renderer->redo_adhoc_task($vocab->plugin);
+$plugin->cron      = 0;
+$plugin->component = 'vocabtool_redotask';
+$plugin->maturity  = MATURITY_STABLE;
+$plugin->requires  = 2021051700; // Moodle 3.11.
+$plugin->version   = 2025071307;
+$plugin->release   = '2025-07-13 (07)';
