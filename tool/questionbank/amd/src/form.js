@@ -563,7 +563,6 @@ define(['core/str'], function(STR){
                     }
                 });
             });
-            p.dispatchEvent(new Event("change"));
         }
     };
 
@@ -571,6 +570,7 @@ define(['core/str'], function(STR){
      * Sets the state of question type checkboxes based on the provided configuration.
      *
      * @param {object} qtypes - An object mapping question type names to format IDs.
+     *                          A format ID of 0 means the format that the prompt links to.
      */
     JS.set_qtypes = function(qtypes){
         const s = "#id_questiontypescontainer .felement";
@@ -584,7 +584,7 @@ define(['core/str'], function(STR){
             if (enable && format) {
                 const i = enable.name.indexOf("[");
                 const t = enable.name.substr(0, i);
-                if (qtypes[t]) {
+                if (Object.prototype.hasOwnProperty.call(qtypes, t)) {
                     // The qtype "n" is required.
                     if (enable.checked == false) {
                         enable.checked = true;

@@ -23,3 +23,53 @@
  * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
+
+/**
+ * Data generator for the Vocabulary activity.
+ *
+ * @package    mod_vocab
+ * @copyright  2026 Gordon Bateson
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class mod_vocab_generator extends testing_module_generator {
+    /**
+     * Add a Vocabulary activity.
+     *
+     * @param array|stdClass|null $record
+     * @param array|null $options
+     * @return stdClass the activity record, with "cmid".
+     */
+    public function create_instance($record = null, ?array $options = null) {
+        $record = (object) (array) $record;
+        if (!isset($record->name)) {
+            $record->name = 'Vocabulary ' . ($this->instancecount + 1);
+        }
+        return parent::create_instance($record, (array) $options);
+    }
+
+    /**
+     * Add words to an activity's word list.
+     *
+     * @param int $vocabid
+     * @param string[] $words
+     * @return int[] word id => word.
+     */
+    public function add_words(int $vocabid, array $words): array {
+        global $DB;
+        $result = [];
+        foreach (array_values($words) as $i => $word) {
+            $wordid = $DB->get_field('vocab_words', 'id', ['word' => $word]);
+            if (!$wordid) {
+                $wordid = $DB->insert_record('vocab_words', (object) ['lemmaid' => 0, 'word' => $word]);
+            }
+            $DB->insert_record('vocab_word_instances', (object) [
+                'vocabid' => $vocabid,
+                'wordid' => $wordid,
+                'enabled' => 1,
+                'sortorder' => $i,
+            ]);
+            $result[$wordid] = $word;
+        }
+        return $result;
+    }
+}

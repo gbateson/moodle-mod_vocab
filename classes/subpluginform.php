@@ -124,11 +124,15 @@ abstract class subpluginform extends \moodleform {
     }
 
     /**
-     * Add a heading to the given $mform
+     * Extracts and returns the 'name' and 'strname' values for a form element.
      *
-     * @param string $name the name of a form element
-     * @param string $attributes (passed by reference) the attributes on this form element.
-     * @return array of names ['name' => name, 'strname' => 'strname']
+     * This method looks for optional 'name' and 'strname' keys in the attributes array
+     * and returns their values. If not present, it defaults both to the provided $name.
+     * The extracted keys are also removed from the original attributes array.
+     *
+     * @param string $name The default name of the form element.
+     * @param array  $attributes (passed by reference) The attributes on this form element.
+     * @return array Indexed array containing two elements: [name, strname]
      */
     public function get_names($name, &$attributes) {
         $names = [
@@ -161,7 +165,6 @@ abstract class subpluginform extends \moodleform {
             $mform->setExpanded($name, $expanded);
         }
     }
-
 
     /**
      * Add a help button to element, only one button per element is allowed.
@@ -245,9 +248,6 @@ abstract class subpluginform extends \moodleform {
                     // An on/off attribute e.g. 'disabled'.
                     $attributes = [$attributes => $attributes];
                 }
-            }
-            if (array_key_exists('multiple', $attributes)) {
-                $attributes['size'] = min(6, count($options));
             }
         }
         list($name, $strname) = $this->get_names($name, $attributes);
@@ -400,155 +400,8 @@ abstract class subpluginform extends \moodleform {
     }
 
     /*//////////////////////////////
-    // Shared between vocabai_prompt
-    // and vocabtool_questionbank.
+    // Used by vocabtool_questionbank.
     //////////////////////////////*/
-
-    /**
-     * Get a list of AI assistants that are available to the current user and context.
-     *
-     * @param string $type
-     * @param string $subtype
-     * @return array of AI assistants [config name => path]
-     */
-    public function get_subplugins($type, $subtype) {
-        $plugins = \core_component::get_plugin_list($type);
-        foreach ($plugins as $name => $path) {
-            $ai = "\\vocabai_$name\\ai";
-            if ($ai::create()->subtype == $subtype) {
-                continue;
-            }
-            unset($plugins[$name]);
-        }
-        return $plugins;
-    }
-
-    /**
-     * Get a list of AI assistants that are available to the current user and context.
-     *
-     * @param string $subtype on of the \mod_vocab\aibase::SUBTYPE_XXX constants.
-     * @param boolean $optional TRUE if this field is optional, otherwise FALSE
-     * @return array of AI assistants [config name => localized name]
-     */
-    public function get_assistant_options($subtype, $optional=false) {
-        global $DB;
-
-        // Get all relevant contexts (activity, course, coursecat, site).
-        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
-        list($ctxselect, $ctxparams) = $DB->get_in_or_equal($contexts);
-
-        // Get all available AI assistants.
-        $type = 'vocabai';
-        $plugins = $this->get_subplugins($type, $subtype);
-
-        if (empty($plugins)) {
-            return null;
-        }
-
-        $prefix = $type.'_';
-        $prefixlen = strlen($prefix);
-
-        // Prefix all the plugin names with the $prefix string
-        // and get create the sql conditions.
-        $plugins = array_keys($plugins);
-
-        $plugins = substr_replace($plugins, $prefix, 0, 0);
-        list($select, $params) = $DB->get_in_or_equal($plugins);
-
-        $select = "contextid $ctxselect AND subplugin $select";
-        $params = array_merge($ctxparams, $params);
-        if ($options = $DB->get_records_select_menu('vocab_config', $select, $params, 'id', 'id, subplugin')) {
-            $options = array_unique($options); // Remove duplicates.
-            foreach ($options as $id => $subplugin) {
-                $name = substr($subplugin, $prefixlen);
-                $options[$id] = get_string($name, $subplugin);
-            }
-            $options = array_filter($options); // Remove blanks.
-            asort($options);
-            if ($optional) {
-                $options = ([0 => get_string('none')] + $options);
-            }
-        }
-        return $options;
-    }
-
-    /**
-     * Get a list of AI config options that are available to the current user and context.
-     *
-     * @param string $type of config ("prompts" or "formats")
-     * @param mixed $namefields array mapping fields' DB names to their form names.
-     * @param string $selectstring name of string to display as first option
-     * @param boolean $optional TRUE if this field is optional, otherwise FALSE.
-     * @return array of AI config options [config id => config name]
-     */
-    public function get_config_options($type, $namefields, $selectstring='', $optional=false) {
-        global $DB;
-        $options = [];
-
-        // Expand $namefields into a array of $namefields.
-        if (is_string($namefields)) {
-            if ($namefields == '*' || $namefields == 'all') {
-                $namefields = '\\vocabai_'.$type.'\\ai';
-                $namefields = $namefields::get_settingnames();
-            } else {
-                $namefields = explode(',', $namefields);
-                $namefields = array_map('trim', $namefields);
-                $namefields = array_filter($namefields);
-            }
-            // Assume DB field names are the same as form field names.
-            $namefields = array_combine($namefields, $namefields);
-        }
-        $countfields = count($namefields);
-        $namefield = key($namefields);
-
-        // Get all relevant contexts (activity, course, coursecat, site).
-        $contexts = $this->get_vocab()->get_readable_contexts('', 'id');
-        list($where, $params) = $DB->get_in_or_equal($contexts);
-
-        // Set up SQL to extract record of the required $type.
-        $select = 'vcs.*';
-        $from = '{vocab_config_settings} vcs '.
-                'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
-        $where = "vc.contextid $where AND vc.subplugin = ?";
-        $params[] = "vocabai_$type"; // The AI subplugin type.
-        if ($countfields == 1) {
-            $where .= ' AND vcs.name = ?';
-            $params[] = $namefield;
-        }
-        $sql = "SELECT $select FROM $from WHERE $where";
-        if ($records = $DB->get_records_sql($sql, $params)) {
-            foreach ($records as $record) {
-                $configid = $record->configid;
-                $name = $record->name;
-                $value = $record->value;
-                if ($countfields == 1) {
-                    if ($name == $namefield) {
-                        $options[$configid] = $value;
-                    }
-                } else if (array_key_exists($name, $namefields)) {
-                    if (empty($options[$configid])) {
-                        $options[$configid] = (object)[];
-                    }
-                    $formname = $namefields[$name];
-                    $options[$configid]->$formname = $value;
-                }
-            }
-        }
-        if ($countfields > 1) {
-            ksort($options);
-        } else {
-            asort($options);
-            if ($optional) {
-                $options = ([0 => get_string('none')] + $options);
-            } else if (count($options) > 1) {
-                if ($selectstring) {
-                    $selectstring = $this->get_string($selectstring);
-                }
-                $options = ([0 => $selectstring] + $options);
-            }
-        }
-        return $options;
-    }
 
     /**
      * get_question_formats
@@ -624,85 +477,6 @@ abstract class subpluginform extends \moodleform {
         } else {
             // Illegal value - shouldn't happen !!
             return $qtype;
-        }
-    }
-
-    /**
-     * Adds a form field for selecting an AI text assistant.
-     *
-     * @param MoodleQuickForm $mform The form to which the field should be added.
-     * @param array $options The available AI text assistants.
-     * @return void ... but may update $mform.
-     */
-    public function add_field_textassistant($mform, $options) {
-        $this->add_field_ai_assistant($mform, 'textassistant', $options, 'chatgpt');
-    }
-
-    /**
-     * Adds a form field for selecting a tuning file.
-     *
-     * @param MoodleQuickForm $mform The form to which the field should be added.
-     * @param array $options The available tuning files.
-     * @return void ... but may update $mform.
-     */
-    public function add_field_tuningfile($mform, $options) {
-        $this->add_field_ai_assistant($mform, 'file', $options, 'files');
-    }
-
-    /**
-     * Adds a form field for selecting an AI audio assistant.
-     *
-     * @param MoodleQuickForm $mform The form to which the field should be added.
-     * @param array $options The available AI audio assistants.
-     * @return void ... but may update $mform.
-     */
-    public function add_field_audioassistant($mform, $options) {
-        $this->add_field_ai_assistant($mform, 'audioassistant', $options, 'tts');
-    }
-
-    /**
-     * Adds a form field for selecting an AI image assistant.
-     *
-     * @param MoodleQuickForm $mform The form to which the field should be added.
-     * @param array $options The available AI image assistants.
-     * @return void ... but may update $mform.
-     */
-    public function add_field_imageassistant($mform, $options) {
-        $this->add_field_ai_assistant($mform, 'imageassistant', $options, 'dalle');
-    }
-
-    /**
-     * Adds a form field for selecting an AI video assistant.
-     *
-     * @param MoodleQuickForm $mform The form to which the field should be added.
-     * @param array $options The available AI video assistants.
-     * @return void ... but may update $mform.
-     */
-    public function add_field_videoassistant($mform, $options) {
-        $this->add_field_ai_assistant($mform, 'videoassistant', $options, 'tts');
-    }
-
-    /**
-     * Adds a form field for selecting an AI assistant.
-     *
-     * @param MoodleQuickForm $mform The form to which the field should be added.
-     * @param string $name Full form field name e.g. "textassistant".
-     * @param array $options The available AI assistants.
-     * @param string $defaulttype the name of the default AI type.
-     * @return void ... but may update $mform.
-     */
-    public function add_field_ai_assistant($mform, $name, $options, $defaulttype) {
-        // Remove "assistant" from $name to get an AI type.
-        // E.g. file, image, audio, video.
-        $type = str_replace('assistant', '', $name);
-        if (empty($options)) {
-            $cmid = $this->get_vocab()->cm->id;
-            $url = new \moodle_url('/mod/vocab/ai/'.$defaulttype.'/index.php', ['id' => $cmid]);
-            $msg = \html_writer::link($url, $this->get_string('clicktoadd'.$type));
-            $msg = $this->get_string('no'.$type.'sfound', $msg);
-            $this->add_field_static($mform, $name, $msg, 'showhelp');
-        } else {
-            $this->add_field_select($mform, $name, $options, PARAM_INT);
         }
     }
 
@@ -784,16 +558,63 @@ abstract class subpluginform extends \moodleform {
 
         $categories = question_categorylist($coursecategory->id);
         list($select, $params) = $DB->get_in_or_equal($categories);
-        if ($categories = $DB->get_records_select_menu('question_categories', "id $select", $params, 'sortorder', 'id, name')) {
+        $fields = 'id, name, parent, sortorder';
+        if ($categories = $DB->get_records_select('question_categories', "id $select", $params, 'sortorder', $fields)) {
 
+            // Get localised name of default quesiont category in this course.
             if ($coursecategory->name == 'top') {
-                $name = $coursecontext->get_context_name(false, false, true);
-                $name = get_string('topfor', 'question', $name);
                 if (array_key_exists($coursecategory->id, $categories)) {
-                    $categories[$coursecategory->id] = $name;
+                    $name = $coursecontext->get_context_name(false, false, true);
+                    $name = get_string('topfor', 'question', $name);
+                    $categories[$coursecategory->id]->name = $name;
                 }
             }
-            return $categories;
+
+            // Cache separator and max length of category name.
+            $separator = ' ⟫ ';
+            $maxnamelength = 32;
+
+            $categorynames = [];
+            foreach ($categories as $catid => $category) {
+                $names = [];
+                $parentid = $category->parent;
+                while ($parentid = intval($parentid)) {
+                    if (empty($categories[$parentid])) {
+                        $parentid = 0; // Shouldn't happen !!
+                    } else {
+                        $name = trim($categories[$parentid]->name);
+                        if (\core_text::strlen($name) > 10) {
+                            $name = preg_split('/[:,. ]+/u', $name)[0];
+                            if (\core_text::strlen($name) > 10) {
+                                $name = shorten_text($name, 10);
+                            }
+                        }
+                        $names[] = $name;
+                        $parentid = $categories[$parentid]->parent;
+                    }
+                }
+                $names = array_reverse($names);
+                $names[] = $categories[$catid]->name;
+                $categorynames[$catid] = implode($separator, $names);
+            }
+
+            // Sort results by name (maintain keys).
+            asort($categorynames);
+            foreach ($categorynames as $catid => $name) {
+                $prefix = '';
+                while (\core_text::strlen($name) > $maxnamelength) {
+                    $len = \core_text::strlen($separator);
+                    if ($pos = \core_text::strpos($name, $separator)) {
+                        $name = \core_text::substr($name, $pos + $len);
+                    } else {
+                        $name = shorten_text($name, $maxnamelength);
+                    }
+                    $prefix = '... ';
+                }
+                $categorynames[$catid] = $prefix.$name;
+            }
+
+            return $categorynames;
         } else {
             return [];
         }
@@ -849,7 +670,7 @@ abstract class subpluginform extends \moodleform {
     public function add_subcategories($mform, $name, $defaultvalue, $defaultcustomname='') {
         $form = '\\vocabtool_questionbank\\form';
         return $this->add_checkboxes(
-            $mform, $name, 'subcategories',
+            $mform, $name, 'subcategories', null, PARAM_INT,
             self::get_subcategory_types(),
             $form::SUBCAT_NONE, $form::SUBCAT_CUSTOMNAME,
             $defaultvalue, $defaultcustomname
@@ -869,7 +690,7 @@ abstract class subpluginform extends \moodleform {
     public function add_questiontags($mform, $name, $defaultvalue, $defaultcustomname='') {
         $form = '\\vocabtool_questionbank\\form';
         return $this->add_checkboxes(
-            $mform, $name, 'questiontags',
+            $mform, $name, 'questiontags', null, PARAM_INT,
             $this->get_questiontag_types(),
             $form::QTAG_NONE, $form::QTAG_CUSTOMTAGS,
             $defaultvalue, $defaultcustomname
@@ -882,22 +703,24 @@ abstract class subpluginform extends \moodleform {
      * @param MoodleQuickForm $mform The form object to add elements to.
      * @param string $name The base name for the checkbox group.
      * @param string $strname The string identifier used for the group label and help button.
+     * @param array $a Arguments, if any, needed for the strname. May be null.
+     * @param string $paramtype The PARAM_xxx type of values of these checkboxes.
      * @param array $options Associative array of checkbox values and their labels.
-     * @param int $valuenone The value representing the 'none' option (disables others).
-     * @param int $valuecustom The value that triggers display of the custom text input.
-     * @param int $defaultvalue Bitmask representing default checked values.
-     * @param string $defaultcustomname (Optional) Default text for the custom input field.
+     * @param int $valuenone (Optional, default=0)  The value representing the 'none' option.
+     * @param int $valuecustom (Optional, default=0)  The value that triggers display of the custom text input.
+     * @param int $defaultvalue (Optional, default=0)  Bitmask representing default checked values.
+     * @param string $defaultcustomname (Optional, default="") Default text for the custom input field.
      *
      * @return void ... but may update $mform.
      */
-    public function add_checkboxes($mform, $name, $strname,
-                                   $options, $valuenone, $valuecustom,
-                                   $defaultvalue, $defaultcustomname='') {
+    public function add_checkboxes($mform, $name, $strname, $a, $paramtype,
+                                   $options, $valuenone=0, $valuecustom=0,
+                                   $defaultvalue=0, $defaultcustomname='') {
 
         // The name of the form field containing the custom name/tag string.
         $customname = $name.'[name]';
 
-        $label = $this->get_string($strname);
+        $label = $this->get_string($strname, $a);
 
         // Cache line break element.
         $linebreak = \html_writer::tag('span', '', ['class' => 'w-100']);
@@ -914,17 +737,19 @@ abstract class subpluginform extends \moodleform {
         $elementnone = $name.'['.$valuenone.']';
         foreach ($options as $value => $text) {
             $elementname = $name.'['.$value.']';
-            $mform->setType($elementname, PARAM_INT);
-            if ($value == $valuecustom) {
-                $mform->setType($customname, PARAM_TEXT);
-                $mform->setDefault($customname, $defaultcustomname);
-                $mform->disabledIf($customname, $elementname, 'notchecked');
-            }
-            if ($defaultvalue & $value) {
-                $mform->setDefault($elementname, 1);
-            }
-            if ($value > 0) {
-                $mform->disabledIf($elementname, $elementnone, 'checked');
+            $mform->setType($elementname, $paramtype);
+            if ($paramtype == PARAM_INT) {
+                if ($value == $valuecustom) {
+                    $mform->setType($customname, PARAM_TEXT);
+                    $mform->setDefault($customname, $defaultcustomname);
+                    $mform->disabledIf($customname, $elementname, 'notchecked');
+                }
+                if ($defaultvalue & $value) {
+                    $mform->setDefault($elementname, 1);
+                }
+                if ($value > 0) {
+                    $mform->disabledIf($elementname, $elementnone, 'checked');
+                }
             }
         }
     }

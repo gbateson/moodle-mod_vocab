@@ -25,10 +25,11 @@
  */
 
 /**
- * xmldb_vocab_install
- *
- *
- * TODO: Finish documenting this function
+ * Add the activity's prompts and formats to the AI bridge's library, if the
+ * bridge is installed. Otherwise, the bridge adds them when it is installed.
  */
 function xmldb_vocab_install() {
+    if (\mod_vocab\aibridge_migration::is_bridge_ready()) {
+        \tool_aibridge\library::sync_component('mod_vocab');
+    }
 }

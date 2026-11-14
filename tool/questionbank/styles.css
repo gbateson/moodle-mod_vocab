@@ -12,12 +12,19 @@
 }
 #vocabtool_questionbank_form fieldset#id_selectedlogrecord:not(.collapsed),
 #vocabtool_questionbank_form fieldset#id_logrecords:not(.collapsed) {
-    max-width: 1140px;
+    max-width: 100vw;
+}
+
+#vocabtool_questionbank_form .table-responsive {
+    max-height: 100vh;
+    overflow-y: auto;
 }
 
 #vocabtool_questionbank_form #questionbanklog_table thead {    
-    background-color: #664d99; /* 4d0099 365 (bg-info) */
+    background-color: #664d99; /* dark purple */
     color: #f8f9fa; /* text-light */
+    position: sticky;
+    top: 0px;
 }
 #vocabtool_questionbank_form #questionbanklog_table th + th {
     border-left: solid ivory 2px;

@@ -3,6 +3,10 @@
     max-width: 640px;
 }
 
+.icon.vocabtool_import_icon {
+    color: #330066;
+}
+
 .vocabtool_import thead tr {
     /* bg-primary and text-light */
     background-color: #0f6cbf;

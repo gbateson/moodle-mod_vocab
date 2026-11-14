@@ -37,6 +37,9 @@ class questions extends \core\task\adhoc_task {
     /** @var object to represent the vocabtool_questionbank object */
     protected $tool = null;
 
+    /** @var int the teacher who set up this task, as whom the AI bridge is used. */
+    protected $userid = 0;
+
     /**
      * Execute the task.
      *
@@ -55,6 +58,7 @@ class questions extends \core\task\adhoc_task {
         if (! $userid = $this->get_userid()) {
             $userid = $USER->id;
         }
+        $this->userid = (int) $userid;
 
         // Cache the tool class name (it's rather long).
         $toolclass = '\\vocabtool_questionbank\\tool';
@@ -70,7 +74,7 @@ class questions extends \core\task\adhoc_task {
         }
 
         if (empty($log)) {
-            $logid = (isset($data->logid) ? $log->id : 'missing');
+            $logid = (isset($data->logid) ? $data->logid : 'missing');
             return $this->report_error($log, 'invalidlogid', $logid);
         }
 
@@ -86,11 +90,6 @@ class questions extends \core\task\adhoc_task {
         $textid = (int)$log->textid;
         $promptid = (int)$log->promptid;
         $formatid = (int)$log->formatid;
-        $fileid = (int)$log->fileid;
-
-        $imageid = (int)$log->imageid;
-        $audioid = (int)$log->audioid;
-        $videoid = (int)$log->videoid;
 
         $review = $log->review;
 
@@ -156,23 +155,26 @@ class questions extends \core\task\adhoc_task {
         // Shortcut to form class name.
         $form = '\\vocabtool_questionbank\\form';
 
-        // Check the essential elements (key, prompt, format) are available.
+        // The activity's context, in which the AI bridge chooses providers and templates.
+        $context = $this->tool->vocab->context;
+
+        // Check the prompt, format and provider are available.
         $a = [];
-        if (! $textconfig = $this->get_config($textid)) {
-            $a[] = "textid ($textid)";
-        }
-        if (! $promptconfig = $this->get_config($promptid)) {
+        $prompttemplate = \mod_vocab\aibridge::get_template($promptid);
+        if (! $prompttemplate || ! $prompttemplate->can_use($context, $userid)) {
             $a[] = "promptid ($promptid)";
         }
-        if (! $formatconfig = $this->get_config($formatid)) {
-            $a[] = "formatid ($formatid)";
-        }
-        // If fileid is given, it must be valid.
-        // If it is null, blank or zero, we just ignore it.
-        if (! $fileconfig = $this->get_config($fileid)) {
-            if ($fileid) {
-                $a[] = "fileid ($fileid)";
+        $formattemplate = null;
+        if ($formatid) {
+            $formattemplate = \mod_vocab\aibridge::get_template($formatid);
+            if (! $formattemplate || ! $formattemplate->can_use($context, $userid)) {
+                $a[] = "formatid ($formatid)";
             }
+        }
+        // A provider id of 0 or less lets the AI bridge choose a provider.
+        $providerid = max(0, $textid);
+        if ($providerid && ! \mod_vocab\aibridge::get_provider($providerid)) {
+            $a[] = "textid ($textid)";
         }
         if ($a = implode(', ', $a)) {
             return $this->report_error($log, 'invalidtaskparameters', $a);
@@ -203,12 +205,8 @@ class questions extends \core\task\adhoc_task {
             return; // No return value is required.
         }
 
-        // Initialize variable to represent instance of AI subplugin.
-        // If required, it will be setup later.
-        $ai = null;
-
         /*//////////////////////////////////
-        // Check parameters (e.g. fileid).
+        // Check parameters and make the prompt.
         //////////////////////////////////*/
 
         if ($status == $toolclass::TASKSTATUS_NOTSET ||
@@ -222,34 +220,27 @@ class questions extends \core\task\adhoc_task {
             $status = $toolclass::TASKSTATUS_CHECKING_PARAMS;
             $this->tool->update_log($log->id, ['status' => $status]);
 
-            // Setup the AI assistant if required.
-            if ($ai === null) {
-                $ai = $this->get_ai($textconfig);
+            if (! \mod_vocab\aibridge::is_enabled()) {
+                return $this->report_error($log, 'aibridgedisabled');
             }
 
-            if ($ai->delay_task($log)) {
-                mtrace(' - task has been delayed and will run again later.');
-                \core\task\manager::reschedule_or_queue_adhoc_task($this);
-                return;
+            // Make the prompt from the template, unless it has been made
+            // already, and perhaps edited by the teacher.
+            if (empty($prompt)) {
+                $rendering = $this->render_prompt(
+                    $prompttemplate, $formattemplate, $context, $userid,
+                    $word, $qtype, $qlevel, $qcount
+                );
+                if (! $rendering->is_valid()) {
+                    $a = ['id' => $promptid, 'name' => implode(' ', $rendering->get_errors())];
+                    return $this->report_error($log, 'invalidprompt', $a);
+                }
+                $prompt = $rendering->get_text();
+                $qformat = ($rendering->get_qformat() ?: 'gift');
+                $this->tool->update_log($log->id, ['prompt' => $prompt, 'qformat' => $qformat]);
             }
-
-            if (! $ai->check_prompt_params($promptconfig)) {
-                $a = ['id' => 'promptid', 'name' => $promptconfig->promptname];
-                return $this->report_error($log, 'invalidprompt', $a);
-            }
-            if (! $ai->check_format_params($formatconfig)) {
-                $a = ['id' => 'formatid', 'name' => $formatconfig->formatname];
-                return $this->report_error($log, 'invalidformat', $a);
-            }
-            if (! $ai->check_file_params($fileconfig)) {
-                $a = ['id' => $fileid, 'name' => $fileconfig->filedescription];
-                return $this->report_error($log, 'invalidfile', $a);
-            }
-
-            if ($ai->reschedule_task($promptconfig, $formatconfig, $fileconfig)) {
-                mtrace(' - task has been rescheduled and will run again later.');
-                \core\task\manager::reschedule_or_queue_adhoc_task($this);
-                return;
+            if (empty($qformat)) {
+                $qformat = 'gift';
             }
 
             // Report successful completion of checking params.
@@ -270,69 +261,47 @@ class questions extends \core\task\adhoc_task {
             $a = (object)['count' => $qcount, 'word' => $word];
             mtrace($this->tool->get_string('generatingquestions', $a), ' ');
 
-            // Create prompt, if necessary.
-            if (empty($prompt)) {
-                $prompt = $this->get_prompt(
-                    $promptconfig, $formatconfig,
-                    $word, $qtype, $qlevel, $qcount, $qformat
-                );
-                $this->tool->update_log($log->id, ['prompt' => $prompt]);
-            }
-
-            // Setup the AI assistant if required.
-            if ($ai === null) {
-                $ai = $this->get_ai($textconfig);
-                $ai->use_tuning_file($fileid > 0);
-            }
-
             // Ensure sensible values for min/max tries.
             $maxtries = max(1, min(10, $maxtries));
-            $mintries = max(0, min($maxtries, $log->tries));
+            $tries = max(0, min($maxtries, $log->tries));
 
-            // Prompt the AI assistant until either we succeed
-            // or we have tried the allowed number of times.
-            for ($i = $mintries; $i < $maxtries; $i++) {
+            // Each run of the task sends the prompt once. If the AI bridge
+            // says that it may work later, e.g. after a rate limit or when the
+            // provider is less busy, the task fails and Moodle runs it again
+            // later, until the allowed number of tries have been made.
+            $tries++;
+            $this->tool->update_log($log->id, ['tries' => $tries]);
+            $response = $this->send_prompt($prompt, $prompttemplate, $context, $userid, $providerid);
+            $results = ($response->get_success() ? trim($response->get_content()) : '');
 
-                // Loop may finish before $maxtries
-                // if results are received from AI.
-
-                // Update tries value in the database.
-                $this->tool->update_log($log->id, [
-                    'tries' => ($i + 1),
-                ]);
-
-                // Send the prompt to the AI assistant
-                // and receive the response.
-                $response = $ai->get_response($prompt);
-
-                if ($results = $response->text) {
-
-                    if ($log->review) {
-                        $status = $toolclass::TASKSTATUS_AWAITING_REVIEW;
-                    } else {
-                        $status = $toolclass::TASKSTATUS_AWAITING_IMPORT;
-                    }
-
-                    // Store error, status and results.
+            if ($results === '') {
+                $error = ($response->get_success() ? $this->tool->get_string('emptyresults') : $response->get_error());
+                if ($response->is_temporary() && $tries < $maxtries) {
                     $this->tool->update_log($log->id, [
-                        'error' => $response->error,
-                        'status' => $status,
-                        'results' => $results,
+                        'status' => $toolclass::TASKSTATUS_DELAYED,
+                        'error' => shorten_text($error, 255),
                     ]);
-
-                    // Report successful completion to cron job.
-                    mtrace('['.get_string('ok').']');
-
-                    // We have receieved a message from the AI assistant
-                    // so we can leave the FOR loop now.
-                    break;
+                    throw new \moodle_exception('error_aibridgetryagain', 'vocabtool_questionbank', '', $error);
                 }
-
-                // Prepare error message for cron output.
-                if (! empty($response->error)) {
-                    $error = $response->error;
-                }
+                return $this->report_error($log, 'generatequestions', $error);
             }
+
+            if ($log->review) {
+                $status = $toolclass::TASKSTATUS_AWAITING_REVIEW;
+            } else {
+                $status = $toolclass::TASKSTATUS_AWAITING_IMPORT;
+            }
+
+            // Store error, status and results.
+            $error = '';
+            $this->tool->update_log($log->id, [
+                'error' => $error,
+                'status' => $status,
+                'results' => $results,
+            ]);
+
+            // Report successful completion to cron job.
+            mtrace('['.get_string('ok').']');
         }
 
         // Get all question categories in the current course.
@@ -398,7 +367,7 @@ class questions extends \core\task\adhoc_task {
         // Format prompt name (incl. head and tail).
         $prompthead = '';
         $prompttail = '';
-        if ($promptname = $promptconfig->promptname) {
+        if ($promptname = format_string($prompttemplate->get_name(), true, ['context' => $context])) {
             $promptname = explode(' ', $promptname);
             $promptname = array_filter($promptname);
             $promptname = array_diff($promptname, ['Generate', 'questions']);
@@ -510,7 +479,11 @@ class questions extends \core\task\adhoc_task {
             if ($questions === null) {
                 $questions = [];
                 foreach ($questionids as $questionid) {
-                    $questions[$questionid] = \question_bank::load_question($questionid);
+                    // Check that the question exists, and if it does we load it up.
+                    // If it doesn't exist, it has probably been deleted.
+                    if ($DB->record_exists('question', ['id' => $questionid])) {
+                        $questions[$questionid] = \question_bank::load_question($questionid);
+                    }
                 }
             }
 
@@ -521,7 +494,7 @@ class questions extends \core\task\adhoc_task {
                 'VIDEO' => $log->videoid,
             ];
             $mediatags = array_filter($mediatags);
-            if ($mediatags = implode(', ', $mediatags)) {
+            if ($mediatags = implode(', ', array_keys($mediatags))) {
                 $a = (object)['media' => $mediatags, 'word' => $word];
                 mtrace($this->tool->get_string('creatingmedia', $a));
             }
@@ -593,182 +566,45 @@ class questions extends \core\task\adhoc_task {
     }
 
     /**
-     * Create a new object to represent an AI assistant.
-     * The class name will be something like \vocabai_chatgpt\ai.
+     * Make the prompt from a template in the AI bridge's library.
      *
-     * @param object $textconfig settings for an AI subplugin.
-     * @return object to represent an instance of the required AI subplugin
-     */
-    public function get_ai($textconfig) {
-        $ai = '\\'.$textconfig->subplugin.'\\ai';
-        $ai = new $ai($this->tool->vocab);
-        $ai->set_config($textconfig);
-        return $ai;
-    }
-
-    /**
-     * get_config
-     *
-     * @param integer $configid
-     * @return object record from the vocab_config table
-     */
-    protected function get_config($configid) {
-        global $DB;
-
-        // Sanity check on the $configid.
-        if ($configid && is_numeric($configid)) {
-
-            // Get all relevant contexts (activity, course, coursecat, site).
-            $contexts = $this->tool->vocab->get_readable_contexts('', 'id');
-            list($where, $params) = $DB->get_in_or_equal($contexts);
-
-            // Retrieve all field names and values in the required config record.
-            $select = 'vcs.id, vcs.name, vcs.value, vcs.configid, vc.subplugin, vc.contextid';
-            $from = '{vocab_config_settings} vcs '.
-                    'LEFT JOIN {vocab_config} vc ON vcs.configid = vc.id';
-            $where = "vcs.configid = ? AND vc.contextid $where";
-            $params = array_merge([$configid], $params);
-
-            $sql = "SELECT $select FROM $from WHERE $where";
-            if ($settings = $DB->get_records_sql($sql, $params)) {
-                $config = new \stdClass();
-                foreach ($settings as $setting) {
-                    $config->configid = $setting->configid;
-                    $config->subplugin = $setting->subplugin;
-                    $config->contextid = $setting->contextid;
-                    $config->{$setting->name} = $setting->value;
-                }
-                return $config;
-            }
-        }
-
-        // The config id was missing or invalid.
-        return null;
-    }
-
-    /**
-     * get prompt
-     *
-     * @param object $promptconfig
-     * @param object $formatconfig
+     * @param \tool_aibridge\library\template $prompt
+     * @param \tool_aibridge\library\template|null $format the output format, or null for the one that the prompt links to.
+     * @param \context $context
+     * @param int $userid
      * @param string $word
-     * @param string $qtype
-     * @param string $qlevel
-     * @param integer $qcount
-     * @param string $qformat
-     * @return string a prompt to send to an AI assistant, such as ChatGPT.
+     * @param string $qtype e.g. "multichoice".
+     * @param string $qlevel e.g. "A2".
+     * @param int $qcount
+     * @return \tool_aibridge\library\rendering
      */
-    protected function get_prompt($promptconfig, $formatconfig, $word, $qtype, $qlevel, $qcount, $qformat) {
-        if (empty($promptconfig->prompttext)) {
-            $prompt = $this->get_prompt_default();
-        } else {
-            $prompt = $promptconfig->prompttext;
+    protected function render_prompt($prompt, $format, $context, $userid, $word, $qtype, $qlevel, $qcount) {
+        $values = [
+            'vocabulary-item' => $word,
+            'level-of-questions' => $qlevel,
+            'number-of-questions' => $qcount,
+        ];
+        if ($format) {
+            $values['format'] = $format->get_shortname();
         }
-        if (empty($formatconfig->formattext)) {
-            $format = $this->get_format_default($qformat, $qtype);
-        } else {
-            $format = $formatconfig->formattext;
-        }
-
-        // Replace all place holders with their respective values.
-        $prompt = strtr($prompt, [
-            '{{target-language}}' => 'English',
-            '{{student-nationality}}' => 'Japanese',
-            '{{school-level}}' => 'university',
-            '{{vocabulary-item}}' => $word,
-            '{{type-of-questions}}' => $qtype,
-            '{{level-of-questions}}' => $qlevel,
-            '{{number-of-questions}}' => $qcount,
-            '{{question-format}}' => $qformat,
-            '{{output-format}}' => $format,
-        ]);
-
-        // Standardize all whitespace in the prompt.
-        // This can mess with the UTF-8 encoding, but
-        // the convert method will fix any broken UTF-8.
-        // Outside Moodle, we could also use mb_convert_encoding().
-        $prompt = preg_replace('/\s+/u', ' ', $prompt);
-        $prompt = \core_text::convert($prompt, 'UTF-8', 'UTF-8');
-
-        return $prompt;
+        return \tool_aibridge\library::render($prompt, $context, $userid, $values, $qtype);
     }
 
     /**
-     * get_prompt_default
+     * Send a prompt to the AI bridge.
      *
-     * @return string a prompt suitable for generating questions.
+     * @param string $text the prompt.
+     * @param \tool_aibridge\library\template $prompt the template that it was made from, for the log.
+     * @param \context $context
+     * @param int $userid
+     * @param int $providerid one provider to use, or 0 for any.
+     * @return \tool_aibridge\response
      */
-    protected function get_prompt_default() {
-        return <<<'EOD'
-I am a language teacher. I teach {{target-language}}
-to {{student-nationality}} students at {{school-level}}.
-Your role is an expert in generating online educational content.
-Help me to create questions that I can import into a Moodle LMS.
-Create {{number-of-questions}} {{type-of-questions}} questions
-to check students understanding of the vocabulary item "{{vocabulary-item}}".
-Use only CEFR level {{level-of-questions}} {{target-language}}.
-Format the questions in {{question-format}} format
-using the following output format template: {{output-format}}
-EOD;
-    }
-
-    /**
-     * Get a format for the required question format and type.
-     *
-     * @param string $qformat the question format e.g. "gift" or "xml".
-     * @param string $qtype the question type e.g. "multichoice" or "truefalse".
-     * @return string the GIFT format, including place holders marked with {{...}}
-     */
-    protected function get_format($qformat, $qtype) {
-        $method = "get_{$qformat}_format_{$qtype}";
-        if (method_exists($this, $method)) {
-            return $this->$method();
-        }
-        return "No $qformat format found for $qtype questions.";
-    }
-
-    /**
-     * get_gift_format_multichoice
-     *
-     * @return string a GIFT format for a multichoice question
-     */
-    protected function get_gift_format_multichoice() {
-        return <<<'EOD'
-::question-name::question-text {
-    =correct-answer #Explanation of why the answer is correct.
-    ~wrong-answer-1 #Explanation of why the answer is wrong and hint about the correct answer.
-    ~wrong-answer-2 #Explanation of why the answer is wrong and hint about the correct answer.
-    ~wrong-answer-3 #Explanation of why the answer is wrong and hint about the correct answer.
-}
-EOD;
-    }
-
-    /**
-     * get_gift_format_truefalse
-     *
-     * @return string a GIFT format for a truefalse question
-     */
-    protected function get_gift_format_truefalse() {
-        return <<<'EOD'
-::question-name::statement-that-is-true{TRUE #Explanation of why this answer is TRUE}
-::question-name::statement-that-is-false{FALSE #Explanation of why this answer is FALSE}
-EOD;
-    }
-
-    /**
-     * get_gift_format_match
-     *
-     * @return string a GIFT format for a match question
-     */
-    protected function get_gift_format_match() {
-        return <<<'EOD'
-Match the following words with their corresponding meanings. {
-   =target-word -> definition-of-target-word
-   =similar-word-1 -> definition-of-similar-word-1
-   =similar-word-2 -> definition-of-similar-word-2
-   =similar-word-3 -> definition-of-similar-word-3
-}
-EOD;
+    protected function send_prompt($text, $prompt, $context, $userid, $providerid) {
+        $action = new \tool_aibridge\action\generate_text($context->id, $userid, $text);
+        $action->set_purpose('vocabtool_questionbank', $prompt->get_shortname());
+        $action->set_template($prompt->get_id(), $prompt->get_version());
+        return \tool_aibridge\manager::process($action, $providerid);
     }
 
     /**
@@ -1063,7 +899,8 @@ EOD;
         global $USER;
         $questions = [];
 
-        // Parse the text into individual questions.
+        // Parse the raw text into individual questions.
+        // ::question-name::question-text {=correct-answer ~wrong-answer ...}
         // Match $1 contains the question name.
         // Match $2 contains the question text.
         // Match $3 contains the answer details (including weighting and feedback).
@@ -1081,7 +918,6 @@ EOD;
                 }
             }
         }
-
         return $questions;
     }
 
@@ -1369,18 +1205,15 @@ EOD;
      */
     public function create_media($log, $question, $context, $tags) {
 
-        // Map each media tag to the configid of the AI subplugin
-        // that will create the media content for that tag.
-        static $mediatags = null;
-        if ($mediatags === null) {
-            $mediatags = [
-                'IMAGE' => $log->imageid,
-                'AUDIO' => $log->audioid,
-                'VIDEO' => $log->videoid,
-            ];
-            // Remove tags that are not required.
-            $mediatags = array_filter($mediatags);
-        }
+        // Map each media tag to the AI bridge provider that will create the
+        // media content for that tag: -1 for any provider, or 0 for none.
+        $mediatags = [
+            'IMAGE' => (int) $log->imageid,
+            'AUDIO' => (int) $log->audioid,
+            'VIDEO' => (int) $log->videoid,
+        ];
+        // Remove tags that are not required.
+        $mediatags = array_filter($mediatags);
 
         // If there's nothing to do, we can finish early.
         if (empty($mediatags)) {
@@ -1588,7 +1421,7 @@ EOD;
             if ($dbman->field_exists($table, $field)) {
                 // These question types:
                 // question_ddwtos
-                // question_gapselect
+                // question_gapselect.
                 return [$table, $fields];
             }
             return null;
@@ -1727,47 +1560,16 @@ EOD;
         $filerecord['filename'] = '';
 
         // Set up search string for the media tags.
-        static $search = null;
-        if ($search === null) {
-            $search = (object)[
-                // Search string to extract media tags:
-                // $1: type of media (IMAGE, AUDIO or VIDEO)
-                // $2: tag attributes and AI prompt.
-                'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/u',
-                // Search string to extract attributes of media tags:
-                // $1: name of attribute (alt, width, height, class)
-                // $2: value of attribute.
-                'attributes' => '/(\w+) *= *"(.*?)"/u',
-                // Search string to identify dialog between two or more speakers:
-                // $1: Dialog info
-                // $2: Dialog lines.
-                'dialog' => '/^(.*?)\s*([A-Z]\s*:\s*.*)$/ius',
-                // Search string to extract info about speakers in a dialog:
-                // $1: Speaker letter
-                // $2: Speaker gender
-                // $3: Speaker details (optional).
-                'info' => '/([A-Z])\s*=\s*(\w+)(?:\s*\(([^)]+)\))?/ius',
-                // Search string to extract a line of a dialog:
-                // $1: Speaker letter
-                // $2: Speaker line.
-                'line' => '/([A-Z])\s*:\s*(.*?)(?=\s+[A-Z]\s*:|$)/ius',
-            ];
-        }
-
-        /* ==========================
-        Sample dialog (conveniently split into lines, but it ain't necessarily so)
-        [[AUDIO
-            A=woman (customer calling with complaint)
-            B=male (staff on a customer help line)
-            A: Hello. I'm calling about a coffee machine I purchased from your website.
-               It has stopped working, even though I haven't had it for very long.
-               I expected it to last much longer than this.
-            B: Oh, I'm sorry to hear that. Our warranty covers products for up to a year. Do you know when you bought it?
-            A: I've had it for over a year so the warranty has probably just expired. This is so disappointing.
-            B: Well, I'll tell you what we can do. Although we can't replace it, since you're a valued customer,
-               I can offer you a coupon for 40% off your next purchase.
-        ]]
-        ========================== */
+        $search = (object)[
+            // Search string to extract media tags:
+            // $1: type of media (IMAGE, AUDIO or VIDEO)
+            // $2: tag attributes and AI prompt.
+            'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/us',
+            // Search string to extract attributes of media tags:
+            // $1: name of attribute (alt, width, height, class)
+            // $2: value of attribute.
+            'attributes' => '/(\w+) *= *"(.*?)"/u',
+        ];
 
         // Initialize the counters used to generate unique filenames.
         $index = (object)array_combine(
@@ -1787,9 +1589,6 @@ EOD;
                 $taglength = strlen($tag);
                 $tagname = $tags[1][$t][0];
                 $tagprompt = $tags[2][$t][0];
-
-                // Get the configid of the AI subplugin that will create the media file.
-                $configid = $mediatags[$tagname];
 
                 // Initilize the array of allowable tag parameters.
                 $tagparams = [
@@ -1865,52 +1664,13 @@ EOD;
                     }
                 }
 
-                $lines = [];
-                if ($tagname == 'AUDIO') {
-
-                    if (preg_match($search->dialog, $tagprompt, $matches)) {
-
-                        $dialoginfo = trim($matches[1]);
-                        $dialoglines = trim($matches[2]);
-
-                        $genders = [];
-                        if (preg_match_all($search->info, $dialoginfo, $matches)) {
-                            foreach (array_keys($matches[0]) as $i) {
-                                $speaker = trim($matches[1][$i]);
-                                $speaker = strtoupper($speaker);
-                                $gender = trim($matches[2][$i]);
-                                $gender = $this->get_valid_gender($gender);
-                                $genders[$speaker] = $gender;
-                            }
-                        }
-
-                        if (preg_match_all($search->line, $dialoglines, $matches)) {
-                            foreach (array_keys($matches[0]) as $i) {
-                                $speaker = trim($matches[1][$i]);
-                                $speaker = strtoupper($speaker);
-                                $line = trim($matches[2][$i]);
-                                if (! array_key_exists($speaker, $genders)) {
-                                    $genders[$speaker] = 'random'; // Shouldn't happen!!
-                                }
-                                // Store the line as [speaker, gender, prompt].
-                                $lines[] = [$speaker, $genders[$speaker], $line];
-                            }
-                        }
-                    }
-                }
-
                 // Set the root of the media filename e.g. questiontext-01-image-01.
                 $mediafilename = \mod_vocab\activity::modify_filename($filename, '', $suffix, $filetype);
                 $filerecord['filename'] = $mediafilename;
 
-                if (count($lines)) {
-                    $file = $this->create_dialog_file($configid, $tagname, $lines, $filerecord, $questionid);
-                } else {
-                    // Send the prompt to one of the AI subplugins to generate the media file.
-                    // For image files, several variations maybe created, but only the
-                    // first one will be returned by the "create_media_file()" method.
-                    $file = $this->create_media_file($configid, $tagname, $tagprompt, $filerecord, $questionid);
-                }
+                // Ask the AI bridge to make the media file. A conversation between
+                // several speakers is spoken in a different voice for each speaker.
+                $file = $this->create_media_file($mediatags[$tagname], $tagname, $tagprompt, $filerecord, $questionid);
 
                 if (is_object($file)) {
 
@@ -1982,7 +1742,7 @@ EOD;
                     // Report error message?
                     mtrace($file);
                 } else {
-                    mtrace('Oops, "create_media_file()" returned an unrecognizeable result.');
+                    mtrace('Oops, "create_media_file()" returned an unrecognizable result.');
                 }
             }
         }
@@ -2012,7 +1772,7 @@ EOD;
             $file->get_component(),
             $file->get_filearea(),
             $file->get_itemid(),
-            $file->get_filename(),
+            $file->get_filepath(),
             $filename
         );
 
@@ -2030,149 +1790,7 @@ EOD;
         }
     }
 
-    /**
-     * Determine if the given string holds "man", "woman", "male", "female"
-     * or a localized version of one of those strings.
-     *
-     * @param string $gender to idenitify as "male" or "female"
-     * @return string valid version of gender string, "male", "female" or "random"
-     */
-    protected function get_valid_gender($gender) {
 
-        static $male = null;
-        static $female = null;
-
-        if ($male === null) {
-            $male = ['man', $this->tool->get_string('man'),
-                     'male', $this->tool->get_string('male')];
-            $male = array_map('strtolower', $male);
-            $male = array_unique($male);
-        }
-
-        if ($female === null) {
-            $female = ['woman', $this->tool->get_string('woman'),
-                       'female', $this->tool->get_string('female')];
-            $female = array_map('strtolower', $female);
-            $female = array_unique($female);
-        }
-
-        $gender = trim($gender);
-
-        if (in_array($gender, $male)) {
-            return 'male';
-        }
-        if (in_array($gender, $female)) {
-            return 'female';
-        }
-
-        return 'random'; // Will be assigned later.
-    }
-
-    /**
-     * Creates a media file (e.g. AUDIO) that represents a dialog between two or more speakers.
-     *
-     * This method uses speaker information and dialog lines to generate a media file,
-     * typically via an AI subplugin identified by the given config ID.
-     *
-     * @param int $configid The ID of the AI subplugin configuration to use.
-     * @param string $mediatype The type of media to create (e.g. 'AUDIO').
-     * @param array $lines An array of dialog lines, where each item is a numeric array:
-     *                     [0] = speaker ID (e.g., 'A'),
-     *                     [1] = speaker gender or voice style (e.g., 'female'),
-     *                     [2] = the line of dialog (e.g., 'Hello!').
-     *                     Example: [['A', 'female', 'Hello!'], ['B', 'male', 'Good morning.']]
-     * @param array $filerecord An array of file record information (e.g. filename, filepath, contextid).
-     * @param int $questionid The ID of the Moodle question to which this media file belongs.
-     *
-     * @return stored_file|string|null The generated media file object on success,
-     *                                 a string error message on failure,
-     *                                 or null if the media could not be created.
-     */
-    public function create_dialog_file($configid, $mediatype, $lines, $filerecord, $questionid) {
-
-        // Cache the file storage object.
-        $fs = get_file_storage();
-
-        // Cache the base filename.
-        // E.g questiontext-01-audio-01.mp3.
-        $filename = $filerecord['filename'];
-
-        $files = [];
-        foreach ($lines as $i => $line) {
-
-            // Extract the speaker, gender and prompt for this line.
-            list($speaker, $gender, $text) = $line;
-
-            // Ensure media file name is unique by adding unique suffix.
-            // E.g. questiontext-01-audio-01-01-A.mp3.
-            $suffix = [str_pad($i + 1, 2, '0', STR_PAD_LEFT), $speaker];
-            $filerecord['filename'] = \mod_vocab\activity::modify_filename($filename, '', $suffix);
-
-            // Create an audio file for this line of the dialog.
-            $files[] = $this->create_media_file(
-                $configid, $mediatype, $text, $filerecord, $questionid, $speaker, $gender
-            );
-        }
-
-        // Concatenate content of mp3 files. Note that we
-        // strip any mp3 tags on the individual media files
-        // and then add leading ID3v2 tag and trailing ID2v1 tag.
-
-        $starttime = 0;
-        $captions = [];
-        $captions[] = 'WEBVTT';
-        $captions[] = ''; // Blank line after header.
-        $title = '';
-
-        foreach ($files as $i => $file) {
-            // Sample line: A, female, Hello!.
-            list($speaker, $gender, $text) = $lines[$i];
-
-            if (is_object($file)) {
-                $content = $this->strip_mp3_tags($file->get_content());
-                $duration = $this->get_mp3_duration_cbr($content);
-                $endtime = $starttime + $duration;
-
-                // Format milliseconds into hh:mm:ss.mmm.
-                $starttext = $this->format_webvtt_time($starttime);
-                $endtext = $this->format_webvtt_time($endtime);
-                $starttime = $endtime;
-
-                $captions[] = ($i + 1); // Cue identifier.
-                $captions[] = $starttext.' --> '.$endtext;
-                $captions[] = $speaker.': '.$text;
-                $captions[] = ''; // Force exta newline.
-
-                // Add the text from this line to the MP3 title string.
-                $title .= ($title ? ' ' : '').$text;
-
-                $files[$i] = $content;
-                $file->delete();
-            } else {
-                $files[$i] = '';
-            }
-        }
-
-        // Generate file for concatenated audio and return it.
-        if ($captions = implode("\n", $captions)) {
-            $filerecord['filename'] = \mod_vocab\activity::modify_filename($filename, '', '', 'vtt');
-            $this->add_or_update_file_from_string($fs, $filerecord, $captions);
-        }
-
-        // Generate file for concatenated audio and return it.
-        if ($files = implode('', $files)) {
-            $title = shorten_text(strip_tags($title));
-            $artist = $this->tool->get_string('pluginname');
-            $files = $this->mp3_id3v2_tag($title, $artist).
-                     $files. // The concatenated mp3 content.
-                     $this->mp3_id3v1_tag($title, $artist);
-            $filerecord['filename'] = $filename;
-            return $this->add_or_update_file_from_string($fs, $filerecord, $files);
-        }
-
-        // Something went wrong, so abort generation of this audio file.
-        return false;
-    }
 
     /**
      * Creates or replaces a stored file in the Moodle file system from a string.
@@ -2201,12 +1819,8 @@ EOD;
             return $file;
         }
         // Oops, something went wrong and the file could not be created.
-        $a = (object)[
-            'subplugin' => $filearea['component'],
-            'filearea' => $filerecord['filearea'],
-            'itemid' => $filerecord['itemid'],
-        ];
-        return $this->tool->get_string('medianotcreated', $a).': '.$filerecord['filename'];
+        $a = (object)['type' => $filerecord['filearea'], 'error' => $filerecord['filename']];
+        return $this->tool->get_string('medianotcreated', $a);
     }
 
     /**
@@ -2233,206 +1847,128 @@ EOD;
         );
     }
 
-    /**
-     * Generates a media file (image, audio, or video) using the specified AI configuration and prompt.
-     *
-     * This method retrieves the appropriate AI generator based on the media type and configuration,
-     * then delegates the media creation to that generator.
-     *
-     * @param int $configid The ID of the AI subplugin configuration to use.
-     * @param string $mediatype The type of media to generate (e.g., 'IMAGE', 'AUDIO', 'VIDEO').
-     * @param string $prompt The content or script to send to the media generator.
-     * @param array $filerecord File metadata used to store the generated file in Moodle.
-     * @param int $questionid The ID of the Moodle question associated with the media.
-     * @param string $speaker (Optional) The speaker label (used for audio prompts).
-     * @param string $gender (Optional) The speaker's gender or voice style (used for audio prompts).
-     *
-     * @return stored_file|null The generated media file object, or null on failure.
-     */
-    public function create_media_file($configid, $mediatype, $prompt, $filerecord, $questionid, $speaker='', $gender='') {
 
-        static $configs = [];
-        if (! array_key_exists($configid, $configs)) {
-            $configs[$configid] = $this->get_config($configid);
-        }
-        if (! ($config = $configs[$configid])) {
-            return null; // Invalid configid - shouldn't happen !!
-        }
 
-        static $creators = [];
-        if (! array_key_exists($mediatype, $creators)) {
-            $creators[$mediatype] = $this->get_ai($config);
-        }
-        if (! ($creator = $creators[$mediatype])) {
-            return null; // Invalid mediatype - shouldn't happen !!
-        }
 
-        return $creator->get_media_file($prompt, $filerecord, $questionid, $speaker, $gender);
-    }
+
+
+
 
     /**
-     * Estimates the duration of a CBR MP3 file by parsing the first MPEG audio frame.
+     * Make a media file (image or audio) with the AI bridge.
      *
-     * This method assumes the MP3 file uses constant bitrate (CBR) encoding. It searches for
-     * the first valid MPEG frame header, extracts the bitrate and sampling rate, and calculates
-     * the total duration based on the file size.
-     *
-     * @param string $mp3 The raw binary content of the MP3 file (without leading/trailing ID3 tags).
-     *
-     * @return float|null The estimated duration in seconds, or null if a valid frame header could not be found.
+     * @param int $providerid the provider to use, or -1 for any provider.
+     * @param string $mediatype IMAGE, AUDIO or VIDEO.
+     * @param string $prompt what to draw or say. For a conversation, the speakers and lines.
+     * @param array $filerecord where to store the file. Its extension is set from the media.
+     * @param int $questionid
+     * @return \stored_file|string the file, or an error message.
      */
-    protected function get_mp3_duration_cbr($mp3) {
-
-        // Find first frame sync byte.
-        $offset = strpos($mp3, "\xFF");
-        while ($offset !== false && (ord($mp3[$offset + 1]) & 0xE0) !== 0xE0) {
-            $offset = strpos($mp3, "\xFF", $offset + 1);
-        }
-
-        // If no frame was found, we abort.
-        if ($offset === false) {
-            return null;
-        }
-
-        $header = substr($mp3, $offset, 4);
-        $bytes = unpack('N', $header)[1];
-
-        $bitrateindex = ($bytes >> 12) & 0xF;
-        $samplingindex = ($bytes >> 10) & 0x3;
-
-        $bitratetable = [
-            // For MPEG-1 Layer III.
-            null, 32, 40, 48, 56, 64,
-            80, 96, 112, 128, 160, 192,
-            224, 256, 320, null,
+    public function create_media_file($providerid, $mediatype, $prompt, $filerecord, $questionid) {
+        $providerid = max(0, (int) $providerid);
+        $text = $prompt;
+        $options = [
+            'providerid' => $providerid,
+            'component' => 'vocabtool_questionbank',
+            'purpose' => strtolower($mediatype),
         ];
-        $samplingratetable = [44100, 48000, 32000, null];
-
-        $bitrate = ($bitratetable[$bitrateindex] ?? null);
-        $samplerate = ($samplingratetable[$samplingindex] ?? null);
-
-        if ($bitrate && $samplerate) {
-            $filesize = strlen($mp3); // Bytes.
-            $duration = ($filesize * 8) / ($bitrate * 1000); // Seconds.
-            return (float)$duration;
+        if ($mediatype == 'AUDIO') {
+            $text = self::format_dialogue($text);
+            if (! \tool_aibridge\dialogue::is_dialogue($text)) {
+                $options['voice'] = $this->choose_voice($providerid, $questionid);
+            }
+        }
+        $item = ['type' => $mediatype, 'text' => $text, 'attributes' => '', 'marker' => ''];
+        $response = \tool_aibridge\media::generate($item, $this->tool->vocab->context->id, $this->userid, $options);
+        if (! $response->get_success()) {
+            $a = (object)['type' => strtolower($mediatype), 'error' => $response->get_error()];
+            return $this->tool->get_string('medianotcreated', $a);
         }
 
-        // Bit rate and/or sample rate could not be determined.
-        return null;
-    }
-
-    /**
-     * Converts a duration in milliseconds to WebVTT timestamp format (hh:mm:ss.mmm).
-     *
-     * @param float|int $time Duration in milliseconds.
-     * @return string Formatted time (e.g. 00:01:23.456)
-     */
-    protected function format_webvtt_time($time) {
-        // Cast the time to an integer in order to prevent error:
-        // Implicit conversion from float 12.345 to int loses precision.
-        $time = (int)$time;
-        $h = floor($time / 3600000);
-        $m = floor(($time % 3600000) / 60000);
-        $s = floor(($time % 60000) / 1000);
-        $time = $time % 1000;
-        return sprintf('%02d:%02d:%02d.%03d', $h, $m, $s, $time);
-    }
-
-    /**
-     * Strips the ID3v1 and ID3v2 tags from the MP3 data.
-     * Removes the ID3v1 tag, if present, at the end of the MP3.
-     * Removes the ID3v2 tag, if present, at the start of the MP3.
-     *
-     * @param string $mp3 The raw binary content of an MP3 file.
-     * @return string The MP3 data with ID3 tags removed.
-     */
-    protected function strip_mp3_tags($mp3) {
-        // Remove ID3v1 tag (128 bytes at end).
-        if (substr($mp3, -128, 3) === "TAG") {
-            $mp3 = substr($mp3, 0, -128);
-        }
-
-        // Remove ID3v2 tag (size from bytes 6–10, synchsafe int).
-        if (substr($mp3, 0, 3) === "ID3") {
-            $sizebytes = substr($mp3, 6, 4);
-            $size = (ord($sizebytes[0]) & 0x7F) << 21 |
-                    (ord($sizebytes[1]) & 0x7F) << 14 |
-                    (ord($sizebytes[2]) & 0x7F) << 7 |
-                    (ord($sizebytes[3]) & 0x7F);
-            $mp3 = substr($mp3, 10 + $size);
-        }
-
-        return $mp3;
-    }
-
-    /**
-     * Generates an ID3v1 tag suitable for appending to the end of an MP3 file.
-     *
-     * @param string $title The title of the track.
-     * @param string $artist The artist of the track.
-     * @param string $album The album name.
-     * @param int $year The year of the track.
-     * @param string $comment The comment associated with the track.
-     * @param int $genre The genre of the track (0–255). Use 255 for undefined.
-     * @return bool True on success, false on failure.
-     */
-    protected function mp3_id3v1_tag($title = '', $artist = '',
-                                     $album = '', $year = 0,
-                                     $comment = '', $genre = 255) {
-        if ($year == 0) {
-            $year = date('Y');
-        }
-        $tag = 'TAG';
-        $tag .= str_pad(substr($title, 0, 30), 30, "\0");
-        $tag .= str_pad(substr($artist, 0, 30), 30, "\0");
-        $tag .= str_pad(substr($album, 0, 30), 30, "\0");
-        $tag .= str_pad(substr("$year", 0, 4), 4, "\0");
-        $tag .= str_pad(substr($comment, 0, 30), 30, "\0");
-        $tag .= chr($genre); // 1 byte
-        return $tag;
-    }
-
-    /**
-     * Generates a basic ID3v2.3 tag with title and artist
-     * suitable for prepending to the beginning of an MP3 file.
-     *
-     * @param string $title The title of the track.
-     * @param string $artist The artist name.
-     * @return string ID3v2 tag.
-     */
-    protected function mp3_id3v2_tag($title = '', $artist = '') {
-        $frames = '';
-        if ($title) {
-            $frames .= $this->build_mp3_frame('TIT2', $title);
-        }
-        if ($artist) {
-            $frames .= $this->build_mp3_frame('TPE1', $artist);
-        }
-
-        $tagsize = strlen($frames);
-        $sizebytes = pack('C4',
-            ($tagsize >> 21) & 0x7F,
-            ($tagsize >> 14) & 0x7F,
-            ($tagsize >> 7) & 0x7F,
-            ($tagsize) & 0x7F
+        $fs = get_file_storage();
+        $filerecord['filename'] = \mod_vocab\activity::modify_filename(
+            $filerecord['filename'], '', '', $response->get_extension()
         );
+        $pathnamehash = $this->get_pathnamehash($fs, $filerecord);
+        if ($fs->file_exists_by_hash($pathnamehash)) {
+            $fs->get_file_by_hash($pathnamehash)->delete();
+        }
+        if ($mediatype == 'IMAGE') {
+            $file = $response->save_image($filerecord);
+        } else {
+            $file = $response->save_audio($filerecord);
+        }
 
-        $header = 'ID3'."\x03\x00"."\x00".$sizebytes;
-
-        return $header.$frames;
+        // A conversation has subtitles, with the speaker and text of each line.
+        if ($captions = $response->get_captions()) {
+            $filerecord['filename'] = \mod_vocab\activity::modify_filename($filerecord['filename'], '', '', 'vtt');
+            $this->add_or_update_file_from_string($fs, $filerecord, $captions);
+        }
+        return $file;
     }
 
     /**
-     * Builds a single ID3v2.3 text frame for an MP3 tag.
+     * Choose a voice for the audio of a question, from the provider's voices, so that
+     * different questions may have different voices, but each question has only one.
      *
-     * @param string $id   The 4-character frame ID (e.g., 'TIT2', 'TPE1').
-     * @param string $text The text content to encode in the frame.
-     * @return string The binary frame data.
+     * @param int $providerid
+     * @param int $questionid
+     * @return string the voice, or '' for the provider's default voice.
      */
-    protected function build_mp3_frame($id, $text) {
-        $encoded = "\x00".$text; // 0x00 = ISO-8859-1 encoding.
-        $size = strlen($encoded);
-        return $id.pack('N', $size)."\x00\x00".$encoded;
+    protected function choose_voice($providerid, $questionid) {
+        $provider = \mod_vocab\aibridge::get_provider((int) $providerid);
+        if (! $provider) {
+            return '';
+        }
+        $defaults = $provider->get_token_defaults();
+        $voices = [];
+        foreach (['VOICES_FEMALE', 'VOICES_MALE'] as $name) {
+            if (! empty($defaults[$name])) {
+                $voices = array_merge($voices, explode(',', $defaults[$name]));
+            }
+        }
+        $voices = array_values(array_filter(array_map('trim', $voices)));
+        if (empty($voices)) {
+            return '';
+        }
+        return $voices[$questionid % count($voices)];
+    }
+
+    /**
+     * Put each speaker and each line of a conversation on a line of its own,
+     * if the AI has written the whole conversation on one line, e.g.
+     * "A=woman (customer) B=man (staff) A: Hello. B: Hi." becomes
+     * "A=woman (customer)\nB=man (staff)\nA: Hello.\nB: Hi."
+     *
+     * @param string $text
+     * @return string
+     */
+    public static function format_dialogue($text) {
+        $text = preg_replace('/<br\s*\/?>|<\/p>/i', "\n", $text);
+        $text = trim(html_entity_decode(strip_tags($text), ENT_QUOTES, 'UTF-8'));
+        if (strpos($text, "\n") !== false) {
+            return $text;
+        }
+        if (! preg_match('/^(.*?)\s*([A-Z]\s*:\s*.*)$/us', $text, $match)) {
+            return $text;
+        }
+        $script = [];
+        if (preg_match_all('/([A-Z])\s*=\s*(\w+)(?:\s*\(([^)]+)\))?/u', $match[1], $speakers, PREG_SET_ORDER)) {
+            foreach ($speakers as $speaker) {
+                $script[] = $speaker[1].'='.$speaker[2].(empty($speaker[3]) ? '' : ' ('.trim($speaker[3]).')');
+            }
+        }
+        $count = 0;
+        if (preg_match_all('/([A-Z])\s*:\s*(.*?)(?=\s+[A-Z]\s*:|$)/us', $match[2], $lines, PREG_SET_ORDER)) {
+            foreach ($lines as $line) {
+                $script[] = $line[1].': '.trim($line[2]);
+                $count++;
+            }
+        }
+        if ($count < 2) {
+            return $text;
+        }
+        return implode("\n", $script);
     }
 
     /**

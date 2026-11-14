@@ -1496,12 +1496,6 @@ class form extends \mod_vocab\toolform {
             'vocab_word_usages',
         ];
 
-        // Access to config tables is also disallowed.
-        $configtables = [
-            'vocab_config',
-            'vocab_config_settings',
-        ];
-
         foreach ($DB->get_tables() as $table) {
             if (in_array($table, $dictionarytables)) {
                 $info[$table] = [];

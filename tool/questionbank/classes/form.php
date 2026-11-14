@@ -100,7 +100,7 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function definition() {
-        global $PAGE, $OUTPUT;
+        global $PAGE, $OUTPUT, $USER;
 
         $mform = $this->_form;
         $this->set_form_id($mform);
@@ -119,44 +119,30 @@ class form extends \mod_vocab\toolform {
         $cmid = $this->get_vocab()->cm->id;
         $icon = $OUTPUT->pix_icon('t/edit', get_string('editsettings'));
 
-        // Ensure that we have access details, prompts and formats for AI assistants.
-        $a = [];
-        $textassistants = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_TEXT);
-        if (empty($textassistants)) {
-            $url = new \moodle_url('/mod/vocab/ai/chatgpt/index.php', ['id' => $cmid]);
-            $a[] = $this->get_string('noassistantsfound', \html_writer::link($url, $icon));
-        }
-        if (! $prompts = $this->get_config_options('prompts', 'promptname', 'selectprompt')) {
-            $url = new \moodle_url('/mod/vocab/ai/prompts/index.php', ['id' => $cmid]);
-            $a[] = $this->get_string('nopromptsfound', \html_writer::link($url, $icon));
-        }
-        if (! $formats = $this->get_config_options('formats', 'formatname', 'selectformat')) {
-            $url = new \moodle_url('/mod/vocab/ai/formats/index.php', ['id' => $cmid]);
-            $a[] = $this->get_string('noformatsfound', \html_writer::link($url, $icon));
-        }
-        if (count($a)) {
-            $a = \html_writer::alist($a, ['class' => 'list-unstyled']);
-            $msg = $this->get_string('missingaidetails', $a).
-                   $this->get_string('addaidetails');
-            $this->add_message($mform, $msg);
+        // The AI providers and templates are those that this teacher can use in this activity.
+        $context = $this->get_vocab()->context;
+        $userid = (int) $USER->id;
+
+        // Ensure that the AI bridge is turned on, and that there are some prompts.
+        if (! \mod_vocab\aibridge::is_enabled()) {
+            $this->add_message($mform, $this->get_string('aibridgedisabled'));
             return;
         }
+        $prompts = \mod_vocab\aibridge::get_prompt_menu($context, $userid);
+        if (empty($prompts)) {
+            $url = \mod_vocab\aibridge::get_url('library', $context);
+            $msg = $this->get_string('nopromptsfound', \html_writer::link($url, $icon));
+            $this->add_message($mform, $this->get_string('missingaidetails', $msg));
+            return;
+        }
+        if (count($prompts) > 1) {
+            $prompts = [0 => $this->get_string('selectprompt')] + $prompts;
+        }
+        $formats = \mod_vocab\aibridge::get_format_menu($context, $userid);
 
-        // The training files are not essential so we allow them to be empty.
-        $files = $this->get_config_options('files', 'filedescription', 'selectfile', true);
-
-        $imageassistants = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_IMAGE, true);
-        if (is_array($imageassistants) && count($imageassistants)) {
-            $imageassistants = [0 => get_string('none')] + $imageassistants;
-        }
-        $audioassistants = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_AUDIO, true);
-        if (is_array($audioassistants) && count($audioassistants)) {
-            $audioassistants = [0 => get_string('none')] + $audioassistants;
-        }
-        $videoassistants = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_VIDEO, true);
-        if (is_array($videoassistants) && count($videoassistants)) {
-            $videoassistants = [0 => get_string('none')] + $videoassistants;
-        }
+        $textassistants = \mod_vocab\aibridge::get_text_menu($context, $userid);
+        $imageassistants = \mod_vocab\aibridge::get_media_menu('image', $context, $userid);
+        $audioassistants = \mod_vocab\aibridge::get_media_menu('audio', $context, $userid);
 
         // Cache line break for flex context.
         $br = \html_writer::tag('span', '', ['class' => 'w-100']);
@@ -190,19 +176,14 @@ class form extends \mod_vocab\toolform {
         $name = 'aisettings';
         $this->add_heading($mform, $name, true);
 
-        $this->add_field_textassistant($mform, $textassistants);
+        $name = 'textassistant';
+        $this->add_field_select($mform, $name, $textassistants, PARAM_INT, \mod_vocab\aibridge::AUTOMATIC);
 
         $name = 'prompt';
-        $this->add_field_select($mform, $name, $prompts, PARAM_ALPHANUM);
+        $this->add_field_select($mform, $name, $prompts, PARAM_INT);
 
-        $name = 'qformat';
-        $options = self::get_question_formats();
-        $this->add_field_select($mform, $name, $options, PARAM_ALPHANUM, 'gift');
-
-        $this->add_field_tuningfile($mform, $files, $cmid);
-        $this->add_field_imageassistant($mform, $imageassistants);
-        $this->add_field_audioassistant($mform, $audioassistants);
-        $this->add_field_videoassistant($mform, $videoassistants);
+        $this->add_field_media_assistant($mform, 'image', $imageassistants, $context);
+        $this->add_field_media_assistant($mform, 'audio', $audioassistants, $context);
 
         // Add a heading for the "Question types".
         $name = 'questiontypes';
@@ -212,8 +193,7 @@ class form extends \mod_vocab\toolform {
         // If we omit the enable label completely, the vertical spacing gets messed up,
         // so to compensate, we use a non-blank space. Could also use get_string('enable').
         $enablelabel = '&nbsp;';
-        $promptlabel = get_string('promptname', 'vocabai_prompts');
-        $formatlabel = get_string('formatname', 'vocabai_formats');
+        $formatlabel = $this->get_string('formatname');
 
         $qtypes = self::get_question_types();
         foreach ($qtypes as $qtype => $label) {
@@ -225,11 +205,8 @@ class form extends \mod_vocab\toolform {
             $mform->addGroup($elements, $qtype, $label);
             $mform->addHelpButton($qtype, 'pluginname', "qtype_$qtype");
 
-            // Set the default format to be the first of any that contain
-            // the question type in their name.
-            if ($defaults = preg_grep('/'.preg_quote($label, '/').'/', $formats)) {
-                $mform->setDefault($qtype.'[format]', key($defaults));
-            }
+            // By default, the prompt chooses the format for each question type.
+            $mform->setDefault($qtype.'[format]', 0);
 
             // Disable the format menu until the question type becomes checked.
             $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
@@ -287,47 +264,40 @@ class form extends \mod_vocab\toolform {
         $label = $this->get_string('generatequestions');
         $this->add_action_buttons(true, $label);
 
-        // Setup paramters to pass to Javscript AMD.
-        $namefields = [
-            'prompttextid' => 'textassistant',
-            'promptfileid' => 'file',
-            'promptqformat' => 'qformat',
-            'promptimageid' => 'imageassistant',
-            'promptaudioid' => 'audioassistant',
-            'promptvideoid' => 'videoassistant',
-            'promptqtypes' => 'qtypes',
-            'promptqcount' => 'questioncount',
-            'promptreview' => 'questionreview',
-            'promptparentcatid' => 'parentcat[id]',
-            'promptsubcattype' => 'subcattypes',
-            'promptsubcatname' => 'subcatname',
-            'prompttagtypes' => 'tagtypes',
-            'prompttagnames' => 'tagnames',
-        ];
-
-        $options = $this->get_config_options('prompts', $namefields);
-        foreach ($options as $configid => $defaults) {
-            if (empty($defaults->qtypes)) {
-                continue;
-            }
-            $qtypes = json_decode($defaults->qtypes);
-            if (json_last_error() == JSON_ERROR_NONE) {
-                $defaults->qtypes = $qtypes;
-                $options[$configid] = $defaults;
-            }
-        }
-
+        // When a prompt is chosen, the form is set up with the choices that this
+        // teacher last made with that prompt, or with the prompt's question types.
         $prompt = $mform->getElement('prompt');
         foreach ($prompt->_options as $i => $option) {
-            $configid = $option['attr']['value'];
-            if (array_key_exists($configid, $options)) {
-                $defaults = json_encode($options[$configid]);
-                $option['attr']['data-defaults'] = $defaults;
+            $template = \mod_vocab\aibridge::get_template((int) $option['attr']['value']);
+            if ($template && ($defaults = \mod_vocab\aibridge::get_prompt_defaults($template, $userid))) {
+                $option['attr']['data-defaults'] = json_encode($defaults);
                 $prompt->_options[$i] = $option;
             }
         }
 
         $PAGE->requires->js_call_amd('vocabtool_questionbank/form', 'init');
+    }
+
+    /**
+     * Add a menu of the AI providers that can make a kind of media, or, if there
+     * are none, a link to the page where they can be set up.
+     *
+     * @param object $mform the Moodle form
+     * @param string $type image or audio
+     * @param array $options provider id => name
+     * @param \context $context
+     * @return void ... but may update $mform.
+     */
+    public function add_field_media_assistant($mform, $type, $options, $context) {
+        $name = $type.'assistant';
+        if (empty($options)) {
+            $url = \mod_vocab\aibridge::get_url('index', $context);
+            $msg = \html_writer::link($url, $this->get_string('clicktoadd'.$type));
+            $msg = $this->get_string('no'.$type.'sfound', $msg);
+            $this->add_field_static($mform, $name, $msg, 'showhelp');
+        } else {
+            $this->add_field_select($mform, $name, $options, PARAM_INT, \mod_vocab\aibridge::NONE);
+        }
     }
 
     /**
@@ -461,6 +431,7 @@ class form extends \mod_vocab\toolform {
                 'C1' => get_string('cefr_c1_description', $plugin),
                 'C2' => get_string('cefr_c2_description', $plugin),
             ];
+            return $cefr;
         }
     }
 
@@ -501,6 +472,10 @@ class form extends \mod_vocab\toolform {
             if (empty($data[$name])) {
                 $errors[$name] = $this->get_string('empty'.$name);
             }
+        }
+
+        if (array_key_exists('prompt', $data) && empty($data['prompt'])) {
+            $errors['prompt'] = $this->get_string('emptyprompt');
         }
 
         return $errors;
@@ -546,29 +521,25 @@ class form extends \mod_vocab\toolform {
         // Cache the vocabid.
         $vocabid = $this->get_vocab()->id;
 
-        // Get config id of an AI access.
+        // Get the id of the AI provider for text, or -1 to let the AI bridge choose.
         $name = 'textassistant';
-        $textid = (empty($data->$name) ? 0 : $data->$name);
+        $textid = (isset($data->$name) ? (int)$data->$name : \mod_vocab\aibridge::AUTOMATIC);
 
-        // Get config id of an AI prompt.
+        // Get the id of the AI prompt in the AI bridge's library.
         $name = 'prompt';
-        $promptid = (empty($data->$name) ? 0 : $data->$name);
+        $promptid = (empty($data->$name) ? 0 : (int)$data->$name);
 
+        // Get the ids of the AI providers for media, 0 for none or -1 for any.
         $name = 'imageassistant';
-        $imageid = (empty($data->$name) ? 0 : $data->$name);
+        $imageid = (empty($data->$name) ? 0 : (int)$data->$name);
 
         $name = 'audioassistant';
-        $audioid = (empty($data->$name) ? 0 : $data->$name);
+        $audioid = (empty($data->$name) ? 0 : (int)$data->$name);
 
-        $name = 'videoassistant';
-        $videoid = (empty($data->$name) ? 0 : $data->$name);
+        $videoid = 0;
 
-        // Get question format (GIFT or XML).
-        $name = 'qformat';
-        $qformat = (empty($data->$name) ? '' : $data->$name);
-
-        $name = 'file';
-        $fileid = (empty($data->$name) ? 0 : $data->$name);
+        // The question format (GIFT or XML) is set by the output format, when the prompt is made.
+        $qformat = '';
 
         if (property_exists($data, 'selectedwords')) {
             unset($data->selectedwords['selectall']);
@@ -590,12 +561,13 @@ class form extends \mod_vocab\toolform {
         foreach ($qtypes as $name => $text) {
             if (isset($data->$name) && is_array($data->$name)) {
                 $values = $data->$name;
-                if (empty($values['enable']) || empty($values['format'])) {
+                if (empty($values['enable'])) {
                     $values = null;
                 } else {
+                    // A format id of 0 means the format that the prompt links to this question type.
                     $values = (object)[
                         'text' => $text,
-                        'formatid' => $values['format'],
+                        'formatid' => (empty($values['format']) ? 0 : (int)$values['format']),
                     ];
                 }
             } else {
@@ -620,7 +592,7 @@ class form extends \mod_vocab\toolform {
             unset($data->questionlevels);
         }
 
-        if (empty($words) || empty($qtypes) || empty($qlevels)) {
+        if (empty($words) || empty($qtypes) || empty($qlevels) || empty($promptid)) {
             return;
         }
 
@@ -705,6 +677,24 @@ class form extends \mod_vocab\toolform {
             unset($data->$groupname);
         }
 
+        // Remember these choices, for the next time that this prompt is used.
+        $defaults = [
+            'textassistant' => $textid,
+            'imageassistant' => $imageid,
+            'audioassistant' => $audioid,
+            'qtypes' => array_map(function($values) {
+                return $values->formatid;
+            }, $qtypes),
+            'questioncount' => $qcount,
+            'questionreview' => $review,
+            'parentcat[id]' => $parentcatid,
+            'subcattypes' => $subcattype,
+            'subcatname' => $subcatname,
+            'tagtypes' => $tagtypes,
+            'tagnames' => $tagnames,
+        ];
+        \mod_vocab\aibridge::save_prompt_defaults($promptid, $defaults, $USER->id);
+
         // Cache reference to this questionbank tool object.
         // This allows easy access to the log functions.
         $tool = $this->get_subplugin();
@@ -746,7 +736,7 @@ class form extends \mod_vocab\toolform {
                         'textid' => $textid,
                         'promptid' => $promptid,
                         'formatid' => $qtypesettings->formatid,
-                        'fileid' => $fileid,
+                        'fileid' => 0,
                         'imageid' => $imageid,
                         'audioid' => $audioid,
                         'videoid' => $videoid,
@@ -806,8 +796,10 @@ class form extends \mod_vocab\toolform {
         $logids = [];
         $logaction = '';
 
-        $defaultlogid = 0;
-        $defaultfields = [];
+        $defaultlogid = self::get_optional_param('defaultlogid', 0, PARAM_INT);
+        $defaultfields = self::get_optional_param('defaultfields', [], PARAM_INT);
+        $defaultfields = array_filter($defaultfields);
+        $defaultfields = array_keys($defaultfields);
 
         $logtable = '';
         $logmessage = '';
@@ -896,7 +888,7 @@ class form extends \mod_vocab\toolform {
                 // Define the types of the log fields that can be updated.
                 // Fields that are not in this array cannot be updated.
                 // The includes the folowing fields:
-                // id, taskid, userid, vocabid, wordid, questionids
+                // id, taskid, userid, vocabid, wordid
                 // and any other fields that not in the list below.
                 $types = [
                     'qtype' => PARAM_TEXT,
@@ -906,10 +898,8 @@ class form extends \mod_vocab\toolform {
                     'textid' => PARAM_INT,
                     'promptid' => PARAM_INT,
                     'formatid' => PARAM_INT,
-                    'fileid' => PARAM_INT,
                     'imageid' => PARAM_INT,
                     'audioid' => PARAM_INT,
-                    'videoid' => PARAM_INT,
                     'parentcatid' => PARAM_INT,
                     'subcattype' => PARAM_INT,
                     'subcatname' => PARAM_TEXT,
@@ -922,6 +912,7 @@ class form extends \mod_vocab\toolform {
                     'error' => PARAM_TEXT,
                     'prompt' => PARAM_CLEANHTML,
                     'results' => PARAM_CLEANHTML,
+                    'questionids' => PARAM_TEXT,
                 ];
 
                 // The $updated array holds the names
@@ -972,8 +963,6 @@ class form extends \mod_vocab\toolform {
                 $logids = self::get_optional_param('logids', [], PARAM_INT);
             }
             if (count($logids) && confirm_sesskey()) {
-                $defaultlogid = self::get_optional_param('defaultlogid', 0, PARAM_INT);
-                $defaultfields = self::get_optional_param('defaultfields', [], PARAM_INT);
                 $logmessage = $this->process_log_records(
                     $mform, $logaction, $logids,
                     $defaultlogid, $defaultfields
@@ -1012,7 +1001,7 @@ class form extends \mod_vocab\toolform {
             $this->add_heading(
                 $mform, 'logrecords',
                 (strlen($logmessage) == 0 ? false : true),
-                ($logcount == 0 ? '' : " ($logcount)")
+                (empty($logcount) ? '' : " ($logcount)")
             );
 
             // Display log messages about any log action that was just taken.
@@ -1071,10 +1060,7 @@ class form extends \mod_vocab\toolform {
         $defaultvalues = [];
         if ($defaultlogid && count($defaultfields)) {
             $defaultlog = $tool::get_log($defaultlogid);
-            foreach ($defaultfields as $name => $checked) {
-                if ($checked == 0) {
-                    continue; // Shouldn't happen !!
-                }
+            foreach ($defaultfields as $name) {
                 if (property_exists($defaultlog, $name)) {
                     $defaultvalues[$name] = $defaultlog->$name;
                 }
@@ -1178,40 +1164,34 @@ class form extends \mod_vocab\toolform {
                     $options = self::get_question_formats();
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
 
+                    // The AI providers and templates that the teacher can use in this activity.
+                    $context = $this->get_vocab()->context;
+                    $userid = (int)$USER->id;
+
                     $name = 'textid';
                     $a = ['strname' => 'textassistant'];
-                    $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_TEXT);
+                    $options = \mod_vocab\aibridge::get_text_menu($context, $userid);
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'promptid';
                     $a = ['strname' => 'prompt'];
-                    $options = $this->get_config_options('prompts', 'promptname', 'selectprompt');
+                    $options = \mod_vocab\aibridge::get_prompt_menu($context, $userid);
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     $name = 'formatid';
-                    $a = ['strname' => 'qformat'];
-                    $options = $this->get_config_options('formats', 'formatname', 'selectformat');
+                    $a = ['strname' => 'formatname'];
+                    $options = \mod_vocab\aibridge::get_format_menu($context, $userid);
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
-                    $name = 'fileid';
-                    $a = ['strname' => 'file'];
-                    $options = $this->get_config_options('files', 'filedescription', 'selectfile', true);
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
-
-                    $name = 'imageid';
-                    $a = ['strname' => 'imageassistant'];
-                    $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_IMAGE, true);
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
-
-                    $name = 'audioid';
-                    $a = ['strname' => 'audioassistant'];
-                    $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_AUDIO, true);
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
-
-                    $name = 'videoid';
-                    $a = ['strname' => 'videoassistant'];
-                    $options = self::get_assistant_options(\mod_vocab\aibase::SUBTYPE_VIDEO, true);
-                    $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
+                    foreach (['image', 'audio'] as $type) {
+                        $name = $type.'id';
+                        $a = ['strname' => $type.'assistant'];
+                        $options = \mod_vocab\aibridge::get_media_menu($type, $context, $userid);
+                        if (empty($options)) {
+                            $options = [\mod_vocab\aibridge::NONE => get_string('none')];
+                        }
+                        $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
+                    }
 
                     // The parent category group includes 'log[parentcat][id]'.
                     $this->add_parentcategory($mform, "log[parentcat]", $log->parentcatid);
@@ -1253,13 +1233,8 @@ class form extends \mod_vocab\toolform {
                     $this->add_field_textarea($mform, "log[$name]", PARAM_CLEANHTML, $log->$name, $a);
 
                     $name = 'questionids';
-                    $a = ['strname' => 'moodlequestions'];
-                    if (empty($log->$name)) {
-                        $log->$name = get_string('noquestions', 'quiz');
-                    } else {
-                        $log->$name = $this->format_questionids($log->$name);
-                    }
-                    $this->add_field_static($mform, "log[$name]", $log->$name, $a);
+                    $a = ['strname' => 'moodlequestions', 'size' => 40];
+                    $this->add_field_text($mform, "log[$name]", PARAM_INT, $log->$name, $a);
 
                     $name = 'savechanges';
                     $mform->addGroup([
@@ -1358,50 +1333,41 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * format_questionids
+     * Generates HTML-formatted question IDs with action links (edit, preview, delete).
      *
-     * @param string $questionids comma-separated list of question ids.
-     * @param object $incomplete details of incomplete log ids and question ids.
-     * @return string containing a list of links to previw pages of the questions.
+     * Each question ID is wrapped in a <span> with non-wrapping class and followed by icons
+     * for editing, previewing, and deleting the question. Incomplete questions (if provided)
+     * are visually marked using a CSS class.
+     *
+     * @param int $courseid The course ID used in question links.
+     * @param string $questionids A comma-separated list of question IDs.
+     * @param object $incomplete Optional object with 'question' array to mark incomplete items.
+     * @return string HTML-formatted list of question IDs with associated action links.
      */
-    public function format_questionids($questionids, $incomplete=null) {
-        global $OUTPUT;
+    public static function format_questionids($courseid, $questionids, $incomplete=null) {
 
         if (empty($questionids)) {
             return '';
         }
-
-        // Cache the courseid and edit/preview icons.
-        $courseid = $this->get_vocab()->course->id;
-        $editicon = $OUTPUT->pix_icon('t/edit', get_string('editsettings'));
-        $deleteicon = $OUTPUT->pix_icon('t/delete', get_string('delete'));
-        $previewicon = $OUTPUT->pix_icon('t/preview', get_string('preview'));
-
-        // Append, Bootstrap class to remove right (and left) margin on icons.
-        $search = '/class="([^"]*?) *"/';
-        $replace = 'class="$1 mx-0"';
-        $editicon = preg_replace($search, $replace, $editicon, 1);
-        $deleteicon = preg_replace($search, $replace, $deleteicon, 1);
-        $previewicon = preg_replace($search, $replace, $previewicon, 1);
-
-        // Cache URL of question edit page.
-        // This is used as the "returnurl" when deleting questions.
-        $params = ['courseid' => $courseid];
-        $returnurl = new \moodle_url('/question/edit.php', $params);
 
         $ids = explode(',', $questionids);
         $ids = array_map('trim', $ids);
         $ids = array_filter($ids);
 
         if (function_exists('array_key_last')) {
-            // PHP >= 7.3
+            // PHP >= 7.3.
             $lastkey = array_key_last($ids);
         } else {
-            // PHP <= 7.2
+            // PHP <= 7.2.
             end($ids);
             $lastkey = key($ids);
             reset($ids);
         }
+
+        // Cache the action icons.
+        $deleteicon = self::action_icon('delete', 'delete', 't/delete');
+        $editicon = self::action_icon('edit', 'editsettings', 't/edit');
+        $previewicon = self::action_icon('preview', 'preview', 't/preview');
 
         foreach ($ids as $i => $id) {
 
@@ -1414,20 +1380,13 @@ class form extends \mod_vocab\toolform {
 
             $url = '/question/bank/editquestion/question.php';
             $url = new \moodle_url($url, ['courseid' => $courseid, 'id' => $id]);
-            $ids[$i] = ' '.\html_writer::link($url, $id, $params);
+            $ids[$i] .= ' '.\html_writer::link($url, $editicon, $params);
 
             $url = '/question/bank/previewquestion/preview.php';
             $url = new \moodle_url($url, ['id' => $id]);
             $ids[$i] .= ' '.\html_writer::link($url, $previewicon, $params);
 
-            $url = '/question/bank/deletequestion/delete.php';
-            $url = new \moodle_url($url, [
-                'deleteselected' => $id,
-                'deleteall' => 1,
-                "q$id" => 1,
-                'courseid' => $courseid,
-                'returnurl' => $returnurl,
-            ]);
+            $url = self::delete_questions_url($courseid,  $id);
             $ids[$i] .= ' '.\html_writer::link($url, $deleteicon, $params);
 
             // Add comma separator, if this is not the last item in the array.
@@ -1441,6 +1400,72 @@ class form extends \mod_vocab\toolform {
         return implode(' ', $ids);
     }
 
+    /**
+     * Returns a cached HTML action icon (edit, delete, preview) with no horizontal margin.
+     *
+     * Icons are cached statically to improve performance. If not cached, the icon is created
+     * using Moodle's pix_icon and styled with Bootstrap `mx-0` class.
+     *
+     * @param string $type The internal icon type (e.g. 'edit', 'delete').
+     * @param string $strname The string identifier for the icon's alt text (defaults to $type).
+     * @param string $icon The Moodle pix_icon name (defaults to 't/{type}').
+     * @return string HTML for the icon image tag with adjusted class.
+     */
+    public static function action_icon($type, $strname='', $icon='') {
+        global $OUTPUT;
+        static $icons = [];
+
+        if (! array_key_exists($type, $icons)) {
+            if ($strname == '') {
+                $strname = $type;
+            }
+            if ($icon == '') {
+                $icon = "t/$type";
+            }
+            $icon = $OUTPUT->pix_icon($icon, get_string($strname));
+
+            // Append, Bootstrap class to remove right (and left) margin on icons.
+            $search = '/class="([^"]*?) *"/';
+            $replace = 'class="$1 mx-0"';
+            $icon = preg_replace($search, $replace, $icon, 1);
+
+            $icons[$type] = $icon;
+        }
+        return $icons[$type];
+    }
+
+    /**
+     * Builds a Moodle URL to delete one or more questions.
+     *
+     * Accepts a single question ID or an array/comma-separated string of IDs.
+     * Constructs a URL to the deletequestion script with appropriate parameters
+     * and a return URL to the question editing page.
+     *
+     * @param int $courseid The course ID used in the return URL.
+     * @param int|string[] $questionids A single question ID, comma-separated string, or array of IDs.
+     *
+     * @return \moodle_url The URL for initiating question deletion.
+     */
+    public static function delete_questions_url($courseid,  $questionids) {
+
+        // The URL of question edit page is used as the "returnurl" when deleting questions.
+        $returnurl = new \moodle_url('/question/edit.php', ['courseid' => $courseid]);
+
+        $params = [
+            'deleteselected' => 1,
+            'deleteall' => '1',
+            'courseid' => $courseid,
+            'returnurl' => $returnurl,
+        ];
+        if (is_string($questionids)) {
+            $questionids = explode(',', $questionids);
+            $questionids = array_filter($questionids);
+        }
+        foreach ($questionids as $questionid) {
+            $params['q'.$questionid] = 1;
+        }
+        return new \moodle_url('/question/bank/deletequestion/delete.php', $params);
+    }
 
     /**
      * Generates an HTML table displaying log records for a vocab activity.
@@ -1502,13 +1527,6 @@ class form extends \mod_vocab\toolform {
         // Initialize arrays that cache commonly used values in the main loop.
         $users = [];
         $qformats = [];
-        $textnames = [];
-        $promptnames = [];
-        $formatnames = [];
-        $filedescriptions = [];
-        $imagenames = [];
-        $audionames = [];
-        $videonames = [];
         $categorynames = [];
 
         // Cache valid types of subcategory and question tag.
@@ -1522,106 +1540,11 @@ class form extends \mod_vocab\toolform {
 
             foreach ($logs as $log) {
 
-                if (empty($users[$log->userid])) {
+                if (! array_key_exists($log->userid, $users)) {
                     $users[$log->userid] = $DB->get_record('user', ['id' => $log->userid]);
                 }
 
-                if (empty($textnames[$log->textid])) {
-                    $params = ['id' => $log->textid];
-                    if ($name = $DB->get_field($configtable, 'subplugin', $params)) {
-                        // The $name value is something like "vocabai_chatgpt".
-                        // We want to use get_string('chatgpt', 'vocabai_chatgpt').
-                        $name = get_string(substr($name, strpos($name, '_') + 1), $name);
-                    } else {
-                        $a = ['configid' => $log->textid, 'type' => 'subplugin'];
-                        $name = $this->get_string('missingconfigname', $a);
-                    }
-                    $textnames[$log->textid] = $name;
-                }
-
-                if (empty($promptnames[$log->promptid])) {
-                    $params = ['configid' => $log->promptid, 'name' => 'promptname'];
-                    if (! $name = $DB->get_field($settingstable, 'value', $params)) {
-                        $a = ['configid' => $log->promptid, 'type' => 'promptname'];
-                        $name = $this->get_string('missingconfigname', $a);
-                    }
-                    $promptnames[$log->promptid] = $name;
-                }
-
-                if (empty($formatnames[$log->formatid])) {
-                    $params = ['configid' => $log->formatid, 'name' => 'formatname'];
-                    if (! $name = $DB->get_field($settingstable, 'value', $params)) {
-                        $a = ['configid' => $log->formatid, 'type' => 'formatname'];
-                        $name = $this->get_string('missingconfigname', $a);
-                    }
-                    $formatnames[$log->formatid] = $name;
-                }
-
-                if (empty($filedescriptions[$log->fileid])) {
-                    if (empty($log->fileid)) {
-                        $name = ''; // Optional file, not specified.
-                    } else {
-                        $params = ['configid' => $log->fileid, 'name' => 'filedescription'];
-                        if (! $name = $DB->get_field($settingstable, 'value', $params)) {
-                            $a = ['configid' => $log->fileid, 'type' => 'filedescription'];
-                            $name = $this->get_string('missingconfigname', $a);
-                        }
-                    }
-                    $filedescriptions[$log->fileid] = $name;
-                }
-
-                if (empty($imagenames[$log->imageid])) {
-                    if (empty($log->imageid)) {
-                        $name = ''; // Optional image AI assistant, not specified.
-                    } else {
-                        $params = ['id' => $log->imageid];
-                        if ($name = $DB->get_field($configtable, 'subplugin', $params)) {
-                            // The $name value is something like "vocabai_chatgpt".
-                            // We want to the get_string('chatgpt', 'vocabai_chatgpt').
-                            $name = get_string(substr($name, strpos($name, '_') + 1), $name);
-                        } else {
-                            $a = ['configid' => $log->imageid, 'type' => 'subplugin'];
-                            $name = $this->get_string('missingconfigname', $a);
-                        }
-                    }
-                    $imagenames[$log->imageid] = $name;
-                }
-
-                if (empty($audionames[$log->audioid])) {
-                    if (empty($log->audioid)) {
-                        $name = ''; // Optional image AI assistant, not specified.
-                    } else {
-                        $params = ['id' => $log->audioid];
-                        if ($name = $DB->get_field($configtable, 'subplugin', $params)) {
-                            // The $name value is something like "vocabai_chatgpt".
-                            // We want to the get_string('chatgpt', 'vocabai_chatgpt').
-                            $name = get_string(substr($name, strpos($name, '_') + 1), $name);
-                        } else {
-                            $a = ['configid' => $log->audioid, 'type' => 'subplugin'];
-                            $name = $this->get_string('missingconfigname', $a);
-                        }
-                    }
-                    $audionames[$log->audioid] = $name;
-                }
-
-                if (empty($videonames[$log->videoid])) {
-                    if (empty($log->videoid)) {
-                        $name = ''; // Optional image AI assistant, not specified.
-                    } else {
-                        $params = ['id' => $log->videoid];
-                        if ($name = $DB->get_field($configtable, 'subplugin', $params)) {
-                            // The $name value is something like "vocabai_chatgpt".
-                            // We want to the get_string('chatgpt', 'vocabai_chatgpt').
-                            $name = get_string(substr($name, strpos($name, '_') + 1), $name);
-                        } else {
-                            $a = ['configid' => $log->videoid, 'type' => 'subplugin'];
-                            $name = $this->get_string('missingconfigname', $a);
-                        }
-                    }
-                    $videonames[$log->videoid] = $name;
-                }
-
-                if (empty($categorynames[$log->parentcatid])) {
+                if (! array_key_exists($log->parentcatid, $categorynames)) {
                     $params = ['id' => $log->parentcatid];
                     if (! $name = $DB->get_field($categoriestable, 'name', $params)) {
                         $name = $this->get_string('invalidquestioncategory', $log->parentcatid);
@@ -1629,7 +1552,7 @@ class form extends \mod_vocab\toolform {
                     $categorynames[$log->parentcatid] = $name;
                 }
 
-                if (empty($qformats[$log->qformat])) {
+                if (! array_key_exists($log->qformat, $qformats)) {
                     if (empty($log->qformat)) {
                         $name = ''; // Shouldn't happen !!
                     } else {
@@ -1668,7 +1591,8 @@ class form extends \mod_vocab\toolform {
                 }
 
                 $name = 'questionids';
-                $log->$name = $this->format_questionids($log->$name, $incomplete);
+                $courseid = $this->get_vocab()->course->id;
+                $log->$name = self::format_questionids($courseid, $log->$name, $incomplete);
 
                 if ($log->timecreated) {
                     $log->timecreated = userdate($log->timecreated, $datefmt);
@@ -1708,7 +1632,7 @@ class form extends \mod_vocab\toolform {
                 // Maybe we should add a "label" too?
                 $label = \html_writer::tag(
                     'label', $tool->get_string('default', $log->id),
-                    array('for' => "id_$name", 'class' => 'ms-1')
+                    ['for' => "id_$name", 'class' => 'ms-1']
                 );
 
                 // Define actions allowed on this log record.
@@ -1718,6 +1642,9 @@ class form extends \mod_vocab\toolform {
                         // Only allow this action if the log record has questions to fix.
                         $allowaction = array_key_exists($log->id, $incomplete->log);
                         $textparams = ['class' => 'text-danger'];
+                    } else if ($action == 'applydefaults') {
+                        $allowaction = false;
+                        $textparams = null;
                     } else {
                         $allowaction = true;
                         $textparams = null;
@@ -1750,13 +1677,11 @@ class form extends \mod_vocab\toolform {
                     $log->qcount,
                     $log->qlevel,
                     $qformats[$log->qformat],
-                    $textnames[$log->textid],
-                    $promptnames[$log->promptid],
-                    $formatnames[$log->formatid],
-                    $filedescriptions[$log->fileid],
-                    $imagenames[$log->imageid],
-                    $audionames[$log->audioid],
-                    $videonames[$log->videoid],
+                    $this->format_provider_name($log->textid),
+                    $this->format_template_name($log->promptid),
+                    $this->format_template_name($log->formatid),
+                    $this->format_provider_name($log->imageid),
+                    $this->format_provider_name($log->audioid),
                     $categorynames[$log->parentcatid],
                     $subcattypes,
                     $subcatnames,
@@ -1799,16 +1724,16 @@ class form extends \mod_vocab\toolform {
             5 => 'center', // Default.
             7 => 'center', // Question count.
             8 => 'center', // Question level.
-            22 => 'center', // Maxtries.
-            23 => 'center', // Tries.
-            25 => 'center', // Review.
+            20 => 'center', // Maxtries.
+            21 => 'center', // Tries.
+            23 => 'center', // Review.
         ];
 
         // Specify nowrap columns.
         $table->wrap = [
-            18 => 'nowrap', // Sub-categories.
-            20 => 'nowrap', // Question tags.
-            21 => 'nowrap', // Custom tags.
+            16 => 'nowrap', // Sub-categories.
+            18 => 'nowrap', // Question tags.
+            19 => 'nowrap', // Custom tags.
         ];
 
         // Define strings for column headings.
@@ -1826,10 +1751,8 @@ class form extends \mod_vocab\toolform {
             'textid' => $this->get_string('textassistant'),
             'promptid' => $this->get_string('promptname'),
             'formatid' => $this->get_string('formatname'),
-            'fileid' => $this->get_string('filedescription'),
             'imageid' => $this->get_string('imageassistant'),
             'audioid' => $this->get_string('audioassistant'),
-            'videoid' => $this->get_string('videoassistant'),
             'parentcatid' => $this->get_string('parentcategory'),
             'subcattype' => $this->get_string('subcattype'),
             'subcatname' => $this->get_string('subcatname'),
@@ -1846,20 +1769,30 @@ class form extends \mod_vocab\toolform {
             'timecreated' => $this->get_string('timecreated'),
             'timemodified' => $this->get_string('timemodified'),
         ];
-        foreach ($head as $name => $text) {
-            $head[$name] = new \html_table_cell($text);
-        }
-        $table->head = array_values($head);
-        $table = \html_writer::table($table);
 
         $excludednames = [
             'logactions', 'taskid', 'userid', 'wordid',
             'error', 'prompt', 'results', 'questionids',
             'timecreated', 'timemodified',
         ];
+
+        foreach ($head as $name => $text) {
+            $cell = new \html_table_cell($text);
+            if (in_array($name, $excludednames)) {
+                $cell->attributes['rowspan'] = 2;
+                // We set the rowspan in the $attributes array,
+                // because cell->rowspan is ignored on header cells.
+            }
+            $head[$name] = $cell;
+        }
+
+        $table->head = array_values($head);
+        $table = \html_writer::table($table);
+
         foreach ($head as $name => $cell) {
             if (in_array($name, $excludednames)) {
                 $cell->text = '';
+                unset($cell->attributes['rowspan']);
             } else if ($name == 'logids') {
                 // Add the checkbox to select all logs.
                 $cell->text = \html_writer::empty_tag('input', [
@@ -1867,7 +1800,7 @@ class form extends \mod_vocab\toolform {
                     'value' => 1,
                     'name' => $name.'[0]',
                     'id' => 'id_'.$name.'_0',
-                    'class' => 'd-none',
+                    'class' => 'd-none', // Unhidden later (by Javascript).
                     'checked' => (in_array(0, $logids) ? 'checked' : null),
                 ]);
             } else if ($name == 'defaultlogid') {
@@ -1888,15 +1821,54 @@ class form extends \mod_vocab\toolform {
                     'checked' => (in_array($name, $defaultfields) ? 'checked' : null),
                 ]);
             }
-            if ($cell->text) {
+            if (empty($cell->text)) {
+                unset($head[$name]);
+            } else {
                 $cell->attributes['style'] = 'text-align:center;';
+                $head[$name] = \html_writer::tag('th', $cell->text, $cell->attributes);
             }
-            $head[$name] = \html_writer::tag('th', $cell->text, $cell->attributes);
         }
         $head = \html_writer::tag('tr', implode('', array_values($head)));
         $table = substr_replace($table, $head, strpos($table, '</thead>'), 0);
 
         return [$table, $logcount, $incomplete];
+    }
+
+    /**
+     * Format the name of an AI provider in the AI bridge, for the log table.
+     *
+     * @param int $providerid the provider id, -1 for any provider, or 0 for none.
+     * @return string
+     */
+    protected function format_provider_name($providerid) {
+        $providerid = (int)$providerid;
+        if ($providerid == \mod_vocab\aibridge::NONE) {
+            return '';
+        }
+        if ($providerid == \mod_vocab\aibridge::AUTOMATIC) {
+            return get_string('aibridgeautomatic', 'mod_vocab');
+        }
+        if ($provider = \mod_vocab\aibridge::get_provider($providerid)) {
+            return s($provider->get_name());
+        }
+        return $this->get_string('missingconfigname', (object)['configid' => $providerid, 'type' => 'provider']);
+    }
+
+    /**
+     * Format the name of a prompt or output format in the AI bridge's library, for the log table.
+     *
+     * @param int $templateid the template id, or 0 for none.
+     * @return string
+     */
+    protected function format_template_name($templateid) {
+        $templateid = (int)$templateid;
+        if ($templateid == 0) {
+            return '';
+        }
+        if ($template = \mod_vocab\aibridge::get_template($templateid)) {
+            return format_string($template->get_name(), true, ['context' => $this->get_vocab()->context]);
+        }
+        return $this->get_string('missingconfigname', (object)['configid' => $templateid, 'type' => 'template']);
     }
 
     /**

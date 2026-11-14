@@ -166,10 +166,6 @@ function vocab_delete_instance($id) {
         'vocab_sample_words',
         'vocab_words',
     ];
-    $configtables = [
-        'vocab_config',
-        'vocab_config_settings',
-    ];
     $othertables = [
         'vocabtool_questionbank_log',
         'vocab_games',
@@ -384,7 +380,7 @@ function vocab_extend_navigation(navigation_node $node, stdClass $course, stdCla
  * @return void (but may add items to $vocabnode)
  */
 function vocab_extend_settings_navigation(settings_navigation $settings, navigation_node $vocabnode) {
-    global $PAGE;
+    global $CFG, $PAGE;
 
     // In Moodle >= 4.x we can use $cm = $settings->get_page()->cm
     // but for compatability with Moodle 3.11, we use the line below.
@@ -409,8 +405,8 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
         $types = [
             'report' => [],
             'game' => [],
-            'tool' => ['wordlist', 'dictionary', 'questionbank', 'import', 'phpdocs'],
-            'ai' => ['prompts', 'formats', 'files'],
+            'tool' => ['dictionary', 'wordlist', 'questionbank', 'import'],
+            'util' => [],
         ];
 
         foreach ($types as $type => $order) {
@@ -469,6 +465,17 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
                 $vocabnode->add_node($node, $beforekey);
             }
         }
+
+        // Links to the AI bridge, where teachers set up the AI providers,
+        // prompts and output formats that are used to generate questions.
+        $node = navigation_node::create(get_string('ais', 'vocab'));
+        $node->force_open();
+        require_once($CFG->dirroot.'/admin/tool/aibridge/lib.php');
+        $coursecontext = context_course::instance($cm->course);
+        tool_aibridge_extend_navigation_course($node, $PAGE->course, $coursecontext);
+        if ($node->has_children()) {
+            $vocabnode->add_node($node, $beforekey);
+        }
     }
 }
 
@@ -490,15 +497,38 @@ function vocab_extend_subplugin_navigation(navigation_node $node, $type, $name, 
 }
 
 /**
+ * Adds a navigation node if the current user is the module developer.
+ *
+ * @param settings_navigation $settings The settings navigation object
+ * @param navigation_node $node The node to which the node for this tool will be added.
+ * @param string $type of the subplugin, e.g. "tool".
+ * @param string $name of the subplugin, e.g. "phpdocs".
+ */
+function vocab_extend_navigation_for_developer(settings_navigation $settings, navigation_node $node, $type, $name) {
+    global $PAGE;
+    // Restrict this tool to use by the main developer in the development environment.
+    if (\mod_vocab\activity::is_developer()) {
+        $function = 'vocab_extend_subplugin_navigation';
+        $function($node, $type, $name, $PAGE->cm);
+    }
+}
+
+/**
  * Get icon mapping for font-awesome.
  * (see "https://fontawesome.com/search")
  */
 function mod_vocab_get_fontawesome_icon_map() {
     // Actually this array is not used because the individual subplugins define their own icon map.
-    return [
-        'mod_vocab:dictionary' => 'fa-book',
-        'mod_vocab:import' => 'fa-database',
-        'mod_vocab:phpdocs' => 'fa-code',
-        'mod_vocab:wordlist' => 'fa-list',
-    ];
+    return [];
+}
+
+/**
+ * Called by the AI bridge (tool_aibridge) when it is installed. If the
+ * bridge was installed in the same upgrade as this plugin, the old AI
+ * settings could not be moved into it then, so they are moved now.
+ */
+function mod_vocab_aibridge_installed() {
+    if (get_config('mod_vocab', 'movetoaibridge')) {
+        \mod_vocab\aibridge_migration::run();
+    }
 }

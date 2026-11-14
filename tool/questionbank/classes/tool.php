@@ -182,7 +182,7 @@ class tool extends \mod_vocab\toolbase {
     /**
      * Update a record in the log table.
      *
-     * @param integer $id
+     * @param object $log
      * @param array $params
      * @return bool, TRUE if log was updated, otherwise FALSE
      */

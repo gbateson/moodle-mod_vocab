@@ -155,6 +155,42 @@ function xmldb_vocab_upgrade($oldversion) {
         xmldb_vocab_check_structure($dbman, ['vocab']);
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
+
+    $newversion = 2025071478;
+    if ($oldversion < $newversion) {
+        // Remove several several vocabtool subplugins.
+        $vocabtools = $DB->get_records_select_menu(
+            'config_plugins',
+            $DB->sql_like('plugin', '?').' AND name = ?',
+            ['vocabtool_%', 'version'],
+            'plugin', // Sort by the plugin field.
+            'plugin, value' // Return these fields.
+        );
+        $toolnames = ['phpdocs', 'redotask', 'redoupgrade', 'sortstrings'];
+        foreach ($toolnames as $toolname) {
+            $pluginname = "vocabtool_$toolname";
+            if (array_key_exists($pluginname, $vocabtools)) {
+                uninstall_plugin('vocabtool', $toolname);
+                unset($toolnames[$toolname]);
+            }
+            $dir = $CFG->dirroot.'/mod/vocab/tool/'.$toolname;
+            if (is_dir($dir) && is_writeable($dir)) {
+                remove_dir($dir); // See "lib/moodlelib.php".
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
+    $newversion = 2026111480;
+    if ($oldversion < $newversion) {
+        // Move the settings of the "vocabai" subplugins (ChatGPT, DALL-E, Imagen, TTS,
+        // prompts, formats and tuning files) into the AI bridge (tool_aibridge), and
+        // remove the subplugins. If the bridge is installed in this same upgrade, this
+        // is done when it is installed, by mod_vocab_aibridge_installed().
+        \mod_vocab\aibridge_migration::run();
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

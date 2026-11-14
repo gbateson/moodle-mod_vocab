@@ -1234,4 +1234,21 @@ class activity {
         }
         return substr(str_shuffle($str), 0, $length);
     }
+
+    /**
+     * Determine whether or not the current user is the module developer.
+     *
+     * @return bool TRUE if the current user is the module developer; otherwise FALSE.
+     */
+    public static function is_developer() {
+        global $CFG, $PAGE, $USER;
+        if (is_siteadmin() && $USER->username == 'gbateson') {
+            if (isset($CFG->debug) && $CFG->debug == DEBUG_DEVELOPER) {
+                if (parse_url($CFG->wwwroot, PHP_URL_HOST) == 'localhost') {
+                    return has_capability('moodle/site:config', $PAGE->context);
+                }
+            }
+        }
+        return false;
+    }
 }

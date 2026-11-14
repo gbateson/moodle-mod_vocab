@@ -37,13 +37,10 @@ use core\plugininfo\base;
  * @since      Moodle 3.11
  */
 class vocabtool extends base {
-
     /**
-     * is_uninstall_allowed
+     * Determines whether or not this subplugin can be uninstalled.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return bool True if the subplugin is allowed to be uninstalled, false otherwise.
      */
     public function is_uninstall_allowed() {
         return true;

@@ -17,21 +17,21 @@
 /**
  * renderer.php The renderer for the vocab acitivity module.
  *
- * @package    mod_vocab
- * @copyright  2023 Gordon BATESON
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Gordon BATESON https://github.com/gbateson
- * @since      Moodle 3.11
+ * @package mod_vocab
+ * @copyright 2023 Gordon BATESON
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author Gordon BATESON https://github.com/gbateson
+ * @since Moodle 3.11
  */
 
 /**
  * mod_vocab_renderer
  *
- * @package    mod_vocab
- * @copyright  2023 Gordon Bateson
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Gordon Bateson gordonbateson@gmail.com
- * @since      Moodle 3.11
+ * @package mod_vocab
+ * @copyright 2023 Gordon Bateson
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author Gordon Bateson gordonbateson@gmail.com
+ * @since Moodle 3.11
  */
 class mod_vocab_renderer extends plugin_renderer_base {
 
@@ -684,531 +684,275 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Redo the upgrade for main module or a subplugin.
+     * find_missing_files
      *
-     * @param string $plugin frankenstyle plugin name
-     * @param string $basedir path to main folder of this plugin
-     * @param string $dateformat (optional, default='jS M Y') format string for "date()"
-     * @return void, but may modify settings in the config_plugins DB table
+     * @param string $plugin name
+     * @param bool $purgecaches
+     * @return string HTML code to display results
      */
-    public function redo_upgrade($plugin, $basedir, $dateformat='jS M Y') {
-        global $CFG, $FULLME, $DB;
-
-        // Set up the heading e.g. Redo upgrade: Vocabulary activity.
-        $heading = get_string('pluginname', $plugin)." ($plugin)";
-        $heading = $this->vocab->get_string('redoupgrade', $heading);
-
-        $output = '';
-        $output .= $this->header();
-        $output .= $this->heading($heading);
-        $output .= $this->box_start();
-
-        if ($version = \mod_vocab\activity::get_optional_param('version', 0, PARAM_INT)) {
-
-            // Format the plugin version.
-            if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})/', "$version", $match)) {
-                $yy = $match[1];
-                $mm = $match[2];
-                $dd = $match[3];
-                $vv = intval($match[4]);
-                $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).($vv == 0 ? '' : " ($vv)");
-            } else {
-                $text = ''; // Shouldn't happen !!
-            }
-
-            // Reset the plugin version.
-            $dbman = $DB->get_manager();
-            if ($dbman->table_exists('config_plugins')) {
-                // This table is available in Moodle >= 2.6.
-                $params = ['plugin' => $plugin, 'name' => 'version'];
-                $DB->set_field('config_plugins', 'value', $version - 1, $params);
-                // Force Moodle to refetch versions.
-                if (isset($CFG->allversionshash)) {
-                    unset_config('allversionshash');
-                }
-            }
-
-            // Inform user that module version has been reset.
-            $a = (object)['version' => $version, 'datetext' => $text];
-            $str = $this->vocab->get_string('redoversiondate', $a);
-            $output .= html_writer::tag('p', $str);
-
-            // Add a link to the upgrade page.
-            $href = new moodle_url('/admin/index.php', ['confirmplugincheck' => 1, 'cache' => 0]);
-            $str = $this->vocab->get_string('clicktocontinue');
-            $str = html_writer::tag('a', $str, ['href' => $href]);
-            $output .= html_writer::tag('p', $str);
-
-        } else { // No $version given, so offer a form to select $version.
-
-            // Start the form.
-            $output .= html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
-            $output .= html_writer::start_tag('div');
-
-            $versions = [];
-
-            // Extract and format the current version.
-            $contents = file_get_contents($CFG->dirroot."/$basedir/version.php");
-            if (preg_match('/^\$plugin->version *= *(\d{4})(\d{2})(\d{2})(\d{2});/m', $contents, $matches)) {
-                $yy = $matches[1];
-                $mm = $matches[2];
-                $dd = $matches[3];
-                $vv = $matches[4];
-                $version = "$yy$mm$dd$vv";
-                $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
-            }
-
-            // Extract and format versions from the upgrade script.
-            $contents = file_get_contents($CFG->dirroot."/$basedir/db/upgrade.php");
-            preg_match_all('/(?<=\$newversion = )(\d{4})(\d{2})(\d{2})(\d{2})(?=;)/', $contents, $matches);
-            $imax = count($matches[0]);
-            for ($i = 0; $i < $imax; $i++) {
-                $version = $matches[0][$i];
-                $yy = $matches[1][$i];
-                $mm = $matches[2][$i];
-                $dd = $matches[3][$i];
-                $vv = $matches[4][$i];
-                $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
-            }
-            krsort($versions);
-
-            // Add the form elements.
-            $output .= get_string('version').' '.html_writer::select($versions, 'version').' ';
-            $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
-
-            // Finish the form.
-            $output .= html_writer::end_tag('div');
-            $output .= html_writer::end_tag('form');
-        }
-
-        $output .= $this->box_end();
-        $output .= $this->footer();
-        return $output;
-    }
-
-    /**
-     * Reruns a selected adhoc task for a given plugin, optionally using the core lock system.
-     *
-     * This method provides a simple admin interface to manually trigger the execution of a Moodle
-     * adhoc task (e.g., for debugging or development). It can be used with or without locking, and
-     * provides form-based selection of available adhoc tasks belonging to the plugin.
-     *
-     * When a task is run, it is either executed with proper core locking (mimicking Moodle's
-     * cron handling), or in "lockless" mode for testing purposes.
-     *
-     * @param string $plugin The full plugin name (e.g., 'vocabtool_questionbank').
-     * @param bool $uselocks Whether to use Moodle's lock system (recommended in production).
-     *
-     * @return string The rendered HTML page, including status messages and a form for selecting tasks.
-     */
-    public function redo_adhoc_task($plugin, $uselocks=false) {
+    public function find_missing_files($plugin, $purgecaches=true) {
         global $CFG, $DB, $FULLME;
 
-        // Set up the heading e.g. Redo upgrade: Vocabulary activity.
+        require_once($CFG->dirroot.'/lib/questionlib.php');
+
+        // Set up the heading i.e. Find missing files.
         $heading = get_string('pluginname', $plugin)." ($plugin)";
-        $heading = $this->vocab->get_string('redotask', $heading);
+        $heading = $this->vocab->get_string('findmissingfiles', $heading);
 
         $output = '';
         $output .= $this->header();
         $output .= $this->heading($heading);
         $output .= $this->box_start();
-
-        $taskid = \mod_vocab\activity::get_optional_param('taskid', 0, PARAM_INT);
-        $taskexecutor = optional_param('taskexecutor', 0, PARAM_INT);
-
-        if ($taskid) {
-            if ($taskexecutor == 1) {
-                $url = "/{$CFG->admin}/tool/task/run_adhoctasks.php";
-                $params = ['id' => $taskid, 'confirm' => 1, 'sesskey' => sesskey()];
-                redirect(new moodle_url($url, $params));
-                // Script will stop here.
-            }
-
-            if ($uselocks) {
-                $cronlockfactory = \core\lock\lock_config::get_lock_factory('cron');
-                $lock = $cronlockfactory->get_lock('adhoc_' . $taskid, 0);
-            } else {
-                $cronlockfactory = false;
-                $lock = true;
-            }
-
-            $msg = '';
-            if ($lock) {
-
-                $record = $DB->get_record('task_adhoc', ['id' => $taskid]);
-                $task = \core\task\manager::adhoc_task_from_record($record);
-
-                if ($uselocks) {
-                    $cronlock = $cronlockfactory->get_lock('core_cron', 10);
-                } else {
-                    $cronlock = true;
-                }
-
-                // The global cron lock.
-                if ($cronlock) {
-
-                    if ($uselocks) {
-                        $task->set_lock($lock);
-                        $task->set_cron_lock($cronlock);
-                    }
-
-                    $output .= html_writer::start_tag('pre', ['class' => 'bg-dark text-light py-2 px-3']);
-                    ob_start();
-                    \core\task\manager::run_adhoc_from_cli($taskid);
-                    $output .= ob_get_contents();
-                    $output .= html_writer::end_tag('pre');
-
-                    if ($uselocks) {
-                        \core\task\manager::adhoc_task_complete($task);
-                        $cronlock->release();
-                    } else {
-                        // Mimic "adhoc_task_complete()" without locks.
-                        // We only use this during development.
-                        \core\task\logmanager::finalise_log();
-                        $task->set_timestarted();
-                        $task->set_hostname();
-                        $task->set_pid();
-
-                        // Delete the adhoc task record - it is finished.
-                        $DB->delete_records('task_adhoc', ['id' => $task->get_id()]);
-                    }
-                } else {
-                    $msg = ' Global lock not available.';
-                }
-                if ($uselocks) {
-                    $lock->release();
-                }
-            } else {
-                $msg = ' Record lock not available.';
-            }
-
-            if ($msg) {
-                $msg = get_string('error').get_string('labelsep', 'langconfig').$msg;
-            } else {
-                $msg = get_string('success');
-            }
-            $output .= html_writer::tag('p', $msg);
-        }
-
-        // Add the form elements.
-        if ($tasks = $DB->get_records_select('task_adhoc', $DB->sql_like('component', '?'), ['vocab%'])) {
-
-            // Cache the label seperator, e.g. ": ".
-            $labelsep = get_string('labelsep', 'langconfig');
-
-            foreach ($tasks as $taskid => $task) {
-                list($subplugin, $dir, $name) = explode('\\', trim($task->classname, '\\'), 3);
-                $data = json_decode($task->customdata);
-                foreach ($data as $name => $value) {
-                    $data->$name = "$name = $value";
-                }
-                if ($data = implode(', ', (array)$data)) {
-                    $data = " ($data)";
-                }
-                $tasks[$taskid] = str_replace('\\', '/', "$taskid: ".get_string('pluginname', $subplugin).$data);
-            }
-
-            $taskexecutors = [
-                0 => $this->vocab->get_string('pluginname').$labelsep.
-                     get_string('redotask', $plugin),
-                1 => get_string('server', 'admin').$labelsep.
-                     get_string('taskadmintitle', 'admin').$labelsep.
-                     get_string('adhoctasks', 'tool_task'),
-            ];
-
-            // Start the form.
-            $output .= html_writer::start_tag('form', ['action' => $FULLME, 'method' => 'post']);
-            $output .= html_writer::start_tag('div');
-
-            // Menu of tasks.
-            $output .= \html_writer::start_tag('p', ['class' => 'my-2']);
-            $output .= get_string('adhoctaskid', 'vocabtool_questionbank').$labelsep;
-            $output .= html_writer::select($tasks, 'taskid', $taskid, null);
-            $output .= \html_writer::end_tag('p');
-
-            // Menu of task executors.
-            $output .= \html_writer::start_tag('p', ['class' => 'my-2']);
-            $output .= get_string('taskexecutor', 'vocabtool_questionbank').$labelsep;
-            $output .= html_writer::select($taskexecutors, 'taskexecutor', $taskexecutor, null);
-            $output .= \html_writer::end_tag('p');
-
-            // Go button.
-            $output .= \html_writer::start_tag('p', ['class' => 'my-2']);
-            $output .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
-            $output .= \html_writer::end_tag('p');
-
-            // Finish the form.
-            $output .= html_writer::end_tag('div');
-            $output .= html_writer::end_tag('form');
-
-            // Add a link to run the cron (only available on localhost servers).
-            if (strpos($CFG->wwwroot, '/localhost/')) {
-                if ($password = $DB->get_field('config', 'value', ['name' => 'cronremotepassword'])) {
-                    $msg = get_string('redotaskincron', $plugin);
-                    $url = new moodle_url('/admin/cron.php', ['password' => $password]);
-                    $msg = html_writer::link($url, $msg, ['onclick' => "this.target = 'redotask';"]);
-                    $output .= html_writer::tag('p', $msg, ['class' => 'my-2']);
-                }
-            }
-
-        } else {
-            $msg = $this->vocab->get_string('notasks');
-            $output .= html_writer::tag('p', $msg, ['class' => 'my-2']);
-        }
-
-        $msg = get_string('refresh');
-        $msg = html_writer::link($FULLME, $msg);
-        $output .= html_writer::tag('p', $msg, ['class' => 'my-2']);
-
-        $output .= $this->box_end();
-        $output .= $this->footer();
-        return $output;
-    }
-
-    /**
-     * Displays a form and optionally sorts language strings in plugin lang files.
-     *
-     * This method renders a form listing available vocab-related plugins with language files
-     * and allows users to select which ones to sort. If the form is submitted, the selected
-     * language files are backed up, cleaned, and rewritten with language strings sorted
-     * alphabetically by key.
-     *
-     * @param string $plugin The plugin name (used for headings and context).
-     * @param boolean $purgecaches Optional flag to trigger cache purging after sorting (Default = true).
-     *
-     * @return string HTML output of the rendered page, including the plugin list form and confirmation message.
-     */
-    public function sort_lang_strings($plugin, $purgecaches=true) {
-        global $CFG, $DB, $FULLME;
-        $strlen = strlen($CFG->dirroot);
-
-        // Get incoming data, if any.
-        $selected = optional_param_array('selected', [], PARAM_INT);
-        $backuplangfiles = optional_param('backuplangfiles', 0, PARAM_INT);
-
-        // Set up the heading i.e. Sort strings for selected plugins.
-        $heading = get_string('pluginname', $plugin)." ($plugin)";
-        $heading = $this->vocab->get_string('sortstrings', $heading);
-
-        $output = '';
-        $output .= $this->header();
-        $output .= $this->heading($heading);
-        $output .= $this->box_start();
-
-        $dirs = [];
-
-        foreach (['mod', 'report', 'game', 'tool', 'ai'] as $type) {
-            if ($type == 'mod') {
-                $name = 'vocab';
-                $dir = $CFG->dirroot."/$type/$name";
-                $langfile = "$dir/lang/en/$name.php";
-                if (file_exists($langfile)) {
-                    $dirs[$type] = [$name => $dir];
-                }
-            } else {
-                $plugintype = "vocab{$type}";
-                $plugins = core_component::get_plugin_list($plugintype);
-                foreach ($plugins as $name => $dir) {
-                    $langfile = "$dir/lang/en/{$plugintype}_{$name}.php";
-                    if (file_exists($langfile)) {
-                        if (empty($dirs[$type])) {
-                            $dirs[$type] = [];
-                        }
-                        $dirs[$type][$name] = $dir;
-                    }
-                }
-            }
-        }
-
-        // Map chars to their escape/unescape equivalents.
-        $escape = [
-            '\\' => "\\\\",
-            "'" => "\\'",
-        ];
-        $unescape = [
-            '\\\\' => "\\",
-            "\\'" => "'",
-            '\\"' => '"',
-        ];
-
-        $updated = [];
-        $unchanged = [];
-        foreach ($selected as $pluginname => $value) {
-            // E.g. mod_vocab, vocabtool_dictionary.
-            if (empty($value)) {
-                continue; // Shouldn't happen !!
-            }
-            list($plugintype, $name) = explode('_', $pluginname, 2);
-            $type = str_replace('vocab', '', $plugintype);
-            if (empty($dirs[$type]) || empty($dirs[$type][$name])) {
-                continue; // Shouldn't happen !!
-            }
-            $dir = $dirs[$type][$name];
-            if ($type == 'mod') {
-                $langdirpath = "$dir/lang";
-                $langfilename = "$name.php";
-            } else {
-                $langdirpath = "$dir/lang";
-                $langfilename = "{$plugintype}_{$name}.php";
-            }
-
-            $langdirs = array_filter(glob("$langdirpath/*"), 'is_dir');
-            foreach ($langdirs as $langdir) {
-                $lang = substr($langdir, strrpos($langdir, '/') + 1);
-                $langfile = "$langdir/$langfilename";
-                if (is_writable($langfile)) {
-
-                    // Get the curent content of the langfile.
-                    $oldcontent = file_get_contents($langfile);
-
-                    // Make a backup of the langfile, if requested and required.
-                    if ($backuplangfiles) {
-                        $langfilebackup = str_replace('.php', '.backup.php', $langfile);
-                        if (! file_exists($langfilebackup)) {
-                            file_put_contents($langfilebackup, $oldcontent);
-                        }
-                    }
-
-                    // Truncate lang file at first occurrence of '$string'.
-                    if (! $pos = core_text::strpos($oldcontent, '$string')) {
-                        continue; // Shouldn't happen !!
-                    }
-                    $newcontent = core_text::substr($oldcontent, 0, $pos);
-                    $newcontent = trim($newcontent)."\n\n";
-
-                    // Get all the strings in the langfile, and sort them.
-                    $string = [];
-                    include($langfile);
-                    ksort($string);
-
-                    foreach ($string as $strname => $strvalue) {
-                        $strvalue = strtr($strvalue, $unescape);
-                        $strvalue = strtr($strvalue, $escape);
-                        $newcontent .= '$'."string['".$strname."'] = '".$strvalue."';\n";
-                    }
-                    if ($newcontent == $oldcontent) {
-                        if (empty($unchanged[$pluginname])) {
-                            $unchanged[$pluginname] = [];
-                        }
-                        $unchanged[$pluginname][$lang] = substr($langfile, $strlen);
-                    } else {
-                        file_put_contents($langfile, $newcontent);
-                        if (empty($updated[$pluginname])) {
-                            $updated[$pluginname] = [];
-                        }
-                        $updated[$pluginname][$lang] = substr($langfile, $strlen);
-                    }
-                    $newcontent = $oldcontent = ''; // Reclaim memory.
-                }
-            }
-        }
-
-        // Cache attributes classes for output elements.
-        $dl = ['class' => 'row'];
-        $dt = ['class' => 'col-md-3'];
-        $dd = ['class' => 'col-md-9'];
-        $span = ['class' => 'font-weight-normal'];
-
-        if (count($unchanged)) {
-            $output .= \html_writer::tag('h5', get_string('unchangedlangfiles', $plugin));
-            $output .= \html_writer::start_tag('dl', $dl);
-            foreach ($unchanged as $pluginname => $langs) {
-                $strpluginname = get_string('pluginname', $pluginname);
-                $langs = '['.implode(', ', array_keys($langs)).']';
-                $langs = \html_writer::tag('span', $langs, $span);
-                $output .= \html_writer::tag('dt', "$langs $pluginname", $dt);
-                $output .= \html_writer::tag('dd', "$strpluginname", $dd);
-            }
-            $output .= \html_writer::end_tag('dl');
-        }
-        if (count($updated)) {
-            $output .= \html_writer::tag('h5', get_string('updatedlangfiles', $plugin));
-            $output .= \html_writer::start_tag('dl', $dl);
-            foreach ($updated as $pluginname => $langs) {
-                $strpluginname = get_string('pluginname', $pluginname);
-                $langs = '['.implode(', ', array_keys($langs)).']';
-                $langs = \html_writer::tag('span', $langs, $span);
-                $output .= \html_writer::tag('dt', "$langs $pluginname", $dt);
-                $output .= \html_writer::tag('dd', "$strpluginname", $dd);
-            }
-            $output .= \html_writer::end_tag('dl');
-            if ($purgecaches) {
-                $output .= \html_writer::tag('p', get_string('stringcachesreset', $plugin));
-                get_string_manager()->reset_caches(true);
-            }
-        }
 
         $startedlists = false;
-        foreach ($dirs as $type => $plugindirs) {
-            if ($type == 'mod') {
-                $plugintype = $type;
-            } else {
-                $plugintype = "vocab{$type}";
-            }
+        $startedlist = false;
 
-            $startedlist = false;
-            foreach ($plugindirs as $name => $dir) {
+        $courseid = 4;
+        $course = $DB->get_record('course', ['id' => $courseid]);
+        $coursecontext = context_course::instance($courseid);
 
-                if ($startedlists == false) {
-                    $startedlists = true;
-                    $output .= \html_writer::start_tag('form', [
-                        'action' => $FULLME,
-                        'method' => 'post',
-                    ]);
-                    $output .= \html_writer::start_tag('div', [
-                        'class' => 'container ml-0',
-                        'style' => 'max-width: 840px;',
-                    ]);
-                }
+        $params = ['contextid' => $coursecontext->id, 'parent' => 0];
+        $coursecategory = $DB->get_record('question_categories', $params);
 
-                if ($startedlist == false) {
-                    $startedlist = true;
-                    if ($type == 'mod') {
-                        $label = get_string('activitymodules');
-                    } else {
-                        $label = get_string($type.'s', 'vocab');
+        $categoryids = question_categorylist($coursecategory->id);
+
+        // Map category ids to category records.
+        $categories = [];
+
+        // Map question ids to question records.
+        $questions = [];
+
+        // Map parent categories onto their subcategories.
+        $subcategories = [];
+
+        // Map category ids onto ids of questions with faulty files.
+        $missingfiles = [];
+
+        list($where, $params) = $DB->get_in_or_equal($categoryids);
+        $select = implode(',', [
+            'qv.id',
+            'qv.questionid',
+            'qc.id AS catid',
+            'qc.name AS catname',
+            'q.name AS questionname',
+        ]);
+        ;
+        $from = implode(',', [
+            '{question_bank_entries} qbe',
+            '{question_versions} qv',
+            '{question_categories} qc',
+            '{question} q',
+        ]);
+        $where = implode(' AND ', [
+            "qbe.questioncategoryid $where",
+            'qbe.id = qv.questionbankentryid',
+            'qbe.questioncategoryid = qc.id',
+            'qv.questionid = q.id',
+        ]);
+        $sql = "SELECT $select FROM $from WHERE $where";
+        if ($entries = $DB->get_records_sql($sql, $params)) {
+            $filerecord = [
+                'contextid' => $coursecontext->id,
+                'component' => 'question',
+                'filearea' => 'questiontext',
+                'itemid' => 0, // Set later.
+                'filepath' => '/', // Always this value.
+                'filename' => '', // Set later.
+            ];
+            foreach ($entries as $versionid => $entry) {
+                $select = 'contextid = ? AND '.
+                          'component = ? AND '.
+                          'filearea = ? AND '.
+                          'itemid = ? AND '.
+                          'filepath = ? AND '.
+                          'filename <> ?';
+                $params = [
+                    $coursecontext->id,
+                    'question',
+                    'questiontext',
+                    $entry->questionid,
+                    '/',
+                    '.',
+                ];
+                if ($files = $DB->get_records_select('files', $select, $params)) {
+                    foreach ($files as $file) {
+                        $hash = $file->contenthash;
+                        $dir1 = substr($hash, 0, 2);
+                        $dir2 = substr($hash, 2, 2);
+                        if (! file_exists($CFG->dataroot."/filedir/$dir1/$dir2/$hash")) {
+                            $questions[$entry->questionid] = $entry->questionname;
+
+                            // Initialize the subcategory id.
+                            $catid = $entry->catid;
+                            $subcatid = 0;
+
+                            // Get the next/first parent category.
+                            while ($catid && ($category = $DB->get_record('question_categories', ['id' => $catid]))) {
+
+                                // Cache the category id for convenience.
+                                $catid = $category->id;
+
+                                // Cache the category record - we may need it later.
+                                if (empty($categories[$catid])) {
+                                    $category->questionids = [];
+                                    $categories[$catid] = $category;
+                                }
+                                $categories[$catid]->questionids[$entry->questionid] = 1;
+
+                                if ($subcatid) {
+                                    // Update the subcategories for the parent category.
+                                    if (empty($subcategories[$catid])) {
+                                        $subcategories[$catid] = [];
+                                    }
+                                    if (empty($subcategories[$catid][$subcatid])) {
+                                        $subcategories[$catid][$subcatid] = 0;
+                                    }
+                                    $subcategories[$catid][$subcatid]++;
+                                }
+
+                                $subcatid = $catid;
+                                $catid = $category->parent;
+                            }
+
+                            if (empty($missingfiles[$entry->catid])) {
+                                $missingfiles[$entry->catid] = [];
+                            }
+                            if (empty($missingfiles[$entry->catid][$entry->questionid])) {
+                                $missingfiles[$entry->catid][$entry->questionid] = [];
+                            }
+                            $missingfiles[$entry->catid][$entry->questionid][] = $file->filepath.$file->filename;
+                        }
                     }
-                    $output .= \html_writer::tag('h5', $label);
-                    $output .= \html_writer::start_tag('dl', ['class' => 'row']);
                 }
-
-                if ($type == 'mod') {
-                    $pluginname = "{$type}_{$name}";
-                    $label = get_string('pluginname', $name);
-                    $langfile = "$dir/lang/en/{$name}.php";
-                } else {
-                    $pluginname = "{$plugintype}_{$name}";
-                    $label = get_string($name, $pluginname);
-                    $langfile = "$dir/lang/en/{$pluginname}.php";
-                }
-                $checkbox = \html_writer::checkbox(
-                    'selected['.$pluginname.']', 1,
-                    array_key_exists($pluginname, $selected),
-                    $label, null, ['class' => 'ml-2']
-                );
-                $output .= \html_writer::tag('dt', $checkbox, ['class' => 'col-md-3']);
-                $output .= \html_writer::tag('dd', $dir, ['class' => 'col-md-9']);
-            }
-
-            if ($startedlist) {
-                $output .= \html_writer::end_tag('dl');
             }
         }
 
-        if ($startedlists) {
-            // Backup selector.
-            $name = 'backuplangfiles';
-            $label = get_string($name, $plugin);
-            $helpicon = $this->output->help_icon($name, $plugin);
-            $output .= \html_writer::tag('p', $label.$helpicon.\html_writer::select_yes_no($name, 0));
-            // Sort button.
-            $output .= \html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('sort')]);
+        if (empty($categories)) {
+            $output .= \html_writer::tag('p', 'No missing files found. Well done!');
+        } else {
+            // Fix the name of the "top" question category for this course.
+            $catid = $coursecategory->id;
+            if (array_key_exists($catid, $categories)) {
+                $name = $coursecontext->get_context_name(false, false, true);
+                $name = get_string('topfor', 'question', $name);
+                $categories[$catid]->name = $name;
+            }
+
+            // Print the category tree, starting at the top course question category.
+            $output .= \html_writer::start_tag('div', ['class' => 'container ml-0']);
+            $output .= $this->format_question_category(
+                $courseid, $coursecategory->id,
+                $categories, $questions,
+                $missingfiles, $subcategories
+            );
             $output .= \html_writer::end_tag('div');
-            $output .= \html_writer::end_tag('form');
         }
 
         $output .= $this->box_end();
         $output .= $this->footer();
+        return $output;
+    }
+
+    /**
+     * Formats the output for a single question category, including its subcategories and incomplete questions.
+     *
+     * This method recursively builds an HTML structure that displays a category's name,
+     * associated subcategories, and any questions with missing media files. It also
+     * includes action links for editing or deleting faulty questions.
+     *
+     * @param int $courseid The ID of the course the category belongs to.
+     * @param int $catid The ID of the question category to render.
+     * @param array $categories Reference to the full list of categories, keyed by category ID.
+     * @param array $questions Reference to the list of formatted question summaries.
+     * @param array $missingfiles Reference to questions missing one or more required files, keyed by category/question ID.
+     * @param array $subcategories Reference to a tree of subcategory relationships, keyed by parent category ID.
+     *
+     * @return string HTML output representing the category block.
+     */
+    public function format_question_category($courseid, $catid, &$categories, &$questions, &$missingfiles, &$subcategories) {
+        $output = '';
+
+        $category = $categories[$catid];
+
+        $form = '\\vocabtool_questionbank\\form';
+
+        // Note, $category->questionids could be used to delete ALL faulty questions in this category.
+        $count = [];
+        if (array_key_exists($catid, $subcategories)) {
+            $count[] = '['.count($subcategories[$catid]).' categories]';
+        }
+        if (property_exists($category, 'questionids')) {
+            $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
+
+            $delete = \html_writer::link(
+                $form::delete_questions_url($courseid, array_keys($category->questionids)),
+                $form::action_icon('delete', 'delete', 't/delete'),
+                $params
+            );
+
+            $edit = \html_writer::link(
+                new \moodle_url('/question/edit.php', [
+                    'courseid' => $courseid,
+                    'cat' => join(',', [$category->id, $category->contextid]),
+                ]),
+                $form::action_icon('edit', 'editcategorythis', 't/edit'),
+                $params
+            );
+
+            $count[] = '['.count($category->questionids).' questions '.$edit.$delete.']';
+        }
+        if ($count = join(' ', $count)) {
+            $count = ' '.\html_writer::tag('small', $count, ['class' => 'dimmed']);
+        }
+
+        $output = '';
+        $output .= \html_writer::start_tag('dl', ['class' => 'my-1 ml-4 mr-0']);
+        $output .= \html_writer::tag('dt', 'Category: '.$category->name.$count, ['class' => 'my-0']);
+        $output .= \html_writer::start_tag('dd', ['class' => 'my-0']);
+
+        if (array_key_exists($catid, $subcategories)) {
+            foreach ($subcategories[$catid] as $subcatid => $missingfilecount) {
+                $output .= $this->format_question_category(
+                    $courseid, $subcatid, $categories, $questions, $missingfiles, $subcategories
+                );
+            }
+        }
+
+        if (array_key_exists($catid, $missingfiles)) {
+            foreach ($missingfiles[$catid] as $questionid => $files) {
+                sort($files);
+                // Get standard icons for edit, view and delete.
+                $summary = $form::format_questionids($courseid, $questionid);
+                // Remove leading numeric question id.
+                $summary = preg_replace('/(?<=>)\d+ (?=<)/', '', $summary, 1);
+                $summary = implode(' ', [
+                    '['.count($files).' files]',
+                    $summary,
+                    $questions[$questionid],
+                ]);
+                $output .= $this->format_question_details($summary, $files);
+            }
+        }
+
+        $output .= \html_writer::end_tag('dd');
+        $output .= \html_writer::end_tag('dl');
+        return $output;
+    }
+
+    /**
+     * Formats a collapsible HTML details block for a single question and its missing files.
+     *
+     * @param string $summary A short summary describing the question and file count.
+     * @param array $details An array of missing file names or paths.
+     *
+     * @return string HTML markup containing the summary and an ordered list of file names.
+     */
+    public function format_question_details($summary, $details) {
+        $output = '';
+        $output .= \html_writer::start_tag('details', ['name' => 'questiondetails']);
+        $output .= \html_writer::tag('summary', $summary);
+        $output .= \html_writer::alist($details, ['class' => 'mt-0 mb-2'], 'ol');
+        $output .= \html_writer::end_tag('details');
         return $output;
     }
 }

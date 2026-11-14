@@ -44,9 +44,9 @@
         <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
         <KEY NAME="vocabid" TYPE="foreign" FIELDS="vocabid" REFTABLE="vocab" REFFIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
-        <KEY NAME="textid" TYPE="foreign" FIELDS="textid" REFTABLE="vocab_config" REFFIELDS="id"/>
-        <KEY NAME="promptid" TYPE="foreign" FIELDS="promptid" REFTABLE="vocab_config" REFFIELDS="id"/>
-        <KEY NAME="formatid" TYPE="foreign" FIELDS="formatid" REFTABLE="vocab_config" REFFIELDS="id"/>
+        <KEY NAME="textid" TYPE="foreign" FIELDS="textid" REFTABLE="tool_aibridge_providers" REFFIELDS="id" COMMENT="-1 means any provider"/>
+        <KEY NAME="promptid" TYPE="foreign" FIELDS="promptid" REFTABLE="tool_aibridge_templates" REFFIELDS="id"/>
+        <KEY NAME="formatid" TYPE="foreign" FIELDS="formatid" REFTABLE="tool_aibridge_templates" REFFIELDS="id" COMMENT="0 means the format that the prompt links to"/>
         <KEY NAME="parentcatid" TYPE="foreign" FIELDS="parentcatid" REFTABLE="question_categories" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
