@@ -6,18 +6,31 @@
     color: #4d0099;
 }
 
-/** Restrict the width of the sections in the main form */ 
+/** Restrict the width of the sections in the main form */
 #vocabtool_questionbank_form fieldset.collapsible {
     max-width: 760px;
 }
+
 /**
- * The log records are a wide table, so their sections use the full width.
- * (Moodle 4.x leaves the "collapsed" class on a fieldset when it is expanded,
- * so the width cannot depend on that class.)
+ * The log records are a wide table, so their sections widen to the full width
+ * when they are expanded, and narrow again when they are collapsed. (Moodle 4.x
+ * leaves the "collapsed" class on a fieldset when it is expanded, so the width
+ * depends on the "aria-expanded" of its toggle link, which Bootstrap changes as
+ * soon as the link is clicked.)
  */
 #vocabtool_questionbank_form fieldset#id_selectedlogrecord,
 #vocabtool_questionbank_form fieldset#id_logrecords {
-    max-width: none;
+    transition: max-width 0.5s ease-in-out;
+}
+#vocabtool_questionbank_form fieldset#id_selectedlogrecord:has(a.fheader[aria-expanded="true"]),
+#vocabtool_questionbank_form fieldset#id_logrecords:has(a.fheader[aria-expanded="true"]) {
+    max-width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+    #vocabtool_questionbank_form fieldset#id_selectedlogrecord,
+    #vocabtool_questionbank_form fieldset#id_logrecords {
+        transition: none;
+    }
 }
 
 #vocabtool_questionbank_form .table-responsive {
