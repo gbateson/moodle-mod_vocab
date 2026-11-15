@@ -107,6 +107,7 @@ $string['fixquestions'] = 'Fix questions';
 $string['fixquestionsresult'] = 'Questions from {$a->count} task will be fixed {$a->ids}';
 $string['fixquestionsresults'] = 'Questions from {$a->count} tasks will be fixed {$a->ids}';
 $string['formatname'] = 'AI output format';
+$string['formatname_help'] = 'The output format that the AI is asked to use for the questions. "The prompt\'s own format" uses the format that the prompt links to this question type. Formats are kept in the AI prompt library.';
 $string['gapselectshort'] = 'Gap';
 $string['generatequestions'] = 'Generate questions';
 $string['generatingquestions'] = '... generating {$a->count} questions for "{$a->word}"';

@@ -107,6 +107,7 @@ $string['fixquestions'] = '質問を修正';
 $string['fixquestionsresult'] = '{$a->count} 件のログレコードを修正しました {$a->ids}';
 $string['fixquestionsresults'] = '{$a->count} 件のログレコードを修正しました {$a->ids}';
 $string['formatname'] = 'AI出力形式';
+$string['formatname_help'] = 'AIが問題に使う出力形式です。「プロンプトの出力形式」を選ぶと、プロンプトがこの問題タイプに関連付けている形式が使われます。形式はAIプロンプトライブラリにあります。';
 $string['gapselectshort'] = 'ギャップ';
 $string['generatequestions'] = '質問を生成';
 $string['generatingquestions'] = '... 単語 "{$a->word}" に対して {$a->count} 件の質問を生成中 ...';
