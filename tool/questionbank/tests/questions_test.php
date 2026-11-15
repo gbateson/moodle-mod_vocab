@@ -35,6 +35,10 @@ final class questions_test extends \advanced_testcase {
         require_once($CFG->libdir . '/questionlib.php');
         $this->resetAfterTest();
         set_config('requirepolicy', 0, 'tool_aibridge');
+        // The media is kept as the provider sends it (the AI bridge's tests cover converting it).
+        set_config('imageformat', 'keep', 'tool_aibridge');
+        set_config('imagemaxside', 0, 'tool_aibridge');
+        set_config('audioformat', 'keep', 'tool_aibridge');
 
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
