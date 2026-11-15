@@ -131,7 +131,54 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $output .= $this->view_information();
         $output .= $this->view_results_and_wordlist();
         $output .= $this->view_games();
+        $output .= $this->view_materials();
         return $output;
+    }
+
+    /**
+     * For teachers, show whether each game has the materials it needs for the
+     * words, with a button to make the missing materials in the background.
+     *
+     * @return string HTML
+     */
+    public function view_materials() {
+        if ($this->vocab->is_demo() || !$this->vocab->can_manage()) {
+            return '';
+        }
+        $progress = $this->get_progress();
+        $rows = '';
+        foreach ($progress->get_game_instances() as $instance) {
+            $game = \mod_vocab\gamebase::create($progress->get_vocab(), $this->vocab->cm, $instance);
+            if (!$game) {
+                continue;
+            }
+            $summary = $game->get_materials_summary();
+            $text = $this->vocab->get_string('materialsready', (object) $summary);
+            if ($summary['pending']) {
+                $text .= ', ' . $this->vocab->get_string('materialspending', $summary['pending']);
+            }
+            if ($summary['missing']) {
+                $text .= ', ' . $this->vocab->get_string('materialsmissing', count($summary['missing']));
+            }
+            $button = '';
+            if ($summary['missing'] && $game->can_make_materials()) {
+                $url = new moodle_url('/mod/vocab/materials.php', [
+                    'id' => $this->vocab->cm->id,
+                    'instanceid' => $instance->id,
+                    'sesskey' => sesskey(),
+                ]);
+                $button = $this->single_button($url, $this->vocab->get_string('makematerials'), 'post',
+                    ['class' => 'd-inline-block ms-2 ml-2']);
+            }
+            $rows .= html_writer::tag('li', html_writer::tag('b', s($game->get_label())) . ': ' . $text . $button,
+                ['class' => 'mb-1 vocab-materials-game']);
+        }
+        if ($rows === '') {
+            return '';
+        }
+        $title = $this->vocab->get_string('materials') . $this->help_icon('materials', 'mod_vocab');
+        $output = html_writer::tag('h4', $title) . html_writer::tag('ul', $rows, ['class' => 'list-unstyled mb-0']);
+        return html_writer::tag('div', $output, ['class' => 'clearfix bg-light border rounded mt-2 p-2 vocab-materials']);
     }
 
     /**

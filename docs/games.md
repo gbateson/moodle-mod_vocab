@@ -176,10 +176,17 @@ question bank tool.
 - When the question bank tool makes questions, it records which word each
   question is about (`vocab_word_questions`). The questions that it made
   earlier are linked to their words when the activity is upgraded.
-- Teachers see whether each game is ready, e.g. "Quiz: 18 of 24 words have
-  questions", and can ask for the missing materials to be made in the
-  background, with the AI bridge.
+- Teachers see whether each game is ready, on the activity's page, e.g.
+  "Quiz (Recognize): 18 of 24 words have materials, 2 being made, 4 missing",
+  and can ask for the missing materials to be made in the background, with
+  the AI bridge. The background tasks run when Moodle's cron runs.
 - A game is only given words for which it has materials.
+
+A game says what it can do about materials with these methods of
+`\mod_vocab\gamebase`: `get_ready_words()`, `can_make_materials()`,
+`get_pending_words()` and `make_materials()`. The quiz makes questions with the
+question bank tool, as its settings say: the prompt, question type, level and
+number of questions for each word. They are put in the quiz's category.
 
 ## Database
 
@@ -203,6 +210,6 @@ New and changed tables:
 3. The first game: a quiz of questions about the words, from the question
    bank (e.g. questions made by the question bank tool), at the recognize or
    recall stage.
-4. Then more games, one at a time, e.g. flashcards (learn), Hangman (recall)
-   and a chat with an AI (produce), and making missing materials in the
-   background.
+4. Making missing materials in the background (done for the quiz).
+5. Then more games, one at a time, e.g. flashcards (learn), Hangman (recall)
+   and a chat with an AI (produce).

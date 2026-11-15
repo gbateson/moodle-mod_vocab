@@ -27,6 +27,6 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'vocabgame_quiz';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2026111500;
-$plugin->release   = '2026-11-15 (00)';
-$plugin->dependencies = ['mod_vocab' => 2026111490];
+$plugin->version   = 2026111501;
+$plugin->release   = '2026-11-15 (01)';
+$plugin->dependencies = ['mod_vocab' => 2026111491];

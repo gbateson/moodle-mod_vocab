@@ -122,4 +122,48 @@ final class game_test extends \advanced_testcase {
         $this->assertArrayHasKey($one->id, $menu);
         $this->assertArrayHasKey(0, $menu);
     }
+
+    /**
+     * Questions for words that have none are made in the background, by the question bank tool.
+     */
+    public function test_make_materials(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $vocab = $generator->create_module('vocab', ['course' => $course->id]);
+        $cm = get_coursemodule_from_instance('vocab', $vocab->id);
+        $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['apple', 'banana']);
+        progress::save_stages($vocab->id, [progress::STAGE_RECOGNIZE => [1, 1]]);
+        $questions = $generator->get_plugin_generator('core_question');
+        $category = $questions->create_question_category(['contextid' => \context_course::instance($course->id)->id]);
+        $question = $questions->create_question('truefalse', null, ['category' => $category->id]);
+        progress::link_questions((int) $DB->get_field('vocab_words', 'id', ['word' => 'apple']), [$question->id]);
+
+        $config = ['materialqtype' => 'truefalse', 'materiallevel' => 'B1', 'materialcount' => 3];
+        progress::save_game_instances($vocab->id, [['quiz', progress::STAGE_RECOGNIZE, $config]]);
+        $progress = progress::create($vocab->id);
+        $instances = $progress->get_game_instances();
+        $game = \mod_vocab\gamebase::create($progress->get_vocab(), $cm, reset($instances));
+        $this->assertTrue($game->can_make_materials());
+
+        $banana = (int) $DB->get_field_sql("SELECT vwi.id FROM {vocab_word_instances} vwi
+            JOIN {vocab_words} vw ON vw.id = vwi.wordid WHERE vw.word = 'banana'");
+        $summary = $game->get_materials_summary();
+        $this->assertSame(['total' => 2, 'ready' => 1, 'pending' => 0, 'missing' => [$banana]], $summary);
+
+        $this->setUser($teacher);
+        $this->assertSame(1, $game->make_materials($summary['missing'], (int) $teacher->id));
+        $log = $DB->get_record('vocabtool_questionbank_log', ['vocabid' => $vocab->id], '*', MUST_EXIST);
+        $this->assertSame('truefalse', $log->qtype);
+        $this->assertSame('B1', $log->qlevel);
+        $this->assertEquals(3, $log->qcount);
+        $this->assertEquals(\vocabtool_questionbank\tool::TASKSTATUS_QUEUED, $log->status);
+        $this->assertEquals(game::get_default_promptid(), $log->promptid);
+        $this->assertTrue($DB->record_exists('task_adhoc', ['id' => $log->taskid]));
+
+        // Now banana's questions are being made, so they are not made again.
+        $this->assertSame(['total' => 2, 'ready' => 1, 'pending' => 1, 'missing' => []], $game->get_materials_summary());
+    }
 }

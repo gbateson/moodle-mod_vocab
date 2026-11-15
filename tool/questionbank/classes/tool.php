@@ -152,6 +152,47 @@ class tool extends \mod_vocab\toolbase {
     }
 
     /**
+     * Add a record to the log table, and queue the background task that makes
+     * the questions that it describes.
+     *
+     * @param array $params the log's fields, including userid, vocabid and wordid.
+     * @return int the id of the task, or 0 if it could not be queued.
+     */
+    public static function queue_task(array $params): int {
+        $params['status'] = self::TASKSTATUS_NOTSET;
+        $logid = self::insert_log($params);
+
+        $task = new \vocabtool_questionbank\task\questions();
+        $task->set_userid($params['userid']);
+        $task->set_custom_data(['logid' => $logid]);
+
+        // The "queue_adhoc_task()" method returns the id of a record in the "task_adhoc" table.
+        $taskid = (int) \core\task\manager::queue_adhoc_task($task);
+        if ($taskid) {
+            self::update_log($logid, [
+                'taskid' => $taskid,
+                'status' => self::TASKSTATUS_QUEUED,
+            ]);
+        }
+        return $taskid;
+    }
+
+    /**
+     * Get the words of an activity for which questions are being made, i.e. whose
+     * log records are not completed, cancelled or failed.
+     *
+     * @param int $vocabid
+     * @return int[] word ids.
+     */
+    public static function get_pending_wordids(int $vocabid): array {
+        global $DB;
+        $finished = [self::TASKSTATUS_COMPLETED, self::TASKSTATUS_CANCELLED, self::TASKSTATUS_FAILED];
+        [$select, $params] = $DB->get_in_or_equal($finished, SQL_PARAMS_NAMED, 'status', false);
+        $params['vocabid'] = $vocabid;
+        return array_map('intval', $DB->get_fieldset_select(self::LOGTABLE, 'DISTINCT wordid', "vocabid = :vocabid AND status $select", $params));
+    }
+
+    /**
      * Get a record from the log table using the given $id.
      *
      * @param integer $id

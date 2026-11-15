@@ -731,7 +731,7 @@ class form extends \mod_vocab\toolform {
 
                 foreach ($qlevels as $qlevel => $qlevelname) {
                     $a->qlevel = $qlevels[$qlevel];
-                    $logid = $tool::insert_log([
+                    $a->taskid = $tool::queue_task([
                         'userid' => $USER->id,
                         'vocabid' => $vocabid,
                         'wordid' => $wordid,
@@ -752,23 +752,9 @@ class form extends \mod_vocab\toolform {
                         'imageid' => $imageid,
                         'audioid' => $audioid,
                         'videoid' => $videoid,
-                        'status' => $tool::TASKSTATUS_NOTSET,
                         'review' => $review,
                     ]);
-
-                    // Create the adhoc task object, see
-                    // "/lib/classes/task/task_base.php".
-                    $task = new \vocabtool_questionbank\task\questions();
-                    $task->set_userid($USER->id);
-                    $task->set_custom_data(['logid' => $logid]);
-
-                    // If successful, the "queue_adhoc_task()" method
-                    // returns a record id from the "task_adhoc" table.
-                    if ($a->taskid = \core\task\manager::queue_adhoc_task($task)) {
-                        $tool::update_log($logid, [
-                            'taskid' => $a->taskid,
-                            'status' => $tool::TASKSTATUS_QUEUED,
-                        ]);
+                    if ($a->taskid) {
                         $success[] = $this->get_string('taskgeneratequestions', $a);
                     } else {
                         $failure[] = $this->get_string('taskgeneratequestions', $a);

@@ -57,12 +57,73 @@ class game extends \mod_vocab\gamebase {
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, 0);
 
+        self::add_material_settings($mform, $prefix, $context);
+
         $name = $prefix . 'wordcount';
         $counts = array_combine(range(1, self::MAX_WORD_COUNT), range(1, self::MAX_WORD_COUNT));
         $mform->addElement('select', $name, get_string('wordcount', $plugin), $counts);
         $mform->addHelpButton($name, 'wordcount', $plugin);
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, self::DEFAULT_WORD_COUNT);
+    }
+
+    /**
+     * Add the settings for making missing questions: the prompt, question type,
+     * level and number of questions for each word.
+     *
+     * @param \MoodleQuickForm $mform
+     * @param string $prefix
+     * @param \context $context
+     */
+    protected static function add_material_settings(\MoodleQuickForm $mform, string $prefix, \context $context): void {
+        global $USER;
+        if (!self::has_question_bank_tool()) {
+            return;
+        }
+        $plugin = static::get_component();
+        $prompts = \mod_vocab\aibridge::get_prompt_menu($context, (int) $USER->id);
+        $name = $prefix . 'materialprompt';
+        $mform->addElement('select', $name, get_string('materialprompt', $plugin), $prompts);
+        $mform->addHelpButton($name, 'materialprompt', $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, self::get_default_promptid());
+
+        $name = $prefix . 'materialqtype';
+        $qtypes = \vocabtool_questionbank\form::get_question_types();
+        $mform->addElement('select', $name, get_string('materialqtype', $plugin), $qtypes);
+        $mform->setType($name, PARAM_ALPHANUMEXT);
+        $mform->setDefault($name, 'multichoice');
+
+        $name = $prefix . 'materiallevel';
+        $levels = \vocabtool_questionbank\form::get_question_levels();
+        $mform->addElement('select', $name, get_string('materiallevel', $plugin), $levels);
+        $mform->setType($name, PARAM_ALPHANUMEXT);
+        $mform->setDefault($name, 'A2');
+
+        $name = $prefix . 'materialcount';
+        $counts = array_combine(range(1, 5), range(1, 5));
+        $mform->addElement('select', $name, get_string('materialcount', $plugin), $counts);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, 2);
+    }
+
+    /**
+     * Is the question bank tool, which makes questions with AI, installed?
+     *
+     * @return bool
+     */
+    public static function has_question_bank_tool(): bool {
+        return class_exists('\\vocabtool_questionbank\\tool') && class_exists('\\tool_aibridge\\library\\template');
+    }
+
+    /**
+     * Get the default prompt for making questions: the AI bridge's own prompt.
+     *
+     * @return int the template id, or 0.
+     */
+    public static function get_default_promptid(): int {
+        $template = \tool_aibridge\library\template::find('tool_aibridge:generate-questions');
+        return $template ? $template->get_id() : 0;
     }
 
     /**
@@ -74,6 +135,10 @@ class game extends \mod_vocab\gamebase {
      */
     public static function get_settings(\stdClass $data, string $prefix): array {
         return [
+            'materialprompt' => (int) ($data->{$prefix . 'materialprompt'} ?? 0),
+            'materialqtype' => (string) ($data->{$prefix . 'materialqtype'} ?? 'multichoice'),
+            'materiallevel' => (string) ($data->{$prefix . 'materiallevel'} ?? 'A2'),
+            'materialcount' => max(1, min(5, (int) ($data->{$prefix . 'materialcount'} ?? 2))),
             'categoryid' => (int) ($data->{$prefix . 'categoryid'} ?? 0),
             'wordcount' => max(1, min(self::MAX_WORD_COUNT, (int) ($data->{$prefix . 'wordcount'} ?? self::DEFAULT_WORD_COUNT))),
         ];
@@ -183,6 +248,92 @@ class game extends \mod_vocab\gamebase {
      */
     public function get_ready_words(array $wordinstanceids): array {
         return array_keys($this->get_questions($wordinstanceids));
+    }
+
+    /**
+     * Questions can be made with the question bank tool, if the AI bridge is turned on.
+     *
+     * @return bool
+     */
+    public function can_make_materials(): bool {
+        return self::has_question_bank_tool() && \mod_vocab\aibridge::is_enabled();
+    }
+
+    /**
+     * Get the words for which the question bank tool is making questions.
+     *
+     * @param int[] $wordinstanceids
+     * @return int[] word instance ids.
+     */
+    public function get_pending_words(array $wordinstanceids): array {
+        if (!self::has_question_bank_tool()) {
+            return [];
+        }
+        $pending = array_flip(\vocabtool_questionbank\tool::get_pending_wordids((int) $this->vocab->id));
+        $words = $this->get_progress()->get_words();
+        return array_values(array_filter($wordinstanceids, function ($id) use ($pending, $words) {
+            return isset($words[$id]) && isset($pending[$words[$id]->wordid]);
+        }));
+    }
+
+    /**
+     * Make questions about some words, in the background, with the question bank
+     * tool, as the quiz's settings say. The questions are put in the quiz's
+     * category, or the course's default category, in subcategories for the
+     * activity and word, as the question bank tool does by default.
+     *
+     * @param int[] $wordinstanceids
+     * @param int $userid
+     * @return int how many words' questions are being made.
+     */
+    public function make_materials(array $wordinstanceids, int $userid): int {
+        global $CFG;
+        if (!$this->can_make_materials()) {
+            return 0;
+        }
+        require_once($CFG->libdir . '/questionlib.php');
+        $form = '\\vocabtool_questionbank\\form';
+        $coursecontext = $this->context->get_course_context();
+        $categoryid = (int) $this->get_config('categoryid', 0);
+        if (!$categoryid) {
+            $categoryid = (int) question_get_default_category($coursecontext->id)->id;
+        }
+        $promptid = (int) $this->get_config('materialprompt', 0) ?: self::get_default_promptid();
+        $words = $this->get_progress()->get_words();
+        $count = 0;
+        foreach ($wordinstanceids as $id) {
+            if (!isset($words[$id])) {
+                continue;
+            }
+            $taskid = \vocabtool_questionbank\tool::queue_task([
+                'userid' => $userid,
+                'vocabid' => $this->vocab->id,
+                'wordid' => $words[$id]->wordid,
+                'qtype' => (string) $this->get_config('materialqtype', 'multichoice'),
+                'qlevel' => (string) $this->get_config('materiallevel', 'A2'),
+                'qcount' => (int) $this->get_config('materialcount', 2),
+                'qformat' => '',
+                'maxtries' => 3,
+                'parentcatid' => $categoryid,
+                'subcattype' => $form::SUBCAT_ACTIVITYNAME | $form::SUBCAT_WORD | $form::SUBCAT_QUESTIONTYPE
+                    | $form::SUBCAT_VOCABLEVEL,
+                'subcatname' => '',
+                'tagtypes' => $form::QTAG_AI | $form::QTAG_WORD | $form::QTAG_QUESTIONTYPE | $form::QTAG_VOCABLEVEL
+                    | $form::QTAG_MEDIATYPE,
+                'tagnames' => '',
+                'textid' => \mod_vocab\aibridge::AUTOMATIC,
+                'promptid' => $promptid,
+                'formatid' => 0,
+                'imageid' => \mod_vocab\aibridge::AUTOMATIC,
+                'audioid' => \mod_vocab\aibridge::AUTOMATIC,
+                'videoid' => 0,
+                'review' => 0,
+            ]);
+            if ($taskid) {
+                $count++;
+            }
+        }
+        return $count;
     }
 
     /**

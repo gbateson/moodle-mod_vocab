@@ -218,6 +218,54 @@ abstract class gamebase {
     }
 
     /**
+     * Can the game make missing materials in the background?
+     *
+     * @return bool
+     */
+    public function can_make_materials(): bool {
+        return false;
+    }
+
+    /**
+     * Which of these words have materials that are being made?
+     *
+     * @param int[] $wordinstanceids
+     * @return int[] word instance ids.
+     */
+    public function get_pending_words(array $wordinstanceids): array {
+        return [];
+    }
+
+    /**
+     * Make the materials for some words, in the background.
+     *
+     * @param int[] $wordinstanceids
+     * @param int $userid the teacher who asks for them, as whom they are made.
+     * @return int how many words' materials are being made.
+     */
+    public function make_materials(array $wordinstanceids, int $userid): int {
+        return 0;
+    }
+
+    /**
+     * Get the state of the game's materials, for all the words in the activity.
+     *
+     * @return array total (count), ready (count), pending (count) and missing (word instance ids).
+     */
+    public function get_materials_summary(): array {
+        $words = array_keys($this->get_progress()->get_words());
+        $ready = $this->get_ready_words($words);
+        $notready = array_values(array_diff($words, $ready));
+        $pending = $notready ? $this->get_pending_words($notready) : [];
+        return [
+            'total' => count($words),
+            'ready' => count($ready),
+            'pending' => count($pending),
+            'missing' => array_values(array_diff($notready, $pending)),
+        ];
+    }
+
+    /**
      * Get the URL where the game is played.
      *
      * @return \moodle_url
