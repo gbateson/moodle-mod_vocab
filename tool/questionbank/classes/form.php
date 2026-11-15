@@ -1163,7 +1163,12 @@ class form extends \mod_vocab\toolform {
                     $name = 'qlevel';
                     $a = ['strname' => 'questionlevel'];
                     $options = self::get_question_levels(true);
-                    $this->add_field_selectgroups($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
+                    if (is_scalar($options[key($options)])) {
+                        // The levels are not in groups, e.g. the default CEFR levels.
+                        $this->add_field_select($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
+                    } else {
+                        $this->add_field_selectgroups($mform, "log[$name]", $options, PARAM_ALPHANUM, $log->$name, $a);
+                    }
 
                     $name = 'qcount';
                     $a = ['strname' => 'questioncount', 'size' => 2];
