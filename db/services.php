@@ -27,3 +27,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $functions = [];
+
+// The external API of Moodle 4.2 and later.
+if (class_exists('\\core_external\\external_api')) {
+    $functions['mod_vocab_view_vocab'] = [
+        'classname' => \mod_vocab\external\view_vocab::class,
+        'description' => 'Record that the user has viewed a Vocabulary activity, for logs and activity completion.',
+        'type' => 'write',
+        'capabilities' => 'mod/vocab:view',
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ];
+}

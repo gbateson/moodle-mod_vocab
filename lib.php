@@ -175,7 +175,7 @@ function vocab_save_stages_and_games($data) {
  * TODO: Finish documenting this function
  */
 function vocab_delete_instance($id) {
-    global $DB;
+    global $CFG, $DB;
 
     $vocab = $DB->get_record('vocab', ['id' => $id]);
 
@@ -186,42 +186,12 @@ function vocab_delete_instance($id) {
         }
     }
 
-    $wordtables = [
-        'vocab_attributes',
-        'vocab_attribute_names',
-        'vocab_attribute_values',
-        'vocab_corpuses',
-        'vocab_definitions',
-        'vocab_frequencies',
-        'vocab_langnames',
-        'vocab_langs',
-        'vocab_lemmas',
-        'vocab_levelnames',
-        'vocab_levels',
-        'vocab_multimedia',
-        'vocab_pronunciations',
-        'vocab_relationships',
-        'vocab_relationship_names',
-        'vocab_samples',
-        'vocab_sample_words',
-        'vocab_words',
-    ];
-    $othertables = [
-        'vocabtool_questionbank_log',
-        'vocab_games',
-    ];
-    $tables = [
-        'vocab_game_attempts',
-        'vocab_game_instances',
-        'vocab_word_attempts',
-        'vocab_word_instances',
-        'vocab_word_states',
-        'vocab_word_usages',
-    ];
-    $tables = []; // Sort this out later.
-
-    foreach ($tables as $table => $params) {
-        $DB->delete_records($table, ['vocabid' => $id]);
+    // Students' attempts and progress, and the activity's stages, games and word list.
+    \mod_vocab\progress::delete_activity_data($id);
+    if ($vocab) {
+        // Delete the activity's grade item, and its grades.
+        require_once($CFG->libdir . '/gradelib.php');
+        grade_update('mod/vocab', $vocab->course, 'mod', 'vocab', $id, 0, null, ['deleted' => 1]);
     }
 
     // Finally delete the vocab record.

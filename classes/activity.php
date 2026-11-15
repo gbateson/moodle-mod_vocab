@@ -459,8 +459,8 @@ class activity {
 
         if ($this->instance) {
             $event = \mod_vocab\event\course_module_viewed::create([
-               'objectid' => $this->cm->id,
-               'context' => $this->context,
+                'objectid' => $this->instance->id,
+                'context' => $this->context,
             ]);
             $event->add_record_snapshot('course', $this->course);
             $event->add_record_snapshot('course_modules', $this->cm);

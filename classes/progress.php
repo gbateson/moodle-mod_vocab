@@ -706,6 +706,78 @@ class progress {
     }
 
     /*////////////////////////////////////////
+    // Deleting data.
+    ////////////////////////////////////////*/
+
+    /**
+     * Delete students' data in an activity: their game attempts (with their
+     * question usages and word scores), and their progress with the words.
+     *
+     * @param int $vocabid
+     * @param int[]|null $userids the students, or null for every student.
+     */
+    public static function delete_user_data(int $vocabid, ?array $userids = null): void {
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/questionlib.php');
+        if ($userids !== null && empty($userids)) {
+            return;
+        }
+        $params = ['vocabid' => $vocabid];
+        $usersql = '';
+        if ($userids !== null) {
+            [$insql, $userparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'user');
+            $params += $userparams;
+            $usersql = " AND vga.userid $insql";
+        }
+
+        // Game attempts, with their question usages, words and scores.
+        $from = '{vocab_game_attempts} vga JOIN {vocab_game_instances} vgi ON vgi.id = vga.gameinstanceid';
+        $where = 'vgi.vocabid = :vocabid' . $usersql;
+        \question_engine::delete_questions_usage_by_activities(
+            new \qubaid_join($from, 'vga.uniqueid', $where . ' AND vga.uniqueid > 0', $params)
+        );
+        $attemptids = $DB->get_fieldset_sql("SELECT vga.id FROM $from WHERE $where", $params);
+        foreach (array_chunk($attemptids, 1000) as $chunk) {
+            [$insql, $inparams] = $DB->get_in_or_equal($chunk);
+            $usageids = $DB->get_fieldset_select('vocab_word_usages', 'id', "gameattemptid $insql", $inparams);
+            foreach (array_chunk($usageids, 1000) as $usagechunk) {
+                $DB->delete_records_list('vocab_word_attempts', 'wordusageid', $usagechunk);
+            }
+            $DB->delete_records_select('vocab_word_usages', "gameattemptid $insql", $inparams);
+            $DB->delete_records_select('vocab_game_attempts', "id $insql", $inparams);
+        }
+
+        // Progress with the words.
+        $wordsql = 'wordinstanceid IN (SELECT id FROM {vocab_word_instances} WHERE vocabid = :vocabid)';
+        $params = ['vocabid' => $vocabid];
+        if ($userids !== null) {
+            [$insql, $userparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'user');
+            $wordsql .= " AND userid $insql";
+            $params += $userparams;
+        }
+        $DB->delete_records_select('vocab_word_stages', $wordsql, $params);
+        $DB->delete_records_select('vocab_word_states', $wordsql, $params);
+    }
+
+    /**
+     * Delete all the data of an activity, e.g. when it is deleted: students'
+     * data, and its stages, games and word list. The words themselves are
+     * kept, as other activities may use them.
+     *
+     * @param int $vocabid
+     */
+    public static function delete_activity_data(int $vocabid): void {
+        global $DB;
+        self::delete_user_data($vocabid);
+        $DB->delete_records('vocab_game_instances', ['vocabid' => $vocabid]);
+        $DB->delete_records('vocab_stages', ['vocabid' => $vocabid]);
+        $DB->delete_records('vocab_word_instances', ['vocabid' => $vocabid]);
+        if ($DB->get_manager()->table_exists('vocabtool_questionbank_log')) {
+            $DB->delete_records('vocabtool_questionbank_log', ['vocabid' => $vocabid]);
+        }
+    }
+
+    /*////////////////////////////////////////
     // Games.
     ////////////////////////////////////////*/
 

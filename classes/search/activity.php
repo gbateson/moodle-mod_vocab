@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace mod_vocab\search;
+
 /**
- * classes/search/activity.php
+ * Search area for Vocabulary activities: their names and descriptions.
  *
  * @package    mod_vocab
  * @copyright  2023 Gordon BATESON
@@ -23,3 +25,5 @@
  * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
+class activity extends \core_search\base_activity {
+}
