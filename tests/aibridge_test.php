@@ -68,10 +68,11 @@ final class aibridge_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $prompt = template::find('mod_vocab:toeic-part3');
-        $this->assertSame(
-            ['qtypes' => ['multichoice' => 0, 'multianswer' => 0]],
-            aibridge::get_prompt_defaults($prompt, $user->id)
-        );
+        $this->assertSame([
+            'imageassistant' => aibridge::AUTOMATIC,
+            'audioassistant' => aibridge::AUTOMATIC,
+            'qtypes' => ['multichoice' => 0, 'multianswer' => 0],
+        ], aibridge::get_prompt_defaults($prompt, $user->id));
 
         // A prompt that links no formats has the links of the prompt that it extends.
         $parent = template::find('tool_aibridge:generate-questions');

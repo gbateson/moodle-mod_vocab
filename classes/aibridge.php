@@ -197,7 +197,8 @@ class aibridge {
 
     /**
      * Get a user's defaults for the question bank form, when a prompt is chosen.
-     * If none have been saved, the prompt's question types are ticked.
+     * If none have been saved, the prompt's question types are ticked, and
+     * images and audio are made by any provider.
      *
      * @param template $prompt
      * @param int $userid
@@ -208,11 +209,19 @@ class aibridge {
         if (is_array($defaults)) {
             return $defaults;
         }
+        // Media is made for any [[IMAGE]] or [[AUDIO]] markers that the prompt's formats ask for.
+        $defaults = [
+            'imageassistant' => self::AUTOMATIC,
+            'audioassistant' => self::AUTOMATIC,
+        ];
         $qtypes = [];
         foreach (array_keys(self::get_formatlinks($prompt)) as $qtype) {
             $qtypes[$qtype] = 0;
         }
-        return $qtypes ? ['qtypes' => $qtypes] : [];
+        if ($qtypes) {
+            $defaults['qtypes'] = $qtypes;
+        }
+        return $defaults;
     }
 
     /**

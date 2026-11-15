@@ -305,7 +305,8 @@ class form extends \mod_vocab\toolform {
             $msg = $this->get_string('no'.$type.'sfound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
         } else {
-            $this->add_field_select($mform, $name, $options, PARAM_INT, \mod_vocab\aibridge::NONE);
+            // By default, media is made for any [[IMAGE]] or [[AUDIO]] markers in the questions.
+            $this->add_field_select($mform, $name, $options, PARAM_INT, \mod_vocab\aibridge::AUTOMATIC);
         }
     }
 
