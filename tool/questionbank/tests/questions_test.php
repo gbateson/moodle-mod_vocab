@@ -24,8 +24,8 @@ use vocabtool_questionbank\task\questions;
  * @package    vocabtool_questionbank
  * @copyright  2026 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \vocabtool_questionbank\task\questions
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabtool_questionbank\task\questions::class)]
 final class questions_test extends \advanced_testcase {
     /**
      * Questions are generated with the AI bridge, with an image and the audio of a conversation.
@@ -192,5 +192,67 @@ final class questions_test extends \advanced_testcase {
         $this->assertSame("A: Hi.\nB: Hello.", questions::format_dialogue('A: Hi.<br>B: Hello.'));
         $this->assertSame('They are walking to work.', questions::format_dialogue('They are walking to work.'));
         $this->assertSame('Note: one line.', questions::format_dialogue('Note: one line.'));
+    }
+
+    /**
+     * Questions of a question type that offers itself, e.g. SpeakUp, can be generated.
+     */
+    public function test_execute_offered_qtype(): void {
+        global $CFG, $DB;
+        if (!\core_component::get_component_directory('qtype_speakup')) {
+            $this->markTestSkipped('SpeakUp is not installed.');
+        }
+        require_once($CFG->libdir . '/questionlib.php');
+        $this->resetAfterTest();
+        set_config('requirepolicy', 0, 'tool_aibridge');
+
+        $this->assertContains('speakup', \mod_vocab\subpluginform::get_offered_question_types());
+        $this->assertArrayHasKey('speakup', form::get_question_types());
+        set_config('qtypes', 'multichoice', 'vocabtool_questionbank');
+        $this->assertSame(['multichoice'], array_keys(form::get_question_types()));
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $vocab = $generator->create_module('vocab', ['course' => $course->id]);
+        $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['weekend']);
+        $coursecontext = \context_course::instance($course->id);
+        $category = question_make_default_categories([$coursecontext]);
+        $this->setUser($teacher);
+        $text = $generator->get_plugin_generator('tool_aibridge')->create_provider(['contextid' => $coursecontext->id]);
+        $prompt = \tool_aibridge\library\template::find('qtype_speakup:speakup-speaking');
+
+        $logid = tool::insert_log([
+            'userid' => $teacher->id, 'vocabid' => $vocab->id, 'wordid' => key($words),
+            'qtype' => 'speakup', 'qlevel' => 'A2', 'qcount' => 1, 'qformat' => '', 'maxtries' => 1,
+            'parentcatid' => $category->id, 'subcattype' => 0, 'subcatname' => '', 'tagtypes' => 0, 'tagnames' => '',
+            'textid' => $text->get_id(), 'promptid' => $prompt->get_id(), 'formatid' => 0,
+            'imageid' => 0, 'audioid' => 0, 'videoid' => 0,
+            'status' => tool::TASKSTATUS_QUEUED, 'review' => 0,
+        ]);
+        $gift = "::Weekend plans::[html]<p>Listen to the question, and answer it.</p>{\n" .
+            "AUDIO: What are you planning to do this weekend?\n" .
+            "TIMELIMIT=45\n" .
+            "RUBRIC=Give a score out of 100.\\nThen give one suggestion.\n" .
+            "TARGETPHRASE=(\"this weekend\", 20%, /1, partial, nocase)\n" .
+            "#### <p>This weekend, I'm going to visit my grandparents.</p>\n}";
+        \curl::mock_response(json_encode(['choices' => [['message' => ['content' => $gift]]]]));
+
+        $task = new questions();
+        $task->set_userid($teacher->id);
+        $task->set_custom_data(['logid' => $logid]);
+        ob_start();
+        $task->execute();
+        $output = ob_get_clean();
+
+        $log = tool::get_log($logid);
+        $this->assertEquals(tool::TASKSTATUS_COMPLETED, $log->status, $output . $log->error);
+        // The prompt used SpeakUp's own output format.
+        $this->assertStringContainsString('AUDIO: audio-prompt', $log->prompt);
+        $question = $DB->get_record('question', ['id' => (int) trim($log->questionids)], '*', MUST_EXIST);
+        $this->assertSame('speakup', $question->qtype);
+        $options = $DB->get_record('qtype_speakup_options', ['questionid' => $question->id], '*', MUST_EXIST);
+        $this->assertSame('What are you planning to do this weekend?', $options->audioprompttranscript);
+        $this->assertEquals(45, $options->timelimitinseconds);
     }
 }

@@ -1308,7 +1308,7 @@ class questions extends \core\task\adhoc_task {
         ])) {
             $answersexist = true;
         } else if (property_exists($question, 'id')) {
-            $answersexist = $DB->record_exists('question_answers', ['id' => $question->id]);
+            $answersexist = $DB->record_exists('question_answers', ['question' => $question->id]);
         } else {
             $answersexist = false;
         }

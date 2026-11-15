@@ -23,3 +23,31 @@
  * @author     Gordon BATESON https://github.com/gbateson
  * @since      Moodle 3.11
  */
+
+defined('MOODLE_INTERNAL') || die();
+
+if ($ADMIN->fulltree) {
+    // The question types for which the question bank tool can generate questions.
+    $settings->add(new admin_setting_heading(
+        'vocabtool_questionbank/heading',
+        new lang_string('pluginname', 'vocabtool_questionbank'),
+        ''
+    ));
+    $choices = [];
+    $defaults = [];
+    if (!during_initial_install()) {
+        $choices = \mod_vocab\subpluginform::get_importable_question_types();
+        foreach (\mod_vocab\subpluginform::get_default_question_types() as $qtype) {
+            if (isset($choices[$qtype])) {
+                $defaults[$qtype] = 1;
+            }
+        }
+    }
+    $settings->add(new admin_setting_configmulticheckbox(
+        'vocabtool_questionbank/qtypes',
+        new lang_string('allowedqtypes', 'vocabtool_questionbank'),
+        new lang_string('allowedqtypes_desc', 'vocabtool_questionbank'),
+        $defaults,
+        $choices
+    ));
+}

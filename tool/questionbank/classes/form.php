@@ -212,7 +212,9 @@ class form extends \mod_vocab\toolform {
             $elements[] = $mform->createElement('checkbox', 'enable', $enablelabel);
             $elements[] = $mform->createElement('select', 'format', $formatlabel, $formats);
             $mform->addGroup($elements, $qtype, $label);
-            $mform->addHelpButton($qtype, 'pluginname', "qtype_$qtype");
+            if (get_string_manager()->string_exists('pluginname_help', "qtype_$qtype")) {
+                $mform->addHelpButton($qtype, 'pluginname', "qtype_$qtype");
+            }
 
             // By default, the prompt chooses the format for each question type.
             $mform->setDefault($qtype.'[format]', 0);

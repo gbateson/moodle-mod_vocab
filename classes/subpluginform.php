@@ -413,16 +413,94 @@ abstract class subpluginform extends \moodleform {
         return self::get_question_plugins('qformat', ['gift', 'multianswer', 'xml']);
     }
 
+    /** The question types that the question bank tool offered before they could be chosen, in this order. */
+    const DEFAULT_QTYPES = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
+
+    /** Question types that GIFT imports itself. */
+    const GIFT_QTYPES = ['essay', 'match', 'multichoice', 'numerical', 'shortanswer', 'truefalse'];
+
+    /** Question types that Moodle XML imports itself. */
+    const XML_QTYPES = ['calculated', 'calculatedmulti', 'calculatedsimple', 'essay', 'match', 'multianswer',
+        'multichoice', 'numerical', 'shortanswer', 'truefalse'];
+
+    /** Question types that cannot be generated, e.g. because they hold no question of their own. */
+    const EXCLUDED_QTYPES = ['description', 'missingtype', 'random', 'randomsamatch'];
+
     /**
-     * get_question_types
+     * Get the question types for which questions can be generated: those that
+     * the site allows (see get_importable_question_types()).
      *
      * @return array $types of question types for which we can generate questions.
      */
     public static function get_question_types() {
-        // ToDo: Could include ordering, essayautograde, speakautograde and sassessment.
-        $include = ['match', 'multianswer', 'multichoice', 'shortanswer', 'truefalse'];
-        $order = ['multichoice', 'truefalse', 'match', 'shortanswer', 'multianswer'];
-        return self::get_question_plugins('qtype', $include, $order);
+        $importable = array_keys(self::get_importable_question_types());
+        $allowed = get_config('vocabtool_questionbank', 'qtypes');
+        if ($allowed === false) {
+            $allowed = self::get_default_question_types();
+        } else {
+            $allowed = array_filter(explode(',', $allowed));
+        }
+        $include = array_values(array_intersect($allowed, $importable));
+        return self::get_question_plugins('qtype', $include, self::DEFAULT_QTYPES);
+    }
+
+    /**
+     * Get the question types that the site allows by default: the ones that the
+     * tool offered before they could be chosen, and the ones that offer themselves.
+     *
+     * @return string[] question type names.
+     */
+    public static function get_default_question_types(): array {
+        return array_values(array_unique(array_merge(self::DEFAULT_QTYPES, self::get_offered_question_types())));
+    }
+
+    /**
+     * Get the installed question types whose questions can be imported from
+     * GIFT or Moodle XML, either by the format itself or by the question type.
+     *
+     * @return string[] question type name => localised name, sorted by name.
+     */
+    public static function get_importable_question_types(): array {
+        global $CFG;
+        require_once($CFG->libdir . '/questionlib.php');
+        $qtypes = [];
+        foreach (\question_bank::get_all_qtypes() as $name => $qtype) {
+            if (in_array($name, self::EXCLUDED_QTYPES)) {
+                continue;
+            }
+            $importable = in_array($name, self::GIFT_QTYPES) || in_array($name, self::XML_QTYPES);
+            $importable = $importable || method_exists($qtype, 'import_from_gift') || method_exists($qtype, 'import_from_xml');
+            if ($importable) {
+                $qtypes[$name] = $qtype->local_name();
+            }
+        }
+        \core_collator::asort($qtypes);
+        return $qtypes;
+    }
+
+    /**
+     * Get the question types that offer themselves for generating questions. A
+     * question type does so by adding a prompt to the AI bridge's library that
+     * links an output format to the question type (in its db/aibridge_templates.php).
+     *
+     * @return string[] question type names.
+     */
+    public static function get_offered_question_types(): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('tool_aibridge_templates')) {
+            return [];
+        }
+        $qtypes = [];
+        $select = 'enabled = 1 AND type = :type AND ' . $DB->sql_like('component', ':component');
+        $params = ['type' => 'prompt', 'component' => 'qtype\_%'];
+        foreach ($DB->get_records_select('tool_aibridge_templates', $select, $params, 'id', 'id, component, formatlinks') as $t) {
+            $name = substr($t->component, strlen('qtype_'));
+            $links = json_decode((string) $t->formatlinks, true);
+            if (is_array($links) && array_key_exists($name, $links)) {
+                $qtypes[] = $name;
+            }
+        }
+        return array_values(array_unique($qtypes));
     }
 
     /**

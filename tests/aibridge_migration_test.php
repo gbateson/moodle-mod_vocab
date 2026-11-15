@@ -26,8 +26,8 @@ use tool_aibridge\tuning;
  * @package    mod_vocab
  * @copyright  2026 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \mod_vocab\aibridge_migration
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\aibridge_migration::class)]
 final class aibridge_migration_test extends \advanced_testcase {
     /**
      * Make the old tables, as they were before the activity used the AI bridge.
