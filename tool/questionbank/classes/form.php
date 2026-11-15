@@ -128,6 +128,15 @@ class form extends \mod_vocab\toolform {
             $this->add_message($mform, $this->get_string('aibridgedisabled'));
             return;
         }
+        // The questions are generated in the background, where the teacher cannot
+        // be asked to accept the AI policy, so they must accept it here first.
+        if (! \tool_aibridge\policy::has_accepted($userid)) {
+            $url = \tool_aibridge\policy::get_url($context, $PAGE->url);
+            $link = \html_writer::link($url, $this->get_string('aipolicylink'));
+            $this->add_message($mform, $this->get_string('aipolicynotice', $link));
+            return;
+        }
+
         $prompts = \mod_vocab\aibridge::get_prompt_menu($context, $userid);
         if (empty($prompts)) {
             $url = \mod_vocab\aibridge::get_url('library', $context);
