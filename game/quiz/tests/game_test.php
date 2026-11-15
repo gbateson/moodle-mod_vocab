@@ -24,8 +24,8 @@ use mod_vocab\progress;
  * @package    vocabgame_quiz
  * @copyright  2026 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \vocabgame_quiz\game
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\vocabgame_quiz\game::class)]
 final class game_test extends \advanced_testcase {
     /**
      * A student answers questions about their words, and each word gets the score of its question.

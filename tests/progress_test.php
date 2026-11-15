@@ -22,8 +22,8 @@ namespace mod_vocab;
  * @package    mod_vocab
  * @copyright  2026 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \mod_vocab\progress
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\progress::class)]
 final class progress_test extends \advanced_testcase {
     /**
      * Make an activity with words and stages.

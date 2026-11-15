@@ -36,7 +36,6 @@ namespace vocabutil_redotask;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\utilform {
-
     /** @var int Execute task via this vocab util. */
     const TASK_EXECUTOR_VOCABUTIL = 0;
 
@@ -119,8 +118,10 @@ class form extends \mod_vocab\utilform {
         } else {
             $taskexecutor = self::TASK_EXECUTOR_VOCABUTIL;
         }
-        if ($taskexecutor == self::TASK_EXECUTOR_VOCABUTIL ||
-            $taskexecutor == self::TASK_EXECUTOR_ADMINTOOL) {
+        if (
+            $taskexecutor == self::TASK_EXECUTOR_VOCABUTIL ||
+            $taskexecutor == self::TASK_EXECUTOR_ADMINTOOL
+        ) {
             $name = 'task';
             if (empty($data[$name])) {
                 $errors[$name] = $this->get_string('selecttask');
@@ -146,15 +147,15 @@ class form extends \mod_vocab\utilform {
             $select = $DB->sql_like('component', '?');
             $params = ['vocab%'];
             if ($tasks = $DB->get_records_select_menu('task_adhoc', $select, $params, 'userid', 'id,userid')) {
-                list($select, $params) = $DB->get_in_or_equal(array_unique($tasks));
+                [$select, $params] = $DB->get_in_or_equal(array_unique($tasks));
                 if ($users = $DB->get_records_select('user', "id $select", $params, 'id')) {
                     foreach ($users as $userid => $user) {
-                        $taskusers[$userid] = "[$userid] ".fullname($user);
+                        $taskusers[$userid] = "[$userid] " . fullname($user);
                     }
                 }
             }
         } else {
-            $taskusers[$USER->id] = '['.$USER->id.'] '.fullname($USER);
+            $taskusers[$USER->id] = '[' . $USER->id . '] ' . fullname($USER);
         }
         return $taskusers;
     }
@@ -176,7 +177,7 @@ class form extends \mod_vocab\utilform {
                 unset($contexts[$contextid]); // Skip USER context.
             } else {
                 $context = \context::instance_by_id($contextid);
-                $taskcontexts[$contextid] = "[$contextid] ".$context->get_context_name();
+                $taskcontexts[$contextid] = "[$contextid] " . $context->get_context_name();
             }
         }
         return $taskcontexts;
@@ -197,7 +198,7 @@ class form extends \mod_vocab\utilform {
         $params = ['vocab%'];
         if ($tasks = $DB->get_records_select_menu('task_adhoc', $select, $params, 'component', 'id,component')) {
             foreach ($tasks as $taskid => $component) {
-                $taskcomponents[$component] = "[$component] ".get_string('pluginname', $component);
+                $taskcomponents[$component] = "[$component] " . get_string('pluginname', $component);
             }
         }
         return $taskcomponents;
@@ -216,7 +217,7 @@ class form extends \mod_vocab\utilform {
 
         if ($tasks = $DB->get_records_select('task_adhoc', $select, $params)) {
             foreach ($tasks as $taskid => $task) {
-                list($subplugin, $dir, $name) = explode('\\', trim($task->classname, '\\'), 3);
+                [$subplugin, $dir, $name] = explode('\\', trim($task->classname, '\\'), 3);
                 $data = json_decode($task->customdata);
                 foreach ($data as $name => $value) {
                     $data->$name = "$name = $value";
@@ -224,7 +225,7 @@ class form extends \mod_vocab\utilform {
                 if ($data = implode(', ', (array)$data)) {
                     $data = " ($data)";
                 }
-                $tasks[$taskid] = str_replace('\\', '/', "[$taskid] ".get_string('pluginname', $subplugin).$data);
+                $tasks[$taskid] = str_replace('\\', '/', "[$taskid] " . get_string('pluginname', $subplugin) . $data);
             }
         } else {
             $tasks = [];
@@ -245,15 +246,14 @@ class form extends \mod_vocab\utilform {
         $labelsep = get_string('labelsep', 'langconfig');
 
         $i = self::TASK_EXECUTOR_VOCABUTIL;
-        $text = $this->get_string('pluginname').$labelsep.
+        $text = $this->get_string('pluginname') . $labelsep .
                 $this->get_string('redotask');
         $taskexecutors[$i] = $text;
 
         if (is_siteadmin()) {
-
             $i = self::TASK_EXECUTOR_ADMINTOOL;
-            $text = get_string('server', 'admin').$labelsep.
-                    get_string('taskadmintitle', 'admin').$labelsep.
+            $text = get_string('server', 'admin') . $labelsep .
+                    get_string('taskadmintitle', 'admin') . $labelsep .
                     get_string('adhoctasks', 'tool_task');
             $taskexecutors[$i] = $text;
 

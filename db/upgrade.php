@@ -65,7 +65,6 @@ function xmldb_vocab_upgrade($oldversion) {
 
     $newversion = 2023102510;
     if ($oldversion < $newversion) {
-
         // Rename "vocab_wordlists" table to "vocab_word_instances".
         $tablenames = ['vocab_wordlists' => 'vocab_word_instances'];
         xmldb_vocab_rename_tables($dbman, $tablenames);
@@ -77,7 +76,6 @@ function xmldb_vocab_upgrade($oldversion) {
 
     $newversion = 2023103012;
     if ($oldversion < $newversion) {
-
         // Define old/new names for vocabtool plugins.
         $names = [
             'vocabtool_addphpdocs' => 'vocabtool_phpdocs',
@@ -161,7 +159,7 @@ function xmldb_vocab_upgrade($oldversion) {
         // Remove several several vocabtool subplugins.
         $vocabtools = $DB->get_records_select_menu(
             'config_plugins',
-            $DB->sql_like('plugin', '?').' AND name = ?',
+            $DB->sql_like('plugin', '?') . ' AND name = ?',
             ['vocabtool_%', 'version'],
             'plugin', // Sort by the plugin field.
             'plugin, value' // Return these fields.
@@ -173,7 +171,7 @@ function xmldb_vocab_upgrade($oldversion) {
                 uninstall_plugin('vocabtool', $toolname);
                 unset($toolnames[$toolname]);
             }
-            $dir = $CFG->dirroot.'/mod/vocab/tool/'.$toolname;
+            $dir = $CFG->dirroot . '/mod/vocab/tool/' . $toolname;
             if (is_dir($dir) && is_writeable($dir)) {
                 remove_dir($dir); // See "lib/moodlelib.php".
             }
@@ -276,8 +274,13 @@ function xmldb_vocab_rename_tables($dbman, $tablenames) {
  * @param array $plugindir (optional, default=mod/vocab) the relative path to main folder for this plugin's directory
  * @return void (but may update database structure)
  */
-function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='vocab',
-                                    $pluginname='mod_vocab', $plugindir='mod/vocab') {
+function xmldb_vocab_check_structure(
+    $dbman,
+    $tablenames = null,
+    $tableprefix = 'vocab',
+    $pluginname = 'mod_vocab',
+    $plugindir = 'mod/vocab'
+) {
     global $CFG, $DB;
 
     // To see what tables/fields/indexes were added/changed/dropped,
@@ -313,7 +316,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
 
     // Locate the XML file for this plugin, and try to read it.
     $filepath = "/$plugindir/db/install.xml";
-    $file = new xmldb_file($CFG->dirroot.$filepath);
+    $file = new xmldb_file($CFG->dirroot . $filepath);
 
     if (! $file->fileExists()) {
         // Presumably this would only happen on a development site.
@@ -328,8 +331,8 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
     // Check that the XML file could be loaded.
     if (! $file->isLoaded()) {
         if ($structure && ($error = $structure->getAllErrors())) {
-            $error = implode (', ', $error);
-            $error = "Errors found in XMLDB file ($filepath): ". $error;
+            $error = implode(', ', $error);
+            $error = "Errors found in XMLDB file ($filepath): " . $error;
         } else {
             $error = "XMLDB file not loaded ($filepath)";
         }
@@ -354,12 +357,11 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
     }
 
     // Extract only errors relating to tables for this plugin.
-    $keys = preg_grep('/^'.$tableprefix.'(_|$)/', $keys);
+    $keys = preg_grep('/^' . $tableprefix . '(_|$)/', $keys);
     $errors = array_intersect_key($errors, array_flip($keys));
 
     // Loop through $tablenames mentioned in the $errors for this plugin.
     foreach ($errors as $tablename => $messages) {
-
         // Skip tables that have already been checked.
         if (array_key_exists($tablename, $checked[$pluginname])) {
             continue;
@@ -423,9 +425,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
 
         // Loop through the error messages relating to this table.
         foreach ($messages as $message) {
-
             switch (true) {
-
                 // Moodle <= 2.7 uses "Table".
                 // Moodle >= 2.8 uses "table".
                 case preg_match('/[Tt]able is missing/', $message):
@@ -509,7 +509,6 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
                                 echo "Field $tablename.$name was updated<br>";
                             }
                         } else {
-
                             // If field is defined as "NOTNULL" but no default is defined,
                             // we temporarily setNotNull(false), add the field, set NULL values
                             // to a sensible default and finally modify the field to be NOTNULL.
@@ -527,7 +526,6 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
 
                             if ($notnull && $default === null) {
                                 switch ($field->getType()) {
-
                                     case XMLDB_TYPE_INTEGER: // Value = 1.
                                     case XMLDB_TYPE_NUMBER: // Value = 2.
                                         $default = 0;
@@ -568,7 +566,7 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
                 case preg_match('/CREATE(.*?)INDEX(.*?)ON(.*?);/', $message, $match):
                     $DB->execute(rtrim($match[0], '; '));
                     if ($debug) {
-                        echo 'Index '.$match[1].' was added<br>';
+                        echo 'Index ' . $match[1] . ' was added<br>';
                     }
                     break;
 
@@ -583,14 +581,14 @@ function xmldb_vocab_check_structure($dbman, $tablenames=null, $tableprefix='voc
                         }
                         unset($indexes[$name]);
                         if ($debug) {
-                            echo 'Index '.$match[1].' was dropped<br>';
+                            echo 'Index ' . $match[1] . ' was dropped<br>';
                         }
                     }
                     break;
 
                 default:
                     if ($debug) {
-                        echo '<p>Unknown XMLDB error in '.$pluginname.':<br>'.$message.'</p>';
+                        echo '<p>Unknown XMLDB error in ' . $pluginname . ':<br>' . $message . '</p>';
                         die;
                     }
             }

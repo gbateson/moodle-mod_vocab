@@ -26,7 +26,6 @@ namespace vocabutil_phpdocs;
  * @since      Moodle 3.11
  */
 class util extends \mod_vocab\utilbase {
-
     /** @var string holds the name of this plugin */
     const SUBPLUGINNAME = 'phpdocs';
 
@@ -49,7 +48,7 @@ class util extends \mod_vocab\utilbase {
         $this->paramnames = [
             '$a' => (object)['type' => 'array', 'text' => 'additional value or values required for the language string'],
             '$action' => (object)['type' => 'integer', 'text' => ''],
-            '$args' => (object)['type' => 'array',   'text' => ''],
+            '$args' => (object)['type' => 'array', 'text' => ''],
             '$attempt' => (object)[
                 'type' => 'object', 'text' => 'a record form the "vocab_game_attempt" table in the Moodle database'],
             '$attributes' => (object)['type' => 'array', 'text' => ''],
@@ -64,7 +63,7 @@ class util extends \mod_vocab\utilbase {
             '$colors' => (object)['type' => 'array', 'text' => 'string colors expressed as RGB colors'],
             '$component' => (object)['type' => 'string', 'text' => 'the frakenstyle name of a Moodle plugin'],
             '$config' => (object)['type' => 'object', 'text' => ''],
-            '$contents' => (object)['type' => 'string',  'text' => ''],
+            '$contents' => (object)['type' => 'string', 'text' => ''],
             '$context' => (object)['type' => 'object', 'text' => 'a record form the "context" table in the Moodle database'],
             '$count' => (object)['type' => 'integer', 'text' => ''],
             '$course' => (object)['type' => 'object', 'text' => 'a record form the "course" table in the Moodle database'],
@@ -89,8 +88,8 @@ class util extends \mod_vocab\utilbase {
             '$fieldname' => (object)['type' => 'string', 'text' => ''],
             '$fields' => (object)['type' => 'array', 'text' => 'of database field names'],
             '$fileid' => (object)['type' => 'integer', 'text' => ''],
-            '$filename' => (object)['type' => 'string',  'text' => ''],
-            '$filepath' => (object)['type' => 'string',  'text' => ''],
+            '$filename' => (object)['type' => 'string', 'text' => ''],
+            '$filepath' => (object)['type' => 'string', 'text' => ''],
             '$files' => (object)['type' => 'array', 'text' => ''],
             '$filetype' => (object)['type' => 'string', 'text' => 'file type/extension'],
             '$fillcolor' => (object)['type' => 'string', 'text' => 'a CSS color name or value'],
@@ -108,7 +107,7 @@ class util extends \mod_vocab\utilbase {
             '$instance' => (object)[
                 'type' => 'object', 'text' => 'a record form the "vocab" table in the Moodle database'],
             '$item' => (object)['type' => 'object', 'text' => 'representing an item in the XML file'],
-            '$itemvars' => (object)['type' => 'array',   'text' => ''],
+            '$itemvars' => (object)['type' => 'array', 'text' => ''],
             '$langcode' => (object)['type' => 'string', 'text' => ''],
             '$length' => (object)['type' => 'integer', 'text' => ''],
             '$method' => (object)['type' => 'string', 'text' => ''],
@@ -116,7 +115,7 @@ class util extends \mod_vocab\utilbase {
             '$missing' => (object)['type' => 'boolean', 'text' => ''],
             '$mode' => (object)['type' => 'string', 'text' => ''],
             '$n' => (object)['type' => 'integer', 'text' => 'number of colors to return'],
-            '$name' => (object)['type' => 'string',  'text' => ''],
+            '$name' => (object)['type' => 'string', 'text' => ''],
             '$names' => (object)['type' => 'array', 'text' => ''],
             '$newwords' => (object)['type' => 'array', 'text' => ''],
             '$node' => (object)['type' => 'string', 'text' => 'the current navigation node'],
@@ -127,7 +126,7 @@ class util extends \mod_vocab\utilbase {
             '$oldversion' => (object)['type' => 'string', 'text' => ''],
             '$parameters' => (object)['type' => 'array', 'text' => ''],
             '$paramname' => (object)['type' => 'string', 'text' => ''],
-            '$params' => (object)['type' => 'array',   'text' => ''],
+            '$params' => (object)['type' => 'array', 'text' => ''],
             '$phpdocs' => (object)['type' => 'string', 'text' => ''],
             '$phpdocsnew' => (object)['type' => 'string', 'text' => ''],
             '$phpdocsold' => (object)['type' => 'string', 'text' => ''],
@@ -163,7 +162,7 @@ class util extends \mod_vocab\utilbase {
             '$type' => (object)['type' => 'mixed', 'text' => 'a PARAM_xxx constant value'],
             '$update' => (object)['type' => 'boolean', 'text' => ''],
             '$user' => (object)['type' => 'object', 'text' => 'a user on this Moodle site'],
-            '$value' => (object)['type' => 'string',  'text' => ''],
+            '$value' => (object)['type' => 'string', 'text' => ''],
             '$values' => (object)['type' => 'array', 'text' => 'numbers to be displayed as a pie-chart'],
             '$vars' => (object)['type' => 'array', 'text' => 'of values for the current row'],
             '$vocab' => (object)['type' => 'object', 'text' => 'the current Vocabulary activity'],
@@ -214,11 +213,9 @@ class util extends \mod_vocab\utilbase {
 
         $path = current($paths);
         while ($path) {
-
             // Get file/folder items within this directory.
-            $items = new \DirectoryIterator($CFG->dirroot.'/'.$path);
+            $items = new \DirectoryIterator($CFG->dirroot . '/' . $path);
             foreach ($items as $item) {
-
                 // Skip certain directories.
                 if ($item->isDot() || substr($item, 0, 1) == '.' || $item == 'build' || $item == 'lang' || $item == 'pix') {
                     continue;
@@ -243,13 +240,12 @@ class util extends \mod_vocab\utilbase {
                     }
                 }
 
-                $itempath = $path.'/'.$item;
+                $itempath = $path . '/' . $item;
 
                 if ($item->isDir()) {
                     $paths[] = $itempath;
                 } else if ($item->isFile()) {
-
-                    $fullpath = $CFG->dirroot.'/'.$itempath;
+                    $fullpath = $CFG->dirroot . '/' . $itempath;
                     $filetype = pathinfo($path, PATHINFO_EXTENSION);
 
                     $update = false;
@@ -354,7 +350,7 @@ class util extends \mod_vocab\utilbase {
      */
     public function copyright_action($mform, $data, $filepath, $action, &$contents, &$update) {
 
-        $search = '// This file '.'is part of Moodle - http://moodle.org/';
+        $search = '// This file ' . 'is part of Moodle - http://moodle.org/';
         if (is_numeric(strpos($contents, $search))) {
             $missing = false;
             $incorrect = false;
@@ -363,7 +359,7 @@ class util extends \mod_vocab\utilbase {
             $incorrect = true;
         }
 
-        list($report, $remove, $fix) = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
+        [$report, $remove, $fix] = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
 
         $result = [$filepath => []];
 
@@ -391,8 +387,8 @@ class util extends \mod_vocab\utilbase {
      * TODO: Finish documenting this function
      */
     public function remove_copyright(&$contents, &$update) {
-        $search = '// This file '.'is part of Moodle - http://moodle.org/';
-        $search = '/\s*'.preg_quote($search, '/').'(.*?)\n+(?=[^\/])/us';
+        $search = '// This file ' . 'is part of Moodle - http://moodle.org/';
+        $search = '/\s*' . preg_quote($search, '/') . '(.*?)\n+(?=[^\/])/us';
         $contents = preg_replace($search, "\n", $contents, 1, $count);
         if (empty($count)) {
             return false;
@@ -411,7 +407,7 @@ class util extends \mod_vocab\utilbase {
      * TODO: Finish documenting this function
      */
     public function add_copyright(&$contents, &$update) {
-        $copyright = $this->get_copyright()."\n";
+        $copyright = $this->get_copyright() . "\n";
         if (substr($contents, 0, 5) === '<?php') {
             $pos = 6;
         } else if (substr($contents, 0, 2) === '<?') {
@@ -451,7 +447,6 @@ class util extends \mod_vocab\utilbase {
                 $this->fix_file_contents($mform, $data, $filepath, $action, $contents, $update, 4);
                 break;
         }
-
     }
 
     /**
@@ -483,28 +478,28 @@ class util extends \mod_vocab\utilbase {
                 // Handle Javascript functions.
                 $keywords = '(function[ \t]+)';
                 $blockname = '(\w+)[ \t]*';
-                $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
+                $search = '/' . $lastline . $comments . $phpdocs . $indent . $keywords . $blockname . $parameters . '\{/s';
                 break;
 
             case 2:
                 // Handle Javascript methods.
                 $blockname = '(\w+(?:\.\w+)*[ \t]*)';
                 $keywords = '([=:][ \t]*function[ \t]*)';
-                $search = '/'.$lastline.$comments.$phpdocs.$indent.$blockname.$keywords.$parameters.'\{/s';
+                $search = '/' . $lastline . $comments . $phpdocs . $indent . $blockname . $keywords . $parameters . '\{/s';
                 break;
 
             case 3:
                 // PHP functions and methods.
                 $keywords = '((?:(?:abstract|public|private|protected|static)[ \t]+)*function[ \t]+)';
                 $blockname = '(pie_gra\w+)[ \t]*';
-                $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
+                $search = '/' . $lastline . $comments . $phpdocs . $indent . $keywords . $blockname . $parameters . '\{/s';
                 break;
 
             case 4:
                 // PHP classes.
                 $keywords = '((?:(?:abstract|readonly)[ \t]+)?(?:class|interface)[ \t]+)';
                 $blockname = '(\w+[ \t]*)';
-                $search = '/'.$lastline.$comments.$phpdocs.$indent.$keywords.$blockname.$parameters.'\{/s';
+                $search = '/' . $lastline . $comments . $phpdocs . $indent . $keywords . $blockname . $parameters . '\{/s';
                 break;
 
             case 5:
@@ -541,7 +536,6 @@ class util extends \mod_vocab\utilbase {
 
         $imax = count($matches[0]) - 1;
         for ($i = $imax; $i >= 0; $i--) {
-
             $length = strlen($matches[0][$i][0]);
             $start = $matches[0][$i][1];
 
@@ -584,8 +578,15 @@ class util extends \mod_vocab\utilbase {
 
             $parameters = trim($matches[7][$i][0]);
             if (substr($parameters, 0, 1) == '(' && substr($parameters, -1) == ')') {
-                $phpdocsnew = $this->get_phpdocs_parameters($filepath, $contents, $start,
-                                    $indent, $blockname, $parameters, $parseold->comments);
+                $phpdocsnew = $this->get_phpdocs_parameters(
+                    $filepath,
+                    $contents,
+                    $start,
+                    $indent,
+                    $blockname,
+                    $parameters,
+                    $parseold->comments
+                );
             } else {
                 // A "class" in in a PHP file.
                 $phpdocsnew = $this->get_phpdocs_block($data, $indent, $blockname);
@@ -601,11 +602,11 @@ class util extends \mod_vocab\utilbase {
             } else {
                 $incorrect = $this->different_params($blockname, $parseold, $parsenew);
             }
-            list($report, $remove, $fix) = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
+            [$report, $remove, $fix] = $this->get_report_remove_fix($action, $missing, $incorrect, $mform);
 
             if ($remove) {
-                $match = $matches[5][$i][0].$matches[6][$i][0].$matches[7][$i][0];
-                $match = $lastline.$comments.$spacer.$indent.$match.'{';
+                $match = $matches[5][$i][0] . $matches[6][$i][0] . $matches[7][$i][0];
+                $match = $lastline . $comments . $spacer . $indent . $match . '{';
                 $contents = substr_replace($contents, $match, $start, $length);
                 $this->store_phpdocs_message($filepath, $blockname, 'removed');
                 $update = true;
@@ -617,8 +618,8 @@ class util extends \mod_vocab\utilbase {
                         $this->store_phpdocs_message($filepath, $blockname, 'incorrect');
                     }
                 } else if ($fix) {
-                    $match = $matches[5][$i][0].$matches[6][$i][0].$matches[7][$i][0];
-                    $match = $lastline.$comments.$spacer.$phpdocsnew.$indent.$match.'{';
+                    $match = $matches[5][$i][0] . $matches[6][$i][0] . $matches[7][$i][0];
+                    $match = $lastline . $comments . $spacer . $phpdocsnew . $indent . $match . '{';
                     $contents = substr_replace($contents, $match, $start, $length);
 
                     if ($missing) {
@@ -641,7 +642,7 @@ class util extends \mod_vocab\utilbase {
      * TODO: Finish documenting this function
      */
     protected function store_copyright_message($filepath, $type) {
-        $this->store_message($filepath, 'copyright', 'copyright'.$type);
+        $this->store_message($filepath, 'copyright', 'copyright' . $type);
     }
 
     /**
@@ -654,7 +655,7 @@ class util extends \mod_vocab\utilbase {
      * TODO: Finish documenting this function
      */
     protected function store_phpdocs_message($filepath, $blockname, $type) {
-        $this->store_message($filepath, $blockname, 'phpdocs'.$type);
+        $this->store_message($filepath, $blockname, 'phpdocs' . $type);
     }
 
     /**
@@ -700,14 +701,14 @@ class util extends \mod_vocab\utilbase {
         // Cache copyright messages.
         $types = ['added', 'removed', 'missing'];
         foreach ($types as $type) {
-            $type = 'copyright'.$type;
+            $type = 'copyright' . $type;
             $str->$type = get_string($type, $this->plugin);
         }
 
         // Cache PHPdocs messages.
         $types = ['unknownparam', 'incorrect', 'missing', 'removed', 'fixed', 'added'];
         foreach ($types as $type) {
-            $type = 'phpdocs'.$type;
+            $type = 'phpdocs' . $type;
             $str->$type = get_string($type, $this->plugin);
         }
 
@@ -716,7 +717,6 @@ class util extends \mod_vocab\utilbase {
 
         $filelist = [];
         foreach ($this->messages as $filepath => $types) {
-
             // Sort the types by type.
             $sortedtypes = [];
             foreach (array_keys($types) as $type) {
@@ -726,13 +726,12 @@ class util extends \mod_vocab\utilbase {
 
             $typelist = [];
             foreach (array_keys($sortedtypes) as $type) {
-
                 if (substr($type, 0, 7) == 'phpdocs') {
                     // The blocknames were selected starting at the end of
                     // the file so we put them back into the original order.
                     $blocklist = array_reverse($types[$type]);
                     $blocklist = \html_writer::alist($blocklist, $blockparams, 'ul');
-                    $typelist[] = $str->$type.$str->labelsep.$blocklist;
+                    $typelist[] = $str->$type . $str->labelsep . $blocklist;
                 } else if (substr($type, 0, 9) == 'copyright') {
                     // A copyright message has no "blockname".
                     $typelist[] = $str->$type;
@@ -741,7 +740,7 @@ class util extends \mod_vocab\utilbase {
                 }
             }
             $typelist = \html_writer::alist($typelist, $typeparams, 'ul');
-            $filelist[] = $filepath.$typelist;
+            $filelist[] = $filepath . $typelist;
         }
         if (empty($filelist)) {
             $filelist = 'No messages for the selected files.';
@@ -770,8 +769,8 @@ class util extends \mod_vocab\utilbase {
         ];
 
         $line = '[ \t]*\*[^\r\n]*[\r\n]+';
-        $block = '[ \t]*\/\*+[\r\n]+'.
-                 "((?:$line)*)".
+        $block = '[ \t]*\/\*+[\r\n]+' .
+                 "((?:$line)*)" .
                  '[ \t]*\*+\/[\r\n]+?';
         $tag = '\*\s+@(\w+)\s+(.*)';
 
@@ -781,28 +780,25 @@ class util extends \mod_vocab\utilbase {
         // @return [Type] [<description>]
         // @todo [description] !!
 
-        if (preg_match('/^'.$block.'$/us', $phpdocs, $blockmatch)) {
-            if (preg_match_all('/'.$line.'/us', $blockmatch[1], $lines)) {
-
+        if (preg_match('/^' . $block . '$/us', $phpdocs, $blockmatch)) {
+            if (preg_match_all('/' . $line . '/us', $blockmatch[1], $lines)) {
                 $imax = count($lines[0]);
                 for ($i = 0; $i < $imax; $i++) {
-
                     $line = trim($lines[0][$i]);
-                    if (preg_match('/'.$tag.'/u', $line, $match)) {
-
+                    if (preg_match('/' . $tag . '/u', $line, $match)) {
                         $token = $match[1];
                         $text = $match[2];
                         $type = '';
                         $name = '';
                         switch ($token) {
                             case 'param':
-                                list($type, $name, $text) = array_pad(explode(' ', $text, 3), 3, '');
+                                [$type, $name, $text] = array_pad(explode(' ', $text, 3), 3, '');
                                 break;
                             case 'return':
-                                list($type, $text) = array_pad(explode(' ', $text, 2), 2, '');
+                                [$type, $text] = array_pad(explode(' ', $text, 2), 2, '');
                                 break;
                             case 'uses':
-                                list($name, $text) = array_pad(explode(' ', $text, 2), 2, '');
+                                [$name, $text] = array_pad(explode(' ', $text, 2), 2, '');
                                 break;
                             default:
                         }
@@ -830,7 +826,7 @@ class util extends \mod_vocab\utilbase {
                         // Add this $token (params require a $name).
                         if ($token == 'param') {
                             if ($name == '') {
-                                $name = 'param_'.count($parse->tags[$token]);
+                                $name = 'param_' . count($parse->tags[$token]);
                             }
                             $parse->tags[$token][$name] = $t;
                         } else {
@@ -901,7 +897,7 @@ $indent * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 $indent * @author     $data->authorname $data->authorcontact
 $indent * @since      Moodle $data->sinceversion
 END;
-        return $this->get_phpdoc($indent, $blockname, $details."\n");
+        return $this->get_phpdoc($indent, $blockname, $details . "\n");
     }
 
     /**
@@ -915,10 +911,10 @@ END;
      * TODO: Finish documenting this function
      */
     public function get_phpdoc($indent, $comments, $details) {
-        return $indent.'/'.'**'."\n".
-               $this->get_comments_phpdoc($comments, $indent).
-               $this->get_details_phpdoc($details, $indent).
-               $indent.' *'.'/'."\n";
+        return $indent . '/' . '**' . "\n" .
+               $this->get_comments_phpdoc($comments, $indent) .
+               $this->get_details_phpdoc($details, $indent) .
+               $indent . ' *' . '/' . "\n";
     }
 
     /**
@@ -959,7 +955,7 @@ END;
      */
     public function get_details_phpdoc($details, $indent) {
         if ($details) {
-            $details = "$indent *\n".$details;
+            $details = "$indent *\n" . $details;
         }
         return $details;
     }
@@ -980,7 +976,7 @@ END;
 
         $details = '';
         $unknownparams = [];
-        $search = '/'.'(\w*)(\&?)(\$\w+)(\s*=\s*([^,]*))?'.'/';
+        $search = '/' . '(\w*)(\&?)(\$\w+)(\s*=\s*([^,]*))?' . '/';
         // The matches should be available as follows
         // [0][$i] : type + reference + name + default value
         // [1][$i] : parameter type (optional)
@@ -1033,10 +1029,10 @@ END;
                 $globals = array_unique($globals);
                 rsort($globals);
                 foreach ($globals as $global) {
-                    $details = "$indent * @uses $global\n".$details;
+                    $details = "$indent * @uses $global\n" . $details;
                 }
             }
-            if (preg_match('/\s'.'return'.'\s/s', $substr)) {
+            if (preg_match('/\s' . 'return' . '\s/s', $substr)) {
                 $details .= "$indent * @return xxx\n";
             }
         }
@@ -1060,10 +1056,10 @@ END;
      * TODO: Finish documenting this function
      */
     public function remove_phpdocs(&$contents, &$update) {
-        $search = '/'.
-                  '(^ *\/\*\*[\r\n]+)'. // Top line.
-                  '(^ *\*.*?[\r\n]+)+'. // Mid line.
-                  '(^ *\*\/[\r\n]+)'. // Bottom line.
+        $search = '/' .
+                  '(^ *\/\*\*[\r\n]+)' . // Top line.
+                  '(^ *\*.*?[\r\n]+)+' . // Mid line.
+                  '(^ *\*\/[\r\n]+)' . // Bottom line.
                   '/um'; // Settings for unicode and multiline.
         $contents = preg_replace($search, '', $contents, -1, $count);
         return [($count > 0), $contents];
@@ -1077,16 +1073,17 @@ END;
      *
      * TODO: Finish documenting this function
      */
-    public function get_copyright($filetype='') {
+    public function get_copyright($filetype = '') {
         $header = '';
         $footer = '';
         switch ($filetype) {
             case 'css':
-                $header = '/*'.str_repeat('*', 10)."\n";
-                $footer = str_repeat('*', 10).'*/'."\n";
+                $header = '/*' . str_repeat('*', 10) . "\n";
+                $footer = str_repeat('*', 10) . '*/' . "\n";
+                break;
             case 'xml':
-                $header = '<!'.str_repeat('-', 10)."\n";
-                $footer = str_repeat('-', 10).'>'."\n";
+                $header = '<!' . str_repeat('-', 10) . "\n";
+                $footer = str_repeat('-', 10) . '>' . "\n";
                 break;
         }
 
@@ -1108,6 +1105,6 @@ END;
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 END;
-        return $header.$copyright."\n".$footer;
+        return $header . $copyright . "\n" . $footer;
     }
 }

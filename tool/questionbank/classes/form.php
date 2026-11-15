@@ -36,7 +36,6 @@ namespace vocabtool_questionbank;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\toolform {
-
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_questionbank';
 
@@ -206,7 +205,6 @@ class form extends \mod_vocab\toolform {
 
         $qtypes = self::get_question_types();
         foreach ($qtypes as $qtype => $label) {
-
             // Add the checkbox, prompt menu and format menu for this question type.
             $elements = [];
             $elements[] = $mform->createElement('checkbox', 'enable', $enablelabel);
@@ -217,10 +215,10 @@ class form extends \mod_vocab\toolform {
             }
 
             // By default, the prompt chooses the format for each question type.
-            $mform->setDefault($qtype.'[format]', 0);
+            $mform->setDefault($qtype . '[format]', 0);
 
             // Disable the format menu until the question type becomes checked.
-            $mform->hideIf($qtype.'[format]', $qtype.'[enable]', 'notchecked');
+            $mform->hideIf($qtype . '[format]', $qtype . '[enable]', 'notchecked');
         }
 
         // Add a heading for the "Question settings".
@@ -300,11 +298,11 @@ class form extends \mod_vocab\toolform {
      * @return void ... but may update $mform.
      */
     public function add_field_media_assistant($mform, $type, $options, $context) {
-        $name = $type.'assistant';
+        $name = $type . 'assistant';
         if (empty($options)) {
             $url = \mod_vocab\aibridge::get_url('index', $context);
-            $msg = \html_writer::link($url, $this->get_string('clicktoadd'.$type));
-            $msg = $this->get_string('no'.$type.'sfound', $msg);
+            $msg = \html_writer::link($url, $this->get_string('clicktoadd' . $type));
+            $msg = $this->get_string('no' . $type . 'sfound', $msg);
             $this->add_field_static($mform, $name, $msg, 'showhelp');
         } else {
             // By default, media is made for any [[IMAGE]] or [[AUDIO]] markers in the questions.
@@ -322,7 +320,7 @@ class form extends \mod_vocab\toolform {
      * @param string $closeafter the name of previous section, if any (optional, default='logrecords')
      * @return void, but update $mform settings and fields
      */
-    public function add_message($mform, $msg, $type='warning', $closebutton=false, $closeafter='logrecords') {
+    public function add_message($mform, $msg, $type = 'warning', $closebutton = false, $closeafter = 'logrecords') {
         global $OUTPUT;
         if ($mform->elementExists($closeafter)) {
             $name = 'closebeforeme';
@@ -341,7 +339,7 @@ class form extends \mod_vocab\toolform {
      *                If FALSE return a one-dimensional array [code => name].
      * @return array of vocabulary levels.
      */
-    public static function get_question_levels($sortbyprefix=false) {
+    public static function get_question_levels($sortbyprefix = false) {
         global $DB;
 
         // The $levels array is the return value for this function.
@@ -357,15 +355,14 @@ class form extends \mod_vocab\toolform {
         }
 
         $select = 'n.*, lvl.levelcode, lng.langcode';
-        $from = '{vocab_levelnames} n '.
-                'JOIN {vocab_levels} lvl ON n.levelid = lvl.id  '.
+        $from = '{vocab_levelnames} n ' .
+                'JOIN {vocab_levels} lvl ON n.levelid = lvl.id  ' .
                 'JOIN {vocab_langs} lng  ON n.langid = lng.id';
-        list($where, $params) = $DB->get_in_or_equal($langs);
+        [$where, $params] = $DB->get_in_or_equal($langs);
         $where = "lng.langcode $where";
 
         $sql = "SELECT $select FROM $from WHERE $where";
         if ($names = $DB->get_records_sql($sql, $params)) {
-
             // Sort by langcode: child, parent, "en".
             uasort($names, function ($a, $b) {
 
@@ -400,7 +397,6 @@ class form extends \mod_vocab\toolform {
             // Extract $levels from the the $names array.
             // Note that we don't overwrite items.
             foreach ($names as $id => $level) {
-
                 $code = $level->levelcode;
                 $name = $level->levelname;
 
@@ -482,7 +478,7 @@ class form extends \mod_vocab\toolform {
 
         foreach ($names as $name) {
             if (empty($data[$name])) {
-                $errors[$name] = $this->get_string('empty'.$name);
+                $errors[$name] = $this->get_string('empty' . $name);
             }
         }
 
@@ -558,8 +554,8 @@ class form extends \mod_vocab\toolform {
 
             $select = 'vwi.wordid, vw.word';
             $from = '{vocab_word_instances} vwi, {vocab_words} vw';
-            list($where, $params) = $DB->get_in_or_equal(array_keys($data->selectedwords));
-            $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id '.$where;
+            [$where, $params] = $DB->get_in_or_equal(array_keys($data->selectedwords));
+            $where = 'vwi.vocabid = ? AND vwi.wordid = vw.id AND vw.id ' . $where;
             $params = array_merge([$vocabid], $params);
             $order = 'vwi.sortorder, vw.word';
 
@@ -638,7 +634,6 @@ class form extends \mod_vocab\toolform {
         // Extract type and name of question subcategory.
         $groupname = 'subcat';
         if (property_exists($data, $groupname)) {
-
             $types = static::get_subcategory_types();
             foreach ($types as $type => $text) {
                 if (! empty($data->{$groupname}[$type])) {
@@ -666,7 +661,6 @@ class form extends \mod_vocab\toolform {
         // Extract type and name of question subcategory.
         $groupname = 'qtag';
         if (property_exists($data, $groupname)) {
-
             $types = static::get_questiontag_types();
             foreach ($types as $type => $text) {
                 if (! empty($data->{$groupname}[$type])) {
@@ -694,7 +688,7 @@ class form extends \mod_vocab\toolform {
             'textassistant' => $textid,
             'imageassistant' => $imageid,
             'audioassistant' => $audioid,
-            'qtypes' => array_map(function($values) {
+            'qtypes' => array_map(function ($values) {
                 return $values->formatid;
             }, $qtypes),
             'questioncount' => $qcount,
@@ -767,17 +761,17 @@ class form extends \mod_vocab\toolform {
         if (count($success)) {
             $success = \html_writer::alist($success);
             $success = $this->get_string('scheduletaskssuccess', $success);
-            $strsuccess = get_string('success').get_string('labelsep', 'langconfig');
+            $strsuccess = get_string('success') . get_string('labelsep', 'langconfig');
             $strsuccess = \html_writer::tag('b', $strsuccess, ['class' => 'text-success']);
-            $success = $OUTPUT->notification($strsuccess.$success, 'success', false);
+            $success = $OUTPUT->notification($strsuccess . $success, 'success', false);
             $mform->addElement('html', $success);
         }
         if (count($failure)) {
             $failure = \html_writer::alist($failure);
             $failure = $this->get_string('scheduletasksfailure', $failure);
-            $strfailure = get_string('error').get_string('labelsep', 'langconfig');
+            $strfailure = get_string('error') . get_string('labelsep', 'langconfig');
             $strfailure = \html_writer::tag('b', $strfailure, ['class' => 'text-danger']);
-            $failure = $OUTPUT->notification($strfailure.$failure, 'warning', false);
+            $failure = $OUTPUT->notification($strfailure . $failure, 'warning', false);
             $mform->addElement('html', $failure);
         }
     }
@@ -804,7 +798,6 @@ class form extends \mod_vocab\toolform {
 
         // Get array of new log values. Use depth=2 to get array.
         if ($values = self::get_optional_param('log', null, PARAM_RAW, 2)) {
-
             $tool = $this->get_subplugin();
             $siteadmin = is_siteadmin();
 
@@ -882,7 +875,6 @@ class form extends \mod_vocab\toolform {
             $values['tagnames'] = $tagnames;
 
             if ($allowupdate) {
-
                 // Define the types of the log fields that can be updated.
                 // Fields that are not in this array cannot be updated.
                 // The includes the folowing fields:
@@ -962,8 +954,11 @@ class form extends \mod_vocab\toolform {
             }
             if (count($logids) && confirm_sesskey()) {
                 $logmessage = $this->process_log_records(
-                    $mform, $logaction, $logids,
-                    $defaultlogid, $defaultfields
+                    $mform,
+                    $logaction,
+                    $logids,
+                    $defaultlogid,
+                    $defaultfields
                 );
             }
         }
@@ -987,17 +982,20 @@ class form extends \mod_vocab\toolform {
 
         // Get table of current log records.
         $logtable = $this->get_log_records_table(
-            $logactions, $logaction, $logids,
-            $defaultlogid, $defaultfields
+            $logactions,
+            $logaction,
+            $logids,
+            $defaultlogid,
+            $defaultfields
         );
-        list($logtable, $logcount, $incomplete) = $logtable;
+        [$logtable, $logcount, $incomplete] = $logtable;
 
         if ($logtable || $logmessage) {
-
             // If there is a log message, we expand the logrecords section.
             // If there are any log records, we append how many there are.
             $this->add_heading(
-                $mform, 'logrecords',
+                $mform,
+                'logrecords',
                 (strlen($logmessage) == 0 ? false : true),
                 (empty($logcount) ? '' : " ($logcount)")
             );
@@ -1070,7 +1068,6 @@ class form extends \mod_vocab\toolform {
 
         $ids = [];
         foreach ($logids as $logid => $value) {
-
             // Ensure the the checkbox was actually checked.
             if (empty($value)) {
                 continue;
@@ -1098,7 +1095,7 @@ class form extends \mod_vocab\toolform {
             if ($task = $DB->get_record('task_adhoc', ['id' => $log->taskid])) {
                 if ($task->classname == '\\vocabtool_questionbank\\task\\questions') {
                     if ($task->component == 'vocabtool_questionbank') {
-                        if ($task->customdata == '{"logid":'.$logid.'}') { // JSON.
+                        if ($task->customdata == '{"logid":' . $logid . '}') { // JSON.
                             $task = \core\task\manager::adhoc_task_from_record($task);
                         }
                     }
@@ -1111,7 +1108,6 @@ class form extends \mod_vocab\toolform {
 
             // Now we are ready to perform the requested action.
             switch ($logaction) {
-
                 case 'applydefaults':
                     if ($defaultvalues) {
                         if ($tool::update_log_record($log, $defaultvalues)) {
@@ -1187,8 +1183,8 @@ class form extends \mod_vocab\toolform {
                     $this->add_field_select($mform, "log[$name]", $options, PARAM_INT, $log->$name, $a);
 
                     foreach (['image', 'audio'] as $type) {
-                        $name = $type.'id';
-                        $a = ['strname' => $type.'assistant'];
+                        $name = $type . 'id';
+                        $a = ['strname' => $type . 'assistant'];
                         $options = \mod_vocab\aibridge::get_media_menu($type, $context, $userid);
                         if (empty($options)) {
                             $options = [\mod_vocab\aibridge::NONE => get_string('none')];
@@ -1250,7 +1246,6 @@ class form extends \mod_vocab\toolform {
                 case 'redotask':
                 case 'resumetask':
                 case 'fixquestions':
-
                     if ($task) {
                         // The "reschedule" method has no return value,
                         // so we just try it and hope that it works.
@@ -1320,9 +1315,9 @@ class form extends \mod_vocab\toolform {
         // Format results for display.
         $count = count($ids);
         if ($count == 1) {
-            $strname = $logaction.'result';
+            $strname = $logaction . 'result';
         } else {
-            $strname = $logaction.'results';
+            $strname = $logaction . 'results';
         }
         $a = (object)['count' => $count, 'ids' => ''];
         if ($siteadmin && ($ids = implode(', ', $ids))) {
@@ -1347,7 +1342,7 @@ class form extends \mod_vocab\toolform {
      * @param object $incomplete Optional object with 'question' array to mark incomplete items.
      * @return string HTML-formatted list of question IDs with associated action links.
      */
-    public static function format_questionids($courseid, $questionids, $incomplete=null) {
+    public static function format_questionids($courseid, $questionids, $incomplete = null) {
 
         if (empty($questionids)) {
             return '';
@@ -1373,7 +1368,6 @@ class form extends \mod_vocab\toolform {
         $previewicon = self::action_icon('preview', 'preview', 't/preview');
 
         foreach ($ids as $i => $id) {
-
             // Set params for links.
             $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
             if ($incomplete && array_key_exists($id, $incomplete->question)) {
@@ -1383,14 +1377,14 @@ class form extends \mod_vocab\toolform {
 
             $url = '/question/bank/editquestion/question.php';
             $url = new \moodle_url($url, ['courseid' => $courseid, 'id' => $id]);
-            $ids[$i] .= ' '.\html_writer::link($url, $editicon, $params);
+            $ids[$i] .= ' ' . \html_writer::link($url, $editicon, $params);
 
             $url = '/question/bank/previewquestion/preview.php';
             $url = new \moodle_url($url, ['id' => $id]);
-            $ids[$i] .= ' '.\html_writer::link($url, $previewicon, $params);
+            $ids[$i] .= ' ' . \html_writer::link($url, $previewicon, $params);
 
-            $url = self::delete_questions_url($courseid,  $id);
-            $ids[$i] .= ' '.\html_writer::link($url, $deleteicon, $params);
+            $url = self::delete_questions_url($courseid, $id);
+            $ids[$i] .= ' ' . \html_writer::link($url, $deleteicon, $params);
 
             // Add comma separator, if this is not the last item in the array.
             if ($i != $lastkey) {
@@ -1414,7 +1408,7 @@ class form extends \mod_vocab\toolform {
      * @param string $icon The Moodle pix_icon name (defaults to 't/{type}').
      * @return string HTML for the icon image tag with adjusted class.
      */
-    public static function action_icon($type, $strname='', $icon='') {
+    public static function action_icon($type, $strname = '', $icon = '') {
         global $OUTPUT;
         static $icons = [];
 
@@ -1449,7 +1443,7 @@ class form extends \mod_vocab\toolform {
      *
      * @return \moodle_url The URL for initiating question deletion.
      */
-    public static function delete_questions_url($courseid,  $questionids) {
+    public static function delete_questions_url($courseid, $questionids) {
 
         // The URL of question edit page is used as the "returnurl" when deleting questions.
         $returnurl = new \moodle_url('/question/edit.php', ['courseid' => $courseid]);
@@ -1465,7 +1459,7 @@ class form extends \mod_vocab\toolform {
             $questionids = array_filter($questionids);
         }
         foreach ($questionids as $questionid) {
-            $params['q'.$questionid] = 1;
+            $params['q' . $questionid] = 1;
         }
         return new \moodle_url('/question/bank/deletequestion/delete.php', $params);
     }
@@ -1538,11 +1532,9 @@ class form extends \mod_vocab\toolform {
 
         // Fetch all logs pertaining to the current vocab activity.
         if ($logs = $tool::get_logs($tool->vocab->id)) {
-
             $incomplete = $this->get_incomplete($tool, $logs);
 
             foreach ($logs as $log) {
-
                 if (! array_key_exists($log->userid, $users)) {
                     $users[$log->userid] = $DB->get_record('user', ['id' => $log->userid]);
                 }
@@ -1559,20 +1551,24 @@ class form extends \mod_vocab\toolform {
                     if (empty($log->qformat)) {
                         $name = ''; // Shouldn't happen !!
                     } else {
-                        $name = get_string('pluginname', 'qformat_'.$log->qformat);
+                        $name = get_string('pluginname', 'qformat_' . $log->qformat);
                     }
                     $qformats[$log->qformat] = $name;
                 }
 
                 // Format list of standard and custom subcategories.
                 $subcattypes = $this->format_types(
-                    $subcategorytypes, $log->subcattype, 'subcattypes'
+                    $subcategorytypes,
+                    $log->subcattype,
+                    'subcattypes'
                 );
                 $subcatnames = $this->format_names($log->subcatname, 'subcatnames');
 
                 // Format list of standard and custom question tags.
                 $tagtypes = $this->format_types(
-                    $questiontagtypes, $log->tagtypes, 'tagtypes'
+                    $questiontagtypes,
+                    $log->tagtypes,
+                    'tagtypes'
                 );
                 $tagnames = $this->format_names($log->tagnames, 'tagnames');
 
@@ -1604,13 +1600,13 @@ class form extends \mod_vocab\toolform {
                     $log->timemodified = userdate($log->timemodified, $datefmt);
                 }
                 if ($log->nextruntime) {
-                    $log->nextruntime = get_string('nextruntime', 'tool_task').
-                                        get_string('labelsep', 'langconfig').
+                    $log->nextruntime = get_string('nextruntime', 'tool_task') .
+                                        get_string('labelsep', 'langconfig') .
                                         userdate($log->nextruntime, $datefmt);
                 } else {
                     $log->nextruntime = get_string('completed');
                     if ($log->timemodified) {
-                        $log->nextruntime .= get_string('labelsep', 'langconfig').$log->timemodified;
+                        $log->nextruntime .= get_string('labelsep', 'langconfig') . $log->timemodified;
                     }
                     if ($siteadmin) {
                         $msg = get_string('adhoctaskid', 'tool_task', $log->taskid);
@@ -1621,7 +1617,7 @@ class form extends \mod_vocab\toolform {
                 // Define checkbox to select this log record.
                 $name = 'logids';
                 $checked = array_key_exists($log->id, $logids);
-                $checkbox = \html_writer::checkbox($name.'['.$log->id.']', $log->id, $checked);
+                $checkbox = \html_writer::checkbox($name . '[' . $log->id . ']', $log->id, $checked);
 
                 // Define radio btn to set this log as the default.
                 $name = 'defaultlogid';
@@ -1629,12 +1625,13 @@ class form extends \mod_vocab\toolform {
                     'type' => 'radio',
                     'value' => $log->id,
                     'name' => $name,
-                    'id' => 'id_'.$name.'_'.$log->id,
+                    'id' => 'id_' . $name . '_' . $log->id,
                     'checked' => ($defaultlogid == $log->id ? 'checked' : null),
                 ]);
                 // Maybe we should add a "label" too?
                 $label = \html_writer::tag(
-                    'label', $tool->get_string('default', $log->id),
+                    'label',
+                    $tool->get_string('default', $log->id),
                     ['for' => "id_$name", 'class' => 'ms-1']
                 );
 
@@ -1662,8 +1659,8 @@ class form extends \mod_vocab\toolform {
                             'sesskey' => sesskey(),
                         ]);
                         $text = \html_writer::tag('small', $text, $textparams);
-                        $logaction = \html_writer::link($url, $icon.' '.$text);
-                        $logactions .= \html_writer::tag('div', $logaction, ['class' => $cssclass->logaction.' '.$action]);
+                        $logaction = \html_writer::link($url, $icon . ' ' . $text);
+                        $logactions .= \html_writer::tag('div', $logaction, ['class' => $cssclass->logaction . ' ' . $action]);
                     }
                 }
                 $logactions = \html_writer::tag('div', $logactions, ['class' => $cssclass->logactions]);
@@ -1801,8 +1798,8 @@ class form extends \mod_vocab\toolform {
                 $cell->text = \html_writer::empty_tag('input', [
                     'type' => 'checkbox',
                     'value' => 1,
-                    'name' => $name.'[0]',
-                    'id' => 'id_'.$name.'_0',
+                    'name' => $name . '[0]',
+                    'id' => 'id_' . $name . '_0',
                     'class' => 'd-none', // Unhidden later (by Javascript).
                     'checked' => (in_array(0, $logids) ? 'checked' : null),
                 ]);
@@ -1812,15 +1809,15 @@ class form extends \mod_vocab\toolform {
                     'type' => 'radio',
                     'value' => '0',
                     'name' => $name,
-                    'id' => 'id_'.$name.'_0',
+                    'id' => 'id_' . $name . '_0',
                     'checked' => ($defaultlogid == 0 ? 'checked' : null),
                 ]);
             } else {
                 $cell->text = \html_writer::empty_tag('input', [
                     'type' => 'checkbox',
                     'value' => 1,
-                    'name' => 'defaultfields['.$name.']',
-                    'id' => 'id_defaultfields_'.$name,
+                    'name' => 'defaultfields[' . $name . ']',
+                    'id' => 'id_defaultfields_' . $name,
                     'checked' => (in_array($name, $defaultfields) ? 'checked' : null),
                 ]);
             }
@@ -1907,7 +1904,7 @@ class form extends \mod_vocab\toolform {
             $names = explode(',', $names);
             $names = array_map('trim', $names);
             $names = array_filter($names);
-            $names = array_map(function($name) {
+            $names = array_map(function ($name) {
                 return \html_writer::tag('li', $name);
             }, $names);
             $names = $this->format_list($names, $cssclass);
@@ -1963,10 +1960,12 @@ class form extends \mod_vocab\toolform {
                 $qids = array_map('trim', $qids);
                 $qids = array_filter($qids);
                 if (count($qids) < $log->qcount) {
-                    if ($log->status == $tool::TASKSTATUS_AWAITING_REVIEW ||
+                    if (
+                        $log->status == $tool::TASKSTATUS_AWAITING_REVIEW ||
                         $log->status == $tool::TASKSTATUS_COMPLETED ||
                         $log->status == $tool::TASKSTATUS_CANCELLED ||
-                        $log->status == $tool::TASKSTATUS_FAILED) {
+                        $log->status == $tool::TASKSTATUS_FAILED
+                    ) {
                         // Not enough questions.
                         $incomplete->log[$logid] = true;
                     }
@@ -1979,7 +1978,7 @@ class form extends \mod_vocab\toolform {
 
         ksort($questionids);
         if (count($questionids)) {
-            list($select, $params) = $DB->get_in_or_equal(array_keys($questionids));
+            [$select, $params] = $DB->get_in_or_equal(array_keys($questionids));
             if ($questions = $DB->get_records_select('question', "id $select", $params)) {
                 $classname = '\\vocabtool_questionbank\\task\\questions';
                 $ids = [];
@@ -2016,8 +2015,8 @@ class form extends \mod_vocab\toolform {
                     // Get the name of the field that holds the question id.
                     $field = array_shift($ids[$table]);
                     // Get the select and param values for these questionids.
-                    list($s, $p) = $DB->get_in_or_equal($ids[$table]);
-                    $s = $field.' '.$s.' AND ('.$select[$table].')';
+                    [$s, $p] = $DB->get_in_or_equal($ids[$table]);
+                    $s = $field . ' ' . $s . ' AND (' . $select[$table] . ')';
                     $p = array_merge($p, $params[$table]);
                     // Find any records in this table that are incomplete.
                     if ($records = $DB->get_records_select($table, $s, $p)) {

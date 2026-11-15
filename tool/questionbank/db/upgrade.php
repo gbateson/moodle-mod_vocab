@@ -47,7 +47,7 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
 
     // Get the upgrade script for the main plugin.
     // Crucially, this contains "xmldb_vocab_check_structure()".
-    require_once($CFG->dirroot.'/mod/vocab/db/upgrade.php');
+    require_once($CFG->dirroot . '/mod/vocab/db/upgrade.php');
 
     // Get the DB manager.
     $dbman = $DB->get_manager();
@@ -60,7 +60,6 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
 
     $newversion = 2025010124;
     if ($oldversion < $newversion) {
-
         // Cache class name of questionbank form.
         $form = '\\vocabtool_questionbank\\form';
 
@@ -96,14 +95,14 @@ function xmldb_vocabtool_questionbank_upgrade($oldversion) {
     if ($oldversion < $newversion) {
         // Increment status TASKSTATUS_COMPLETED (7->8), TASKSTATUS_CANCELLED (8->9),
         // TASKSTATUS_FAILED (9->10), to make room for TASKSTATUS_ADDING_MULTIMEDIA (7).
-        $DB->execute('UPDATE {'.$table.'} SET status = status + 1 WHERE status IN (?, ?, ?)', [7, 8, 9]);
+        $DB->execute('UPDATE {' . $table . '} SET status = status + 1 WHERE status IN (?, ?, ?)', [7, 8, 9]);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
 
     $newversion = 2025051931;
     if ($oldversion < $newversion) {
         // Increment status (2-10 => 3-11) to make room for TASKSTATUS_DELAYED (2).
-        $DB->execute('UPDATE {'.$table.'} SET status = status + 1 WHERE status >= ?', [2]);
+        $DB->execute('UPDATE {' . $table . '} SET status = status + 1 WHERE status >= ?', [2]);
         upgrade_plugin_savepoint($result, $newversion, $type, $name);
     }
     return $result;

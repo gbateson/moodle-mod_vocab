@@ -65,7 +65,7 @@ class tool extends \mod_vocab\toolbase {
             $mm = $match[2];
             $dd = $match[3];
             $vv = intval($match[4]);
-            $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).($vv == 0 ? '' : " ($vv)");
+            $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)) . ($vv == 0 ? '' : " ($vv)");
         } else {
             $text = ''; // Shouldn't happen !!
         }

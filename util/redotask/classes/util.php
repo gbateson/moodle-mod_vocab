@@ -52,7 +52,7 @@ class util extends \mod_vocab\utilbase {
      *
      * @return string|false HTML output of task execution log and refresh link, or false if no task was selected.
      */
-    public function redo_task($mform, $uselocks=false) {
+    public function redo_task($mform, $uselocks = false) {
         global $CFG, $DB, $FULLME;
 
         // Initialize HTML output string.
@@ -107,7 +107,6 @@ class util extends \mod_vocab\utilbase {
 
         $msg = '';
         if ($lock) {
-
             $record = $DB->get_record('task_adhoc', ['id' => $taskid]);
             $task = \core\task\manager::adhoc_task_from_record($record);
 
@@ -119,7 +118,6 @@ class util extends \mod_vocab\utilbase {
 
             // The global cron lock.
             if ($cronlock) {
-
                 if ($uselocks) {
                     $task->set_lock($lock);
                     $task->set_cron_lock($cronlock);
@@ -156,7 +154,7 @@ class util extends \mod_vocab\utilbase {
         }
 
         if ($msg) {
-            $msg = get_string('error').get_string('labelsep', 'langconfig').$msg;
+            $msg = get_string('error') . get_string('labelsep', 'langconfig') . $msg;
         } else {
             $msg = get_string('success');
         }

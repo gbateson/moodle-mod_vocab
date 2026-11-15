@@ -36,7 +36,6 @@ namespace vocabutil_phpdocs;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\utilform {
-
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabutil_phpdocs';
 

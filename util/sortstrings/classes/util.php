@@ -48,7 +48,7 @@ class util extends \mod_vocab\utilbase {
      * @param bool $purgecaches Whether to purge the string cache after updating files.
      * @return string HTML output summarizing the sorting process.
      */
-    public function sort_strings($mform, $purgecaches=true) {
+    public function sort_strings($mform, $purgecaches = true) {
         global $CFG, $DB;
         $prefixlen = strlen($CFG->dirroot);
 
@@ -103,8 +103,7 @@ class util extends \mod_vocab\utilbase {
         $unchanged = [];
 
         foreach ($selected as $pluginname => $dir) {
-
-            list($plugintype, $name) = explode('_', $pluginname, 2);
+            [$plugintype, $name] = explode('_', $pluginname, 2);
             if ($plugintype == 'mod') {
                 $langdirpath = "$dir/lang";
                 $langfilename = "$name.php";
@@ -116,7 +115,7 @@ class util extends \mod_vocab\utilbase {
             $langdirs = array_filter(glob("$langdirpath/*"), 'is_dir');
 
             // Ensure that the "en" lang always comes first.
-            usort($langdirs, function($a, $b){
+            usort($langdirs, function ($a, $b) {
                 $alang = substr($a, strrpos($a, '/') + 1);
                 $blang = substr($b, strrpos($b, '/') + 1);
                 if ($alang == 'en') {
@@ -142,7 +141,6 @@ class util extends \mod_vocab\utilbase {
                 $lang = substr($langdir, strrpos($langdir, '/') + 1);
                 $langfile = "$langdir/$langfilename";
                 if (is_writable($langfile)) {
-
                     // Get the curent content of the langfile.
                     $oldcontent = file_get_contents($langfile);
 
@@ -161,7 +159,7 @@ class util extends \mod_vocab\utilbase {
                     }
                     // Remove all the $string definitions, leaving just the header.
                     $newcontent = \core_text::substr($oldcontent, 0, $pos);
-                    $newcontent = trim($newcontent)."\n\n";
+                    $newcontent = trim($newcontent) . "\n\n";
 
                     // Get all the strings in the langfile, and sort them.
                     $string = [];
@@ -200,7 +198,7 @@ class util extends \mod_vocab\utilbase {
                     foreach ($string as $strname => $strvalue) {
                         $strvalue = strtr($strvalue, $unescape);
                         $strvalue = strtr($strvalue, $escape);
-                        $newcontent .= '$'."string['".$strname."'] = '".$strvalue."';\n";
+                        $newcontent .= '$' . "string['" . $strname . "'] = '" . $strvalue . "';\n";
                     }
 
                     // Add any "missing" strings.
@@ -211,13 +209,13 @@ class util extends \mod_vocab\utilbase {
                         }
                         if (empty($missing[$pluginname][$lang])) {
                             $missing[$pluginname][$lang] = [];
-                            $newcontent .= '/*/////////////////'.";\n";
-                            $newcontent .= '// Missing strings.'.";\n";
-                            $newcontent .= '/////////////////*/'.";\n";
+                            $newcontent .= '/*/////////////////' . ";\n";
+                            $newcontent .= '// Missing strings.' . ";\n";
+                            $newcontent .= '/////////////////*/' . ";\n";
                         }
                         $missing[$pluginname][$lang][$key] = $text;
                         $text = strtr(strtr($text, $unescape), $escape);
-                        $newcontent .= '$'."string['".$key."'] = '".$text."';\n";
+                        $newcontent .= '$' . "string['" . $key . "'] = '" . $text . "';\n";
                     }
 
                     if ($newcontent == $oldcontent) {
@@ -238,7 +236,11 @@ class util extends \mod_vocab\utilbase {
         }
 
         return $this->format_results(
-            $extra, $missing, $updated, $unchanged, $purgecaches
+            $extra,
+            $missing,
+            $updated,
+            $unchanged,
+            $purgecaches
         );
     }
 
@@ -274,7 +276,7 @@ class util extends \mod_vocab\utilbase {
             $output .= \html_writer::start_tag('dl', $dl);
             foreach ($unchanged as $pluginname => $langs) {
                 $strpluginname = get_string('pluginname', $pluginname);
-                $langs = '['.implode(', ', array_keys($langs)).']';
+                $langs = '[' . implode(', ', array_keys($langs)) . ']';
                 $langs = \html_writer::tag('span', $langs, $span);
                 $output .= \html_writer::tag('dt', "$langs $pluginname", $dt);
                 $output .= \html_writer::tag('dd', "$strpluginname", $dd);
@@ -289,7 +291,7 @@ class util extends \mod_vocab\utilbase {
             $output .= \html_writer::start_tag('dl', $dl);
             foreach ($updated as $pluginname => $langs) {
                 $strpluginname = get_string('pluginname', $pluginname);
-                $langcodes = '['.implode(', ', array_keys($langs)).']';
+                $langcodes = '[' . implode(', ', array_keys($langs)) . ']';
                 $langcodes = \html_writer::tag('span', $langcodes, $span);
                 $output .= \html_writer::tag('dt', "$langcodes $pluginname", $dt);
                 $output .= \html_writer::tag('dd', "$strpluginname", $dd);
@@ -328,7 +330,7 @@ class util extends \mod_vocab\utilbase {
             foreach ($strings[$pluginname] as $lang => $texts) {
                 asort($texts);
                 foreach ($texts as $key => $text) {
-                    $texts[$key] = \html_writer::tag('b', $key).' => '.$text;
+                    $texts[$key] = \html_writer::tag('b', $key) . ' => ' . $text;
                 }
                 $a = (object)['count' => count($texts), 'lang' => $lang];
                 $output .= \html_writer::tag('dt', $this->get_string($strname, $a), $dt);

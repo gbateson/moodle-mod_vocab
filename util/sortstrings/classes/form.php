@@ -36,7 +36,6 @@ namespace vocabutil_sortstrings;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\utilform {
-
     /**
      * Defines the form elements for the sortstrings tool.
      *
@@ -58,13 +57,18 @@ class form extends \mod_vocab\utilform {
             // and "vocabutil" to "sortvocabutils".
             $fieldname = "sort{$type}s";
             foreach ($names as $name => $dir) {
-                $pluginname = \html_writer::tag('b', $name.$labelsep).' ';
+                $pluginname = \html_writer::tag('b', $name . $labelsep) . ' ';
                 $pluginname .= get_string('pluginname', "{$type}_{$name}");
                 $names[$name] = $pluginname;
             }
-            $this->add_checkboxes($mform, $fieldname, $fieldname,
-                                  \html_writer::tag('b', $type),
-                                  PARAM_ALPHANUM, $names);
+            $this->add_checkboxes(
+                $mform,
+                $fieldname,
+                $fieldname,
+                \html_writer::tag('b', $type),
+                PARAM_ALPHANUM,
+                $names
+            );
         }
 
         $name = 'backuplangfiles';
@@ -86,13 +90,13 @@ class form extends \mod_vocab\utilform {
         global $CFG;
         $dirs = [];
 
-        $types = self::get_subplugins($CFG->dirroot.'/mod/vocab');
+        $types = self::get_subplugins($CFG->dirroot . '/mod/vocab');
         $types = array_merge(['mod'], array_keys($types));
 
         foreach ($types as $type) {
             if ($type == 'mod') {
                 $name = 'vocab';
-                $dir = $CFG->dirroot."/$type/$name";
+                $dir = $CFG->dirroot . "/$type/$name";
                 $langfile = "$dir/lang/en/$name.php";
                 if (file_exists($langfile)) {
                     $dirs[$type] = [$name => $dir];
@@ -125,7 +129,7 @@ class form extends \mod_vocab\utilform {
     public static function get_subplugins($plugindir) {
 
         if (file_exists("$plugindir/db/subplugins.json")) {
-            $subplugins = file_get_contents($plugindir.'/db/subplugins.json');
+            $subplugins = file_get_contents($plugindir . '/db/subplugins.json');
 
             $subplugins = json_decode($subplugins);
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -141,7 +145,7 @@ class form extends \mod_vocab\utilform {
             if ($subplugins->subplugintypes) {
                 $subplugins = (array)$subplugins->subplugintypes;
                 foreach ($subplugins as $type => $subtype) {
-                    $subplugins[$type] = 'mod/vocab/'.$subtype;
+                    $subplugins[$type] = 'mod/vocab/' . $subtype;
                 }
                 return $subplugins;
             }
@@ -149,7 +153,7 @@ class form extends \mod_vocab\utilform {
             // Otherwise we keep trying - against the odds!
         }
 
-        if (file_exists($plugindir.'/db/subplugins.php')) {
+        if (file_exists($plugindir . '/db/subplugins.php')) {
             $subplugins = [];
             include("$plugindir/db/subplugins.php");
         }

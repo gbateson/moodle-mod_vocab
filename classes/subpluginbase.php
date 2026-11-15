@@ -34,7 +34,6 @@ namespace mod_vocab;
  * @since      Moodle 3.11
  */
 class subpluginbase {
-
     /** The folder containing subplugins of this type e.g. tool */
     const SUBPLUGINTYPE = '';
 
@@ -66,10 +65,10 @@ class subpluginbase {
      * @param mixed $vocabinstanceorid (optional, default=null) is a vocab instance or id
      * @return void, but will initialize this object instance
      */
-    public function __construct($vocabinstanceorid=null) {
+    public function __construct($vocabinstanceorid = null) {
         $this->vocab = \mod_vocab\activity::create(null, null, $vocabinstanceorid);
-        $this->plugin = 'vocab'.static::SUBPLUGINTYPE.'_'.static::SUBPLUGINNAME;
-        $this->pluginpath = $this->vocab->pluginpath.'/'.static::SUBPLUGINTYPE.'/'.static::SUBPLUGINNAME;
+        $this->plugin = 'vocab' . static::SUBPLUGINTYPE . '_' . static::SUBPLUGINNAME;
+        $this->pluginpath = $this->vocab->pluginpath . '/' . static::SUBPLUGINTYPE . '/' . static::SUBPLUGINNAME;
     }
 
     /**
@@ -81,7 +80,7 @@ class subpluginbase {
      * @param integer $depth the maximum depth of array parameters
      * @return mixed, either an actual value from the form, or a suitable default
      */
-    public static function get_optional_param($names, $default, $type, $depth=1) {
+    public static function get_optional_param($names, $default, $type, $depth = 1) {
         return \mod_vocab\activity::get_optional_param($names, $default, $type, $depth);
     }
 
@@ -91,7 +90,7 @@ class subpluginbase {
      * @param mixed $vocabinstanceorid the vocab instance id or object
      * @return object a new instance of the current subplugin class
      */
-    public static function create($vocabinstanceorid=null) {
+    public static function create($vocabinstanceorid = null) {
         $class = get_called_class();
         return new $class($vocabinstanceorid);
     }
@@ -121,11 +120,11 @@ class subpluginbase {
      *
      * TODO: Finish documenting this function
      */
-    public function url($filepath, $escaped=null, $params=[]) {
+    public function url($filepath, $escaped = null, $params = []) {
         if ($this->vocab && $this->vocab->cm) {
             $params['id'] = $this->vocab->cm->id;
         }
-        $url = '/'.$this->pluginpath.'/'.$filepath;
+        $url = '/' . $this->pluginpath . '/' . $filepath;
         $url = new \moodle_url($url, $params);
         if (is_bool($escaped)) {
             $url = $url->out($escaped);
@@ -140,7 +139,7 @@ class subpluginbase {
      * @param array $params (optional, default=[])
      * @return string the URL of the index file for this plugin
      */
-    public function index_url($escaped=null, $params=[]) {
+    public function index_url($escaped = null, $params = []) {
         return $this->url('index.php', $escaped, $params);
     }
 
@@ -172,7 +171,7 @@ class subpluginbase {
      * @param mixed $a (optional, default=null) additional value or values required for the string
      * @return string
      */
-    public function get_string($strname, $a=null) {
+    public function get_string($strname, $a = null) {
         $component = $this->get_string_component($strname);
         return get_string($strname, $component, $a);
     }

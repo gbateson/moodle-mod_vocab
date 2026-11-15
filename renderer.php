@@ -34,7 +34,6 @@
  * @since Moodle 3.11
  */
 class mod_vocab_renderer extends plugin_renderer_base {
-
     /**
      * @var \mod_vocab\activity object to represent current vocab activity
      */
@@ -116,7 +115,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $img = $this->pix_icon('t/edit', get_string('edit'));
         // Add container to restrict width, height and font-size to 16px.
         $img = \html_writer::tag('span', $img, ['class' => 'icon-size-3']);
-        return ' '.html_writer::link($url, $img);
+        return ' ' . html_writer::link($url, $img);
     }
 
     /**
@@ -167,11 +166,18 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     'instanceid' => $instance->id,
                     'sesskey' => sesskey(),
                 ]);
-                $button = $this->single_button($url, $this->vocab->get_string('makematerials'), 'post',
-                    ['class' => 'd-inline-block ms-2 ml-2']);
+                $button = $this->single_button(
+                    $url,
+                    $this->vocab->get_string('makematerials'),
+                    'post',
+                    ['class' => 'd-inline-block ms-2 ml-2']
+                );
             }
-            $rows .= html_writer::tag('li', html_writer::tag('b', s($game->get_label())) . ': ' . $text . $button,
-                ['class' => 'mb-1 vocab-materials-game']);
+            $rows .= html_writer::tag(
+                'li',
+                html_writer::tag('b', s($game->get_label())) . ': ' . $text . $button,
+                ['class' => 'mb-1 vocab-materials-game']
+            );
         }
         if ($rows === '') {
             return '';
@@ -191,8 +197,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function view_page_guest() {
         $output = '';
         $output .= $this->view_information();
-        $message = html_writer::tag('p', get_string('guestsnotallowed', 'vocab'))."\n".
-                   html_writer::tag('p', get_string('liketologin'))."\n";
+        $message = html_writer::tag('p', get_string('guestsnotallowed', 'vocab')) . "\n" .
+                   html_writer::tag('p', get_string('liketologin')) . "\n";
         $output .= $this->confirm($message, get_login_url(), get_local_referer(false));
         return $output;
     }
@@ -207,8 +213,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function view_page_notenrolled() {
         $output = '';
         $output .= $this->view_information();
-        $message = html_writer::tag('p', get_string('youneedtoenrol', 'vocab'))."\n".
-                   html_writer::tag('p', $this->continue_button($this->vocab->course_url()))."\n";
+        $message = html_writer::tag('p', get_string('youneedtoenrol', 'vocab')) . "\n" .
+                   html_writer::tag('p', $this->continue_button($this->vocab->course_url())) . "\n";
         $output .= $this->box($message, 'generalbox', 'notice');
         return $output;
     }
@@ -268,7 +274,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      *
      * TODO: Finish documenting this function
      */
-    public function view_results($words, $user=null) {
+    public function view_results($words, $user = null) {
         global $USER;
 
         if ($user === null) {
@@ -280,7 +286,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $title = $this->vocab->get_string('resultstitle', fullname($user));
         $output .= html_writer::tag('h4', $title);
 
-        list($total, $completed, $inprogress, $notstarted) = $this->get_wordcounts($words);
+        [$total, $completed, $inprogress, $notstarted] = $this->get_wordcounts($words);
         if ($total == 0) {
             if ($this->vocab->can_manage()) {
                 $msg = $this->vocab->get_string('nowordsfound');
@@ -346,8 +352,15 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $output .= $this->pie_graph(98, 1, 1, $values, $colors, $params);
 
             // Define the pie graph key.
-            $output .= $this->pie_graph_key(220, 10, 30, 20, 30, $colors,
-                $delimiter, array_values((array)$a), // The delimiter and texts.
+            $output .= $this->pie_graph_key(
+                220,
+                10,
+                30,
+                20,
+                30,
+                $colors,
+                $delimiter,
+                array_values((array)$a), // The delimiter and texts.
                 ['font-size' => 14, 'fill' => '#333'], // The textparams.
                 ['stroke' => '#333', 'stroke-width' => '1'] // The rectparams.
             );
@@ -463,7 +476,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $fullcircleradians = deg2rad(360);
 
         // Define the center of the circle.
-        $center = ($offsetx + $radius).','.($offsety + $radius);
+        $center = ($offsetx + $radius) . ',' . ($offsety + $radius);
 
         // Calculate the total value.
         $total = array_sum($values);
@@ -476,7 +489,6 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $subtotal = 0;
         foreach ($values as $i => $value) {
             if ($value = intval($value)) {
-
                 // Define the end point point of the line
                 // (start point is the center of the circle).
                 $l = "$x,$y";
@@ -497,7 +509,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 if ($value == $total) {
                     // If there's only one value, then
                     // draw a (nearly) complete circle.
-                    $a = "$radius,$radius 0 1 1 ".($x - 1).",$y";
+                    $a = "$radius,$radius 0 1 1 " . ($x - 1) . ",$y";
                 } else {
                     // The "rotation" always 0, and "sweep" is always 1.
                     // The "largearc" is set to 1 if arc covers more than half the pie.
@@ -531,8 +543,18 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param array $rectparams
      * @return string SVG code to represent the pie graph key
      */
-    public function pie_graph_key($xoffset, $xspace, $yoffset, $yspace,
-        $size, $colors, $delimiter, $texts, $textparams, $rectparams) {
+    public function pie_graph_key(
+        $xoffset,
+        $xspace,
+        $yoffset,
+        $yspace,
+        $size,
+        $colors,
+        $delimiter,
+        $texts,
+        $textparams,
+        $rectparams
+    ) {
 
         $p = [
             'x' => $xoffset,
@@ -557,7 +579,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 foreach ($lines as $l => $line) {
                     $p = [
                         'x' => $textparams['x'],
-                        'dy' => ($l * 1.2).'em',
+                        'dy' => ($l * 1.2) . 'em',
                     ];
                     $lines[$l] = html_writer::tag('tspan', $line, $p);
                 }
@@ -706,7 +728,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
             for ($i = 0; $i < rand(1, 20); $i++) {
                 $games[] = (object)[
                     'name' => "vocabgame_$i",
-                    'label' => 'Vocabulary game '.($i + 1),
+                    'label' => 'Vocabulary game ' . ($i + 1),
                     'url' => '#',
                 ];
             }
@@ -747,7 +769,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      *
      * TODO: Finish documenting this function
      */
-    public function game_button($game, $gamecolor='', $textcolor='') {
+    public function game_button($game, $gamecolor = '', $textcolor = '') {
         // See "single_button" method in "lib/outputrenderers.php".
         $style = [];
         if ($gamecolor) {
@@ -820,13 +842,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param bool $purgecaches
      * @return string HTML code to display results
      */
-    public function find_missing_files($plugin, $purgecaches=true) {
+    public function find_missing_files($plugin, $purgecaches = true) {
         global $CFG, $DB, $FULLME;
 
-        require_once($CFG->dirroot.'/lib/questionlib.php');
+        require_once($CFG->dirroot . '/lib/questionlib.php');
 
         // Set up the heading i.e. Find missing files.
-        $heading = get_string('pluginname', $plugin)." ($plugin)";
+        $heading = get_string('pluginname', $plugin) . " ($plugin)";
         $heading = $this->vocab->get_string('findmissingfiles', $heading);
 
         $output = '';
@@ -858,7 +880,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         // Map category ids onto ids of questions with faulty files.
         $missingfiles = [];
 
-        list($where, $params) = $DB->get_in_or_equal($categoryids);
+        [$where, $params] = $DB->get_in_or_equal($categoryids);
         $select = implode(',', [
             'qv.id',
             'qv.questionid',
@@ -890,11 +912,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 'filename' => '', // Set later.
             ];
             foreach ($entries as $versionid => $entry) {
-                $select = 'contextid = ? AND '.
-                          'component = ? AND '.
-                          'filearea = ? AND '.
-                          'itemid = ? AND '.
-                          'filepath = ? AND '.
+                $select = 'contextid = ? AND ' .
+                          'component = ? AND ' .
+                          'filearea = ? AND ' .
+                          'itemid = ? AND ' .
+                          'filepath = ? AND ' .
                           'filename <> ?';
                 $params = [
                     $coursecontext->id,
@@ -909,7 +931,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                         $hash = $file->contenthash;
                         $dir1 = substr($hash, 0, 2);
                         $dir2 = substr($hash, 2, 2);
-                        if (! file_exists($CFG->dataroot."/filedir/$dir1/$dir2/$hash")) {
+                        if (! file_exists($CFG->dataroot . "/filedir/$dir1/$dir2/$hash")) {
                             $questions[$entry->questionid] = $entry->questionname;
 
                             // Initialize the subcategory id.
@@ -918,7 +940,6 @@ class mod_vocab_renderer extends plugin_renderer_base {
 
                             // Get the next/first parent category.
                             while ($catid && ($category = $DB->get_record('question_categories', ['id' => $catid]))) {
-
                                 // Cache the category id for convenience.
                                 $catid = $category->id;
 
@@ -950,7 +971,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                             if (empty($missingfiles[$entry->catid][$entry->questionid])) {
                                 $missingfiles[$entry->catid][$entry->questionid] = [];
                             }
-                            $missingfiles[$entry->catid][$entry->questionid][] = $file->filepath.$file->filename;
+                            $missingfiles[$entry->catid][$entry->questionid][] = $file->filepath . $file->filename;
                         }
                     }
                 }
@@ -971,9 +992,12 @@ class mod_vocab_renderer extends plugin_renderer_base {
             // Print the category tree, starting at the top course question category.
             $output .= \html_writer::start_tag('div', ['class' => 'container ml-0']);
             $output .= $this->format_question_category(
-                $courseid, $coursecategory->id,
-                $categories, $questions,
-                $missingfiles, $subcategories
+                $courseid,
+                $coursecategory->id,
+                $categories,
+                $questions,
+                $missingfiles,
+                $subcategories
             );
             $output .= \html_writer::end_tag('div');
         }
@@ -1009,7 +1033,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         // Note, $category->questionids could be used to delete ALL faulty questions in this category.
         $count = [];
         if (array_key_exists($catid, $subcategories)) {
-            $count[] = '['.count($subcategories[$catid]).' categories]';
+            $count[] = '[' . count($subcategories[$catid]) . ' categories]';
         }
         if (property_exists($category, 'questionids')) {
             $params = ['onclick' => "this.target = 'vocabtool_questionbank';"];
@@ -1029,21 +1053,26 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 $params
             );
 
-            $count[] = '['.count($category->questionids).' questions '.$edit.$delete.']';
+            $count[] = '[' . count($category->questionids) . ' questions ' . $edit . $delete . ']';
         }
         if ($count = join(' ', $count)) {
-            $count = ' '.\html_writer::tag('small', $count, ['class' => 'dimmed']);
+            $count = ' ' . \html_writer::tag('small', $count, ['class' => 'dimmed']);
         }
 
         $output = '';
         $output .= \html_writer::start_tag('dl', ['class' => 'my-1 ml-4 mr-0']);
-        $output .= \html_writer::tag('dt', 'Category: '.$category->name.$count, ['class' => 'my-0']);
+        $output .= \html_writer::tag('dt', 'Category: ' . $category->name . $count, ['class' => 'my-0']);
         $output .= \html_writer::start_tag('dd', ['class' => 'my-0']);
 
         if (array_key_exists($catid, $subcategories)) {
             foreach ($subcategories[$catid] as $subcatid => $missingfilecount) {
                 $output .= $this->format_question_category(
-                    $courseid, $subcatid, $categories, $questions, $missingfiles, $subcategories
+                    $courseid,
+                    $subcatid,
+                    $categories,
+                    $questions,
+                    $missingfiles,
+                    $subcategories
                 );
             }
         }
@@ -1056,7 +1085,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 // Remove leading numeric question id.
                 $summary = preg_replace('/(?<=>)\d+ (?=<)/', '', $summary, 1);
                 $summary = implode(' ', [
-                    '['.count($files).' files]',
+                    '[' . count($files) . ' files]',
                     $summary,
                     $questions[$questionid],
                 ]);

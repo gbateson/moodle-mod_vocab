@@ -24,8 +24,8 @@ use tool_aibridge\library\template;
  * @package    mod_vocab
  * @copyright  2026 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \mod_vocab\aibridge
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\aibridge::class)]
 final class aibridge_test extends \advanced_testcase {
     /**
      * The menus list the teacher's own providers and those shared with the course,

@@ -36,7 +36,6 @@ namespace vocabtool_import;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\toolform {
-
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_import';
 
@@ -125,7 +124,14 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function __construct($action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
+    public function __construct(
+        $action = null,
+        $customdata = null,
+        $method = 'post',
+        $target = '',
+        $attributes = null,
+        $editable = true
+    ) {
         global $CFG;
 
         // Get a valid form state.
@@ -147,7 +153,7 @@ class form extends \mod_vocab\toolform {
         }
 
         // Check for new PhpExcel (Moodle >= 3.8).
-        $this->phpspreadsheet = file_exists($CFG->dirroot.'/lib/phpspreadsheet');
+        $this->phpspreadsheet = file_exists($CFG->dirroot . '/lib/phpspreadsheet');
 
         // Check for branch pruning on the Excel calculation engine.
         $class = '\PhpOffice\PhpSpreadsheet\Calculation\Engine\BranchPruner';
@@ -170,20 +176,19 @@ class form extends \mod_vocab\toolform {
         $submit = '';
         $cancel = '';
         switch ($this->formstate) {
-
             case 'upload':
                 $this->set_next_formstate($mform, 'preview');
-                list($submit, $cancel) = $this->definition_upload($mform);
+                [$submit, $cancel] = $this->definition_upload($mform);
                 break;
 
             case 'preview':
                 $this->set_next_formstate($mform, 'review');
-                list($submit, $cancel) = $this->definition_preview($mform);
+                [$submit, $cancel] = $this->definition_preview($mform);
                 break;
 
             case 'review':
                 $this->set_next_formstate($mform, 'import');
-                list($submit, $cancel) = $this->definition_review($mform);
+                [$submit, $cancel] = $this->definition_review($mform);
                 break;
         }
 
@@ -257,7 +262,7 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function get_options_uploadaction($value=null) {
+    public function get_options_uploadaction($value = null) {
         $options = [
             self::ACTION_ADD_NEW_ONLY => $this->get_string('actionaddnewonly'),
             self::ACTION_ADD_AND_UPDATE => $this->get_string('actionaddandupdate'),
@@ -398,11 +403,11 @@ class form extends \mod_vocab\toolform {
         // Get the path to main PHPExcel file and object.
         if ($this->phpspreadsheet) {
             // Moodle >= 3.8.
-            $filepath = $CFG->dirroot.'/lib/phpspreadsheet/vendor/autoload.php';
+            $filepath = $CFG->dirroot . '/lib/phpspreadsheet/vendor/autoload.php';
             $iofactory = '\\PhpOffice\\PhpSpreadsheet\\IOFactory';
         } else {
             // Moodle 2.5 - 3.7.
-            $filepath = $CFG->dirroot.'/lib/phpexcel/PHPExcel/IOFactory.php';
+            $filepath = $CFG->dirroot . '/lib/phpexcel/PHPExcel/IOFactory.php';
             $iofactory = 'PHPExcel_IOFactory';
         }
         require_once($filepath);
@@ -410,8 +415,8 @@ class form extends \mod_vocab\toolform {
         $fs = get_file_storage();
         $context = \context_user::instance($USER->id);
 
-        list($datafilename, $datafilepath) = $this->get_datafileinfo($fs, $context, 'datafile');
-        list($formatfilename, $formatfilecontent) = $this->get_formatfileinfo($fs, $context, 'formatfile');
+        [$datafilename, $datafilepath] = $this->get_datafileinfo($fs, $context, 'datafile');
+        [$formatfilename, $formatfilecontent] = $this->get_formatfileinfo($fs, $context, 'formatfile');
         $format = $this->parse_format_xml($formatfilecontent, 'datafileformat');
 
         if (is_string($format)) {
@@ -423,7 +428,6 @@ class form extends \mod_vocab\toolform {
             $table->data = [];
 
             if ($datafilepath) {
-
                 // Add datafilename to settings so that it is accessible later.
                 if ($format) {
                     $format->settings['datafilename'] = $datafilename;
@@ -439,24 +443,28 @@ class form extends \mod_vocab\toolform {
 
                 if ($format === null) {
                     $format = $this->create_format_xml($workbook, $datafilename);
-                    $table = \html_writer::tag('p', $this->get_string('emptyxmlfile').' '.
+                    $table = \html_writer::tag('p', $this->get_string('emptyxmlfile') . ' ' .
                                                     $this->get_string('showsampleformatxml'));
                     $params = ['class' => 'rounded bg-dark text-white px-2 py-1'];
                     $table .= \html_writer::tag('pre', htmlspecialchars($format, ENT_COMPAT), $params);
                 } else {
                     $table->tablealign = 'center';
-                    $table->id = $this->subpluginname.'_'.$this->formstate;
-                    $table->attributes['class'] = 'generaltable '.$this->subpluginname;
+                    $table->id = $this->subpluginname . '_' . $this->formstate;
+                    $table->attributes['class'] = 'generaltable ' . $this->subpluginname;
                     $table->summary = $this->get_string($this->formstate);
 
-                    list($totalsheets, $totalrows) = $this->get_sheetcount_rowcount($workbook);
-                    list($targetsheets, $targetrows) = $this->get_sheetcount_rowcount($workbook, $format);
+                    [$totalsheets, $totalrows] = $this->get_sheetcount_rowcount($workbook);
+                    [$targetsheets, $targetrows] = $this->get_sheetcount_rowcount($workbook, $format);
                     $table->caption = $this->render_caption(
-                        $datafilename, $totalsheets, $totalrows,
-                        $formatfilename, $targetsheets, $targetrows
+                        $datafilename,
+                        $totalsheets,
+                        $totalrows,
+                        $formatfilename,
+                        $targetsheets,
+                        $targetrows
                     );
 
-                    $populate = 'populate_'.$this->formstate.'_table';
+                    $populate = 'populate_' . $this->formstate . '_table';
                     $this->$populate($workbook, $format, $table);
 
                     if (empty($table->data)) {
@@ -471,7 +479,7 @@ class form extends \mod_vocab\toolform {
             $table = \html_writer::table($table);
             $table = \html_writer::tag('div', $table, ['class' => 'flexible-wrap']);
         } else {
-            $table = \html_writer::tag('p', $table).
+            $table = \html_writer::tag('p', $table) .
                      \html_writer::tag('p', $this->get_string('tryagain'));
             $table = \html_writer::tag('div', $table, ['class' => 'alert alert-warning']);
         }
@@ -504,7 +512,7 @@ class form extends \mod_vocab\toolform {
                 $filetype = substr($filename, strrpos($filename, '.'));
                 if ($dir = make_temp_directory('forms')) {
                     if ($filepath = tempnam($dir, 'tempup_')) {
-                        rename($filepath, $filepath.$filetype);
+                        rename($filepath, $filepath . $filetype);
                         $filepath .= $filetype;
                         $file->copy_content_to($filepath);
                     }
@@ -559,7 +567,7 @@ class form extends \mod_vocab\toolform {
         global $CFG;
 
         // Get XML parsing library.
-        require_once($CFG->dirroot.'/lib/xmlize.php');
+        require_once($CFG->dirroot . '/lib/xmlize.php');
 
         if (empty($formatfilecontent)) {
             // This shouldn't happen. We could return an error
@@ -589,7 +597,6 @@ class form extends \mod_vocab\toolform {
         $s = 0;
         $sheet = $xml[$xmlroot]['#']['sheet'];
         while (is_array($sheet) && array_key_exists($s, $sheet)) {
-
             // Setup rows, settings and records for this sheet.
             $sindex = count($format->sheets);
             $format->sheets[$sindex] = new \stdClass();
@@ -599,7 +606,6 @@ class form extends \mod_vocab\toolform {
             $r = 0;
             $row = &$sheet[$s]['#']['row'];
             while (array_key_exists($r, $row)) {
-
                 // Setup cells, settings and records for this row.
                 $rindex = count($format->sheets[$sindex]->rows);
                 $format->sheets[$sindex]->rows[$rindex] = new \stdClass();
@@ -706,7 +712,6 @@ class form extends \mod_vocab\toolform {
         $record = &$xml['#']['record'];
         $r = 0;
         while (array_key_exists($r, $record)) {
-
             // Initialize the structure for this record.
             $format->records[$rindex] = (object)[
                 'table' => '',
@@ -723,7 +728,6 @@ class form extends \mod_vocab\toolform {
             $field = &$record[$r]['#']['field'];
             $f = 0;
             while (array_key_exists($f, $field)) {
-
                 $name = $field[$f]['#']['name'][0]['#'];
                 $value = $field[$f]['#']['value'][0]['#'];
                 $format->records[$rindex]->fields[$name] = $value;
@@ -753,11 +757,11 @@ class form extends \mod_vocab\toolform {
 
         $coffset = ($this->phpspreadsheet ? 1 : 0); // The column offset.
 
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'.$nl;
-        $xml .= '<datafileformat type="'.$this->get_format_type($datafilename).'">'.$nl;
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . $nl;
+        $xml .= '<datafileformat type="' . $this->get_format_type($datafilename) . '">' . $nl;
 
         $xml .= $nl;
-        $xml .= str_repeat($tab, $i).$this->get_comment('explainsettings').$nl;
+        $xml .= str_repeat($tab, $i) . $this->get_comment('explainsettings') . $nl;
 
         // Set default form settings.
         $setting = (object)[
@@ -769,13 +773,13 @@ class form extends \mod_vocab\toolform {
 
         // Add XML for settings.
         foreach ($settings as $setting) {
-            $xml .= str_repeat($tab, $i++).'<setting>'.$nl;
+            $xml .= str_repeat($tab, $i++) . '<setting>' . $nl;
             if (isset($setting->comment)) {
-                $xml .= str_repeat($tab, $i).'<!-- '.$setting->comment.' -->'.$nl;
+                $xml .= str_repeat($tab, $i) . '<!-- ' . $setting->comment . ' -->' . $nl;
             }
-            $xml .= str_repeat($tab, $i).'<name>'.$setting->name.'</name>'.$nl;
-            $xml .= str_repeat($tab, $i).'<value>'.$setting->value.'</value>'.$nl;
-            $xml .= str_repeat($tab, --$i).'</setting>'.$nl;
+            $xml .= str_repeat($tab, $i) . '<name>' . $setting->name . '</name>' . $nl;
+            $xml .= str_repeat($tab, $i) . '<value>' . $setting->value . '</value>' . $nl;
+            $xml .= str_repeat($tab, --$i) . '</setting>' . $nl;
         }
 
         $smin = 1;
@@ -785,34 +789,33 @@ class form extends \mod_vocab\toolform {
             $worksheet = $workbook->setActiveSheetIndex($s - 1);
 
             $xml .= $nl;
-            $xml .= str_repeat($tab, $i).$this->get_comment('explainmeta', 'sheet').$nl;
-            $xml .= str_repeat($tab, $i).$this->get_comment('explaindata', 'sheet').$nl;
-            $xml .= str_repeat($tab, $i).$this->get_comment('explainstartend', 'sheet').$nl;
-            $xml .= str_repeat($tab, $i++).'<sheet sheettype="data" sheetstart="'.$s.'" sheetend="'.$s.'">'.$nl;
+            $xml .= str_repeat($tab, $i) . $this->get_comment('explainmeta', 'sheet') . $nl;
+            $xml .= str_repeat($tab, $i) . $this->get_comment('explaindata', 'sheet') . $nl;
+            $xml .= str_repeat($tab, $i) . $this->get_comment('explainstartend', 'sheet') . $nl;
+            $xml .= str_repeat($tab, $i++) . '<sheet sheettype="data" sheetstart="' . $s . '" sheetend="' . $s . '">' . $nl;
 
-            list($rmin, $rmax) = $this->get_min_max_rows($worksheet);
+            [$rmin, $rmax] = $this->get_min_max_rows($worksheet);
 
             $xmlmetarow = '';
             $xmldatarow = '';
             for ($r = $rmin; $r <= $rmax; $r++) {
-
-                list($cmin, $cmax) = $this->get_min_max_cols($worksheet, $r);
+                [$cmin, $cmax] = $this->get_min_max_cols($worksheet, $r);
 
                 if ($cmin < $cmax) {
-                    $xmlmetarow .= $nl.
-                       str_repeat($tab, $i).$this->get_comment('explainmeta', 'row').$nl.
-                       str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
-                       str_repeat($tab, $i).'<row rowtype="meta" rowstart="'.$r.'" rowend="'.$r.'">'.$nl;
+                    $xmlmetarow .= $nl .
+                       str_repeat($tab, $i) . $this->get_comment('explainmeta', 'row') . $nl .
+                       str_repeat($tab, $i) . $this->get_comment('explainstartend', 'row') . $nl .
+                       str_repeat($tab, $i) . '<row rowtype="meta" rowstart="' . $r . '" rowend="' . $r . '">' . $nl;
 
-                    $xmldatarow .= $nl.
-                       str_repeat($tab, $i).$this->get_comment('explaindata', 'row').$nl.
-                       str_repeat($tab, $i).$this->get_comment('explainstartend', 'row').$nl.
-                       str_repeat($tab, $i).$this->get_comment('explainname', 'row').$nl.
-                       str_repeat($tab, $i).$this->get_comment('explainskip', 'row').$nl.
-                       str_repeat($tab, $i).'<row rowtype="data"'.
-                                            ' rowstart="'.($r + 1).'" '.'rowend="'.$rmax.'"'.
-                                            ' cellstart="'.($cmin + 1).'" cellend="'.($cmax + 1).'"'.
-                                            '>'.$nl;
+                    $xmldatarow .= $nl .
+                       str_repeat($tab, $i) . $this->get_comment('explaindata', 'row') . $nl .
+                       str_repeat($tab, $i) . $this->get_comment('explainstartend', 'row') . $nl .
+                       str_repeat($tab, $i) . $this->get_comment('explainname', 'row') . $nl .
+                       str_repeat($tab, $i) . $this->get_comment('explainskip', 'row') . $nl .
+                       str_repeat($tab, $i) . '<row rowtype="data"' .
+                                            ' rowstart="' . ($r + 1) . '" ' . 'rowend="' . $rmax . '"' .
+                                            ' cellstart="' . ($cmin + 1) . '" cellend="' . ($cmax + 1) . '"' .
+                                            '>' . $nl;
 
                     // Increase indentation for cells.
                     $i++;
@@ -821,12 +824,12 @@ class form extends \mod_vocab\toolform {
                     for ($c = $cmin; $c <= $cmax; $c++) {
                         $value = $this->get_singleline_value($worksheet, $c, $r);
                         $cleanvalue = strtolower($this->get_clean_text($value));
-                        $xmlmetarow .= str_repeat($tab, $i).'<cell>'.$value.'</cell>'.$nl;
-                        $xmldatarow .= str_repeat($tab, $i).'<cell>'.$cleanvalue.'</cell>'.$nl;
+                        $xmlmetarow .= str_repeat($tab, $i) . '<cell>' . $value . '</cell>' . $nl;
+                        $xmldatarow .= str_repeat($tab, $i) . '<cell>' . $cleanvalue . '</cell>' . $nl;
                     }
 
-                    $xmlmetarow .= str_repeat($tab, --$i).'</row>'.$nl;
-                    $xmldatarow .= str_repeat($tab, $i).'</row>'.$nl;
+                    $xmlmetarow .= str_repeat($tab, --$i) . '</row>' . $nl;
+                    $xmldatarow .= str_repeat($tab, $i) . '</row>' . $nl;
 
                     break; // Stop looping through the rows.
                 }
@@ -836,10 +839,10 @@ class form extends \mod_vocab\toolform {
             $xml .= $xmlmetarow;
             $xml .= $xmldatarow;
 
-            $xml .= str_repeat($tab, --$i).'</sheet>'.$nl;
+            $xml .= str_repeat($tab, --$i) . '</sheet>' . $nl;
         }
 
-        $xml .= '</datafileformat>'.$nl;
+        $xml .= '</datafileformat>' . $nl;
 
         return $xml;
     }
@@ -853,8 +856,8 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function get_comment($strname, $a=null) {
-        return '<!-- '.$this->get_string($strname, $a).' -->';
+    public function get_comment($strname, $a = null) {
+        return '<!-- ' . $this->get_string($strname, $a) . ' -->';
     }
 
     /**
@@ -870,7 +873,7 @@ class form extends \mod_vocab\toolform {
         $rmax = $worksheet->getHighestDataRow();
 
         for ($r = $rmin; $r <= $rmax; $r++) {
-            list($cmin, $cmax) = $this->get_min_max_cols($worksheet, $r);
+            [$cmin, $cmax] = $this->get_min_max_cols($worksheet, $r);
             if ($cmin < $cmax) {
                 $rmin = $r;
                 break;
@@ -878,7 +881,7 @@ class form extends \mod_vocab\toolform {
         }
 
         for ($r = $rmax; $r >= $rmin; $r--) {
-            list($cmin, $cmax) = $this->get_min_max_cols($worksheet, $r);
+            [$cmin, $cmax] = $this->get_min_max_cols($worksheet, $r);
             if ($cmin < $cmax) {
                 $rmax = $r;
                 break;
@@ -958,7 +961,7 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function get_sheetcount_rowcount($workbook, $format=null) {
+    public function get_sheetcount_rowcount($workbook, $format = null) {
 
         $sheetcount = 0;
         $rowcount = 0;
@@ -973,11 +976,11 @@ class form extends \mod_vocab\toolform {
         } else {
             // Get the number of targeted sheets and rows in this workbook.
             foreach ($format->sheets as $ss => $sheet) {
-                list($smin, $smax, $stype) = $this->get_sheet_range($workbook, $sheet);
+                [$smin, $smax, $stype] = $this->get_sheet_range($workbook, $sheet);
                 for ($s = $smin; $s <= $smax; $s++) {
                     $worksheet = $workbook->getSheet($s - 1);
                     foreach ($sheet->rows as $rr => $row) {
-                        list($rmin, $rmax, $rtype) = $this->get_row_range($worksheet, $row);
+                        [$rmin, $rmax, $rtype] = $this->get_row_range($worksheet, $row);
                         $rowcount += ($rmax - $rmin + 1);
                     }
                     $sheetcount++;
@@ -997,7 +1000,8 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function number_format($num) {
-        return number_format($num,
+        return number_format(
+            $num,
             0, // The number of decimal places.
             get_string('decsep', 'langconfig'),
             get_string('thousandssep', 'langconfig')
@@ -1015,8 +1019,14 @@ class form extends \mod_vocab\toolform {
      * @param integer $targetrows
      * @return HTML list of items to show in the table caption
      */
-    public function render_caption($datafilename, $totalsheets, $totalrows,
-                                   $formatfilename, $targetsheets, $targetrows) {
+    public function render_caption(
+        $datafilename,
+        $totalsheets,
+        $totalrows,
+        $formatfilename,
+        $targetsheets,
+        $targetrows
+    ) {
         $caption = [];
 
         $caption[] = $this->get_string('totalsheetrowcount', (object)[
@@ -1099,17 +1109,15 @@ class form extends \mod_vocab\toolform {
         $previewrows = $this->get_previewrows();
 
         foreach ($format->sheets as $ss => $sheet) {
-
-            list($smin, $smax, $stype) = $this->get_sheet_range($workbook, $sheet);
+            [$smin, $smax, $stype] = $this->get_sheet_range($workbook, $sheet);
 
             for ($s = $smin; $s <= $smax; $s++) {
                 $worksheet = $workbook->setActiveSheetIndex($s - 1);
 
                 foreach ($sheet->rows as $rr => $row) {
-
                     // Get the minimum and maximum row and columnn numbers in this $row set.
-                    list($rmin, $rmax, $rtype) = $this->get_row_range($worksheet, $row);
-                    list($cmin, $cmax) = $this->get_cell_range($row);
+                    [$rmin, $rmax, $rtype] = $this->get_row_range($worksheet, $row);
+                    [$cmin, $cmax] = $this->get_cell_range($row);
 
                     // Loop through the rows in this row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
@@ -1159,7 +1167,6 @@ class form extends \mod_vocab\toolform {
 
         $c = max(array_keys($totals));
         while ($c >= 0 && $totals[$c] == 0) {
-
             // Remove this column from the head row.
             unset($table->head[$c]);
 
@@ -1183,7 +1190,7 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function populate_review_table($workbook, $format, $table, $dryrun=true) {
+    public function populate_review_table($workbook, $format, $table, $dryrun = true) {
         $this->populate_import_table($workbook, $format, $table, self::MODE_DRYRUN);
     }
 
@@ -1197,7 +1204,7 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function populate_import_table($workbook, $format, $table, $mode=self::MODE_IMPORT) {
+    public function populate_import_table($workbook, $format, $table, $mode = self::MODE_IMPORT) {
 
         // Cache frequently used strings.
         $str = (object)[
@@ -1213,7 +1220,7 @@ class form extends \mod_vocab\toolform {
         // Get total number of sheets and total number of rows.
         // The is only aprroximate and does not take account the
         // start/end settings in the XML file.
-        list($sheetcount, $rowcount) = $this->get_sheetcount_rowcount($workbook, $format);
+        [$sheetcount, $rowcount] = $this->get_sheetcount_rowcount($workbook, $format);
 
         // Initialize counter for the number of rows previewed (=displayed).
         $previewrowsindex = 0;
@@ -1258,10 +1265,8 @@ class form extends \mod_vocab\toolform {
         }
 
         foreach ($format->sheets as $ss => $sheet) {
-
-            list($smin, $smax, $stype) = $this->get_sheet_range($workbook, $sheet);
+            [$smin, $smax, $stype] = $this->get_sheet_range($workbook, $sheet);
             for ($s = $smin; $s <= $smax; $s++) {
-
                 $worksheet = $workbook->setActiveSheetIndex($s - 1);
                 $sheetname = $worksheet->getTitle();
                 $sheetvars = ['sheet_name' => $sheetname];
@@ -1276,19 +1281,17 @@ class form extends \mod_vocab\toolform {
 
                 $headers = [];
                 foreach ($sheet->rows as $rr => $row) {
-
                     // Get the minimum and maximum row and columnn numbers in this $row set.
-                    list($rmin, $rmax, $rtype) = $this->get_row_range($worksheet, $row);
+                    [$rmin, $rmax, $rtype] = $this->get_row_range($worksheet, $row);
 
                     // Loop through the rows in this $row set.
                     for ($r = $rmin; $r <= $rmax; $r++) {
-
                         // Increment the row index and update progress bar.
                         $rowindex++;
                         if ($bar) {
-                            $msg = "{$str->sheet}: $s, ".
-                                   "{$str->row}: $r ".
-                                   "($rowindex/$rowcount) ".
+                            $msg = "{$str->sheet}: $s, " .
+                                   "{$str->row}: $r " .
+                                   "($rowindex/$rowcount) " .
                                    $this->currentrowname;
                             $bar->update($rowindex, $rowcount, $msg);
                         }
@@ -1307,7 +1310,6 @@ class form extends \mod_vocab\toolform {
 
                             // Generate output depending on table/field definitions in XML.
                             if (! $this->skip_row($row, $vars, $tableinfo, $rowvars)) {
-
                                 // Set the current row (for reporting purposes).
                                 $this->currentrow = $r;
                                 $this->currentrowname = $this->get_rowname($row, $vars, $tableinfo);
@@ -1356,11 +1358,11 @@ class form extends \mod_vocab\toolform {
                 $error = $this->number_format($error);
                 $msg[] = $this->get_string('errorsfound', $error);
             }
-            $listsep = get_string('listsep', 'langconfig').' ';
+            $listsep = get_string('listsep', 'langconfig') . ' ';
             if ($msg = implode($listsep, $msg)) {
                 $msg = " ($msg)";
             }
-            $msg = $this->get_string('importcompleted').$msg;
+            $msg = $this->get_string('importcompleted') . $msg;
             $bar->update_full(100, $msg);
         }
 
@@ -1438,7 +1440,7 @@ class form extends \mod_vocab\toolform {
         $name = 'rowname';
         if (empty($row->settings[$name])) {
             $labelsep = get_string('labelsep', 'langconfig');
-            return $this->currentsheet.$labelsep.$this->currentrow;
+            return $this->currentsheet . $labelsep . $this->currentrow;
         } else {
             $rowname = $row->settings[$name]; // E.g. VALUE(word).
             $rowname = $this->format_field($tableinfo, $name, $rowname, $vars, 'ROW');
@@ -1553,11 +1555,10 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function update_totals($table, $type, $msg='') {
+    public function update_totals($table, $type, $msg = '') {
 
         // Check the table name is valid (it should be).
         if (array_key_exists($table, $this->totals->tables)) {
-
             // Shortcuts to current sheet/row number.
             $s = $this->currentsheet;
             $r = $this->currentrow;
@@ -1633,7 +1634,7 @@ class form extends \mod_vocab\toolform {
 
         $cells = [];
 
-        $cell = new \html_table_cell($s.$labelsep.$r);
+        $cell = new \html_table_cell($s . $labelsep . $r);
         $cell->header = true;
         $cells[] = $cell;
 
@@ -1646,7 +1647,6 @@ class form extends \mod_vocab\toolform {
         $errors = 0;
 
         foreach ($this->totals->tables as $tablename => $totals) {
-
             $msg = [];
             if (array_key_exists($s, $totals->sheets)) {
                 if (array_key_exists($r, $totals->sheets[$s]->rows)) {
@@ -1686,7 +1686,7 @@ class form extends \mod_vocab\toolform {
         if ($errors) {
             $text = $this->get_string('errorsfound', $errors);
             $params = ['class' => 'bg-warning text-light rounded px-1 errors'];
-            $cells[1]->text .= ' '.\html_writer::tag('div', $text, $params);
+            $cells[1]->text .= ' ' . \html_writer::tag('div', $text, $params);
         }
 
         return $cells;
@@ -1728,7 +1728,6 @@ class form extends \mod_vocab\toolform {
         $c = 2;
         foreach ($this->totals->tables as $tablename => $totals) {
             if ($totals->total == 0 && $totals->error == 0) {
-
                 // Remove this column from the head row.
                 unset($table->head[$c]);
 
@@ -1794,7 +1793,7 @@ class form extends \mod_vocab\toolform {
         }
 
         // Look for sheettype, rowtype or celltype.
-        $name = $prefix.'type';
+        $name = $prefix . 'type';
         if (array_key_exists($name, $settings)) {
             $type = $settings[$name];
         } else if (array_key_exists('type', $settings)) {
@@ -1811,9 +1810,9 @@ class form extends \mod_vocab\toolform {
         }
 
         // Look for sheetstart, rowstart or cellstart.
-        $name = $prefix.'start';
+        $name = $prefix . 'start';
         if (array_key_exists($name, $settings) && is_numeric($settings[$name])) {
-            $min = $settings[$prefix.'start'];
+            $min = $settings[$prefix . 'start'];
         } else if (array_key_exists('start', $settings) && is_numeric($settings['start'])) {
             $min = $settings['start'];
         } else {
@@ -1828,9 +1827,9 @@ class form extends \mod_vocab\toolform {
         }
 
         // Look for sheetend, rowend or cellend.
-        $name = $prefix.'end';
+        $name = $prefix . 'end';
         if (array_key_exists($name, $settings) && is_numeric($settings[$name])) {
-            $max = $settings[$prefix.'end'];
+            $max = $settings[$prefix . 'end'];
         } else if (array_key_exists('end', $settings) && is_numeric($settings['end'])) {
             $max = $settings['end'];
         } else {
@@ -1918,7 +1917,7 @@ class form extends \mod_vocab\toolform {
      *
      * TODO: Finish documenting this function
      */
-    public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $th=false) {
+    public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $th = false) {
         $cells = [];
         for ($c = $cmin; $c <= $cmax; $c++) {
             $cells[] = $this->get_cell_value($worksheet, $c, $r);
@@ -2032,10 +2031,9 @@ class form extends \mod_vocab\toolform {
 
         // Search for, and replace function names (starting from the rightmost one).
         if (preg_match_all($search, $value, $matches, PREG_OFFSET_CAPTURE)) {
-
             for ($m = count($matches[0]); $m > 0; $m--) {
                 // Cache the function name and start position.
-                list($match, $start) = $matches[0][$m - 1];
+                [$match, $start] = $matches[0][$m - 1];
 
                 $mode = 0;
                 // The possible values for $mode are:
@@ -2054,11 +2052,9 @@ class form extends \mod_vocab\toolform {
                 $i = ($start + strlen($match));
                 while ($i < $imax && $mode < 5) {
                     switch ($mode) {
-
                         case 0:
                             // Expecting opening parenthesis.
                             switch ($value[$i]) {
-
                                 // Leading white space is ignored.
                                 case ' ':
                                     break;
@@ -2077,7 +2073,6 @@ class form extends \mod_vocab\toolform {
                         case 1:
                             // Expecting the start of an argument.
                             switch ($value[$i]) {
-
                                 // Leading white space is ignored.
                                 case ' ':
                                     break;
@@ -2161,7 +2156,7 @@ class form extends \mod_vocab\toolform {
 
                                 default:
                                     $mode = 6;
-                                    $args = "Character '".$value[$i]."' not expected after quoted string in $match";
+                                    $args = "Character '" . $value[$i] . "' not expected after quoted string in $match";
                             }
                             break;
                     }
@@ -2184,7 +2179,6 @@ class form extends \mod_vocab\toolform {
                     }
                 }
                 $value = substr_replace($value, $replace, $start, ($i - $start));
-
             } // End for $m.
         } // End if preg_match_all.
 
@@ -2200,7 +2194,7 @@ class form extends \mod_vocab\toolform {
      * @return string the alias of the given value
      */
     protected function get_value_alias($value, $aliastype) {
-        $aliasname = 'ALIAS_'.$aliastype.'_';
+        $aliasname = 'ALIAS_' . $aliastype . '_';
         $aliasname .= count($this->aliases); // A unique id.
         $this->aliases[$aliasname] = $value;
         return $aliasname;
@@ -2258,7 +2252,7 @@ class form extends \mod_vocab\toolform {
      * @return void, but may update $values.
      */
     protected function clear_aliases($aliastype) {
-        $search = '/^ALIAS_'.$aliastype.'_/';
+        $search = '/^ALIAS_' . $aliastype . '_/';
         $aliasnames = array_keys($this->aliases);
         $aliasnames = preg_grep($search, $aliasnames);
         foreach ($aliasnames as $aliasname) {
@@ -2284,9 +2278,7 @@ class form extends \mod_vocab\toolform {
         $this->get_alias_values($args);
 
         switch ($functionname) {
-
             case 'EMPTY':
-
                 // Is argument is empty (or missing)?
                 if (empty($args[0])) {
                     return true;
@@ -2299,7 +2291,6 @@ class form extends \mod_vocab\toolform {
                 return false;
 
             case 'IDS':
-
                 // Expected syntax is (table, field1, values1, field2, values2, ...).
                 $table = (isset($args[0]) ? $args[0] : '');
                 if (empty($table) || ! is_string($table)) {
@@ -2342,7 +2333,6 @@ class form extends \mod_vocab\toolform {
                 return $ids;
 
             case 'ID':
-
                 // Expected syntax is (table, field1, value1, ...).
                 $table = '';
                 $params = [];
@@ -2409,7 +2399,6 @@ class form extends \mod_vocab\toolform {
 
                 // Check if we have a record matching the NEW value.
                 if ($newrecords) {
-
                     if ($table == 'vocab_words') {
                         $tables = [];
                         // Remove all records matching the OLD conditions.
@@ -2429,7 +2418,6 @@ class form extends \mod_vocab\toolform {
 
                 // Check if we have a record matching the OLD conditions.
                 if ($records) {
-
                     // Update all OLD records.
                     $DB->set_field($table, $newfield, $newvalue, $params);
 
@@ -2442,7 +2430,6 @@ class form extends \mod_vocab\toolform {
                 return $this->get_record_ids($tableinfo, $table, $params);
 
             case 'VALUE':
-
                 // Expected syntax is (name, default).
                 if (array_key_exists(0, $args) && is_string($args[0])) {
                     $value = $args[0];
@@ -2459,10 +2446,9 @@ class form extends \mod_vocab\toolform {
                     // Probably an id.
                     return $value;
                 }
-                return '"'.addslashes($value).'"';
+                return '"' . addslashes($value) . '"';
 
             case 'JOIN':
-
                 // Expected syntax is (joiner, string).
                 if (array_key_exists(0, $args) && is_string($args[0])) {
                     if (array_key_exists(1, $args) && is_string($args[1])) {
@@ -2501,9 +2487,12 @@ class form extends \mod_vocab\toolform {
 
             case 'SUBSTRING':
                 switch (count($args)) {
-                    case 0: $args[0] = ''; // An intentional drop through.
-                    case 1: $args[1] = 1; // An intentional drop through.
-                    case 2: $args[2] = core_text::strlen($args[0]);
+                    case 0:
+                        $args[0] = ''; // An intentional drop through.
+                    case 1:
+                        $args[1] = 1; // An intentional drop through.
+                    case 2:
+                        $args[2] = core_text::strlen($args[0]);
                 }
                 return core_text::substr($args[0], $args[1] - 1, $args[2]);
 
@@ -2551,7 +2540,6 @@ class form extends \mod_vocab\toolform {
      */
     public function get_item_records($item, &$vars, &$tableinfo, $aliastype) {
         foreach ($item->records as $record) {
-
             if ($this->skip_record($record, $tableinfo, $vars, $aliastype)) {
                 continue;
             }
@@ -2740,10 +2728,8 @@ class form extends \mod_vocab\toolform {
             $fields[$name] = $value = trim($value, ' "');
 
             if (array_key_exists($name, $columns)) {
-
                 $column = $columns[$name];
                 switch ($column->meta_type) {
-
                     // See lib/dml/database_column_info.php
                     // R - counter (integer primary key)
                     // I - integers
@@ -2845,7 +2831,7 @@ class form extends \mod_vocab\toolform {
                 /* FF5D */ '｝' => '}', '～' => '~', /* FF5E */
                 /* FF5F */ '｟' => '(', '｠' => ')', /* FF60 */
                 /* FF61 */ '｡' => '. ', '｢' => '"', /* FF62 */
-                /* FF63 */ '｣' => '"',  '､' => ',', /* FF64 */
+                /* FF63 */ '｣' => '"', '､' => ',', /* FF64 */
                 /* FF65 */ '･' => '/', '￣' => '~', /* FFE3 */
                 /* FFE1 */ '￡' => '£', '￥' => '¥', /* FFE5 */
             ];

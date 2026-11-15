@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Get the standard Moodle form for mod plugins.
-require_once($CFG->dirroot.'/course/moodleform_mod.php');
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
 
 /**
  * mod_vocab_mod_form
@@ -39,7 +39,6 @@ require_once($CFG->dirroot.'/course/moodleform_mod.php');
  * @since      Moodle 3.11
  */
 class mod_vocab_mod_form extends moodleform_mod {
-
     /** size of numeric text boxes */
     const TEXT_NUM_SIZE = 4;
 
@@ -236,14 +235,14 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @param mixed $type PARAM_xxx constant value
      * @param mixed $default (optional, default = null)
      */
-    public static function set_type_default_advanced($mform, $config, $name, $type, $default=null) {
+    public static function set_type_default_advanced($mform, $config, $name, $type, $default = null) {
         $mform->setType($name, $type);
         if (isset($config->$name)) {
             $mform->setDefault($name, $config->$name);
         } else if ($default) {
             $mform->setDefault($name, $default);
         }
-        $advname = 'adv'.$name;
+        $advname = 'adv' . $name;
         if (isset($config->$advname)) {
             $mform->setAdvanced($name, $config->$advname);
         }
@@ -293,7 +292,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $elements[] = $mform->createElement('select', $nametype, $labeltype, $options);
         $elements[] = $mform->createElement('html', $OUTPUT->help_icon($nametype, $plugin));
 
-        $groupname = $namecount.'elements';
+        $groupname = $namecount . 'elements';
         $mform->addGroup($elements, $groupname, $labelcount, [' '], false);
         $mform->addHelpButton($groupname, $namecount, $plugin);
 
@@ -412,8 +411,12 @@ class mod_vocab_mod_form extends moodleform_mod {
         foreach ($games as $name => $class) {
             $elements = [];
             foreach ($class::get_supported_stages() as $stage) {
-                $elements[] = $mform->createElement('advcheckbox', 'game_' . $name . '_' . $stage, '',
-                    \mod_vocab\progress::get_stage_name($stage));
+                $elements[] = $mform->createElement(
+                    'advcheckbox',
+                    'game_' . $name . '_' . $stage,
+                    '',
+                    \mod_vocab\progress::get_stage_name($stage)
+                );
             }
             $mform->addGroup($elements, 'game_' . $name, $class::get_title(), ' ', false);
             if (get_string_manager()->string_exists('pluginname_help', $class::get_component())) {
@@ -512,14 +515,14 @@ class mod_vocab_mod_form extends moodleform_mod {
         $elements[] = $mform->createElement('radio', $name, $text, '', $value);
 
         $options = ['defaultunit' => 60]; // Default units are "minutes".
-        $elements[] = $mform->createElement('duration', $name.'fixed', '', $options);
+        $elements[] = $mform->createElement('duration', $name . 'fixed', '', $options);
         $elements[] = $mform->createElement('html', $linebreak);
 
         $text = get_string('expandingdelay', $plugin);
         $value = \mod_vocab\activity::ATTEMPTDELAY_EXPANDING;
         $elements[] = $mform->createElement('radio', $name, $text, '', $value);
 
-        $groupname = $name.'elements';
+        $groupname = $name . 'elements';
         $mform->addGroup($elements, $groupname, $label, [' '], false);
         $mform->addHelpButton($groupname, $name, $plugin);
 
@@ -527,8 +530,8 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform->setDefault($name, \mod_vocab\activity::ATTEMPTDELAY_NONE);
 
         $value = \mod_vocab\activity::ATTEMPTDELAY_FIXED;
-        $mform->disabledIf($name.'fixed[number]', $name, 'neq', $value);
-        $mform->disabledIf($name.'fixed[timeunit]', $name, 'neq', $value);
+        $mform->disabledIf($name . 'fixed[number]', $name, 'neq', $value);
+        $mform->disabledIf($name . 'fixed[timeunit]', $name, 'neq', $value);
     }
 
     /**
@@ -544,11 +547,11 @@ class mod_vocab_mod_form extends moodleform_mod {
         $default = \mod_vocab\activity::ATTEMPTDELAY_NONE;
         $value = (isset($data[$name]) ? $data[$name] : $default);
         if ($value > 0) {
-            $data[$name.'fixed'] = $value;
+            $data[$name . 'fixed'] = $value;
             $value = \mod_vocab\activity::ATTEMPTDELAY_FIXED;
         } else {
             // Default fixed delay is 30 minutes.
-            $data[$name.'fixed'] = 1800;
+            $data[$name . 'fixed'] = 1800;
         }
         $data[$name] = $value;
     }
@@ -564,7 +567,7 @@ class mod_vocab_mod_form extends moodleform_mod {
         $default = \mod_vocab\activity::ATTEMPTDELAY_NONE;
         $value = (isset($data->$name) ? $data->$name : $default);
         if ($value == \mod_vocab\activity::ATTEMPTDELAY_FIXED) {
-            $namefixed = $name.'fixed';
+            $namefixed = $name . 'fixed';
             $value = (isset($data->$namefixed) ? $data->$namefixed : $default);
         }
         $data->$name = $value;
@@ -676,11 +679,11 @@ class mod_vocab_mod_form extends moodleform_mod {
             if (isset($layout['options'])) {
                 foreach ($layout['options'] as $optionname => $optionvalue) {
                     if (is_scalar($optionvalue)) {
-                        $row['option_'.$optionname] = $optionvalue;
+                        $row['option_' . $optionname] = $optionvalue;
                     } else {
                         // The "activityheader" is an array of options.
                         foreach ($optionvalue as $n => $v) {
-                            $row['option_'.$optionname.'_'.$n] = $v;
+                            $row['option_' . $optionname . '_' . $n] = $v;
                         }
                     }
                 }
@@ -699,12 +702,10 @@ class mod_vocab_mod_form extends moodleform_mod {
 
         $strman = get_string_manager();
         foreach ($rows as $r => $row) {
-
             if ($r == 0) {
                 // Set up headings.
                 $keys = array_keys($row);
                 foreach ($keys as $c => $key) {
-
                     // Extract the the last "word" in the key.
                     $i = substr_count($key, '_');
                     $key = explode('_', $key)[$i];

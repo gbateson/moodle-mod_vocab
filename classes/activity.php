@@ -37,7 +37,6 @@ namespace mod_vocab;
  * @since      Moodle 3.11
  */
 class activity {
-
     /** @var string the type of this plugin */
     const PLUGINTYPE = 'mod';
 
@@ -202,11 +201,11 @@ class activity {
      * @param object $context a record form the "context" table in the Moodle database (optional, default=null)
      * @param object $user a record form the "user" table in the Moodle database (optional, default=null)
      */
-    public function __construct($course=null, $cm=null, $instance=null, $context=null, $user=null) {
+    public function __construct($course = null, $cm = null, $instance = null, $context = null, $user = null) {
         global $COURSE, $DB, $SITE, $USER;
 
-        $this->plugin = self::PLUGINTYPE.'_'.self::PLUGINNAME;
-        $this->pluginpath = self::PLUGINTYPE.'/'.self::PLUGINNAME;
+        $this->plugin = self::PLUGINTYPE . '_' . self::PLUGINNAME;
+        $this->pluginpath = self::PLUGINTYPE . '/' . self::PLUGINNAME;
 
         if ($user === null) {
             $this->user = $USER;
@@ -240,7 +239,8 @@ class activity {
         if ($context) {
             $this->context = $context;
         } else if ($cm) {
-            $this->context = \context_module::instance($cm->id);;
+            $this->context = \context_module::instance($cm->id);
+            ;
         } else if ($course) {
             $this->context = \context_course::instance($course->id);
         } else if ($COURSE) {
@@ -295,7 +295,7 @@ class activity {
      * @param object $attempt a record form the "vocab_game_attempt" table in the Moodle database (optional, default=null)
      * @return object a new \mod_vocab\activity object
      */
-    public static function create($course=null, $cm=null, $instance=null, $context=null, $attempt=null) {
+    public static function create($course = null, $cm = null, $instance = null, $context = null, $attempt = null) {
         global $DB;
 
         if (is_scalar($course)) {
@@ -355,7 +355,7 @@ class activity {
      * @param integer $depth the maximum depth allowed for array parameters
      * @return mixed, either an actual value from the form, or a suitable default
      */
-    public static function get_optional_param($names, $default, $type, $depth=1) {
+    public static function get_optional_param($names, $default, $type, $depth = 1) {
         if (is_scalar($names)) {
             $names = [$names];
         }
@@ -376,7 +376,7 @@ class activity {
      * @param integer $depth maximum allowable depth of nested arrays
      * return mixed the cleaned input parameter value, if it exists; otherwise $default value.
      */
-    public static function get_param($name, $default, $type, $depth=1) {
+    public static function get_param($name, $default, $type, $depth = 1) {
         if (isset($_POST[$name])) {
             return self::clean_param($_POST[$name], $default, $type, $depth);
         }
@@ -395,7 +395,7 @@ class activity {
      * @param integer $depth maximum allowable depth of nested arrays
      * return mixed the cleaned input parameter value, if it exists; otherwise $default value.
      */
-    public static function clean_param($value, $default, $type, $depth=1) {
+    public static function clean_param($value, $default, $type, $depth = 1) {
         if ($depth == 0) {
             return $default;
         }
@@ -455,7 +455,7 @@ class activity {
      */
     public function trigger_viewed_event_and_completion() {
         global $CFG;
-        require_once($CFG->dirroot.'/lib/completionlib.php');
+        require_once($CFG->dirroot . '/lib/completionlib.php');
 
         if ($this->instance) {
             $event = \mod_vocab\event\course_module_viewed::create([
@@ -485,11 +485,11 @@ class activity {
      * @param array $params (optional, default=array)
      * @return string a URL connected to this plugin
      */
-    public function url($filepath, $escaped=null, $params=[]) {
+    public function url($filepath, $escaped = null, $params = []) {
         if ($this->cm) {
             $params = array_merge(['id' => $this->cm->id], $params);
         }
-        $url = '/'.$this->pluginpath.'/'.$filepath;
+        $url = '/' . $this->pluginpath . '/' . $filepath;
         $url = new \moodle_url($url, $params);
         if (is_bool($escaped)) {
             $url = $url->out($escaped);
@@ -504,7 +504,7 @@ class activity {
      * @param array $params (optional, default=[])
      * @return string URL of the main view page for this plugin
      */
-    public function view_url($escaped=null, $params=[]) {
+    public function view_url($escaped = null, $params = []) {
         return $this->url('view.php', $escaped, $params);
     }
 
@@ -515,7 +515,7 @@ class activity {
      * @param array $params (optional, default=[])
      * @return string URL of the report page for this plugin
      */
-    public function report_url($escaped=null, $params=[]) {
+    public function report_url($escaped = null, $params = []) {
         return $this->url('report.php', $escaped, $params);
     }
 
@@ -526,7 +526,7 @@ class activity {
      * @param array $params (optional, default=[])
      * @return string URL of the attempt page for this plugin
      */
-    public function attempt_url($escaped=null, $params=[]) {
+    public function attempt_url($escaped = null, $params = []) {
         return $this->url('attempt.php', $escaped, $params);
     }
 
@@ -537,7 +537,7 @@ class activity {
      * @param array $params (optional, default=[])
      * @return string URL of the submit page for this plugin
      */
-    public function submit_url($escaped=null, $params=[]) {
+    public function submit_url($escaped = null, $params = []) {
         return $this->url('submit.php', $escaped, $params);
     }
 
@@ -548,7 +548,7 @@ class activity {
      * @param array $params (optional, default=[])
      * @return string URL of the review page for this plugin
      */
-    public function review_url($escaped=null, $params=[]) {
+    public function review_url($escaped = null, $params = []) {
         return $this->url('review.php', $escaped, $params);
     }
 
@@ -559,7 +559,7 @@ class activity {
      * @param array $params (optional, default=[])
      * @return string the URL of the index page for this plugin
      */
-    public function index_url($escaped=null, $params=[]) {
+    public function index_url($escaped = null, $params = []) {
         return new \moodle_url('/mod/vocab/index.php', ['id' => $this->course->id]);
     }
 
@@ -629,7 +629,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user has the specified capability in the current context. Otherwise, FALSE.
      */
-    public function can($capability, $user=null) {
+    public function can($capability, $user = null) {
         return has_capability("{$this->pluginpath}:$capability", $this->context, $user);
     }
 
@@ -639,7 +639,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can add instance in the current context. Otherwise, FALSE.
      */
-    public function can_addinstance($user=null) {
+    public function can_addinstance($user = null) {
         return $this->can('addinstance', $user);
     }
 
@@ -649,7 +649,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can manage the current context. Otherwise, FALSE.
      */
-    public function can_manage($user=null) {
+    public function can_manage($user = null) {
         return $this->can('manage', $user);
     }
 
@@ -659,7 +659,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can view reports in the current context. Otherwise, FALSE.
      */
-    public function can_viewreports($user=null) {
+    public function can_viewreports($user = null) {
         return $this->can('viewreports', $user);
     }
 
@@ -669,7 +669,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can delete attempts in the current context. Otherwise, FALSE.
      */
-    public function can_deleteattempts($user=null) {
+    public function can_deleteattempts($user = null) {
         return $this->can('deleteattempts', $user);
     }
 
@@ -679,7 +679,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can view Vocab activities in the current context. Otherwise, FALSE.
      */
-    public function can_view($user=null) {
+    public function can_view($user = null) {
         return $this->can('view', $user);
     }
 
@@ -689,7 +689,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can view attempt games in the current context. Otherwise, FALSE.
      */
-    public function can_attempt($user=null) {
+    public function can_attempt($user = null) {
         return $this->can('attempt', $user);
     }
 
@@ -699,7 +699,7 @@ class activity {
      * @param mixed $user a user id or object. By default (null) the current $USER's permissions will be checked.
      * @return bool TRUE if $user can review their own game attempts in the current context. Otherwise, FALSE.
      */
-    public function can_reviewmyattempts($user=null) {
+    public function can_reviewmyattempts($user = null) {
         return $this->can('reviewmyattempts', $user);
     }
 
@@ -714,7 +714,7 @@ class activity {
      * @param array $a additional value or values required for the language string (optional, default=null)
      * @return string
      */
-    public function get_string($strname, $a=null) {
+    public function get_string($strname, $a = null) {
         $components = [$this->plugin, 'moodle'];
         $component = $this->get_string_component($strname, $components);
         return get_string($strname, $component, $a);
@@ -771,7 +771,7 @@ class activity {
      *
      * TODO: Finish documenting this function
      */
-    public function get_userids($groupid=0) {
+    public function get_userids($groupid = 0) {
         global $DB;
         $mode = $this->get_groupmode();
         if ($mode == NOGROUPS || $mode == VISIBLEGROUPS || has_capability('moodle/site:accessallgroups', $this->context)) {
@@ -789,9 +789,9 @@ class activity {
                 if (empty($groups)) {
                     return false;
                 }
-                list($select, $params) = $DB->get_in_or_equal($groups['0']);
+                [$select, $params] = $DB->get_in_or_equal($groups['0']);
             }
-            $users = $DB->get_records_select_menu('group_members', 'groupid '.$select, $params, 'id, userid');
+            $users = $DB->get_records_select_menu('group_members', 'groupid ' . $select, $params, 'id, userid');
             if (empty($users)) {
                 return false;
             }
@@ -922,7 +922,7 @@ class activity {
      * @param array $attributes
      * @return void (but will update url, title, heading and attributes in $PAGE object)
      */
-    public function setup_page($url, $title, $heading, $attributes=[]) {
+    public function setup_page($url, $title, $heading, $attributes = []) {
         global $PAGE;
 
         $PAGE->set_url($url);
@@ -1035,7 +1035,7 @@ class activity {
      * @param mixed $user (optional, default=null) a user id or object
      * @return array
      */
-    public function get_readable_contexts($keyfield='', $valuefield='', $user=null) {
+    public function get_readable_contexts($keyfield = '', $valuefield = '', $user = null) {
         global $DB, $USER;
 
         if ($user === null) {
@@ -1089,7 +1089,7 @@ class activity {
      * @param mixed $user (optional, default=null) a user id or object
      * @return array
      */
-    public function get_writeable_contexts($keyfield='', $valuefield='', $user=null) {
+    public function get_writeable_contexts($keyfield = '', $valuefield = '', $user = null) {
         global $DB, $USER;
 
         if ($user === null) {
@@ -1103,7 +1103,6 @@ class activity {
 
         $writeable = [];
         foreach ($contexts as $context) {
-
             // For reference, SYSTEM is 10, USER is 30, COURSECAT is 40, COURSE is 50, MODULE is 70.
             switch ($context->contextlevel) {
                 case CONTEXT_MODULE:
@@ -1149,9 +1148,9 @@ class activity {
      *
      * TODO: Finish documenting this function
      */
-    public function get_question_categories($toponly=false) {
+    public function get_question_categories($toponly = false) {
         global $CFG;
-        require_once($CFG->dirrot.'/lib/questionlib.php');
+        require_once($CFG->dirrot . '/lib/questionlib.php');
 
         $categories = [];
         $contexts = $this->get_writeable_contexts('contextlevel');
@@ -1183,7 +1182,7 @@ class activity {
      * @param string $join the join string used to prepend $prefix or append $suffix (optional, default="-")
      * @return string the modified filename.
      */
-    public static function modify_filename($filename, $prefix='', $suffix='', $extension='', $join='-') {
+    public static function modify_filename($filename, $prefix = '', $suffix = '', $extension = '', $join = '-') {
         $pathinfo = pathinfo($filename);
 
         // If necessary, fix the dirname.
@@ -1218,7 +1217,7 @@ class activity {
             $filename = "{$filename}.{$extension}";
         }
 
-        return $dirname.$filename;
+        return $dirname . $filename;
     }
 
     /**
@@ -1228,7 +1227,7 @@ class activity {
      * @param string $str of chars from which to select randomly
      * @return string of $length characters selected randomly from $str
      */
-    public static function get_random_chars($length=4, $str='') {
+    public static function get_random_chars($length = 4, $str = '') {
         if ($str == '') {
             $str = implode(range('a', 'z'));
         }

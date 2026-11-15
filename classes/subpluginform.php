@@ -30,7 +30,7 @@ namespace mod_vocab;
 defined('MOODLE_INTERNAL') || die;
 
 // Fetch the parent class, "moodleform".
-require_once($CFG->dirroot.'/lib/formslib.php');
+require_once($CFG->dirroot . '/lib/formslib.php');
 
 /**
  * \mod_vocab\subpluginform
@@ -42,7 +42,6 @@ require_once($CFG->dirroot.'/lib/formslib.php');
  * @since      Moodle 3.11
  */
 abstract class subpluginform extends \moodleform {
-
     /**
      * @var public string $subpluginname the name of the subplugin that is
      *      creating this form. This value can be used in get_string().
@@ -60,16 +59,29 @@ abstract class subpluginform extends \moodleform {
      * @param bool $editable
      * @param array $ajaxformdata Forms submitted via ajax, must pass their data here.
      */
-    public function __construct($action=null, $customdata=null, $method='post',
-                                $target='', $attributes=null, $editable=true,
-                                $ajaxformdata=null) {
+    public function __construct(
+        $action = null,
+        $customdata = null,
+        $method = 'post',
+        $target = '',
+        $attributes = null,
+        $editable = true,
+        $ajaxformdata = null
+    ) {
 
         // Set the subplugin name.
         $this->subpluginname = $customdata['subplugin']->plugin;
 
         // Call the parent constructor in the usual way.
-        parent::__construct($action, $customdata, $method, $target,
-                            $attributes, $editable, $ajaxformdata);
+        parent::__construct(
+            $action,
+            $customdata,
+            $method,
+            $target,
+            $attributes,
+            $editable,
+            $ajaxformdata
+        );
     }
 
     /**
@@ -101,7 +113,7 @@ abstract class subpluginform extends \moodleform {
      * @param mixed $a (optional, default=null) additional value or values required for the string
      * @return string requested string from the lang pack for the current subplugin
      */
-    public function get_string($name, $a=null) {
+    public function get_string($name, $a = null) {
         $component = $this->get_subplugin()->get_string_component($name);
         return get_string($name, $component, $a);
     }
@@ -113,7 +125,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $id (optional, default='') the new form id
      * @return mixed default value of setting
      */
-    public function set_form_id($mform, $id='') {
+    public function set_form_id($mform, $id = '') {
         if ($id == '') {
             $id = str_replace('\\', '_', get_called_class());
             $id = ltrim($id, '_');
@@ -157,7 +169,7 @@ abstract class subpluginform extends \moodleform {
      * @param array $a arguments, if any, required for header string (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_heading($mform, $name, $expanded, $a=null) {
+    public function add_heading($mform, $name, $expanded, $a = null) {
         $component = $this->get_subplugin()->get_string_component($name);
         $label = get_string($name, $component, $a);
         $mform->addElement('header', $name, $label);
@@ -188,8 +200,8 @@ abstract class subpluginform extends \moodleform {
      * @param array $attributes (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_static($mform, $name, $value, $attributes=null) {
-        list($name, $strname) = $this->get_names($name, $attributes);
+    public function add_field_static($mform, $name, $value, $attributes = null) {
+        [$name, $strname] = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('static', $name, $label, $value);
 
@@ -238,7 +250,7 @@ abstract class subpluginform extends \moodleform {
      * @param array $attributes (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_text($mform, $name, $type, $default, $attributes=null) {
+    public function add_field_text($mform, $name, $type, $default, $attributes = null) {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 if (is_numeric($attributes)) {
@@ -250,7 +262,7 @@ abstract class subpluginform extends \moodleform {
                 }
             }
         }
-        list($name, $strname) = $this->get_names($name, $attributes);
+        [$name, $strname] = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('text', $name, $label, $attributes);
         $this->add_help_button($mform, $name, $strname);
@@ -268,11 +280,11 @@ abstract class subpluginform extends \moodleform {
      * @param array $attributes (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_textarea($mform, $name, $type, $default, $attributes=null) {
+    public function add_field_textarea($mform, $name, $type, $default, $attributes = null) {
         if (is_array($attributes)) {
             $attributes = array_merge(['rows' => 5, 'cols' => 40], $attributes);
         }
-        list($name, $strname) = $this->get_names($name, $attributes);
+        [$name, $strname] = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('textarea', $name, $label, $attributes);
         $this->add_help_button($mform, $name, $strname);
@@ -291,7 +303,7 @@ abstract class subpluginform extends \moodleform {
      * @param array $attributes (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_selectgroups($mform, $name, $options, $type, $default=null, $attributes=null) {
+    public function add_field_selectgroups($mform, $name, $options, $type, $default = null, $attributes = null) {
         $this->add_field_select($mform, $name, $options, $type, $default, $attributes, 'selectgroups');
     }
 
@@ -307,7 +319,7 @@ abstract class subpluginform extends \moodleform {
      * @param string $elementtype (optional, default="select")
      * @return void ... but may update $mform.
      */
-    public function add_field_select($mform, $name, $options, $type, $default=null, $attributes=null, $elementtype='select') {
+    public function add_field_select($mform, $name, $options, $type, $default = null, $attributes = null, $elementtype = 'select') {
         if ($attributes) {
             if (is_scalar($attributes)) {
                 // An on/off attribute e.g. 'disabled' or 'multiple'.
@@ -317,7 +329,7 @@ abstract class subpluginform extends \moodleform {
                 $attributes['size'] = min(6, max(10, count($options)));
             }
         }
-        list($name, $strname) = $this->get_names($name, $attributes);
+        [$name, $strname] = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement($elementtype, $name, $label, $options, $attributes);
         $this->add_help_button($mform, $name, $strname);
@@ -335,8 +347,8 @@ abstract class subpluginform extends \moodleform {
      * @param array $attributes (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_datetime($mform, $name, $attributes=null) {
-        list($name, $strname) = $this->get_names($name, $attributes);
+    public function add_field_datetime($mform, $name, $attributes = null) {
+        [$name, $strname] = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement('date_time_selector', $name, $label, $attributes);
         $this->add_help_button($mform, $name, $strname);
@@ -352,7 +364,7 @@ abstract class subpluginform extends \moodleform {
      * @param array $options (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_filemanager($mform, $name, $attributes=null, $options=null) {
+    public function add_field_filemanager($mform, $name, $attributes = null, $options = null) {
         $this->add_field_file('filemanager', $mform, $name, $attributes, $options);
     }
 
@@ -366,7 +378,7 @@ abstract class subpluginform extends \moodleform {
      * @param array $options (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_filepicker($mform, $name, $attributes=null, $options=null) {
+    public function add_field_filepicker($mform, $name, $attributes = null, $options = null) {
         $this->add_field_file('filepicker', $mform, $name, $attributes, $options);
     }
 
@@ -380,8 +392,8 @@ abstract class subpluginform extends \moodleform {
      * @param array $options (optional, default=null)
      * @return void ... but may update $mform.
      */
-    public function add_field_file($type, $mform, $name, $attributes=null, $options=null) {
-        list($name, $strname) = $this->get_names($name, $attributes);
+    public function add_field_file($type, $mform, $name, $attributes = null, $options = null) {
+        [$name, $strname] = $this->get_names($name, $attributes);
         $label = $this->get_string($strname);
         $mform->addElement($type, $name, $label, $attributes, $options);
         $this->add_help_button($mform, $name, $strname);
@@ -511,7 +523,7 @@ abstract class subpluginform extends \moodleform {
      * @param array $order (optional, default=[])
      * @return array $plugins of question formats for which we can generate questions.
      */
-    public static function get_question_plugins($plugintype, $include=null, $order=[]) {
+    public static function get_question_plugins($plugintype, $include = null, $order = []) {
 
         // Get the full list of plugins of the required type.
         $plugins = \core_component::get_plugin_list($plugintype);
@@ -519,7 +531,7 @@ abstract class subpluginform extends \moodleform {
         // Remove items that are not in the $include array.
         foreach (array_keys($plugins) as $name) {
             if ($include === null || in_array($name, $include)) {
-                $plugins[$name] = get_string('pluginname', $plugintype.'_'.$name);
+                $plugins[$name] = get_string('pluginname', $plugintype . '_' . $name);
             } else {
                 unset($plugins[$name]);
             }
@@ -566,7 +578,7 @@ abstract class subpluginform extends \moodleform {
      * @param int $defaultid the id of the default parent category (optional, default=0.
      * @return void ... but may update $mform.
      */
-    public function add_parentcategory($mform, $name, $defaultid=0) {
+    public function add_parentcategory($mform, $name, $defaultid = 0) {
 
         // Get the course context.
         $courseid = $this->get_vocab()->course->id;
@@ -598,7 +610,7 @@ abstract class subpluginform extends \moodleform {
         $mform->addGroup($elements, $name, $label);
         $this->add_help_button($mform, $name, $strname);
 
-        $elementname = $name.'[id]';
+        $elementname = $name . '[id]';
         $mform->setType($elementname, PARAM_INT);
         $mform->setDefault($elementname, $defaultid);
     }
@@ -628,17 +640,16 @@ abstract class subpluginform extends \moodleform {
      */
     public function get_question_categories() {
         global $CFG, $DB;
-        require_once($CFG->dirroot.'/lib/questionlib.php');
+        require_once($CFG->dirroot . '/lib/questionlib.php');
 
         $courseid = $this->get_vocab()->course->id;
         $coursecontext = \context_course::instance($courseid);
         $coursecategory = $this->get_top_question_category($coursecontext->id, true);
 
         $categories = question_categorylist($coursecategory->id);
-        list($select, $params) = $DB->get_in_or_equal($categories);
+        [$select, $params] = $DB->get_in_or_equal($categories);
         $fields = 'id, name, parent, sortorder';
         if ($categories = $DB->get_records_select('question_categories', "id $select", $params, 'sortorder', $fields)) {
-
             // Get localised name of default quesiont category in this course.
             if ($coursecategory->name == 'top') {
                 if (array_key_exists($coursecategory->id, $categories)) {
@@ -689,7 +700,7 @@ abstract class subpluginform extends \moodleform {
                     }
                     $prefix = '... ';
                 }
-                $categorynames[$catid] = $prefix.$name;
+                $categorynames[$catid] = $prefix . $name;
             }
 
             return $categorynames;
@@ -745,13 +756,19 @@ abstract class subpluginform extends \moodleform {
      *
      * @return void ... but may update $mform.
      */
-    public function add_subcategories($mform, $name, $defaultvalue, $defaultcustomname='') {
+    public function add_subcategories($mform, $name, $defaultvalue, $defaultcustomname = '') {
         $form = '\\vocabtool_questionbank\\form';
         return $this->add_checkboxes(
-            $mform, $name, 'subcategories', null, PARAM_INT,
+            $mform,
+            $name,
+            'subcategories',
+            null,
+            PARAM_INT,
             self::get_subcategory_types(),
-            $form::SUBCAT_NONE, $form::SUBCAT_CUSTOMNAME,
-            $defaultvalue, $defaultcustomname
+            $form::SUBCAT_NONE,
+            $form::SUBCAT_CUSTOMNAME,
+            $defaultvalue,
+            $defaultcustomname
         );
     }
 
@@ -765,13 +782,19 @@ abstract class subpluginform extends \moodleform {
      *
      * @return void ... but may update $mform.
      */
-    public function add_questiontags($mform, $name, $defaultvalue, $defaultcustomname='') {
+    public function add_questiontags($mform, $name, $defaultvalue, $defaultcustomname = '') {
         $form = '\\vocabtool_questionbank\\form';
         return $this->add_checkboxes(
-            $mform, $name, 'questiontags', null, PARAM_INT,
+            $mform,
+            $name,
+            'questiontags',
+            null,
+            PARAM_INT,
             $this->get_questiontag_types(),
-            $form::QTAG_NONE, $form::QTAG_CUSTOMTAGS,
-            $defaultvalue, $defaultcustomname
+            $form::QTAG_NONE,
+            $form::QTAG_CUSTOMTAGS,
+            $defaultvalue,
+            $defaultcustomname
         );
     }
 
@@ -791,12 +814,21 @@ abstract class subpluginform extends \moodleform {
      *
      * @return void ... but may update $mform.
      */
-    public function add_checkboxes($mform, $name, $strname, $a, $paramtype,
-                                   $options, $valuenone=0, $valuecustom=0,
-                                   $defaultvalue=0, $defaultcustomname='') {
+    public function add_checkboxes(
+        $mform,
+        $name,
+        $strname,
+        $a,
+        $paramtype,
+        $options,
+        $valuenone = 0,
+        $valuecustom = 0,
+        $defaultvalue = 0,
+        $defaultcustomname = ''
+    ) {
 
         // The name of the form field containing the custom name/tag string.
-        $customname = $name.'[name]';
+        $customname = $name . '[name]';
 
         $label = $this->get_string($strname, $a);
 
@@ -812,9 +844,9 @@ abstract class subpluginform extends \moodleform {
         }
         $mform->addGroup($elements, $name, $label, '');
         $this->add_help_button($mform, $name, $strname);
-        $elementnone = $name.'['.$valuenone.']';
+        $elementnone = $name . '[' . $valuenone . ']';
         foreach ($options as $value => $text) {
-            $elementname = $name.'['.$value.']';
+            $elementname = $name . '[' . $value . ']';
             $mform->setType($elementname, $paramtype);
             if ($paramtype == PARAM_INT) {
                 if ($value == $valuecustom) {
@@ -909,13 +941,13 @@ abstract class subpluginform extends \moodleform {
         $this->add_heading($mform, 'import', false);
 
         $name = 'importfile';
-        $groupname = $name.'elements';
+        $groupname = $name . 'elements';
         $label = $this->get_string($name);
         $options = ['accepted_types' => ['.txt', '.xml']];
         // Perhaps we could also consider csv, xlsx, xls, ods?
         $elements = [
             $mform->createElement('filepicker', $name, $label, '', $options),
-            $mform->createElement('submit', $name.'button', $this->get_string('import')),
+            $mform->createElement('submit', $name . 'button', $this->get_string('import')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $this->add_help_button($mform, $groupname, $name);
@@ -946,19 +978,19 @@ abstract class subpluginform extends \moodleform {
         $filename = $this->fullwidth_to_halfwidth($filename);
         $filename = preg_replace('/([[:punct:]]|[[:space:]]|\s)+/u', '_', $filename);
         $filename = trim($filename, ' -._');
-        $filename = $filename.'.xml';
+        $filename = $filename . '.xml';
 
         $name = 'exportfile';
-        $groupname = $name.'elements';
+        $groupname = $name . 'elements';
         $label = $this->get_string($name);
         $elements = [
             $mform->createElement('text', $name, $label, '', ['size' => 20]),
-            $mform->createElement('submit', $name.'button', $this->get_string('export')),
+            $mform->createElement('submit', $name . 'button', $this->get_string('export')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $this->add_help_button($mform, $groupname, $name);
-        $mform->setDefault($groupname.'['.$name.']', $filename);
-        $mform->setType($groupname.'['.$name.']', PARAM_FILE);
+        $mform->setDefault($groupname . '[' . $name . ']', $filename);
+        $mform->setType($groupname . '[' . $name . ']', PARAM_FILE);
 
         $PAGE->requires->js_call_amd('mod_vocab/export', 'init');
     }
@@ -987,7 +1019,7 @@ abstract class subpluginform extends \moodleform {
 
         // Fallback for older PHP versions without mb_convert_kana.
         $search = '/[\x{FF01}-\x{FF5E}]/u';
-        $callback = function($m) {
+        $callback = function ($m) {
             // Manual conversion without mb_ord (PHP 5.6 compatible).
             $code = unpack('N', mb_convert_encoding($m[0], 'UCS-4BE', 'UTF-8'))[1];
             return chr($code - 0xFEE0);
@@ -1014,7 +1046,7 @@ abstract class subpluginform extends \moodleform {
      * @param integer $depth the maximum depth of array parameters
      * @return mixed, either an actual value from the form, or a suitable default
      */
-    public static function get_optional_param($names, $default, $type, $depth=1) {
+    public static function get_optional_param($names, $default, $type, $depth = 1) {
         return \mod_vocab\activity::get_optional_param($names, $default, $type, $depth);
     }
 }

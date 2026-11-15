@@ -24,8 +24,8 @@ use vocabtool_questionbank\task\questions;
  * @package    vocabtool_questionbank
  * @copyright  2026 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \vocabtool_questionbank\task\questions
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\vocabtool_questionbank\task\questions::class)]
 final class questions_test extends \advanced_testcase {
     /**
      * Questions are generated with the AI bridge, with an image and the audio of a conversation.

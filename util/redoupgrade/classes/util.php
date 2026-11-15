@@ -44,7 +44,7 @@ class util extends \mod_vocab\utilbase {
      * @param string $dateformat Optional. Format to display the version date (default: 'jS M Y').
      * @return string|false HTML output message, or false if no version was selected.
      */
-    public function redo_upgrade($mform, $dateformat='jS M Y') {
+    public function redo_upgrade($mform, $dateformat = 'jS M Y') {
         global $CFG, $DB;
 
         // Initialize HTML output string.
@@ -66,7 +66,7 @@ class util extends \mod_vocab\utilbase {
             $mm = $match[2];
             $dd = $match[3];
             $vv = intval($match[4]);
-            $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).($vv == 0 ? '' : " ($vv)");
+            $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)) . ($vv == 0 ? '' : " ($vv)");
         } else {
             $text = ''; // Shouldn't happen !!
         }

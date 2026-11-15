@@ -33,7 +33,6 @@ namespace vocabtool_questionbank\task;
  * @category    admin
  */
 class questions extends \core\task\adhoc_task {
-
     /** @var object to represent the vocabtool_questionbank object */
     protected $tool = null;
 
@@ -198,10 +197,12 @@ class questions extends \core\task\adhoc_task {
 
         // If the status is any of the following, something
         // is wrong so we stop here.
-        if ($status == $toolclass::TASKSTATUS_AWAITING_REVIEW ||
+        if (
+            $status == $toolclass::TASKSTATUS_AWAITING_REVIEW ||
             $status == $toolclass::TASKSTATUS_COMPLETED ||
             $status == $toolclass::TASKSTATUS_CANCELLED ||
-            $status == $toolclass::TASKSTATUS_FAILED) {
+            $status == $toolclass::TASKSTATUS_FAILED
+        ) {
             return; // No return value is required.
         }
 
@@ -209,11 +210,12 @@ class questions extends \core\task\adhoc_task {
         // Check parameters and make the prompt.
         //////////////////////////////////*/
 
-        if ($status == $toolclass::TASKSTATUS_NOTSET ||
+        if (
+            $status == $toolclass::TASKSTATUS_NOTSET ||
             $status == $toolclass::TASKSTATUS_QUEUED ||
             $status == $toolclass::TASKSTATUS_DELAYED ||
-            $status == $toolclass::TASKSTATUS_CHECKING_PARAMS) {
-
+            $status == $toolclass::TASKSTATUS_CHECKING_PARAMS
+        ) {
             // Report start of checking params.
             mtrace($this->tool->get_string('checkingparams'), ' ');
 
@@ -228,8 +230,14 @@ class questions extends \core\task\adhoc_task {
             // already, and perhaps edited by the teacher.
             if (empty($prompt)) {
                 $rendering = $this->render_prompt(
-                    $prompttemplate, $formattemplate, $context, $userid,
-                    $word, $qtype, $qlevel, $qcount
+                    $prompttemplate,
+                    $formattemplate,
+                    $context,
+                    $userid,
+                    $word,
+                    $qtype,
+                    $qlevel,
+                    $qcount
                 );
                 if (! $rendering->is_valid()) {
                     $a = ['id' => $promptid, 'name' => implode(' ', $rendering->get_errors())];
@@ -244,7 +252,7 @@ class questions extends \core\task\adhoc_task {
             }
 
             // Report successful completion of checking params.
-            mtrace('['.get_string('ok').']');
+            mtrace('[' . get_string('ok') . ']');
 
             // Set log status to "Fetching results".
             $status = $toolclass::TASKSTATUS_FETCHING_RESULTS;
@@ -256,7 +264,6 @@ class questions extends \core\task\adhoc_task {
         //////////////////////////////////*/
 
         if ($status == $toolclass::TASKSTATUS_FETCHING_RESULTS) {
-
             // Report status of this adhoc task.
             $a = (object)['count' => $qcount, 'word' => $word];
             mtrace($this->tool->get_string('generatingquestions', $a), ' ');
@@ -301,7 +308,7 @@ class questions extends \core\task\adhoc_task {
             ]);
 
             // Report successful completion to cron job.
-            mtrace('['.get_string('ok').']');
+            mtrace('[' . get_string('ok') . ']');
         }
 
         // Get all question categories in the current course.
@@ -319,7 +326,7 @@ class questions extends \core\task\adhoc_task {
         // Determine the human readable text for $qtype e.g. "Multiple choice".
         $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);
 
-        $qtypeshort = $qtype.'short';
+        $qtypeshort = $qtype . 'short';
         if (get_string_manager()->string_exists($qtypeshort, $this->tool->plugin)) {
             $qtypeshort = $this->tool->get_string($qtypeshort); // E.g. "MC".
         } else {
@@ -334,7 +341,7 @@ class questions extends \core\task\adhoc_task {
         $coursename = format_string($coursename, true, ['context' => $coursecontext]);
 
         // Format section type e.g. "Topic" or "Week".
-        $sectiontype = 'format_'.$this->tool->vocab->course->format;
+        $sectiontype = 'format_' . $this->tool->vocab->course->format;
         $sectiontype = get_string('sectionname', $sectiontype);
 
         // Format section name.
@@ -353,7 +360,7 @@ class questions extends \core\task\adhoc_task {
         }
         if ($sectionname == '') {
             // Create a default name for this section e.g. "Topic: 1" or "Week: 2".
-            $sectionname = $sectiontype.get_string('labelsep', 'langconfig');
+            $sectionname = $sectiontype . get_string('labelsep', 'langconfig');
             $sectionname .= $DB->get_field('course_sections', 'section', ['id' => $sectionid]);
         }
 
@@ -436,9 +443,10 @@ class questions extends \core\task\adhoc_task {
         // and generate questions.
         //////////////////////////////////*/
 
-        if ($status == $toolclass::TASKSTATUS_AWAITING_IMPORT ||
-            $status == $toolclass::TASKSTATUS_IMPORTING_RESULTS) {
-
+        if (
+            $status == $toolclass::TASKSTATUS_AWAITING_IMPORT ||
+            $status == $toolclass::TASKSTATUS_IMPORTING_RESULTS
+        ) {
             if (empty($results)) {
                 return $this->report_error($log, 'emptyresults');
             }
@@ -526,13 +534,19 @@ class questions extends \core\task\adhoc_task {
                         $cache->delete($question->id);
                         if ($addmediatags) {
                             $alltags = \core_tag_tag::get_item_tags_array(
-                                'core_question', 'question', $question->id
+                                'core_question',
+                                'question',
+                                $question->id
                             );
                             $alltags = array_values($alltags); // Remove tagids.
                             $alltags = array_merge($alltags, $mediatags);
                             $alltags = array_filter($alltags); // Remove blanks.
                             \core_tag_tag::set_item_tags(
-                                'core_question', 'question', $question->id, $context, $alltags
+                                'core_question',
+                                'question',
+                                $question->id,
+                                $context,
+                                $alltags
                             );
                         }
                     }
@@ -651,14 +665,20 @@ class questions extends \core\task\adhoc_task {
                     foreach ($subcatnames as $subcatname) {
                         $a->$strname = $subcatname;
                         $category = $this->get_question_subcategory(
-                            $table, $strname, $a, $category
+                            $table,
+                            $strname,
+                            $a,
+                            $category
                         );
                     }
                     $a->$strname = implode(', ', $subcatnames);
                 } else {
                     // A single category.
                     $category = $this->get_question_subcategory(
-                        $table, $strname, $a, $category
+                        $table,
+                        $strname,
+                        $a,
+                        $category
                     );
                 }
             } else if (isset($a->$strname)) {
@@ -686,7 +706,7 @@ class questions extends \core\task\adhoc_task {
      * @param string $catinfo (optional, default="") the info of the subcategory
      * @return object $subcategory record from the $table in the Moodle DB.
      */
-    protected function get_question_subcategory($table, $strname, $a, $parentcategory, $catname='', $catinfo='') {
+    protected function get_question_subcategory($table, $strname, $a, $parentcategory, $catname = '', $catinfo = '') {
         global $DB;
 
         // Sanity check on incoming data.
@@ -721,7 +741,7 @@ class questions extends \core\task\adhoc_task {
         // than the highest currently in the parent category.
         $params = ['parent' => $parentcategory->id];
         if ($sortorder = $DB->get_field($table, 'MAX(sortorder)', $params)) {
-            $sortorder ++;
+            $sortorder++;
         } else {
             $sortorder = 1;
         }
@@ -780,7 +800,9 @@ class questions extends \core\task\adhoc_task {
         // Get the context for this question category.
         // We need it when we add tags.
         $context = \context::instance_by_id($DB->get_field(
-            'question_categories', 'contextid', ['id' => $categoryid]
+            'question_categories',
+            'contextid',
+            ['id' => $categoryid]
         ));
 
         // Get an instance of the required qformat class.
@@ -792,17 +814,32 @@ class questions extends \core\task\adhoc_task {
             case 'gift':
                 $text = $this->fix_gift($log->qtype, $text);
                 $questions = $this->parse_questions_gift(
-                    $log, $context, $format, $text, $categoryid, $tags
+                    $log,
+                    $context,
+                    $format,
+                    $text,
+                    $categoryid,
+                    $tags
                 );
                 break;
             case 'multianswer': // Embedded questions (a.k.a cloze).
                 $questions = $this->parse_questions_multianswer(
-                    $log, $context, $format, $text, $categoryid, $tags
+                    $log,
+                    $context,
+                    $format,
+                    $text,
+                    $categoryid,
+                    $tags
                 );
                 break;
             case 'xml':
                 $questions = $this->parse_questions_xml(
-                    $log, $context, $format, $text, $categoryid, $tags
+                    $log,
+                    $context,
+                    $format,
+                    $text,
+                    $categoryid,
+                    $tags
                 );
                 break;
         }
@@ -851,12 +888,12 @@ class questions extends \core\task\adhoc_task {
      */
     public function fix_gift_multichoice($text) {
         if (preg_match('/^(.*?){(.*)}(.*?)$/us', $text, $match, PREG_OFFSET_CAPTURE)) {
-            list($match, $start) = $match[2];
+            [$match, $start] = $match[2];
             $length = strlen($match);
             $match = ltrim($match);
             $char = substr($match, 0, 1);
             if ($char != '=' && $char != '~') {
-                $text = substr_replace($text, ' ='.$match, $start, $length);
+                $text = substr_replace($text, ' =' . $match, $start, $length);
             }
         }
         return $text;
@@ -914,8 +951,14 @@ class questions extends \core\task\adhoc_task {
                     $name = $matches[1][$i];
                     $text = $matches[2][$i];
                     $this->add_question(
-                        $questions, $question, $name, $text,
-                        $log, $context, $categoryid, $tags
+                        $questions,
+                        $question,
+                        $name,
+                        $text,
+                        $log,
+                        $context,
+                        $categoryid,
+                        $tags
                     );
                 }
             }
@@ -956,7 +999,7 @@ class questions extends \core\task\adhoc_task {
             } else if (preg_match('/^ *<[^>]*>/us', $rawtext, $match)) {
                 // Escape any regex characters and convert to search string.
                 // Use a lookahead to split *before* each tag.
-                $search = '/(?='.preg_quote($match[0], '/').')/u';
+                $search = '/(?=' . preg_quote($match[0], '/') . ')/u';
                 $rawquestions = preg_split($search, $rawtext, -1, PREG_SPLIT_NO_EMPTY);
                 $rawquestions = array_map('trim', $rawquestions);
                 $rawquestions = array_map(function ($text) {
@@ -1023,8 +1066,15 @@ class questions extends \core\task\adhoc_task {
                     $this->clean_question_name($question[$q]);
                     $this->clean_question_options($question[$q]);
                     $this->add_question(
-                        $questions, $question[$q], $name, $text,
-                        $log, $context, $categoryid, $tags, true
+                        $questions,
+                        $question[$q],
+                        $name,
+                        $text,
+                        $log,
+                        $context,
+                        $categoryid,
+                        $tags,
+                        true
                     );
                 }
             }
@@ -1118,7 +1168,17 @@ class questions extends \core\task\adhoc_task {
      * @param boolean $saveoptions TRUE if question options are to be saved; otherwise FALSE.
      * @return void The parsed questions are stored in the Moodle database.
      */
-    protected function add_question(&$questions, $question, $name, $text, $log, $context, $categoryid, $tags, $saveoptions=false) {
+    protected function add_question(
+        &$questions,
+        $question,
+        $name,
+        $text,
+        $log,
+        $context,
+        $categoryid,
+        $tags,
+        $saveoptions = false
+    ) {
         global $USER;
 
         if (empty($question->name)) {
@@ -1168,7 +1228,11 @@ class questions extends \core\task\adhoc_task {
         // Note that all tags are usually displayed in lowercase
         // even though the "rawname" field stores the uppercase.
         \core_tag_tag::set_item_tags(
-            'core_question', 'question', $question->id, $context, $tags
+            'core_question',
+            'question',
+            $question->id,
+            $context,
+            $tags
         );
     }
 
@@ -1251,8 +1315,12 @@ class questions extends \core\task\adhoc_task {
             foreach ($fields as $field => $filearea) {
                 $filerecord['filearea'] = $filearea;
                 $this->create_media_for_field(
-                    $mediatags, $table, $field,
-                    $filerecord, $question->id, $moretags
+                    $mediatags,
+                    $table,
+                    $field,
+                    $filerecord,
+                    $question->id,
+                    $moretags
                 );
             }
         }
@@ -1260,7 +1328,7 @@ class questions extends \core\task\adhoc_task {
         $moretags = array_keys($moretags);
         foreach ($moretags as $i => $tagname) {
             // Use messages defined in "lang/en/message.php".
-            $strname = 'messagecontent'.strtolower($tagname);
+            $strname = 'messagecontent' . strtolower($tagname);
             $moretags[$i] = get_string($strname, 'message');
         }
 
@@ -1302,12 +1370,14 @@ class questions extends \core\task\adhoc_task {
         // Add the answer table, if required.
         if (property_exists($question, 'answer')) {
             $answersexist = true;
-        } else if (in_array($qtype, [
+        } else if (
+            in_array($qtype, [
             // These question types use the question_answers table.
             'calculated', 'calculatedmulti', 'calculatedsimple',
             'multichoice', 'numerical', 'shortanswer', 'truefalse',
             'ordering', 'essayautograde', 'speakautograde',
-        ])) {
+            ])
+        ) {
             $answersexist = true;
         } else if (property_exists($question, 'id')) {
             $answersexist = $DB->record_exists('question_answers', ['question' => $question->id]);
@@ -1339,7 +1409,7 @@ class questions extends \core\task\adhoc_task {
         // Add the combined feedback table, if any.
         // Usually this is "qtype_{$qtype}_options".
         if ($table = self::get_feedback_table($qtype, $returnquestionid)) {
-            list($table, $fields) = $table;
+            [$table, $fields] = $table;
             $tables[$table] = $fields;
         }
 
@@ -1347,7 +1417,7 @@ class questions extends \core\task\adhoc_task {
         // This is only used by "qtype_match", in which case
         // the table name is "qtype_{$qtype}_subquestions".
         if ($table = self::get_subquestions_table($qtype, $returnquestionid)) {
-            list($table, $fields) = $table;
+            [$table, $fields] = $table;
             $tables[$table] = $fields;
         }
 
@@ -1459,7 +1529,6 @@ class questions extends \core\task\adhoc_task {
 
         $table = "qtype_{$qtype}_subquestions";
         if ($dbman->table_exists($table)) {
-
             $fields = [];
 
             $field = 'questiontext';
@@ -1506,19 +1575,18 @@ class questions extends \core\task\adhoc_task {
         // Determine the SQL search values.
         switch ($table) {
             case 'question':
-                $select = 'id = ? AND '.$DB->sql_like($field, '?');
+                $select = 'id = ? AND ' . $DB->sql_like($field, '?');
                 $params = [$questionid, '%[[%]]%'];
                 break;
             case 'question_answers':
-                $select = 'question = ? AND '.$DB->sql_like($field, '?');
+                $select = 'question = ? AND ' . $DB->sql_like($field, '?');
                 $params = [$questionid, '%[[%]]%'];
                 break;
             default: // Question hints and qtype options table.
-                $select = 'questionid = ? AND '.$DB->sql_like($field, '?');
+                $select = 'questionid = ? AND ' . $DB->sql_like($field, '?');
                 $params = [$questionid, '%[[%]]%'];
         }
         if ($records = $DB->get_records_select($table, $select, $params)) {
-
             $index = 0;
             foreach ($records as $id => $record) {
                 if ($table == 'question_answers' || $table == 'question_hints') {
@@ -1532,7 +1600,13 @@ class questions extends \core\task\adhoc_task {
 
                 // Create the media for this field in this record.
                 $this->create_media_for_record(
-                    $mediatags, $table, $record, $field, $filerecord, $questionid, $moretags
+                    $mediatags,
+                    $table,
+                    $record,
+                    $field,
+                    $filerecord,
+                    $questionid,
+                    $moretags
                 );
             }
         }
@@ -1566,7 +1640,7 @@ class questions extends \core\task\adhoc_task {
             // Search string to extract media tags:
             // $1: type of media (IMAGE, AUDIO or VIDEO)
             // $2: tag attributes and AI prompt.
-            'tags' => '/\[\[('.implode('|', array_keys($mediatags)).')(.*?)\]\]/us',
+            'tags' => '/\[\[(' . implode('|', array_keys($mediatags)) . ')(.*?)\]\]/us',
             // Search string to extract attributes of media tags:
             // $1: name of attribute (alt, width, height, class)
             // $2: value of attribute.
@@ -1581,13 +1655,11 @@ class questions extends \core\task\adhoc_task {
 
         // Extract all the media tags.
         if (preg_match_all($search->tags, $record->$field, $tags, PREG_OFFSET_CAPTURE)) {
-
             // We go backwards from the last tag to the first, so that as each tag is
             // replaced with a player, the positions of earlier tags are not affected.
             $tmax = count($tags[0]) - 1;
             for ($t = $tmax; $t >= 0; $t--) {
-
-                list($tag, $tagstart) = $tags[0][$t];
+                [$tag, $tagstart] = $tags[0][$t];
                 $taglength = strlen($tag);
                 $tagname = $tags[1][$t][0];
                 $tagprompt = $tags[2][$t][0];
@@ -1606,11 +1678,9 @@ class questions extends \core\task\adhoc_task {
 
                 // Transfer tag attributes (e.g. width, height) from $tagprompt to $tagparams.
                 if (preg_match_all($search->attributes, $tagprompt, $attributes, PREG_OFFSET_CAPTURE)) {
-
                     $amax = count($attributes[0]) - 1;
                     for ($a = $amax; $a >= 0; $a--) {
-
-                        list($attribute, $astart) = $attributes[0][$a];
+                        [$attribute, $astart] = $attributes[0][$a];
                         $alength = strlen($attribute);
                         $aname = $attributes[1][$a][0];
                         $avalue = $attributes[2][$a][0];
@@ -1675,7 +1745,6 @@ class questions extends \core\task\adhoc_task {
                 $file = $this->create_media_file($mediatags[$tagname], $tagname, $tagprompt, $filerecord, $questionid);
 
                 if (is_object($file)) {
-
                     // Determine if the media player (for audio and video) will be used.
                     $usemediaplugin = true;
                     if (in_array('nomediaplugin', explode(' ', $tagparams['class']))) {
@@ -1687,7 +1756,7 @@ class questions extends \core\task\adhoc_task {
 
                     // Remove empty tag params, and define value for the "src".
                     $tagparams = array_filter($tagparams);
-                    $src = '@@PLUGINFILE@@/'.$file->get_filename();
+                    $src = '@@PLUGINFILE@@/' . $file->get_filename();
 
                     if ($tagname == 'IMAGE') {
                         if (empty($tagparams['style'])) {
@@ -1710,15 +1779,15 @@ class questions extends \core\task\adhoc_task {
                         // Create the main AUDIO/VIDEO tag.
                         $tagparams['controls'] = 'true';
                         $tagparams['controlslist'] = 'nodownload';
-                        $html = \html_writer::tag(strtolower($tagname), $html.$src, $tagparams);
+                        $html = \html_writer::tag(strtolower($tagname), $html . $src, $tagparams);
 
                         // Add wrapper to prevent mediaplayer filter from positioning this media tag
                         // in the center of the page caused by the .mediaplugin>div { margin: auto; }.
                         if ($tagname == 'AUDIO' && $usemediaplugin === true) {
                             $params = [
                                 'class' => 'rounded',
-                                'style' => 'background: black; '.
-                                           'display: inline-block; '.
+                                'style' => 'background: black; ' .
+                                           'display: inline-block; ' .
                                            'width: min(400px, 85vw);',
                             ];
                             $html = \html_writer::tag('div', $html, $params);
@@ -1731,7 +1800,7 @@ class questions extends \core\task\adhoc_task {
 
                     // Ensure that its "format" field is set to HTML,
                     // so that user can easily access embedded files.
-                    $fieldformat = $field.'format';
+                    $fieldformat = $field . 'format';
                     if (isset($record->$fieldformat) && $record->$fieldformat != FORMAT_HTML) {
                         $record->$fieldformat = FORMAT_HTML;
                         $DB->set_field($table, $fieldformat, $record->$fieldformat, ['id' => $record->id]);
@@ -1739,7 +1808,6 @@ class questions extends \core\task\adhoc_task {
 
                     // Update the Moodle tags for this question.
                     $moretags[strtolower($tagname)] = true;
-
                 } else if (is_string($file)) {
                     // Report error message?
                     mtrace($file);
@@ -1763,7 +1831,7 @@ class questions extends \core\task\adhoc_task {
      *
      * @return string The HTML <track> tag as a string, or an empty string if the subtitle file does not exist.
      */
-    protected function add_html_for_subtitles($file, $srclang='en', $label='English') {
+    protected function add_html_for_subtitles($file, $srclang = 'en', $label = 'English') {
 
         $filename = $file->get_filename();
         $filename = \mod_vocab\activity::modify_filename($filename, '', '', 'vtt');
@@ -1780,7 +1848,7 @@ class questions extends \core\task\adhoc_task {
 
         if ($exists) {
             $params = [
-                'src' => '@@PLUGINFILE@@/'.$filename,
+                'src' => '@@PLUGINFILE@@/' . $filename,
                 'kind' => 'subtitles',
                 'srclang' => $srclang,
                 'label' => $label,
@@ -1844,8 +1912,12 @@ class questions extends \core\task\adhoc_task {
      */
     protected function get_pathnamehash($fs, $filerecord) {
         return $fs->get_pathname_hash(
-            $filerecord['contextid'], $filerecord['component'], $filerecord['filearea'],
-            $filerecord['itemid'], $filerecord['filepath'], $filerecord['filename']
+            $filerecord['contextid'],
+            $filerecord['component'],
+            $filerecord['filearea'],
+            $filerecord['itemid'],
+            $filerecord['filepath'],
+            $filerecord['filename']
         );
     }
 
@@ -1889,7 +1961,10 @@ class questions extends \core\task\adhoc_task {
 
         $fs = get_file_storage();
         $filerecord['filename'] = \mod_vocab\activity::modify_filename(
-            $filerecord['filename'], '', '', $response->get_extension()
+            $filerecord['filename'],
+            '',
+            '',
+            $response->get_extension()
         );
         $pathnamehash = $this->get_pathnamehash($fs, $filerecord);
         if ($fs->file_exists_by_hash($pathnamehash)) {
@@ -1957,13 +2032,13 @@ class questions extends \core\task\adhoc_task {
         $script = [];
         if (preg_match_all('/([A-Z])\s*=\s*(\w+)(?:\s*\(([^)]+)\))?/u', $match[1], $speakers, PREG_SET_ORDER)) {
             foreach ($speakers as $speaker) {
-                $script[] = $speaker[1].'='.$speaker[2].(empty($speaker[3]) ? '' : ' ('.trim($speaker[3]).')');
+                $script[] = $speaker[1] . '=' . $speaker[2] . (empty($speaker[3]) ? '' : ' (' . trim($speaker[3]) . ')');
             }
         }
         $count = 0;
         if (preg_match_all('/([A-Z])\s*:\s*(.*?)(?=\s+[A-Z]\s*:|$)/us', $match[2], $lines, PREG_SET_ORDER)) {
             foreach ($lines as $line) {
-                $script[] = $line[1].': '.trim($line[2]);
+                $script[] = $line[1] . ': ' . trim($line[2]);
                 $count++;
             }
         }
@@ -1981,17 +2056,17 @@ class questions extends \core\task\adhoc_task {
      * @param string $a arguments required (if any) by $error string
      * @return bool false
      */
-    public function report_error($log, $error, $a=null) {
+    public function report_error($log, $error, $a = null) {
 
         // Fetch the full error message.
         $error = $this->tool->get_string("error_$error", $a);
 
         // Format the label.
-        $label = '['.$this->tool->plugin.'] '.get_string('error');
+        $label = '[' . $this->tool->plugin . '] ' . get_string('error');
         $label .= get_string('labelsep', 'langconfig');
 
         // Print the label with the error.
-        mtrace($label.$error);
+        mtrace($label . $error);
 
         // Set log status to "Failed" and report $error.
         if ($log) {

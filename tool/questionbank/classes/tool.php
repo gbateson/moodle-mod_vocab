@@ -34,7 +34,6 @@ namespace vocabtool_questionbank;
  * @since      Moodle 3.11
  */
 class tool extends \mod_vocab\toolbase {
-
     /** @var string holds the name of this plugin */
     const SUBPLUGINNAME = 'questionbank';
 
@@ -189,7 +188,8 @@ class tool extends \mod_vocab\toolbase {
         $finished = [self::TASKSTATUS_COMPLETED, self::TASKSTATUS_CANCELLED, self::TASKSTATUS_FAILED];
         [$select, $params] = $DB->get_in_or_equal($finished, SQL_PARAMS_NAMED, 'status', false);
         $params['vocabid'] = $vocabid;
-        return array_map('intval', $DB->get_fieldset_select(self::LOGTABLE, 'DISTINCT wordid', "vocabid = :vocabid AND status $select", $params));
+        $select = "vocabid = :vocabid AND status $select";
+        return array_map('intval', $DB->get_fieldset_select(self::LOGTABLE, 'DISTINCT wordid', $select, $params));
     }
 
     /**
@@ -256,8 +256,8 @@ class tool extends \mod_vocab\toolbase {
     public static function get_logs($vocabid) {
         global $DB;
         $select = 'qbl.*, ta.nextruntime, vw.word';
-        $from = '{'.self::LOGTABLE.'} qbl '.
-                'LEFT JOIN {task_adhoc} ta ON qbl.taskid = ta.id '.
+        $from = '{' . self::LOGTABLE . '} qbl ' .
+                'LEFT JOIN {task_adhoc} ta ON qbl.taskid = ta.id ' .
                 'LEFT JOIN {vocab_words} vw ON qbl.wordid = vw.id';
         $where = 'qbl.vocabid = ?';
         $params = [$vocabid];

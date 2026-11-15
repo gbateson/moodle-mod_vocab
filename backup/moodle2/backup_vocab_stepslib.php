@@ -34,7 +34,6 @@
  * @since      Moodle 4.1
  */
 class backup_vocab_activity_structure_step extends backup_activity_structure_step {
-
     /** maximum number of words to retrieve in one DB query */
     const GET_WORDS_LIMIT = 100;
 
@@ -153,7 +152,6 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         ////////////////////////////////////////*/
 
         if ($userinfo) {
-
             // Backup game attempts.
             $gameattempts = new backup_nested_element('gameattempts');
             $exclude = ['id', 'gameinstanceid'];
@@ -219,7 +217,6 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         $vocab->add_child($wordinstances);
 
         if ($userinfo) {
-
             // Backup vocab game_attempts.
             $vocab->add_child($gameattempts);
             $gameattempts->add_child($gameattempt);
@@ -246,7 +243,6 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         ////////////////////////////////////////*/
 
         if ($userinfo) {
-
             // Backup vocab grades.
             $vocabid = $this->get_setting_value(backup::VAR_ACTIVITYID);
             $params = ['parenttype' => ['sqlparam' => 0], 'parentid' => ['sqlparam' => $vocabid]];
@@ -273,7 +269,7 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
             $response->set_source_table('vocab_responses', $params);
 
             // Backup strings.
-            list($filter, $params) = $this->get_strings_sql();
+            [$filter, $params] = $this->get_strings_sql();
             $string->set_source_sql("SELECT * FROM {vocab_strings} WHERE id $filter", $params);
         }
 
@@ -301,8 +297,8 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
         ////////////////////////////////////////*/
 
         $vocab->annotate_files('mod_vocab', 'sourcefile', null);
-        $vocab->annotate_files('mod_vocab', 'entrytext',  null);
-        $vocab->annotate_files('mod_vocab', 'exittext',   null);
+        $vocab->annotate_files('mod_vocab', 'entrytext', null);
+        $vocab->annotate_files('mod_vocab', 'exittext', null);
 
         // Return the root element (vocab), wrapped into standard activity structure.
         return $this->prepare_activity_structure($vocab);

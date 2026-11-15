@@ -36,7 +36,6 @@ namespace vocabtool_checkfiles;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\toolform {
-
     /**
      * Defines the form elements for selecting a target version and submitting the upgrade task.
      *

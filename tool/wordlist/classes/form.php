@@ -36,7 +36,6 @@ namespace vocabtool_wordlist;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\toolform {
-
     /** @var string the name of this plugin */
     public $subpluginname = 'vocabtool_wordlist';
 
@@ -54,7 +53,6 @@ class form extends \mod_vocab\toolform {
 
         // Get form data, if any.
         if (($data = data_submitted()) && confirm_sesskey()) {
-
             // Map element name => type of associated value.
             $names = [
                 // Each of these buttons has a corresponding method
@@ -67,17 +65,16 @@ class form extends \mod_vocab\toolform {
             ];
 
             foreach ($names as $name => $type) {
-
                 if ($name == 'wordlist') {
                     // We expect an "action" and a list of selected word ids.
                     $groupname = $name;
-                    $actionname = $name.'action';
-                    $buttonname = $name.'button';
+                    $actionname = $name . 'action';
+                    $buttonname = $name . 'button';
                 } else {
                     // We expect a button and a single parameter.
-                    $groupname = $name.'elements';
+                    $groupname = $name . 'elements';
                     $actionname = '';
-                    $buttonname = $name.'button';
+                    $buttonname = $name . 'button';
                 }
 
                 if ($groupname && empty($data->$groupname)) {
@@ -116,7 +113,6 @@ class form extends \mod_vocab\toolform {
                     }
                 }
             }
-
         }
 
         $name = 'currentlist';
@@ -125,26 +121,26 @@ class form extends \mod_vocab\toolform {
         $this->add_wordlist($mform);
 
         $name = 'addwords';
-        $groupname = $name.'elements';
+        $groupname = $name . 'elements';
         $label = $this->get_string($name);
         $elements = [
             $mform->createElement('textarea', $name, '', ['rows' => 2, 'cols' => 20]),
-            $mform->createElement('submit', $name.'button', get_string('add'), ['class' => 'align-self-end']),
+            $mform->createElement('submit', $name . 'button', get_string('add'), ['class' => 'align-self-end']),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
         $name = 'selectwords';
-        $groupname = $name.'elements';
+        $groupname = $name . 'elements';
         $label = $this->get_string($name);
         $elements = [
             $mform->createElement('text', $name, $label, ['size' => 2]),
-            $mform->createElement('submit', $name.'button', get_string('select')),
+            $mform->createElement('submit', $name . 'button', get_string('select')),
         ];
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
-        $mform->setDefault($groupname.'['.$name.']', 10);
-        $mform->setType($groupname.'['.$name.']', PARAM_INT);
+        $mform->setDefault($groupname . '[' . $name . ']', 10);
+        $mform->setType($groupname . '[' . $name . ']', PARAM_INT);
 
         $this->add_importfile($mform);
         $this->add_exportfile($mform);
@@ -226,7 +222,6 @@ class form extends \mod_vocab\toolform {
 
         $words = [0 => 'selectall'] + $words;
         foreach ($words as $wordid => $word) {
-
             $isheading = ($wordid == 0);
 
             $worditem = '';
@@ -243,7 +238,7 @@ class form extends \mod_vocab\toolform {
             // Add the "wordtext".
             if ($isheading) {
                 $text = '';
-                $params = ['class' => $cssclass->text.' font-weight-bold'];
+                $params = ['class' => $cssclass->text . ' font-weight-bold'];
             } else {
                 $text = $word;
                 $params = ['class' => $cssclass->text];
@@ -297,7 +292,7 @@ class form extends \mod_vocab\toolform {
                 if ($isheading) {
                     $worditem .= \html_writer::tag('small', $this->get_string($stat));
                 } else {
-                    $worditem .= rand(0, 100).($israte ? '%' : '');
+                    $worditem .= rand(0, 100) . ($israte ? '%' : '');
                 }
                 // End "wordstat".
                 $worditem .= \html_writer::end_tag('div');
@@ -331,8 +326,8 @@ class form extends \mod_vocab\toolform {
             'getquestions' => $this->get_string('getquestions'),
             'getsamplesentences' => $this->get_string('getsamplesentences'),
         ];
-        $elements[] = $mform->createElement('select', $name.'action', '', $options);
-        $elements[] = $mform->createElement('submit', $name.'button', get_string('go'));
+        $elements[] = $mform->createElement('select', $name . 'action', '', $options);
+        $elements[] = $mform->createElement('submit', $name . 'button', get_string('go'));
 
         $mform->addGroup($elements, $name, '', '');
     }
@@ -351,14 +346,13 @@ class form extends \mod_vocab\toolform {
 
         switch ($action) {
             case 'remove':
-
                 // Build SQL to select word instances with usage count.
                 $select = 'vwi.*, vw.word, COUNT(vwu.id) AS usagecount';
-                $from = '{vocab_word_instances} vwi '.
-                        'JOIN {vocab_words} vw ON vwi.wordid = vw.id '.
+                $from = '{vocab_word_instances} vwi ' .
+                        'JOIN {vocab_words} vw ON vwi.wordid = vw.id ' .
                         'LEFT JOIN {vocab_word_usages} vwu ON vwi.id = vwu.wordinstanceid';
 
-                list($where, $params) = $DB->get_in_or_equal($wordids);
+                [$where, $params] = $DB->get_in_or_equal($wordids);
                 $where = "vwi.vocabid = ? AND vwi.wordid $where";
                 $params = array_merge([$this->get_vocab()->id], $params);
 
@@ -453,7 +447,6 @@ class form extends \mod_vocab\toolform {
 
         // Main loop to add new words.
         foreach ($newwords as $newword) {
-
             if (in_array($newword, $words)) {
                 $msg->found[] = $newword;
             } else {
@@ -510,7 +503,6 @@ class form extends \mod_vocab\toolform {
             // ToDo: look up this word's lemma on the internet.
             return $word;
         }
-
     }
 
     /**
@@ -541,7 +533,7 @@ class form extends \mod_vocab\toolform {
         $from = '{vocab_words} vw, {vocab_lemmas} vl';
         if (count($words)) {
             // Get SQL for "<>" or "NOT IN (...)".
-            list($where, $params) = $DB->get_in_or_equal($words, SQL_PARAMS_QM, 'param', false);
+            [$where, $params] = $DB->get_in_or_equal($words, SQL_PARAMS_QM, 'param', false);
             $where = "vw.id $where";
         } else {
             $where = 'vw.id > 0';
@@ -600,7 +592,7 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function importfile($mform, $fileid) {
-        $msg = \html_writer::tag('h4', 'importfile: '.$fileid);
+        $msg = \html_writer::tag('h4', 'importfile: ' . $fileid);
         $mform->addElement('html', $msg);
     }
 
@@ -613,7 +605,7 @@ class form extends \mod_vocab\toolform {
      * TODO: Finish documenting this function
      */
     public function exportfile($mform, $filename) {
-        $msg = \html_writer::tag('h4', 'exportfile: '.$filename);
+        $msg = \html_writer::tag('h4', 'exportfile: ' . $filename);
         $mform->addElement('html', $msg);
     }
 }

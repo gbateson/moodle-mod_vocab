@@ -34,7 +34,6 @@ namespace mod_vocab;
  * @since      Moodle 3.11
  */
 class utilbase extends \mod_vocab\subpluginbase {
-
     /** the folder containing subplugins of this type */
     const SUBPLUGINTYPE = 'util';
 

@@ -36,7 +36,6 @@ namespace vocabutil_redoupgrade;
  * @since      Moodle 3.11
  */
 class form extends \mod_vocab\utilform {
-
     /**
      * Defines the form elements for selecting a target version and submitting the upgrade task.
      *
@@ -69,13 +68,13 @@ class form extends \mod_vocab\utilform {
      *
      * @return array Associative array of version numbers mapped to formatted date strings.
      */
-    protected function get_versions($basedir='/mod/vocab', $dateformat='jS M Y') {
+    protected function get_versions($basedir = '/mod/vocab', $dateformat = 'jS M Y') {
         global $CFG;
         $versions = [];
 
         $filepaths = ['/version.php', '/db/upgrade.php'];
         foreach ($filepaths as $filepath) {
-            $contents = file_get_contents($CFG->dirroot."/$basedir/$filepath");
+            $contents = file_get_contents($CFG->dirroot . "/$basedir/$filepath");
             $search = '/\$.*version *= *(\d{4})(\d{2})(\d{2})(\d{2})\b/';
             preg_match_all($search, $contents, $matches);
             $imax = count($matches[0]);
@@ -85,7 +84,7 @@ class form extends \mod_vocab\utilform {
                 $dd = $matches[3][$i];
                 $vv = $matches[4][$i];
                 $version = "$yy$mm$dd$vv";
-                $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)).(intval($vv) == 0 ? '' : " ($vv)");
+                $versions[$version] = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)) . (intval($vv) == 0 ? '' : " ($vv)");
             }
         }
         krsort($versions);

@@ -245,9 +245,9 @@ function vocab_delete_instance($id) {
  * @param mixed $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
  * @return int 0 if ok, error code otherwise
  */
-function vocab_grade_item_update($vocab, $grades=null) {
+function vocab_grade_item_update($vocab, $grades = null) {
     global $CFG;
-    require_once($CFG->dirroot.'/lib/gradelib.php');
+    require_once($CFG->dirroot . '/lib/gradelib.php');
 
     // Sanity check on $vocab->id.
     if (empty($vocab->id) || empty($vocab->course)) {
@@ -289,7 +289,7 @@ function vocab_grade_item_update($vocab, $grades=null) {
  * @param string $timefield (optional, default="timefinish")
  * @return array of grades
  */
-function vocab_get_grades($vocab, $userid, $timefield='timefinish') {
+function vocab_get_grades($vocab, $userid, $timefield = 'timefinish') {
     global $DB;
     $progress = new \mod_vocab\progress($vocab);
     if ($userid) {
@@ -325,7 +325,7 @@ function vocab_get_grades($vocab, $userid, $timefield='timefinish') {
  * @param bool $nullifnone TRUE = force creation of NULL grade if this user has no grade
  * @return bool TRUE if successful, FALSE otherwise
  */
-function vocab_update_grades($vocab=null, $userid=0, $nullifnone=true) {
+function vocab_update_grades($vocab = null, $userid = 0, $nullifnone = true) {
     global $CFG, $DB;
 
     if ($vocab === null) {
@@ -356,7 +356,6 @@ function vocab_update_grades($vocab=null, $userid=0, $nullifnone=true) {
                 }
                 $i = 0;
                 foreach ($rs as $vocab) {
-
                     // Update grade.
                     if ($i >= $imin) {
                         upgrade_set_timeout(); // Apply for more time (3 mins).
@@ -366,7 +365,7 @@ function vocab_update_grades($vocab=null, $userid=0, $nullifnone=true) {
                     // Update progress bar.
                     $i++;
                     if ($bar) {
-                        $bar->update($i, $imax, $strupdating.": ($i/$imax)");
+                        $bar->update($i, $imax, $strupdating . ": ($i/$imax)");
                     }
 
                     // Update record index.
@@ -393,11 +392,9 @@ function vocab_update_grades($vocab=null, $userid=0, $nullifnone=true) {
 
     if (count($grades)) {
         vocab_grade_item_update($vocab, $grades);
-
     } else if ($userid && $nullifnone) {
         // No grades for this user, but we must force the creation of a "null" grade record.
         vocab_grade_item_update($vocab, (object)['userid' => $userid, 'rawgrade' => null]);
-
     } else {
         // No grades and no userid.
         vocab_grade_item_update($vocab);
@@ -447,7 +444,6 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
     $cm = $PAGE->cm;
     $capability = 'mod/vocab:manage';
     if (has_capability($capability, $cm->context)) {
-
         // Locate the "Edit settings" node by its key,
         // and use the key for the node AFTER that as
         // the "beforekey" for the new nodes.
@@ -470,12 +466,11 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
         ];
 
         foreach ($types as $type => $order) {
-
             // Cache the plugin type.
             $plugintype = "vocab{$type}";
 
              // Create the "navigation_node" for this subplugin type.
-            $label = get_string($type.'s', 'vocab'); // E.g. "tools".
+            $label = get_string($type . 's', 'vocab'); // E.g. "tools".
             $node = navigation_node::create($label);
             $node->force_open();
 
@@ -530,7 +525,7 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
         // prompts and output formats that are used to generate questions.
         $node = navigation_node::create(get_string('ais', 'vocab'));
         $node->force_open();
-        require_once($CFG->dirroot.'/admin/tool/aibridge/lib.php');
+        require_once($CFG->dirroot . '/admin/tool/aibridge/lib.php');
         $coursecontext = context_course::instance($cm->course);
         tool_aibridge_extend_navigation_course($node, $PAGE->course, $coursecontext);
         if ($node->has_children()) {
@@ -608,8 +603,17 @@ function mod_vocab_aibridge_installed() {
  * @param bool $forcedownload
  * @param array $options
  */
-function mod_vocab_question_pluginfile($course, $context, $component, $filearea, $qubaid, $slot, $args,
-        $forcedownload, array $options = []) {
+function mod_vocab_question_pluginfile(
+    $course,
+    $context,
+    $component,
+    $filearea,
+    $qubaid,
+    $slot,
+    $args,
+    $forcedownload,
+    array $options = []
+) {
     global $DB, $USER;
     $sql = "SELECT vga.*, vgi.vocabid
               FROM {vocab_game_attempts} vga

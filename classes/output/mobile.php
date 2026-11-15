@@ -36,7 +36,6 @@ namespace mod_vocab\output;
  * @since      Moodle 4.1
  */
 class mobile {
-
     /**
      * Returns the initial page when viewing the activity via the mobile app.
      *

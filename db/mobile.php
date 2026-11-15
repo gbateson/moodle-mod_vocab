@@ -34,7 +34,7 @@ $addons = [
             'view' => [ // Note: any name is OK here.
                 'displaydata' => [
                     'title' => 'pluginname',
-                    'icon' => $CFG->wwwroot.'/mod/vocab/pix/icon.gif',
+                    'icon' => $CFG->wwwroot . '/mod/vocab/pix/icon.gif',
                     'class' => '',
                 ],
                 'delegate' => 'CoreCourseModuleDelegate',
