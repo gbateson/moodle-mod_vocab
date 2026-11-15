@@ -30,6 +30,6 @@ $plugin->cron      = 0;
 $plugin->component = 'mod_vocab';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2026111485;
-$plugin->release   = '2026-11-15 (85)';
+$plugin->version   = 2026111486;
+$plugin->release   = '2026-11-15 (86)';
 $plugin->dependencies = ['tool_aibridge' => 2026111410];

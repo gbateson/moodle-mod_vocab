@@ -10,9 +10,14 @@
 #vocabtool_questionbank_form fieldset.collapsible {
     max-width: 760px;
 }
-#vocabtool_questionbank_form fieldset#id_selectedlogrecord:not(.collapsed),
-#vocabtool_questionbank_form fieldset#id_logrecords:not(.collapsed) {
-    max-width: 100vw;
+/**
+ * The log records are a wide table, so their sections use the full width.
+ * (Moodle 4.x leaves the "collapsed" class on a fieldset when it is expanded,
+ * so the width cannot depend on that class.)
+ */
+#vocabtool_questionbank_form fieldset#id_selectedlogrecord,
+#vocabtool_questionbank_form fieldset#id_logrecords {
+    max-width: none;
 }
 
 #vocabtool_questionbank_form .table-responsive {
