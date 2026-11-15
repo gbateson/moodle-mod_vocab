@@ -72,6 +72,8 @@ $string['customname'] = 'カスタム名';
 $string['customtags'] = 'カスタムタグ';
 $string['defaultregion'] = 'デフォルトのページ領域';
 $string['demonstrationmode'] = 'デモモード';
+$string['errorcompletecount'] = '単語を完了するための成功回数は、合格するための回数より少なくできません。';
+$string['errornostages'] = '少なくとも1つの段階を選んでください。';
 $string['expandforeveryone'] = '常に展開（デフォルト）';
 $string['expandfornoone'] = '常に折りたたみ';
 $string['expandforstudents'] = '学生に対して展開';
@@ -86,7 +88,12 @@ $string['exportfile_help'] = 'この単語リストをファイルにエクス�
 $string['filename'] = 'ファイル名';
 $string['findmissingfiles'] = '不足しているファイルを探す';
 $string['fixeddelay'] = '固定遅延';
+$string['gamecompleted'] = 'すべての単語を完了しました';
+$string['gamelocked'] = '先に前の段階で単語に合格してください';
+$string['gamenotready'] = 'まだ準備ができていません';
+$string['gameresume'] = '続ける';
 $string['games'] = 'ゲーム';
+$string['games_help'] = 'このアクティビティで学生が遊べるゲームと、それを提供する段階です。学生は各段階で遊ぶゲームを選びます。';
 $string['gamesclose'] = 'ゲーム利用期限';
 $string['gamesclose_help'] = '学生は、この日時までゲームを閲覧および操作できます。この日時以降はアクセスできませんが、結果の閲覧は可能です。';
 $string['gamesopen'] = 'ゲーム開始日時';
@@ -154,6 +161,8 @@ $string['nocompletion'] = '完了情報なし';
 $string['nocoursefooter'] = 'コースフッターなし';
 $string['nodescription'] = '説明なし';
 $string['nofooter'] = 'フッターなし';
+$string['nogamesforyou'] = 'まだ遊べるゲームはありません。';
+$string['nogamesinstalled'] = 'ゲームがインストールされていません。';
 $string['nonavbar'] = 'ナビゲーションバーなし';
 $string['notasks'] = '現在、実行待ちのアドホックタスクはありません。';
 $string['notitle'] = 'タイトルなし';
@@ -209,6 +218,30 @@ $string['speedtimecount'] = '時間単位の数';
 $string['speedtimecount_help'] = '1つの時間期間を構成する時間単位の数です。';
 $string['speedtimeunit'] = '時間単位';
 $string['speedtimeunit_help'] = '時間期間を測定するために使用される時間単位の種類です。';
+$string['stagecompletecount'] = '完了までの成功回数';
+$string['stagecompleted'] = '完了';
+$string['stagelearn'] = '学ぶ';
+$string['stagelearn_help'] = '学生は各単語の意味、音、絵、使い方に出会います（例：フラッシュカード）。
+
+単語は、指定された回数の成功でその段階に合格し、次の段階で提供されます。完了までの回数に達すると完了し、この段階では提供されなくなります。使用するすべての段階で完了すると、その単語は習得されたことになります。';
+$string['stagenotstarted'] = '未開始';
+$string['stagepasscount'] = '合格までの成功回数';
+$string['stagepassed'] = '合格';
+$string['stageproduce'] = '使う';
+$string['stageproduce_help'] = '学生は各単語を使ってコミュニケーションします（例：書く、話す、AIとのチャット）。
+
+単語は、指定された回数の成功でその段階に合格し、次の段階で提供されます。完了までの回数に達すると完了し、この段階では提供されなくなります。';
+$string['stageprogress'] = '{$a->stage}: {$a->state}';
+$string['stagerecall'] = '思い出す';
+$string['stagerecall_help'] = '学生は選択肢なしで各単語を思い出します（例：つづりを書く、空所を埋める）。
+
+単語は、指定された回数の成功でその段階に合格し、次の段階で提供されます。完了までの回数に達すると完了し、この段階では提供されなくなります。';
+$string['stagerecognize'] = '認識する';
+$string['stagerecognize_help'] = '学生は選択肢から各単語を選びます（例：多肢選択問題、組み合わせ）。
+
+単語は、指定された回数の成功でその段階に合格し、次の段階で提供されます。完了までの回数に達すると完了し、この段階では提供されなくなります。';
+$string['stages'] = '学習の段階';
+$string['stageuse'] = '使用する';
 $string['subcategories'] = 'サブカテゴリ';
 $string['subcategories_help'] = 'AIによって生成された質問を格納するための、親カテゴリ内の階層構造をこれらのチェックボックスで指定します。
 
@@ -231,8 +264,8 @@ $string['subcategories_help'] = 'AIによって生成された質問を格納す
 **プロンプト名（末尾）:** プロンプト名の「末尾」部分に基づくカテゴリ（例："TOEIC R&L (Part 1): 画像描写" の「画像描写」）。
 
 指定されたサブカテゴリが存在しない場合は、質問のインポート時に自動的に作成されます。';
-$string['subplugintype_vocabgame'] = '語彙ゲーム';
-$string['subplugintype_vocabgame_plural'] = '語彙ゲーム';
+$string['subplugintype_vocabgame'] = 'ゲーム';
+$string['subplugintype_vocabgame_plural'] = 'ゲーム';
 $string['subplugintype_vocabreport'] = '語彙レポート';
 $string['subplugintype_vocabreport_plural'] = '語彙レポート';
 $string['subplugintype_vocabtool'] = '語彙ツール';

@@ -1,9 +1,11 @@
 {
     "subplugintypes": {
+        "vocabgame": "game",
         "vocabtool": "tool",
         "vocabutil": "util"
     },
     "plugintypes": {
+        "vocabgame": "mod\/vocab\/game",
         "vocabtool": "mod\/vocab\/tool",
         "vocabutil": "mod\/vocab\/util"
     }

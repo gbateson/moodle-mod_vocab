@@ -70,6 +70,8 @@ $string['customname'] = 'Custom name';
 $string['customtags'] = 'Custom tags';
 $string['defaultregion'] = 'Default page region';
 $string['demonstrationmode'] = 'Demonstration mode';
+$string['errorcompletecount'] = 'The number of successes to complete a word cannot be less than the number to pass it.';
+$string['errornostages'] = 'Choose at least one stage.';
 $string['expandforeveryone'] = 'Always expand (default)';
 $string['expandfornoone'] = 'Always collapse';
 $string['expandforstudents'] = 'Expand for students';
@@ -84,7 +86,12 @@ $string['exportfile_help'] = 'Here you can export this word list to a file. You 
 $string['filename'] = 'File name';
 $string['findmissingfiles'] = 'Find missing files';
 $string['fixeddelay'] = 'Fixed delay';
+$string['gamecompleted'] = 'All words completed';
+$string['gamelocked'] = 'Pass words at the earlier stages first';
+$string['gamenotready'] = 'Not ready yet';
+$string['gameresume'] = 'Continue';
 $string['games'] = 'Games';
+$string['games_help'] = 'The games that students can play in this activity, and the stages at which they are offered. Students choose which game to play at each stage.';
 $string['gamesclose'] = 'Games playable until';
 $string['gamesclose_help'] = 'Students can view and interact with games until this date and time. After this date, students cannot access the games, but they can still view their results.';
 $string['gamesopen'] = 'Games playable from';
@@ -152,6 +159,8 @@ $string['nocompletion'] = 'No completion information';
 $string['nocoursefooter'] = 'No course footer';
 $string['nodescription'] = 'No description';
 $string['nofooter'] = 'No footer';
+$string['nogamesforyou'] = 'There are no games to play yet.';
+$string['nogamesinstalled'] = 'No games are installed.';
 $string['nonavbar'] = 'No navigation bar';
 $string['notasks'] = 'There are currently no adhoc tasks awaiting execution.';
 $string['notitle'] = 'No title';
@@ -207,6 +216,30 @@ $string['speedtimecount'] = 'Time count';
 $string['speedtimecount_help'] = 'The number of time units that make up a single time period.';
 $string['speedtimeunit'] = 'Time unit';
 $string['speedtimeunit_help'] = 'The type of time units used to measure a single time period.';
+$string['stagecompletecount'] = 'successes to complete';
+$string['stagecompleted'] = 'completed';
+$string['stagelearn'] = 'Learn';
+$string['stagelearn_help'] = 'Students meet each word: its meaning, sound, picture and use, e.g. with flashcards.
+
+A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage. A word is mastered when it is completed at every stage that is used.';
+$string['stagenotstarted'] = 'not started';
+$string['stagepasscount'] = 'successes to pass';
+$string['stagepassed'] = 'passed';
+$string['stageproduce'] = 'Produce';
+$string['stageproduce_help'] = 'Students use each word to communicate, e.g. in writing, speaking or a chat with an AI.
+
+A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage.';
+$string['stageprogress'] = '{$a->stage}: {$a->state}';
+$string['stagerecall'] = 'Recall';
+$string['stagerecall_help'] = 'Students bring each word to mind without choices, e.g. by spelling it or filling a gap.
+
+A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage.';
+$string['stagerecognize'] = 'Recognize';
+$string['stagerecognize_help'] = 'Students pick out each word from choices, e.g. in multiple-choice questions or by matching.
+
+A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage.';
+$string['stages'] = 'Stages of learning';
+$string['stageuse'] = 'Use';
 $string['subcategories'] = 'Subcategories';
 $string['subcategories_help'] = 'Use these checkboxes to specify a hierarchy of subcategories within the parent category into which you wish to put the AI-generated questions.
 
@@ -229,8 +262,8 @@ $string['subcategories_help'] = 'Use these checkboxes to specify a hierarchy of 
 **Prompt name (tail):** The "tail" of the prompt name, i.e. the part after the last colon in a name such as "TOEIC R&L (Part 1): Describe an image".
 
 If any of the specified subcategories do not exist, they will be created automatically as the questions are imported into the question bank.';
-$string['subplugintype_vocabgame'] = 'Vocabulary game';
-$string['subplugintype_vocabgame_plural'] = 'Vocabulary games';
+$string['subplugintype_vocabgame'] = 'Game';
+$string['subplugintype_vocabgame_plural'] = 'Games';
 $string['subplugintype_vocabreport'] = 'Vocabulary report';
 $string['subplugintype_vocabreport_plural'] = 'Vocabulary reports';
 $string['subplugintype_vocabtool'] = 'Vocabulary tool';

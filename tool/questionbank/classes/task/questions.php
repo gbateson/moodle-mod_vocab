@@ -455,6 +455,8 @@ class questions extends \core\task\adhoc_task {
             // and store them in a suitable question category.
             if ($questions = $this->parse_questions($log, $results, $qformat, $category->id, $tags)) {
                 $questionids = array_merge($questionids, array_keys($questions));
+                // Record which word the questions are about, for the activity's games.
+                \mod_vocab\progress::link_questions($wordid, array_keys($questions));
                 $status = $toolclass::TASKSTATUS_ADDING_MULTIMEDIA;
                 $error = ''; // Unset any previous errors.
             } else {

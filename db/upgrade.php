@@ -191,6 +191,33 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026111489;
+    if ($oldversion < $newversion) {
+        // Games: the stages of learning, each student's progress with each word at
+        // each stage, and which questions are about which words (see docs/games.md).
+        xmldb_vocab_check_structure($dbman, [
+            'vocab_game_instances', 'vocab_game_attempts', 'vocab_word_attempts',
+            'vocab_stages', 'vocab_word_stages', 'vocab_word_questions',
+        ]);
+
+        // Existing activities use the "recognize" and "recall" stages.
+        foreach ($DB->get_records('vocab', null, 'id', 'id, attemptcount') as $vocab) {
+            if (!$DB->record_exists('vocab_stages', ['vocabid' => $vocab->id])) {
+                $complete = max(1, min(3, (int) $vocab->attemptcount));
+                \mod_vocab\progress::save_stages($vocab->id, [
+                    \mod_vocab\progress::STAGE_RECOGNIZE => [1, $complete],
+                    \mod_vocab\progress::STAGE_RECALL => [1, $complete],
+                ]);
+            }
+        }
+
+        // Link the questions that the question bank tool made earlier to their words.
+        if ($dbman->table_exists('vocabtool_questionbank_log')) {
+            \mod_vocab\progress::link_logged_questions();
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

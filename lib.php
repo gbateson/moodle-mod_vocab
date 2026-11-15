@@ -88,6 +88,8 @@ function vocab_add_instance($data, $mform) {
     $data->timemodified = $data->timecreated;
 
     $id = $DB->insert_record('vocab', $data);
+    $data->id = $id;
+    vocab_save_stages_and_games($data);
 
     // Add the gradebook item for this Vocab acitivity.
     vocab_grade_item_update($data);
@@ -115,6 +117,7 @@ function vocab_update_instance($data, $mform) {
     $data->id = $data->instance;
 
     $DB->update_record('vocab', $data);
+    vocab_save_stages_and_games($data);
 
     // Add the gradebook item for this Vocab acitivity.
     vocab_grade_item_update($data);
@@ -123,6 +126,43 @@ function vocab_update_instance($data, $mform) {
     \core_completion\api::update_completion_date_event($data->coursemodule, 'vocab', $data->id, $time);
 
     return true;
+}
+
+/**
+ * Save the stages and games of an activity, from its settings form.
+ *
+ * @param stdClass $data from the settings form, with the activity's id.
+ */
+function vocab_save_stages_and_games($data) {
+    $stages = [];
+    foreach (\mod_vocab\progress::STAGES as $stage) {
+        $name = 'stage_' . $stage;
+        if (!empty($data->$name)) {
+            $stages[$stage] = [$data->{$name . '_pass'} ?? 1, $data->{$name . '_complete'} ?? 1];
+        }
+    }
+    if ($stages) {
+        \mod_vocab\progress::save_stages($data->id, $stages);
+    }
+
+    $games = [];
+    foreach (\mod_vocab\gamebase::get_games() as $name => $class) {
+        $config = $class::get_settings($data, 'game_' . $name . '_');
+        foreach ($class::get_supported_stages() as $stage) {
+            $field = 'game_' . $name . '_' . $stage;
+            if (!empty($data->$field) && isset($stages[$stage])) {
+                $games[] = [$name, $stage, $config];
+            }
+        }
+    }
+    // Games are listed in the order of their stages, then by name.
+    usort($games, function ($a, $b) {
+        $order = array_flip(\mod_vocab\progress::STAGES);
+        return ($order[$a[1]] - $order[$b[1]]) ?: strcmp($a[0], $b[0]);
+    });
+    if ($stages || $games) {
+        \mod_vocab\progress::save_game_instances($data->id, $games);
+    }
 }
 
 /**
@@ -251,8 +291,28 @@ function vocab_grade_item_update($vocab, $grades=null) {
  */
 function vocab_get_grades($vocab, $userid, $timefield='timefinish') {
     global $DB;
-    // ToDo: return something useful here.
-    return [];
+    $progress = new \mod_vocab\progress($vocab);
+    if ($userid) {
+        $userids = [$userid];
+    } else {
+        // Every student who has played a game in this activity.
+        $sql = "SELECT DISTINCT vga.userid
+                  FROM {vocab_game_attempts} vga
+                  JOIN {vocab_game_instances} vgi ON vgi.id = vga.gameinstanceid
+                 WHERE vgi.vocabid = ?";
+        $userids = $DB->get_fieldset_sql($sql, [$vocab->id]);
+    }
+    $grades = [];
+    foreach ($userids as $id) {
+        $percent = $progress->get_grade((int) $id);
+        if ($percent !== null) {
+            $grades[$id] = (object) [
+                'userid' => $id,
+                'rawgrade' => $percent * $vocab->grademax / 100,
+            ];
+        }
+    }
+    return $grades;
 }
 
 /**
@@ -403,8 +463,8 @@ function vocab_extend_settings_navigation(settings_navigation $settings, navigat
         // Define the order of subplugins. Other subplugins will
         // be added alphabetically after the ones defined here.
         $types = [
+            // Games are played from the activity's page, so they are not in this menu.
             'report' => [],
-            'game' => [],
             'tool' => ['dictionary', 'wordlist', 'questionbank', 'import'],
             'util' => [],
         ];
@@ -531,4 +591,45 @@ function mod_vocab_aibridge_installed() {
     if (get_config('mod_vocab', 'movetoaibridge')) {
         \mod_vocab\aibridge_migration::run();
     }
+}
+
+/**
+ * Serve the files of questions in the activity's games, e.g. the images and
+ * audio in the questions of the quiz game. Students can see the files of their
+ * own attempts, and teachers can see the files of every attempt.
+ *
+ * @param stdClass $course
+ * @param context $context the question's context.
+ * @param string $component e.g. "question".
+ * @param string $filearea e.g. "questiontext".
+ * @param int $qubaid the question usage of the attempt.
+ * @param int $slot
+ * @param array $args the rest of the file's path.
+ * @param bool $forcedownload
+ * @param array $options
+ */
+function mod_vocab_question_pluginfile($course, $context, $component, $filearea, $qubaid, $slot, $args,
+        $forcedownload, array $options = []) {
+    global $DB, $USER;
+    $sql = "SELECT vga.*, vgi.vocabid
+              FROM {vocab_game_attempts} vga
+              JOIN {vocab_game_instances} vgi ON vgi.id = vga.gameinstanceid
+             WHERE vga.uniqueid = ?";
+    $attempt = $DB->get_record_sql($sql, [$qubaid]);
+    if (!$attempt) {
+        send_file_not_found();
+    }
+    $cm = get_coursemodule_from_instance('vocab', $attempt->vocabid, $course->id, false, MUST_EXIST);
+    require_login($course, false, $cm);
+    if ($attempt->userid != $USER->id) {
+        require_capability('mod/vocab:viewreports', context_module::instance($cm->id));
+    }
+    $fs = get_file_storage();
+    $relativepath = implode('/', $args);
+    $fullpath = "/$context->id/$component/$filearea/$relativepath";
+    $file = $fs->get_file_by_hash(sha1($fullpath));
+    if (!$file || $file->is_directory()) {
+        send_file_not_found();
+    }
+    send_stored_file($file, 0, 0, $forcedownload, $options);
 }

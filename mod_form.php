@@ -201,8 +201,26 @@ class mod_vocab_mod_form extends moodleform_mod {
         // -----------------------------------------------------------------------------
 
         $this->add_attemptscore($mform, $plugin);
-        $this->add_attemptcount($mform, $plugin);
+        $this->add_attempttype($mform, $plugin);
         $this->add_attemptdelay($mform, $plugin);
+
+        // -----------------------------------------------------------------------------
+        $name = 'stages';
+        $label = get_string($name, $plugin);
+        $mform->addElement('header', $name, $label);
+        $mform->setExpanded($name, true);
+        // -----------------------------------------------------------------------------
+
+        $this->add_stages($mform, $plugin);
+
+        // -----------------------------------------------------------------------------
+        $name = 'games';
+        $label = get_string($name, $plugin);
+        $mform->addElement('header', $name, $label);
+        $mform->setExpanded($name, true);
+        // -----------------------------------------------------------------------------
+
+        $this->add_games($mform, $plugin);
 
         $this->standard_coursemodule_elements();
 
@@ -320,41 +338,148 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * Add the attemptcount field to the $mform.
+     * Add the attempttype field to the $mform: which successes count.
      *
      * @param object $mform representing the Moodle form
      * @param string $plugin the name of this plugin
      * @return void, but will update the $mform object
      */
-    public function add_attemptcount($mform, $plugin) {
-        global $OUTPUT;
-
-        $elements = [];
-
-        $namecount = 'attemptcount';
-        $labelcount = get_string($namecount, $plugin);
-        $options = array_combine(range(1, 10), range(1, 10));
-        $elements[] = $mform->createElement('select', $namecount, $labelcount, $options);
-
-        $nametype = 'attempttype';
-        $labeltype = get_string($nametype, $plugin);
+    public function add_attempttype($mform, $plugin) {
+        $name = 'attempttype';
         $options = [
             \mod_vocab\activity::ATTEMPTTYPE_ANY => get_string('anyattempts', $plugin),
             \mod_vocab\activity::ATTEMPTTYPE_RECENT => get_string('recentattempts', $plugin),
             \mod_vocab\activity::ATTEMPTTYPE_CONSECUTIVE => get_string('consecutiveattempts', $plugin),
         ];
-        $elements[] = $mform->createElement('select', $nametype, $labeltype, $options);
-        $elements[] = $mform->createElement('html', $OUTPUT->help_icon($nametype, $plugin));
+        $mform->addElement('select', $name, get_string($name, $plugin), $options);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, \mod_vocab\activity::ATTEMPTTYPE_ANY);
+    }
 
-        $groupname = $namecount.'elements';
-        $mform->addGroup($elements, $groupname, $labelcount, [' '], false);
-        $mform->addHelpButton($groupname, $namecount, $plugin);
+    /**
+     * Add the stages of learning: for each one, whether it is used, and how many
+     * successful interactions with a word are needed to pass and complete it.
+     *
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
+     */
+    public function add_stages($mform, $plugin) {
+        $counts = array_combine(range(1, 10), range(1, 10));
+        $defaults = [
+            \mod_vocab\progress::STAGE_LEARN => [1, 1],
+            \mod_vocab\progress::STAGE_RECOGNIZE => [1, 2],
+            \mod_vocab\progress::STAGE_RECALL => [1, 2],
+            \mod_vocab\progress::STAGE_PRODUCE => [1, 1],
+        ];
+        foreach (\mod_vocab\progress::STAGES as $stage) {
+            $name = 'stage_' . $stage;
+            $elements = [];
+            $elements[] = $mform->createElement('advcheckbox', $name, '', get_string('stageuse', $plugin));
+            $elements[] = $mform->createElement('static', '', '', get_string('stagepasscount', $plugin));
+            $elements[] = $mform->createElement('select', $name . '_pass', '', $counts);
+            $elements[] = $mform->createElement('static', '', '', get_string('stagecompletecount', $plugin));
+            $elements[] = $mform->createElement('select', $name . '_complete', '', $counts);
+            $mform->addGroup($elements, $name . '_group', \mod_vocab\progress::get_stage_name($stage), ' ', false);
+            $mform->addHelpButton($name . '_group', 'stage' . $stage, $plugin);
+            $mform->setType($name, PARAM_INT);
+            $mform->setDefault($name, 1);
+            [$pass, $complete] = $defaults[$stage];
+            foreach (['_pass' => $pass, '_complete' => $complete] as $suffix => $default) {
+                $mform->setType($name . $suffix, PARAM_INT);
+                $mform->setDefault($name . $suffix, $default);
+                $mform->disabledIf($name . $suffix, $name, 'notchecked');
+            }
+        }
+    }
 
-        $mform->setType($namecount, PARAM_INT);
-        $mform->setDefault($namecount, 5);
+    /**
+     * Add the games: for each installed game, the stages at which it is offered,
+     * and its own settings.
+     *
+     * @param object $mform representing the Moodle form
+     * @param string $plugin the name of this plugin
+     * @return void, but will update the $mform object
+     */
+    public function add_games($mform, $plugin) {
+        $games = \mod_vocab\gamebase::get_games();
+        if (empty($games)) {
+            $mform->addElement('static', 'nogames', '', get_string('nogamesinstalled', $plugin));
+            return;
+        }
+        $context = $this->context ?? \context_course::instance($this->get_course()->id);
+        foreach ($games as $name => $class) {
+            $elements = [];
+            foreach ($class::get_supported_stages() as $stage) {
+                $elements[] = $mform->createElement('advcheckbox', 'game_' . $name . '_' . $stage, '',
+                    \mod_vocab\progress::get_stage_name($stage));
+            }
+            $mform->addGroup($elements, 'game_' . $name, $class::get_title(), ' ', false);
+            if (get_string_manager()->string_exists('pluginname_help', $class::get_component())) {
+                $mform->addHelpButton('game_' . $name, 'pluginname', $class::get_component());
+            }
+            foreach ($class::get_supported_stages() as $stage) {
+                $mform->setType('game_' . $name . '_' . $stage, PARAM_INT);
+                $mform->disabledIf('game_' . $name . '_' . $stage, 'stage_' . $stage, 'notchecked');
+            }
+            $class::add_settings($mform, 'game_' . $name . '_', $context);
+        }
+    }
 
-        $mform->setType($nametype, PARAM_INT);
-        $mform->setDefault($nametype, \mod_vocab\activity::ATTEMPTTYPE_ANY);
+    /**
+     * Check the stages and games.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array field name => error
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        $plugin = 'mod_vocab';
+        $stages = [];
+        foreach (\mod_vocab\progress::STAGES as $stage) {
+            $name = 'stage_' . $stage;
+            if (!empty($data[$name])) {
+                $stages[] = $stage;
+                if ((int) ($data[$name . '_complete'] ?? 1) < (int) ($data[$name . '_pass'] ?? 1)) {
+                    $errors[$name . '_group'] = get_string('errorcompletecount', $plugin);
+                }
+            }
+        }
+        if (empty($stages)) {
+            $errors['stage_' . \mod_vocab\progress::STAGE_LEARN . '_group'] = get_string('errornostages', $plugin);
+        }
+        return $errors;
+    }
+
+    /**
+     * Add the activity's stages and games to the form's data.
+     *
+     * @param array $data
+     */
+    protected function stages_and_games_preprocessing(array &$data): void {
+        global $DB;
+        if (empty($data['instance'])) {
+            return;
+        }
+        $progress = \mod_vocab\progress::create((int) $data['instance']);
+        $stages = $progress->get_stages();
+        foreach (\mod_vocab\progress::STAGES as $stage) {
+            $name = 'stage_' . $stage;
+            $data[$name] = isset($stages[$stage]) ? 1 : 0;
+            if (isset($stages[$stage])) {
+                $data[$name . '_pass'] = $stages[$stage]->passcount;
+                $data[$name . '_complete'] = $stages[$stage]->completecount;
+            }
+        }
+        foreach ($progress->get_game_instances() as $instance) {
+            $data['game_' . $instance->name . '_' . $instance->stage] = 1;
+            $config = json_decode((string) $instance->configdata, true);
+            foreach (is_array($config) ? $config : [] as $key => $value) {
+                $data['game_' . $instance->name . '_' . $key] = $value;
+            }
+        }
     }
 
     /**
@@ -413,6 +538,8 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @return void, but may update values in the $data array
      */
     public function data_preprocessing(&$data) {
+        $this->stages_and_games_preprocessing($data);
+
         $name = 'attemptdelay';
         $default = \mod_vocab\activity::ATTEMPTDELAY_NONE;
         $value = (isset($data[$name]) ? $data[$name] : $default);

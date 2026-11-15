@@ -40,6 +40,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
      */
     public $vocab = null;
 
+    /** @var \mod_vocab\progress|null students' progress with the words of the activity */
+    protected $progress = null;
+
     /**
      * Attach a vocab activity to this renderer
      *
@@ -323,8 +326,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $completed = rand(0, (int)(0.9 * $total));
             $inprogress = rand(0, (int)(0.9 * ($total - $completed)));
         } else {
-            $completed = 0;
-            $inprogress = 0;
+            [$total, $completed, $inprogress] = $this->get_progress()->get_counts($this->get_userid());
         }
         $notstarted = ($total - $completed - $inprogress);
         return [$total, $completed, $inprogress, $notstarted];
@@ -538,9 +540,21 @@ class mod_vocab_renderer extends plugin_renderer_base {
     public function view_wordlist($words) {
         $output = '';
 
+        // For each word, a mark for each stage: empty (not started), half (passed) or full (completed).
+        $marks = [];
+        if (!$this->vocab->is_demo()) {
+            $progress = $this->get_progress();
+            $stages = array_keys($progress->get_stages());
+            $records = $progress->get_progress($this->get_userid());
+            foreach ($progress->get_words() as $id => $word) {
+                $marks[$word->wordid] = $this->stage_marks($stages, $records[$id] ?? []);
+            }
+        }
+
         $wordlist = [];
-        foreach ($words as $word) {
-            $wordlist[] = html_writer::tag('li', $word, ['class' => 'my-0 py-0 vocab-wordlist-word']);
+        foreach ($words as $wordid => $word) {
+            $text = s($word) . ($marks[$wordid] ?? '');
+            $wordlist[] = html_writer::tag('li', $text, ['class' => 'my-0 py-0 d-flex vocab-wordlist-word']);
         }
 
         $title = $this->vocab->get_string('wordlistcontainingnwords', count($wordlist));
@@ -553,6 +567,61 @@ class mod_vocab_renderer extends plugin_renderer_base {
 
         $params = ['class' => 'bg-light border rounded mt-1 mr-2 p-2 float-md-left vocab-wordlist'];
         return html_writer::tag('div', $output, $params);
+    }
+
+    /**
+     * Get the progress object for this activity.
+     *
+     * @return \mod_vocab\progress
+     */
+    protected function get_progress(): \mod_vocab\progress {
+        global $DB;
+        if ($this->progress === null) {
+            $this->progress = new \mod_vocab\progress($DB->get_record('vocab', ['id' => $this->vocab->id], '*', MUST_EXIST));
+        }
+        return $this->progress;
+    }
+
+    /**
+     * Get the id of the user whose results are shown.
+     *
+     * @return int
+     */
+    protected function get_userid(): int {
+        global $USER;
+        return (int) $USER->id;
+    }
+
+    /**
+     * Format the marks that show a word's progress at each stage.
+     *
+     * @param string[] $stages the activity's stages.
+     * @param \stdClass[] $records stage => record from vocab_word_stages.
+     * @return string HTML
+     */
+    protected function stage_marks(array $stages, array $records): string {
+        $marks = '';
+        foreach ($stages as $stage) {
+            $record = $records[$stage] ?? null;
+            if ($record && $record->timecompleted) {
+                $state = 'stagecompleted';
+            } else if ($record && $record->timepassed) {
+                $state = 'stagepassed';
+            } else {
+                $state = 'stagenotstarted';
+            }
+            $title = $this->vocab->get_string('stageprogress', (object) [
+                'stage' => \mod_vocab\progress::get_stage_name($stage),
+                'state' => $this->vocab->get_string($state),
+            ]);
+            // An empty ring (not started), half filled (passed) or filled (completed): see styles.css.
+            $marks .= html_writer::span('', "vocab-stage-mark $state", [
+                'title' => $title,
+                'aria-label' => $title,
+                'role' => 'img',
+            ]);
+        }
+        return $marks ? html_writer::span($marks, 'ml-auto ms-auto text-nowrap pl-2 ps-2 vocab-stage-marks') : '';
     }
 
     /**
@@ -595,18 +664,28 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 ];
             }
         } else {
-            $games = [];
-            /*
-                Get the list of games available for this Vocab activity.
-                Each game can be hidden or shown in any Vocab activity,
-                and furthermore may have it's own settings to add into
-                the module settings page.
-                Each game can define its own icon (as an svg) or fontawesome icon.
-                vocab_games table looks like this:
-                    id name siteenabled
-                vocab_game_instances table looks like this:
-                    vocabid gameid enabled configdata
-            */
+            // The games that the activity offers, with whether each can be played now, and if not, why not.
+            global $DB;
+            $progress = $this->get_progress();
+            $userid = $this->get_userid();
+            $vocab = $progress->get_vocab();
+            foreach ($progress->get_game_instances() as $instance) {
+                if (!$game = \mod_vocab\gamebase::create($vocab, $this->vocab->cm, $instance)) {
+                    continue;
+                }
+                [$playable, $reason] = $progress->get_game_state($game, $userid);
+                $label = $game->get_label();
+                if (\mod_vocab\progress::get_unfinished_attempt($instance->id, $userid)) {
+                    $label .= ' - ' . $this->vocab->get_string('gameresume');
+                }
+                $games[] = (object) [
+                    'name' => $game->get_component(),
+                    'label' => $label,
+                    'url' => $game->get_url(),
+                    'disabled' => !$playable,
+                    'reason' => $reason ? $this->vocab->get_string('game' . $reason) : '',
+                ];
+            }
         }
         return $games;
     }
@@ -635,6 +714,10 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $params['style'] = $style;
         }
         $params['class'] = 'btn vocab-game-button';
+        if (!empty($game->disabled)) {
+            $params['disabled'] = true;
+            $params['title'] = $game->reason;
+        }
         return $this->single_button($game->url, $game->label, 'get', $params);
     }
 
