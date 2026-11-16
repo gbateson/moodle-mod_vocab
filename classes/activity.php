@@ -1128,14 +1128,13 @@ class activity {
 
     /**
      * Get the question category for each context in which the current user can add questions.
-     * (Not finished: it uses $CFG->dirrot, and $DB is not declared global.)
      *
      * @param bool $toponly true for the "top" categories, false for the "default" categories below them
      * @return array context level => question category record
      */
     public function get_question_categories($toponly = false) {
-        global $CFG;
-        require_once($CFG->dirrot . '/lib/questionlib.php');
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/lib/questionlib.php');
 
         $categories = [];
         $contexts = $this->get_writeable_contexts('contextlevel');
@@ -1150,7 +1149,8 @@ class activity {
             foreach ($contexts as $level => $context) {
                 $top = question_get_top_category($context->id);
                 $params = ['contextid' => $context->id, 'parent' => $top->id];
-                $categories[$level] = $DB->get_record('question_categories', $params);
+                // If there are several categories below the top one, use the first.
+                $categories[$level] = $DB->get_record('question_categories', $params, '*', IGNORE_MULTIPLE);
             }
         }
         return $categories;
