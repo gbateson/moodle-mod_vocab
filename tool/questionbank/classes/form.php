@@ -94,9 +94,10 @@ class form extends \mod_vocab\toolform {
     const QTAG_CUSTOMTAGS = 0x40;
 
     /**
-     * definition
-     *
-     * TODO: Finish documenting this function
+     * Define the fields of the question bank tool's form: the log of earlier tasks, the words,
+     * the AI provider and prompt, the question types and levels, and the question categories and tags.
+     * If the AI bridge is off, the AI policy has not been accepted, or there are no words or prompts,
+     * a message is shown instead.
      */
     public function definition() {
         global $PAGE, $OUTPUT, $USER;
@@ -460,14 +461,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * validation
+     * Check that words, question types, levels, a question count, a category, subcategory
+     * and tags were chosen, and a prompt, if there is a choice of prompts.
      *
-     * @uses $USER
-     * @param stdClass $data submitted from the form
-     * @param array $files
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param array $data submitted from the form
+     * @param array $files uploaded files (not used)
+     * @return array errors: form field name => message
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
@@ -490,16 +489,13 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * generate_questions
+     * Set up a background task to generate questions for each chosen word, question type
+     * and level, as the form says, and remember the choices for the chosen prompt. Messages
+     * about the tasks that were (not) set up are added to the form.
      *
-     * @uses $DB
-     * @uses $OUTPUT
-     * @uses $USER
-     * @param moodleform $mform representing the Moodle form
-     * @param object $data submitted from the Moodle form
-     * @return void, but may add records to the "task_adhoc" table in the Moodle database.
-     *
-     * TODO: Finish documenting this function
+     * @param moodleform $mform the form, to which the messages are added
+     * @param stdClass $data submitted from the form
+     * @return void
      */
     public function generate_questions($mform, $data) {
         global $DB, $OUTPUT, $USER;

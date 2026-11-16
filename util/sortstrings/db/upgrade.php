@@ -25,14 +25,10 @@
  */
 
 /**
- * xmldb_vocabutil_sortstrings_upgrade
+ * Upgrade the "sortstrings" util of the Vocabulary activity from an older version: e.g. its capabilities.
  *
- * @uses $CFG
- * @uses $DB
- * @param xxx $oldversion
- * @return xxx
- *
- * TODO: Finish documenting this function
+ * @param int $oldversion the version that is currently installed
+ * @return bool true if the upgrade succeeded
  */
 function xmldb_vocabutil_sortstrings_upgrade($oldversion) {
     global $CFG, $DB;

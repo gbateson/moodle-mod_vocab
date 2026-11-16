@@ -25,14 +25,10 @@
  */
 
 /**
- * xmldb_vocabtool_questionbank_upgrade
+ * Upgrade the "questionbank" tool of the Vocabulary activity from an older version: its capabilities, and its log of tasks.
  *
- * @uses $CFG
- * @uses $DB
- * @param xxx $oldversion
- * @return xxx
- *
- * TODO: Finish documenting this function
+ * @param int $oldversion the version that is currently installed
+ * @return bool true if the upgrade succeeded
  */
 function xmldb_vocabtool_questionbank_upgrade($oldversion) {
     global $CFG, $DB;

@@ -43,11 +43,7 @@ class mod_vocab_mod_form extends moodleform_mod {
     const TEXT_NUM_SIZE = 4;
 
     /**
-     * definition
-     *
-     * @uses $CFG
-     *
-     * TODO: Finish documenting this function
+     * Define the fields of the activity's settings form.
      */
     public function definition() {
         global $CFG;
@@ -756,10 +752,7 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * collapse_navigation
-     *
-     *
-     * TODO: Finish documenting this function
+     * Collapse the navigation menu, if the activity's settings say so.
      */
     public function collapse_navigation() {
         \mod_vocab\activity::create(

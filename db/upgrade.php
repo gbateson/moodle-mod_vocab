@@ -25,14 +25,10 @@
  */
 
 /**
- * xmldb_vocab_upgrade
+ * Upgrade the Vocabulary activity's database tables and data from an older version.
  *
- * @uses $CFG
- * @uses $DB
- * @param xxx $oldversion
- * @return xxx
- *
- * TODO: Finish documenting this function
+ * @param int $oldversion the version that is currently installed
+ * @return bool true
  */
 function xmldb_vocab_upgrade($oldversion) {
     global $CFG, $DB;

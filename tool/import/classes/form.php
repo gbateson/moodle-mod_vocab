@@ -112,17 +112,15 @@ class form extends \mod_vocab\toolform {
     protected $currentrowname = '';
 
     /**
-     * constructor
+     * Set up the import form, and work out which step of the import it is at: upload, preview,
+     * review or import. "Cancel" goes back to the previous step.
      *
-     * @uses $CFG
-     * @param integer $action (optional, default=null)
-     * @param array $customdata (optional, default=null)
-     * @param string $method (optional, default='post')
-     * @param string $target (optional, default='')
-     * @param array $attributes (optional, default=null)
-     * @param bool $editable (optional, default=true)
-     *
-     * TODO: Finish documenting this function
+     * @param mixed $action the URL to which the form is submitted
+     * @param array $customdata extra data for the form
+     * @param string $method "post" or "get"
+     * @param string $target the frame in which the form is submitted, or ''
+     * @param array $attributes extra attributes of the form element
+     * @param bool $editable whether the form can be edited
      */
     public function __construct(
         $action = null,
@@ -164,10 +162,7 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * definition
-     *
-     *
-     * TODO: Finish documenting this function
+     * Define the fields of the import form for its current step, with suitable buttons.
      */
     public function definition() {
         $mform = $this->_form;
@@ -196,12 +191,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * definition_upload
+     * Add the fields of the "upload" step: the data file, the optional format file, and how many rows to preview.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @return string[] the names of the submit and cancel buttons
      */
     public function definition_upload($mform) {
 
@@ -223,12 +216,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * definition_preview
+     * Add the fields of the "preview" step: the values to ignore, and what to do with existing records.
+     * The values from the "upload" step are kept in hidden fields.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @return string[] the names of the submit and cancel buttons
      */
     public function definition_preview($mform) {
 
@@ -255,12 +247,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_options_uploadaction
+     * Get the actions for existing records, for a menu, or the name of one action.
      *
-     * @param string $value (optional, default=null)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param int|null $value an ACTION_xxx constant, or null for all of them
+     * @return array|string ACTION_xxx => name, or the name of the action (or the value itself if it is unknown)
      */
     public function get_options_uploadaction($value = null) {
         $options = [
@@ -279,12 +269,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * definition_review
+     * Add the fields of the "review" step. The values from the earlier steps are kept in hidden fields.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @return string[] the names of the submit and cancel buttons
      */
     public function definition_review($mform) {
         $values = [
@@ -298,13 +286,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * definition_buttons
+     * Add the submit and cancel buttons, if they are needed.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param bool $submit
-     * @param bool $cancel
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @param string $submit the name of the submit button's string, or '' for no submit button
+     * @param string $cancel the name of the cancel button's string, or '' for no cancel button
      */
     public function definition_buttons($mform, $submit, $cancel) {
         if ($submit && $cancel) {
@@ -322,23 +308,19 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_state
+     * Get the current step of the import.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string upload, preview, review or import
      */
     public function get_state() {
         return $this->formstate;
     }
 
     /**
-     * transfer_incoming_values
+     * Keep values from the previous step in hidden fields.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param array $values numbers to be displayed as a pie-chart
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @param array $values field name => PARAM_xxx type
      */
     public function transfer_incoming_values($mform, $values) {
         foreach ($values as $name => $type) {
@@ -354,12 +336,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * set_next_formstate
+     * Set the step of the import that comes next, in a hidden field.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $value
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @param string $value preview, review or import
      */
     public function set_next_formstate($mform, $value) {
         $name = 'formstate';
@@ -369,14 +349,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * validation
+     * Check the submitted data. There are no checks of its own yet.
      *
-     * @uses $USER
-     * @param stdClass $data submitted from the form
-     * @param array $files
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param array $data submitted from the form
+     * @param array $files uploaded files
+     * @return array errors: form field name => message
      */
     public function validation($data, $files) {
 
@@ -389,13 +366,9 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * render_data_table
+     * Read the uploaded spreadsheet, and show its first rows in a table, for the preview.
      *
-     * @uses $CFG
-     * @uses $USER
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML of the table, or of a warning if the file could not be read
      */
     public function render_data_table() {
         global $CFG, $USER;
@@ -492,14 +465,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_datafileinfo
+     * Copy the uploaded data file to a temporary file, so that it can be read.
      *
-     * @param object $fs reference to Moodle file storage singleton object
-     * @param object $context a record form the "context" table in the Moodle database
-     * @param string $paramname
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param file_storage $fs Moodle's file storage
+     * @param context $context the user's context, in which the draft file is
+     * @param string $paramname the name of the form field with the draft item id
+     * @return string[] [filename, path of the temporary file], or ['', ''] if there is no file
      */
     public function get_datafileinfo($fs, $context, $paramname) {
         $filename = '';
@@ -526,14 +497,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_formatfileinfo
+     * Get the name and contents of the uploaded format file.
      *
-     * @param object $fs reference to Moodle file storage singleton object
-     * @param object $context a record form the "context" table in the Moodle database
-     * @param string $paramname
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param file_storage $fs Moodle's file storage
+     * @param context $context the user's context, in which the draft file is
+     * @param string $paramname the name of the form field with the draft item id
+     * @return string[] [filename, file contents], or ['', ''] if there is no file
      */
     public function get_formatfileinfo($fs, $context, $paramname) {
         $filename = '';
@@ -554,14 +523,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * parse_format_xml
+     * Read the XML of a format file, which says how the rows of a spreadsheet map to database records.
      *
-     * @uses $CFG
-     * @param string $formatfilecontent
-     * @param string $xmlroot
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $formatfilecontent the XML
+     * @param string $xmlroot the name of the root element, e.g. "importfile"
+     * @return stdClass|string|null the format, an error message if the XML is not valid, or null if it is empty
      */
     public function parse_format_xml($formatfilecontent, $xmlroot) {
         global $CFG;
@@ -630,13 +596,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * parse_format_xml_initnode
+     * Read one node of a format file (e.g. a sheet or row): its settings and records.
      *
-     * @param string $xml (passed by reference)
-     * @param object $format
-     * @param string $name
-     *
-     * TODO: Finish documenting this function
+     * @param array $xml the node, as returned by xmlize() (passed by reference)
+     * @param stdClass $format the format, to which the settings and records are added
+     * @param string $name the name of the node's child elements, e.g. "rows"
      */
     public function parse_format_xml_initnode(&$xml, $format, $name) {
 
@@ -669,12 +633,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * parse_format_xml_settings
+     * Read the attributes and <setting> elements of a node of a format file into the format's settings.
      *
-     * @param string $xml (passed by reference)
-     * @param object $format
-     *
-     * TODO: Finish documenting this function
+     * @param array $xml the node, as returned by xmlize() (passed by reference)
+     * @param stdClass $format the format, to which the settings are added
      */
     public function parse_format_xml_settings(&$xml, $format) {
 
@@ -696,12 +658,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * parse_format_xml_records
+     * Read the <record> elements of a node of a format file: each one's table, options and fields.
      *
-     * @param string $xml (passed by reference)
-     * @param object $format
-     *
-     * TODO: Finish documenting this function
+     * @param array $xml the node, as returned by xmlize() (passed by reference)
+     * @param stdClass $format the format, to which the records are added
      */
     public function parse_format_xml_records(&$xml, $format) {
 
@@ -742,13 +702,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * create_format_xml
+     * Make a format file for a data file: XML with default settings, and a sheet and row for
+     * each sheet in the workbook, with its column headings, for the teacher to complete.
      *
-     * @param object $workbook
-     * @param string $datafilename
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $workbook the spreadsheet, from PhpSpreadsheet or PHPExcel
+     * @param string $datafilename the name of the data file
+     * @return string the XML
      */
     public function create_format_xml($workbook, $datafilename) {
         $nl = "\n";
@@ -848,25 +807,21 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_comment
+     * Get an XML comment containing a string from this tool's language pack.
      *
-     * @param string $strname
-     * @param array $a additional value or values required for the language string (optional, default=null)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $strname the name of the string
+     * @param mixed $a values for the string, if it needs any
+     * @return string e.g. "<!-- text -->"
      */
     public function get_comment($strname, $a = null) {
         return '<!-- ' . $this->get_string($strname, $a) . ' -->';
     }
 
     /**
-     * get_min_max_rows
+     * Find the first and last rows of a worksheet that contain any data.
      *
-     * @param object $worksheet representing a sheet from the data file
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $worksheet a sheet from the data file
+     * @return int[] [first row, last row]
      */
     public function get_min_max_rows($worksheet) {
         $rmin = 0;
@@ -891,13 +846,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_min_max_cols
+     * Find the first and last columns of a row that contain any data.
      *
-     * @param object $worksheet representing a sheet from the data file
-     * @param integer $r a row number
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $worksheet a sheet from the data file
+     * @param int $r the row number
+     * @return int[] [first column, last column]
      */
     public function get_min_max_cols($worksheet, $r) {
 
@@ -923,12 +876,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_format_type
+     * Get a name for the type of a data file, from its file name without the extension.
      *
      * @param string $filename
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string the name, with punctuation and spaces replaced by "_"
      */
     public function get_format_type($filename) {
         $type = $filename;
@@ -939,12 +890,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_clean_text
+     * Replace punctuation and spaces in a text with underscores, e.g. for an XML name.
      *
      * @param string $txt
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string
      */
     public function get_clean_text($txt) {
         // Replace all punctuation and spaces with an underscore, "_".
@@ -953,13 +902,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_total_rows
+     * Count the sheets and rows in a workbook: all of them, or only those that a format file uses.
      *
-     * @param object $workbook
-     * @param object $format (optional, default=null)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $workbook the spreadsheet
+     * @param stdClass|null $format the format, or null to count everything
+     * @return int[] [number of sheets, number of rows]
      */
     public function get_sheetcount_rowcount($workbook, $format = null) {
 
@@ -992,12 +939,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * number_format
+     * Format a whole number with the thousands separator of the current language.
      *
-     * @param xxx $num
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param int|float $num
+     * @return string
      */
     public function number_format($num) {
         return number_format(
@@ -1073,25 +1018,21 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_previewrows
+     * Get the number of rows to show in the preview.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return int
      */
     public function get_previewrows() {
         return self::get_optional_param('previewrows', 10, PARAM_INT);
     }
 
     /**
-     * populate_preview_table
-     * The preview table contains the raw data from the data file (usually a spreadsheet).
+     * Fill the preview table with the raw data from the first rows of each sheet that the format uses.
+     * The format file's settings become the form's defaults.
      *
-     * @param object $workbook
-     * @param object $format
-     * @param string $table name of a table in the database
-     *
-     * TODO: Finish documenting this function
+     * @param object $workbook the spreadsheet
+     * @param stdClass $format the format
+     * @param html_table $table the table to fill
      */
     public function populate_preview_table($workbook, $format, $table) {
 
@@ -1181,28 +1122,25 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * populate_review_table
+     * Fill the review table with what would be imported, without changing the database (a dry run).
      *
-     * @param object $workbook
-     * @param object $format
-     * @param string $table name of a table in the database
-     * @param bool $dryrun (optional, default=true)
-     *
-     * TODO: Finish documenting this function
+     * @param object $workbook the spreadsheet
+     * @param stdClass $format the format
+     * @param html_table $table the table to fill
+     * @param bool $dryrun not used: the review is always a dry run
      */
     public function populate_review_table($workbook, $format, $table, $dryrun = true) {
         $this->populate_import_table($workbook, $format, $table, self::MODE_DRYRUN);
     }
 
     /**
-     * populate_import_table
+     * Import the data: for each row of each sheet that the format uses, add or find the records that
+     * the format describes, and fill a table with what was done for each row.
      *
-     * @param object $workbook
-     * @param object $format
-     * @param string $table name of a table in the database
-     * @param string $mode (optional, default=self::MODE_IMPORT)
-     *
-     * TODO: Finish documenting this function
+     * @param object $workbook the spreadsheet
+     * @param stdClass $format the format
+     * @param html_table $table the table to fill
+     * @param int $mode MODE_IMPORT to import, MODE_DRYRUN for a review, or MODE_PREVIEW
      */
     public function populate_import_table($workbook, $format, $table, $mode = self::MODE_IMPORT) {
 
@@ -1511,12 +1449,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * setup_totals
+     * Set up the counts of records that were added, found or had errors, for each table that the format uses.
      *
-     * @param array $tableinfo two dimensional array of tables and columns which may be accessed (passed by reference)
-     * @param object $format
-     *
-     * TODO: Finish documenting this function
+     * @param array $tableinfo the tables and fields that may be used (passed by reference)
+     * @param stdClass $format the format
      */
     public function setup_totals(&$tableinfo, $format) {
         $this->totals = (object)[
@@ -1547,13 +1483,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * update_totals
+     * Count a record that was added, found or had an error, for the current sheet and row.
      *
-     * @param string $table name of a table in the database
-     * @param mixed $type a PARAM_xxx constant value
-     * @param xxx $msg (optional, default='')
-     *
-     * TODO: Finish documenting this function
+     * @param string $table the name of the database table
+     * @param string $type added, found or error
+     * @param string $msg an error message, if there was an error
      */
     public function update_totals($table, $type, $msg = '') {
 
@@ -1619,11 +1553,9 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * report_totals_data
+     * Get the cells of the results table for the current row: what was done in each table.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return html_table_cell[]
      */
     public function report_totals_data() {
 
@@ -1693,12 +1625,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * report_totals_head
+     * Get the heading cells of the results table: sheet and row, the first heading, and a column for each table.
      *
-     * @param xxx $headers (passed by reference)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param array $headers the headings of the data file's columns (passed by reference)
+     * @return html_table_cell[]
      */
     public function report_totals_head(&$headers) {
         $cells = [];
@@ -1744,13 +1674,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_sheet_range
+     * Get the sheets of a workbook that a sheet element of the format applies to.
      *
-     * @param object $workbook
-     * @param object $sheet
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $workbook the spreadsheet
+     * @param stdClass $sheet the sheet element of the format
+     * @return array [first sheet, last sheet, TYPE_META or TYPE_DATA]
      */
     public function get_sheet_range($workbook, $sheet) {
         $defaultmin = 1;
@@ -1759,13 +1687,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_row_range
+     * Get the rows of a worksheet that a row element of the format applies to.
      *
-     * @param object $worksheet representing a sheet from the data file
-     * @param object $row
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $worksheet a sheet from the data file
+     * @param stdClass $row the row element of the format
+     * @return array [first row, last row, TYPE_META or TYPE_DATA]
      */
     public function get_row_range($worksheet, $row) {
         $defaultmin = 1;
@@ -1774,15 +1700,14 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_item_range
+     * Get the range and type of the sheets or rows that an element of the format applies to,
+     * from its settings, e.g. "rowstart", "rowend" and "rowtype".
      *
-     * @param object $item representing an item in the XML file
-     * @param string $prefix
-     * @param integer $defaultmin
-     * @param integer $defaultmax
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param stdClass $item a sheet or row element of the format
+     * @param string $prefix "sheet" or "row"
+     * @param int $defaultmin the first sheet or row, if the settings do not say
+     * @param int $defaultmax the last sheet or row, if the settings do not say
+     * @return array [first, last, TYPE_META or TYPE_DATA]
      */
     public function get_item_range($item, $prefix, $defaultmin, $defaultmax) {
 
@@ -1847,13 +1772,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_cell_range
-     * this method is NOT USED anywhere.
+     * Get the range of cells in a row element of the format. (Not used.)
      *
-     * @param object $row
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param stdClass $row the row element of the format
+     * @return int[] [first cell, last cell]
      */
     public function get_cell_range($row) {
 
@@ -1873,12 +1795,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * ignore_value
+     * Should a value from the data file be ignored? Values are ignored if they are in the form's
+     * "ignore values" list, or are internal "storeKey" values of the spreadsheet library.
      *
      * @param string $value
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return bool
      */
     public function ignore_value($value) {
         $name = 'ignorevalues';
@@ -1905,17 +1826,15 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_row_cells
+     * Get the cells of a row of the data file, for a table, with a first cell for a label.
      *
-     * @param object $worksheet representing a sheet from the data file
-     * @param integer $r a row number
-     * @param integer $cmin the minimum column number
-     * @param integer $cmax the maximum column number
-     * @param string $text
-     * @param bool $th if TRUE, the 1st cell should be made a TH cell (optional, default=false)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $worksheet a sheet from the data file
+     * @param int $r the row number
+     * @param int $cmin the first column
+     * @param int $cmax the last column
+     * @param string $text the text of the first cell
+     * @param bool $th true if the first cell is a heading cell
+     * @return array the first cell (html_table_cell), then the values
      */
     public function get_row_cells($worksheet, $r, $cmin, $cmax, $text, $th = false) {
         $cells = [];
@@ -1932,14 +1851,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_singleline_value
+     * Get the value of a cell, with any line breaks and runs of spaces replaced by single spaces.
      *
-     * @param object $worksheet representing a sheet from the data file
-     * @param integer $c a column number
-     * @param integer $r a row number
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $worksheet a sheet from the data file
+     * @param int $c the column number
+     * @param int $r the row number
+     * @return string
      */
     protected function get_singleline_value($worksheet, $c, $r) {
         $value = $this->get_cell_value($worksheet, $c, $r);
@@ -1947,14 +1864,12 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_cell_value
+     * Get the formatted value of a cell, calculating formulas where the spreadsheet library can.
      *
-     * @param object $worksheet representing a sheet from the data file
-     * @param integer $c a column number
-     * @param integer $r a row number
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param object $worksheet a sheet from the data file
+     * @param int $c the column number
+     * @param int $r the row number
+     * @return string the value, or '' if it should be ignored
      */
     protected function get_cell_value($worksheet, $c, $r) {
 
@@ -2261,15 +2176,14 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * format_function
+     * Run one of the functions that a format file can use in its field values, e.g. to look up
+     * or add a record, or to test whether a value is empty.
      *
-     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
-     * @param string $functionname name of the function
-     * @param array $args (passed by reference) arguments for the specified $functionname
-     * @param array $vars (passed by reference) values for the current row in the data file
-     * @return mixed $result of the specified function using the given arguments
-     *
-     * TODO: Finish documenting this function
+     * @param array $tableinfo the tables and fields that may be used (passed by reference)
+     * @param string $functionname the name of the function
+     * @param array $args the function's arguments (passed by reference)
+     * @param array $vars the values of the current row of the data file (passed by reference)
+     * @return mixed the result of the function
      */
     public function format_function(&$tableinfo, $functionname, &$args, &$vars) {
         global $DB;
@@ -2511,16 +2425,14 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_item_settings
+     * Work out the values of the settings of a file, sheet or row element of the format,
+     * and add them to the values that later fields can use.
      *
-     * @param object $item representing an item in the XML file
-     * @param array $vars (passed by reference) values for the current row in the data file
-     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
-     * @param array $itemvars (passed by reference) settings and values for the current item (file, sheet or row).
+     * @param stdClass $item a file, sheet or row element of the format
+     * @param array $vars the values of the current row of the data file (passed by reference)
+     * @param array $tableinfo the tables and fields that may be used (passed by reference)
+     * @param array $itemvars the values of this element's settings (passed by reference)
      * @param string $aliastype "FILE", "SHEET" or "ROW"
-     * @return void, but may update $vars and $itemvars
-     *
-     * TODO: Finish documenting this function
      */
     public function get_item_settings($item, &$vars, &$tableinfo, &$itemvars, $aliastype) {
         foreach ($item->settings as $name => $value) {
@@ -2529,14 +2441,13 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_item_records
+     * Add or find the records that a file, sheet or row element of the format describes, skipping
+     * records whose conditions say so, or whose fields are empty.
      *
-     * @param object $item representing an item in the XML file
-     * @param array $vars (passed by reference) values for the current row in the data file
-     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
+     * @param stdClass $item a file, sheet or row element of the format
+     * @param array $vars the values of the current row of the data file (passed by reference)
+     * @param array $tableinfo the tables and fields that may be used (passed by reference)
      * @param string $aliastype "FILE", "SHEET" or "ROW"
-     *
-     * TODO: Finish documenting this function
      */
     public function get_item_records($item, &$vars, &$tableinfo, $aliastype) {
         foreach ($item->records as $record) {
@@ -2558,14 +2469,13 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_record_ids
+     * Find the records in a table that have these field values, adding a record if there is none.
+     * Only tables and fields in $tableinfo may be used.
      *
-     * @param array $tableinfo (passed by reference) two dimensional array of accessible tables and columns
-     * @param string $table name of a table in the database
-     * @param array $fields of database field names (passed by reference)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param array $tableinfo the tables and fields that may be used (passed by reference)
+     * @param string $table the name of the table
+     * @param array $fields field name => value (passed by reference)
+     * @return int|int[] the id of the record, the ids if there is more than one, or 0 if there is none
      */
     public function get_record_ids(&$tableinfo, $table, &$fields) {
         $debug = true;
@@ -2775,12 +2685,9 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_punctuation
-     * (this function does not apepar to be used)
+     * Get a map of full-width and typographic punctuation to plain ASCII punctuation. (Not used.)
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return array character => replacement
      */
     protected function get_punctuation() {
         if ($this->punctuation === null) {

@@ -25,10 +25,8 @@
  */
 
 /**
- * xmldb_vocab_uninstall
- *
- *
- * TODO: Finish documenting this function
+ * Tidy up when the Vocabulary activity is uninstalled. There is nothing to do yet,
+ * as Moodle removes the plugin's tables and settings itself.
  */
 function xmldb_vocab_uninstall() {
 }

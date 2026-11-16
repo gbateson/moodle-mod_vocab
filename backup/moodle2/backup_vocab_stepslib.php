@@ -38,11 +38,11 @@ class backup_vocab_activity_structure_step extends backup_activity_structure_ste
     const GET_WORDS_LIMIT = 100;
 
     /**
-     * define_structure
+     * Define the structure of a Vocabulary activity's backup: its words and their details,
+     * its games, and, if user data is included, students' attempts.
+     * (Not finished: some parts still refer to TaskChain tables, and backup is turned off in vocab_supports().)
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return backup_nested_element the root element, wrapped for an activity
      */
     protected function define_structure() {
 

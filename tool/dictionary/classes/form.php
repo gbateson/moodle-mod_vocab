@@ -37,10 +37,7 @@ namespace vocabtool_dictionary;
  */
 class form extends \mod_vocab\toolform {
     /**
-     * definition
-     *
-     *
-     * TODO: Finish documenting this function
+     * Define the fields of the dictionary tool's form. (Not finished: it only shows a heading so far.)
      */
     public function definition() {
         $mform = $this->_form;

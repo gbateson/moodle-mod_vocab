@@ -53,11 +53,10 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * header
+     * Output the page header, with the activity's name as the page heading, and, for teachers,
+     * an icon that links to the activity's settings.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function header() {
         $header = parent::header();
@@ -99,11 +98,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * modedit_icon
+     * Get an icon that links to the activity's settings page.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function modedit_icon() {
         $params = [
@@ -119,11 +116,10 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_page
+     * Get the content of the activity's main page: information, the student's results,
+     * the word list, the games, and, for teachers, the state of the study materials.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function view_page() {
         $output = '';
@@ -188,11 +184,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_page_guest
+     * Get the content of the activity's page for guests, who are asked to log in.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function view_page_guest() {
         $output = '';
@@ -204,11 +198,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_page_notenrolled
+     * Get the content of the activity's page for users who are not enrolled in the course.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function view_page_notenrolled() {
         $output = '';
@@ -220,11 +212,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_intro
+     * Get the activity's description, if it has one.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML, or '' if there is no description
      */
     public function view_intro() {
         if (html_is_blank($this->vocab->intro)) {
@@ -236,11 +226,10 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_information
+     * Get information about the activity, e.g. access messages.
+     * (Not finished: it shows a placeholder message.)
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function view_information() {
         $output = '';
@@ -249,11 +238,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_results_and_wordlist
+     * Get the student's results chart and the word list, side by side.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string HTML
      */
     public function view_results_and_wordlist() {
         $output = '';
@@ -265,14 +252,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_results
+     * Get a pie chart of a user's results: how many words are completed, in progress and not started.
      *
-     * @uses $USER
-     * @param array $words
-     * @param xxx $user (optional, default=null)
-     * @return string of HTML to display results
-     *
-     * TODO: Finish documenting this function
+     * @param array $words the words in the word list
+     * @param stdClass|null $user the user, or null for the current user
+     * @return string HTML
      */
     public function view_results($words, $user = null) {
         global $USER;
@@ -372,12 +356,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * get_wordcounts
+     * Count a user's words that are completed, in progress and not started.
+     * In demonstration mode, the counts are random.
      *
-     * @param array $words
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param array $words the words in the word list
+     * @return int[] [total, completed, inprogress, notstarted]
      */
     public function get_wordcounts($words) {
         $total = count($words);
@@ -393,11 +376,9 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * svg_fill_patterns
+     * Get the SVG fill patterns for the parts of the results chart.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return string SVG <defs> element
      */
     public function svg_fill_patterns() {
         $output = '';
@@ -410,18 +391,16 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * svg_fill_pattern
+     * Get an SVG fill pattern: a coloured square with a line drawn on it.
      *
-     * @param xxx $id
-     * @param xxx $width
-     * @param xxx $height
-     * @param xxx $fillcolor
-     * @param xxx $d
-     * @param xxx $strokecolor
-     * @param xxx $strokewidth
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $id the pattern's id, used in "url(#id)"
+     * @param int $width the width of the pattern, in pixels
+     * @param int $height the height of the pattern, in pixels
+     * @param string $fillcolor the background color, e.g. "#3366ff", or '' for none
+     * @param string $d the SVG path of the line, e.g. "M2,2 L7,7"
+     * @param string $strokecolor the color of the line, or '' for no line
+     * @param int $strokewidth the width of the line, in pixels
+     * @return string SVG <pattern> element, or '' if there is nothing to draw
      */
     public function svg_fill_pattern($id, $width, $height, $fillcolor, $d, $strokecolor, $strokewidth) {
         $output = '';
@@ -760,14 +739,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * game_button
+     * Get a button that opens a game. A game that cannot be played now is disabled,
+     * with the reason as its tooltip.
      *
-     * @param xxx $game
-     * @param xxx $gamecolor (optional, default='')
-     * @param xxx $textcolor (optional, default='')
-     * @return string of HTML to display a game button.
-     *
-     * TODO: Finish documenting this function
+     * @param stdClass $game with url, label, and optionally disabled and reason
+     * @param string $gamecolor the button's background color, or '' for the default
+     * @param string $textcolor the button's text color, or '' for the default
+     * @return string HTML
      */
     public function game_button($game, $gamecolor = '', $textcolor = '') {
         // See "single_button" method in "lib/outputrenderers.php".

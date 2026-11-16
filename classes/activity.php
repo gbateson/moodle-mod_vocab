@@ -611,12 +611,10 @@ class activity {
     }
 
     /**
-     * require
+     * Require the current user to have one of this plugin's capabilities in this activity.
      *
-     * @param string $capability
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $capability the capability's name, without "mod/vocab:", e.g. "manage"
+     * @return void, but throws an exception if the user does not have the capability
      */
     public function require($capability) {
         return require_capability("{$this->pluginpath}:$capability", $this->context);
@@ -746,11 +744,9 @@ class activity {
     ////////////////////////////////////////*/
 
     /**
-     * get_groupmode
+     * Get the group mode of this activity, or of its course if there is no activity.
      *
-     * @return integer the groupmode of this cm or course.
-     *
-     * TODO: Finish documenting this function
+     * @return int NOGROUPS, SEPARATEGROUPS or VISIBLEGROUPS
      */
     public function get_groupmode() {
         if ($this->cm) {
@@ -763,13 +759,11 @@ class activity {
     }
 
     /**
-     * get_userids that are accessible to the current user.
+     * Get the ids of the users that the current user can see in this activity: all enrolled
+     * users, or, with separate groups, only those in the given group, or in the user's own groups.
      *
-     * @uses $DB
-     * @param integer $groupid (optional, default=0)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param int $groupid a group, or 0 for any group
+     * @return int[]|false the user ids, or false if there are none
      */
     public function get_userids($groupid = 0) {
         global $DB;
@@ -800,11 +794,9 @@ class activity {
     }
 
     /**
-     * is_demo
+     * Is this activity in demonstration mode, in which made-up words and results are shown?
      *
      * @return bool
-     *
-     * TODO: Finish documenting this function
      */
     public function is_demo() {
         return ($this->operationmode == self::MODE_DEMO);
@@ -880,12 +872,10 @@ class activity {
     }
 
     /**
-     * get_random_word
+     * Make a random, pronounceable word, of alternating consonants and vowels, for demonstration mode.
      *
-     * @param xxx $length
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param int $length the shortest length of the word
+     * @return string
      */
     public function get_random_word($length) {
         $vowels = [
@@ -943,12 +933,9 @@ class activity {
     }
 
     /**
-     * collapse_navigation
+     * Collapse the navigation menu for teachers, students or everyone, as the activity's settings say.
      *
-     * @uses $PAGE
-     * @return void (but may update navigation in $PAGE object)
-     *
-     * TODO: Finish documenting this function
+     * @return void, but may update the navigation in $PAGE
      */
     public function collapse_navigation() {
         global $PAGE;
@@ -1140,13 +1127,11 @@ class activity {
     }
 
     /**
-     * get_question_categories
+     * Get the question category for each context in which the current user can add questions.
+     * (Not finished: it uses $CFG->dirrot, and $DB is not declared global.)
      *
-     * @uses $CFG
-     * @param xxx $toponly (optional, default=false)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param bool $toponly true for the "top" categories, false for the "default" categories below them
+     * @return array context level => question category record
      */
     public function get_question_categories($toponly = false) {
         global $CFG;

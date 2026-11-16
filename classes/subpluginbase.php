@@ -111,14 +111,12 @@ class subpluginbase {
     }
 
     /**
-     * Creates a url for this subplugin
+     * Make a URL for a file in this subplugin, with the id of the activity's course module.
      *
-     * @param string $filepath
-     * @param bool $escaped (optional, default=null)
-     * @param array $params (optional, default=[])
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path within this subplugin, e.g. "index.php"
+     * @param bool|null $escaped null to return a moodle_url, or true/false to return a string, with or without escaped "&"
+     * @param array $params extra URL parameters
+     * @return moodle_url|string
      */
     public function url($filepath, $escaped = null, $params = []) {
         if ($this->vocab && $this->vocab->cm) {

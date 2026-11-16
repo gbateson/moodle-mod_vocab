@@ -40,10 +40,9 @@ class form extends \mod_vocab\toolform {
     public $subpluginname = 'vocabtool_wordlist';
 
     /**
-     * definition
-     *
-     *
-     * TODO: Finish documenting this function
+     * Define the word list form: the current list of words, with actions for selected words,
+     * and fields to add words, select random words, and import or export a list. Actions that
+     * were submitted are carried out first, and their messages are added to the form.
      */
     public function definition() {
         global $PAGE;
@@ -149,14 +148,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * validation
+     * Check the submitted data. There are no checks of its own yet.
      *
-     * @uses $USER
-     * @param stdClass $data submitted from the form
-     * @param array $files
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param array $data submitted from the form
+     * @param array $files uploaded files
+     * @return array errors: form field name => message
      */
     public function validation($data, $files) {
         global $USER;
@@ -169,11 +165,9 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * add_wordlist
+     * Add the current list of words to the form, each with a checkbox, action icons and statistics.
      *
-     * @param moodleform $mform representing the Moodle form
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
      */
     public function add_wordlist($mform) {
         global $OUTPUT, $PAGE;
@@ -333,13 +327,13 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * wordlist
+     * Take an action on the selected words. "remove" removes words from the list (words that
+     * have been used in games are disabled instead, to keep their scores); the other actions
+     * are not done yet.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param string $action (remove, export, getquestions, getsamplesentences)
-     * @param array $wordids
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form, to which messages are added
+     * @param string $action remove, export, getquestions or getsamplesentences
+     * @param int[] $wordids ids from the vocab_words table
      */
     public function wordlist($mform, $action, $wordids) {
         global $DB, $OUTPUT;
@@ -409,12 +403,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * addwords
+     * Add words to the word list, adding them to the dictionary first if necessary.
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param xxx $newwords
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form, to which messages are added
+     * @param string $newwords the words, separated by new lines or the language's list separator
      */
     public function addwords($mform, $newwords) {
         global $OUTPUT;
@@ -481,14 +473,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * get_lemma
+     * Get the lemma (headword) of a word, e.g. "run" for "running", from the dictionary.
      *
-     * @uses $DB
-     * @param xxx $word
-     * @param xxx $langcode
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $word
+     * @param string $langcode e.g. "en"
+     * @return string the lemma, or the word itself if no lemma is known
      */
     public function get_lemma($word, $langcode) {
         global $DB;
@@ -506,14 +495,11 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * selectwords
+     * Add random words from the dictionary to the word list: lemmas that are not used by
+     * any Vocabulary activity in this course.
      *
-     * @uses $DB
-     * @param moodleform $mform representing the Moodle form
-     * @param xxx $count
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form, to which messages are added
+     * @param int $count how many words to add, from 1 to 20
      */
     public function selectwords($mform, $count) {
         global $DB, $OUTPUT;
@@ -584,12 +570,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * importfile
+     * Import a word list from a file. (Not finished: it only shows the file's id.)
      *
-     * @param moodleform $mform representing the Moodle form
-     * @param xxx $fileid
-     *
-     * TODO: Finish documenting this function
+     * @param MoodleQuickForm $mform the form
+     * @param int $fileid the draft item id of the uploaded file
      */
     public function importfile($mform, $fileid) {
         $msg = \html_writer::tag('h4', 'importfile: ' . $fileid);
@@ -597,12 +581,10 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
-     * exportfile
+     * Export the word list to a file. (Not finished: it only shows the file name.)
      *
-     * @param moodleform $mform representing the Moodle form
+     * @param MoodleQuickForm $mform the form
      * @param string $filename
-     *
-     * TODO: Finish documenting this function
      */
     public function exportfile($mform, $filename) {
         $msg = \html_writer::tag('h4', 'exportfile: ' . $filename);

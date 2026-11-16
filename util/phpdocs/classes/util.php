@@ -36,10 +36,8 @@ class util extends \mod_vocab\utilbase {
     protected $messages = [];
 
     /**
-     * __construct
-     *
-     *
-     * TODO: Finish documenting this function
+     * Set up the utility, with the types and descriptions of common parameter names,
+     * which are used to write the @param lines of new PHPdocs.
      */
     public function __construct() {
         parent::__construct();
@@ -181,12 +179,10 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * phpdocs
+     * Check, fix or remove the copyright notices and PHPdocs in the files in a folder, or in one file,
+     * as the form says, then show what was found and done.
      *
-     * @uses $CFG
-     * @param moodleform $mform representing the Moodle form
-     *
-     * TODO: Finish documenting this function
+     * @param moodleform $mform the form, with the folder or file, file types and actions
      */
     public function phpdocs($mform) {
         global $CFG;
@@ -287,15 +283,13 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * get_report_remove_fix
+     * Work out what to do with a copyright notice or PHPdoc: report it, remove it, or fix it.
      *
-     * @param integer $action
-     * @param bool $missing
-     * @param bool $incorrect
-     * @param moodleform $mform representing the Moodle form
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param int $action an ACTION_xxx constant of the form
+     * @param bool $missing is the notice or PHPdoc missing?
+     * @param bool $incorrect is it incorrect?
+     * @param moodleform $mform the form, for its ACTION_xxx constants
+     * @return bool[] [$report, $remove, $fix]
      */
     public function get_report_remove_fix($action, $missing, $incorrect, $mform) {
 
@@ -336,17 +330,15 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * copyright_action
+     * Report, add or remove the copyright notice at the top of a file, as the action says.
      *
-     * @param moodleform $mform representing the Moodle form
+     * @param moodleform $mform the form
      * @param stdClass $data submitted from the form
-     * @param string $filepath
-     * @param integer $action
-     * @param string $contents (passed by reference)
-     * @param bool $update (passed by reference)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path, relative to the Moodle folder
+     * @param int $action an ACTION_xxx constant of the form
+     * @param string $contents the file's contents (passed by reference, and updated)
+     * @param bool $update set to true if the contents were changed (passed by reference)
+     * @return array an empty list of messages for the file (messages are stored with store_copyright_message())
      */
     public function copyright_action($mform, $data, $filepath, $action, &$contents, &$update) {
 
@@ -378,13 +370,11 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * remove_copyright
+     * Remove the copyright notice from a file's contents.
      *
-     * @param string $contents (passed by reference)
-     * @param bool $update (passed by reference)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $contents the file's contents (passed by reference, and updated)
+     * @param bool $update set to true if the contents were changed (passed by reference)
+     * @return bool true if a notice was removed
      */
     public function remove_copyright(&$contents, &$update) {
         $search = '// This file ' . 'is part of Moodle - http://moodle.org/';
@@ -398,13 +388,11 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * add_copyright
+     * Add the standard Moodle copyright notice at the top of a file's contents.
      *
-     * @param string $contents (passed by reference)
-     * @param bool $update (passed by reference)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $contents the file's contents (passed by reference, and updated)
+     * @param bool $update set to true (passed by reference)
+     * @return bool true
      */
     public function add_copyright(&$contents, &$update) {
         $copyright = $this->get_copyright() . "\n";
@@ -421,16 +409,14 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * phpdocs_action
+     * Report, fix or remove the PHPdocs of the functions and classes in a JavaScript or PHP file.
      *
-     * @param moodleform $mform representing the Moodle form
+     * @param moodleform $mform the form
      * @param stdClass $data submitted from the form
-     * @param string $filepath
-     * @param integer $action
-     * @param string $contents (passed by reference)
-     * @param bool $update (passed by reference)
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path, relative to the Moodle folder
+     * @param int $action an ACTION_xxx constant of the form
+     * @param string $contents the file's contents (passed by reference, and updated)
+     * @param bool $update set to true if the contents were changed (passed by reference)
      */
     public function phpdocs_action($mform, $data, $filepath, $action, &$contents, &$update) {
 
@@ -450,19 +436,17 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * fix_file_contents
+     * Report, fix or remove the PHPdocs of one kind of code block in a file's contents.
+     * (Note: for PHP functions, only names starting with "pie_gra" are matched at the moment.)
      *
-     * @uses $CFG
-     * @param moodleform $mform representing the Moodle form
+     * @param moodleform $mform the form
      * @param stdClass $data submitted from the form
-     * @param string $filepath
-     * @param integer $action
-     * @param string $contents (passed by reference)
-     * @param bool $update (passed by reference)
-     * @param xxx $type
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path, relative to the Moodle folder
+     * @param int $action an ACTION_xxx constant of the form
+     * @param string $contents the file's contents (passed by reference, and updated)
+     * @param bool $update set to true if the contents were changed (passed by reference)
+     * @param int $type the kind of block: 1 JavaScript functions, 2 JavaScript methods, 3 PHP functions, 4 PHP classes
+     * @return bool|void false if the search failed, otherwise nothing
      */
     public function fix_file_contents($mform, $data, $filepath, $action, &$contents, &$update, $type) {
         global $CFG;
@@ -634,38 +618,32 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * store_copyright_message
+     * Remember what was found or done with a file's copyright notice, to show later.
      *
-     * @param string $filepath
-     * @param mixed $type a PARAM_xxx constant value
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path
+     * @param string $type added, removed or missing
      */
     protected function store_copyright_message($filepath, $type) {
         $this->store_message($filepath, 'copyright', 'copyright' . $type);
     }
 
     /**
-     * store_phpdocs_message
+     * Remember what was found or done with the PHPdocs of a block of code, to show later.
      *
-     * @param string $filepath
-     * @param string $blockname
-     * @param mixed $type a PARAM_xxx constant value
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path
+     * @param string $blockname the name of the function or class
+     * @param string $type e.g. added, fixed, missing, incorrect, removed or unknownparam
      */
     protected function store_phpdocs_message($filepath, $blockname, $type) {
         $this->store_message($filepath, $blockname, 'phpdocs' . $type);
     }
 
     /**
-     * store_message
+     * Remember a message about a file, to show later.
      *
-     * @param string $filepath
-     * @param string $blockname
-     * @param mixed $type a PARAM_xxx constant value
-     *
-     * TODO: Finish documenting this function
+     * @param string $filepath the file's path
+     * @param string $blockname the name of a function or class, or "copyright"
+     * @param string $type the name of the message's string, e.g. "phpdocsadded"
      */
     protected function store_message($filepath, $blockname, $type) {
         if (! array_key_exists($filepath, $this->messages)) {
@@ -678,10 +656,7 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * display_messages
-     *
-     *
-     * TODO: Finish documenting this function
+     * Show the stored messages, as a list of files, with what was found or done in each one.
      */
     protected function display_messages() {
 
@@ -880,14 +855,12 @@ class util extends \mod_vocab\utilbase {
     }
 
     /**
-     * Get PHPdocs for a block of PHP code, including the package and copyright
+     * Get the PHPdocs for a class or file, with its package, copyright, licence, author and Moodle version.
      *
-     * @param stdClass $data submitted from the form
-     * @param string $indent
-     * @param string $blockname
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param stdClass $data submitted from the form, with the details to use
+     * @param string $indent white space to begin each line
+     * @param string $blockname the name of the class or file
+     * @return string the PHPdocs
      */
     public function get_phpdocs_block($data, $indent, $blockname) {
         $details = <<<END
@@ -901,14 +874,12 @@ END;
     }
 
     /**
-     * get_phpdoc
+     * Put together a PHPdoc comment from its comment lines and its details.
      *
-     * @param string $indent
-     * @param xxx $comments
-     * @param string $details
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $indent white space to begin each line
+     * @param string|string[] $comments a name, or the lines of an old PHPdoc's description
+     * @param string $details the lines of tags, e.g. @param and @return
+     * @return string the PHPdoc
      */
     public function get_phpdoc($indent, $comments, $details) {
         return $indent . '/' . '**' . "\n" .
@@ -918,13 +889,11 @@ END;
     }
 
     /**
-     * get_comments_phpdoc
+     * Format the description lines of a PHPdoc.
      *
-     * @param xxx $comments
-     * @param string $indent
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string|string[] $comments a function or class name, or the lines of an old PHPdoc's description
+     * @param string $indent white space to begin each line
+     * @return string the lines, each beginning with " * "
      */
     public function get_comments_phpdoc($comments, $indent) {
         if (is_scalar($comments)) {
@@ -945,13 +914,11 @@ END;
     }
 
     /**
-     * get_details_phpdoc
+     * Format the tag lines of a PHPdoc, with a blank line before them.
      *
-     * @param xxx $details
-     * @param xxx $indent
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $details the lines of tags, e.g. @param and @return
+     * @param string $indent white space to begin the blank line
+     * @return string the lines, or '' if there are none
      */
     public function get_details_phpdoc($details, $indent) {
         if ($details) {
@@ -1047,13 +1014,11 @@ END;
     }
 
     /**
-     * remove_phpdocs
+     * Remove every PHPdoc comment from a file's contents.
      *
-     * @param string $contents (passed by reference)
-     * @param bool $update (passed by reference)
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $contents the file's contents (passed by reference, and updated)
+     * @param bool $update not used
+     * @return array [bool $removed, string $contents]
      */
     public function remove_phpdocs(&$contents, &$update) {
         $search = '/' .
@@ -1066,12 +1031,10 @@ END;
     }
 
     /**
-     * get_copyright
+     * Get the standard Moodle copyright notice, as a comment for a type of file.
      *
-     * @param string $filetype file type/extension (optional, default='')
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @param string $filetype css, xml, or '' for PHP and JavaScript
+     * @return string the notice
      */
     public function get_copyright($filetype = '') {
         $header = '';

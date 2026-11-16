@@ -27,10 +27,7 @@ namespace mod_vocab\event;
  */
 class course_module_viewed extends \core\event\course_module_viewed {
     /**
-     * init
-     *
-     *
-     * TODO: Finish documenting this function
+     * Initialise the event: viewing an activity is a "read" by a participant, of a record in the "vocab" table.
      */
     protected function init() {
         $this->data['crud'] = 'r';

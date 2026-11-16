@@ -64,12 +64,8 @@ class form extends \mod_vocab\utilform {
     const ACTION_REMOVE_ALL = 7;
 
     /**
-     * definition
-     *
-     * @uses $CFG
-     * @uses $USER
-     *
-     * TODO: Finish documenting this function
+     * Define the fields of the form: which files to check, the actions for their copyright
+     * notices and PHPdocs, and the details to use in the copyright notices.
      */
     public function definition() {
         global $CFG, $USER;
@@ -112,11 +108,9 @@ class form extends \mod_vocab\utilform {
     }
 
     /**
-     * get_filetypes
+     * Get the types of file that can be checked, for a menu.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return array file extension => localised name, e.g. "php" => "PHP files"
      */
     public function get_filetypes() {
         return [
@@ -128,11 +122,9 @@ class form extends \mod_vocab\utilform {
     }
 
     /**
-     * get_actions
+     * Get the actions that can be taken on copyright notices and PHPdocs, for a menu.
      *
-     * @return xxx
-     *
-     * TODO: Finish documenting this function
+     * @return array ACTION_xxx constant => localised name
      */
     public function get_actions() {
         return [

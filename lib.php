@@ -25,13 +25,12 @@
  */
 
 /**
- * Specifies which Moodle features this plugin supports.
- * (for a full list of features, see "lib/moodlelib.php")
+ * Specify which Moodle features this plugin supports.
+ * (For a full list of features, see "lib/moodlelib.php".)
  *
- * @param string $feature a FEATURE_xxx constant e.g. mod_intro
- * @return bool TRUE if this plugin supports this $feature; otherwise FALSE.
- *
- * TODO: Finish documenting this function
+ * @param string $feature a FEATURE_xxx constant, e.g. FEATURE_MOD_INTRO
+ * @return mixed true or false if the feature is (not) supported, a value for some features
+ *     (e.g. the archetype or purpose), or null if the feature is unknown.
  */
 function vocab_supports($feature) {
     // These constants are defined in "lib/moodlelib.php".
@@ -72,14 +71,11 @@ function vocab_supports($feature) {
 }
 
 /**
- * vocab_add_instance
+ * Add a new Vocabulary activity, with its stages and games, and its grade item.
  *
- * @uses $DB
- * @param stdClass $data submitted from the form
- * @param moodleform $mform representing the Moodle form
- * @return xxx
- *
- * TODO: Finish documenting this function
+ * @param stdClass $data submitted from the settings form
+ * @param moodleform $mform the settings form
+ * @return int the id of the new activity
  */
 function vocab_add_instance($data, $mform) {
     global $DB;
@@ -101,14 +97,11 @@ function vocab_add_instance($data, $mform) {
 }
 
 /**
- * vocab_update_instance
+ * Update a Vocabulary activity, with its stages and games, and its grade item.
  *
- * @uses $DB
- * @param stdClass $data submitted from the form
- * @param moodleform $mform representing the Moodle form
- * @return xxx
- *
- * TODO: Finish documenting this function
+ * @param stdClass $data submitted from the settings form
+ * @param moodleform $mform the settings form
+ * @return bool true
  */
 function vocab_update_instance($data, $mform) {
     global $DB;
@@ -166,13 +159,11 @@ function vocab_save_stages_and_games($data) {
 }
 
 /**
- * vocab_delete_instance
+ * Delete a Vocabulary activity: its calendar events, its stages, games and word list,
+ * students' attempts and progress, and its grade item. The words themselves are kept.
  *
- * @uses $DB
- * @param xxx $id
- * @return xxx
- *
- * TODO: Finish documenting this function
+ * @param int $id the id of the activity
+ * @return bool true
  */
 function vocab_delete_instance($id) {
     global $CFG, $DB;
