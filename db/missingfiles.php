@@ -43,4 +43,6 @@ $PAGE->set_pagelayout('admin');
 $renderer = $PAGE->get_renderer($vocab->plugin);
 $renderer->attach_activity($vocab);
 
-echo $renderer->find_missing_files($vocab->plugin, $vocab->pluginpath);
+// The course whose questions are checked, e.g. missingfiles.php?courseid=4.
+$courseid = optional_param('courseid', 0, PARAM_INT);
+echo $renderer->find_missing_files($vocab->plugin, $courseid);

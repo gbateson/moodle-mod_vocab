@@ -157,6 +157,7 @@ $string['materialsqueuedone'] = '1 語の教材をバックグラウンドで作
 $string['materialsready'] = '{$a->total} 語のうち {$a->ready} 語に教材があります';
 $string['medianotcreated'] = 'メディアの作成に失敗しました：{$a->subplugin}。 [filearea={$a->filearea}, itemid={$a->itemid}]';
 $string['mediatype'] = 'メディアタイプ';
+$string['missingfilescourseid'] = 'コースのIDを指定してください（例：missingfiles.php?courseid=4）。';
 $string['modulename'] = '語彙活動';
 $string['modulename_help'] = 'Vocabモジュールは、間隔反復を通して学生の語彙習得を支援します。
 
@@ -173,6 +174,7 @@ $string['nodescription'] = '説明なし';
 $string['nofooter'] = 'フッターなし';
 $string['nogamesforyou'] = 'まだ遊べるゲームはありません。';
 $string['nogamesinstalled'] = 'ゲームがインストールされていません。';
+$string['nomissingfiles'] = '不足しているファイルは見つかりませんでした。';
 $string['nonavbar'] = 'ナビゲーションバーなし';
 $string['notasks'] = '現在、実行待ちのアドホックタスクはありません。';
 $string['notitle'] = 'タイトルなし';

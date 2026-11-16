@@ -45,8 +45,8 @@ class form extends \mod_vocab\toolform {
         $mform = $this->_form;
         $this->set_form_id($mform);
 
-        $mform->addElement('html', \html_writer::tag('p', 'Context'));
-        $mform->addElement('html', \html_writer::tag('p', 'Question category'));
+        // The question category to check, with its subcategories.
+        $this->add_parentcategory($mform, 'parentcat');
 
         // Use "Check files" as the label for the submit button.
         $label = $this->get_string('checkfiles');

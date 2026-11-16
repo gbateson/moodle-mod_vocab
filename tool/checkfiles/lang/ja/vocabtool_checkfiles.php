@@ -25,5 +25,7 @@
  */
 
 $string['checkfiles'] = 'ファイルを確認';
+$string['parentcategory'] = '問題カテゴリ';
+$string['parentcategory_help'] = 'このカテゴリとそのサブカテゴリの問題について、Moodleに記録されているのにファイル保存領域にないファイル（例：サイトの移行時にコピーされなかった画像や音声）を確認します。';
 $string['pluginname'] = '語彙モジュールのアップグレードの再実行';
 $string['privacy:metadata'] = 'vocabtool_checkfiles プラグインは個人データを保存しません。';

@@ -38,63 +38,20 @@ class tool extends \mod_vocab\toolbase {
     const SUBPLUGINNAME = 'checkfiles';
 
     /**
-     * check_files
+     * Check the questions in the chosen question category, and its subcategories,
+     * for files that are recorded in Moodle, but are missing from the file store.
      *
-     * @param object $mform the moodleform object
-     * @return string HTML code to display results
+     * @param \moodleform $mform
+     * @return string HTML of the report.
      */
     public function check_files($mform) {
-        global $CFG, $DB;
-
-        // Initialize HTML output string.
-        $output = '';
-
-        // Fetch the incoming form data.
+        global $PAGE;
         $data = $mform->get_data();
-
-        if (empty($data->targetversion)) {
-            return false;
-        }
-
-        // Extract taskid.
-        $version = intval($data->targetversion);
-
-        // Format the plugin version.
-        if (preg_match('/(\d{4})(\d{2})(\d{2})(\d{2})/', "$version", $match)) {
-            $yy = $match[1];
-            $mm = $match[2];
-            $dd = $match[3];
-            $vv = intval($match[4]);
-            $text = date($dateformat, mktime(0, 0, 0, $mm, $dd, $yy)) . ($vv == 0 ? '' : " ($vv)");
-        } else {
-            $text = ''; // Shouldn't happen !!
-        }
-
-        // Reset the plugin version.
-        $dbman = $DB->get_manager();
-        if ($dbman->table_exists('config_plugins')) {
-            // This table is available in Moodle >= 2.6.
-            $params = ['plugin' => $this->plugin, 'name' => 'version'];
-            $DB->set_field('config_plugins', 'value', $version - 1, $params);
-            // Force Moodle to refetch versions.
-            if (isset($CFG->allversionshash)) {
-                unset_config('allversionshash');
-            }
-        }
-
-        // Inform user that module version has been reset.
-        $str = $this->get_string('redoversiondate', (object)[
-            'plugin' => $this->vocab->get_string('modulename'),
-            'version' => $version,
-            'datetext' => $text,
-        ]);
-        $output .= \html_writer::tag('p', $str, ['class' => 'alert alert-success']);
-
-        // Add a link to the upgrade page.
-        $href = new \moodle_url('/admin/index.php', ['confirmplugincheck' => 1, 'cache' => 0]);
-        $str = \html_writer::tag('a', $this->get_string('clicktocontinue'), ['href' => $href]);
-        $output .= \html_writer::tag('p', $str);
-
-        return $output;
+        $categoryid = (empty($data->parentcat['id']) ? 0 : (int) $data->parentcat['id']);
+        $renderer = $PAGE->get_renderer('mod_vocab');
+        $renderer->attach_activity($this->vocab);
+        $heading = $this->vocab->get_string('findmissingfiles', $this->get_string('pluginname'));
+        return $renderer->heading($heading, 3) .
+            $renderer->missing_files_report((int) $this->vocab->course->id, $categoryid);
     }
 }

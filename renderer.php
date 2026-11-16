@@ -836,17 +836,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * find_missing_files
+     * Show a page with the questions in a course whose files are missing from the file store.
      *
      * @param string $plugin name
-     * @param bool $purgecaches
+     * @param int $courseid the course whose questions are checked.
      * @return string HTML code to display results
      */
-    public function find_missing_files($plugin, $purgecaches = true) {
-        global $CFG, $DB, $FULLME;
-
-        require_once($CFG->dirroot . '/lib/questionlib.php');
-
+    public function find_missing_files($plugin, $courseid = 0) {
         // Set up the heading i.e. Find missing files.
         $heading = get_string('pluginname', $plugin) . " ($plugin)";
         $heading = $this->vocab->get_string('findmissingfiles', $heading);
@@ -855,18 +851,46 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $output .= $this->header();
         $output .= $this->heading($heading);
         $output .= $this->box_start();
+        if ($courseid) {
+            $output .= $this->missing_files_report((int) $courseid);
+        } else {
+            $output .= \html_writer::tag('p', $this->vocab->get_string('missingfilescourseid'));
+        }
+        $output .= $this->box_end();
+        $output .= $this->footer();
+        return $output;
+    }
 
-        $startedlists = false;
-        $startedlist = false;
+    /**
+     * Report the questions in a question category, and its subcategories, whose
+     * files are recorded in Moodle, but are missing from the file store.
+     *
+     * @param int $courseid the course of the questions.
+     * @param int $categoryid the category, or 0 for every category in the course.
+     * @return string HTML code to display results
+     */
+    public function missing_files_report($courseid, $categoryid = 0) {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/lib/questionlib.php');
 
-        $courseid = 4;
-        $course = $DB->get_record('course', ['id' => $courseid]);
+        $output = '';
         $coursecontext = context_course::instance($courseid);
 
-        $params = ['contextid' => $coursecontext->id, 'parent' => 0];
-        $coursecategory = $DB->get_record('question_categories', $params);
+        // The category to check: the given one, or the top category of the course.
+        if ($categoryid) {
+            $params = ['id' => $categoryid, 'contextid' => $coursecontext->id];
+        } else {
+            $params = ['contextid' => $coursecontext->id, 'parent' => 0];
+        }
+        if (! $coursecategory = $DB->get_record('question_categories', $params)) {
+            return \html_writer::tag('p', $this->vocab->get_string('nomissingfiles'));
+        }
 
         $categoryids = question_categorylist($coursecategory->id);
+        if (! is_array($categoryids)) {
+            // Moodle 3.x returns a list separated by commas.
+            $categoryids = explode(',', $categoryids);
+        }
 
         // Map category ids to category records.
         $categories = [];
@@ -889,18 +913,25 @@ class mod_vocab_renderer extends plugin_renderer_base {
             'q.name AS questionname',
         ]);
         ;
-        $from = implode(',', [
-            '{question_bank_entries} qbe',
-            '{question_versions} qv',
-            '{question_categories} qc',
-            '{question} q',
-        ]);
-        $where = implode(' AND ', [
-            "qbe.questioncategoryid $where",
-            'qbe.id = qv.questionbankentryid',
-            'qbe.questioncategoryid = qc.id',
-            'qv.questionid = q.id',
-        ]);
+        if ($DB->get_manager()->table_exists('question_versions')) {
+            // Moodle 4.0 and later: questions have versions, and their categories are in question_bank_entries.
+            $from = implode(',', [
+                '{question_bank_entries} qbe',
+                '{question_versions} qv',
+                '{question_categories} qc',
+                '{question} q',
+            ]);
+            $where = implode(' AND ', [
+                "qbe.questioncategoryid $where",
+                'qbe.id = qv.questionbankentryid',
+                'qbe.questioncategoryid = qc.id',
+                'qv.questionid = q.id',
+            ]);
+        } else {
+            $select = 'q.id, q.id AS questionid, qc.id AS catid, qc.name AS catname, q.name AS questionname';
+            $from = '{question} q, {question_categories} qc';
+            $where = "q.category $where AND q.category = qc.id";
+        }
         $sql = "SELECT $select FROM $from WHERE $where";
         if ($entries = $DB->get_records_sql($sql, $params)) {
             $filerecord = [
@@ -979,7 +1010,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         }
 
         if (empty($categories)) {
-            $output .= \html_writer::tag('p', 'No missing files found. Well done!');
+            $output .= \html_writer::tag('p', $this->vocab->get_string('nomissingfiles'));
         } else {
             // Fix the name of the "top" question category for this course.
             $catid = $coursecategory->id;
@@ -1002,8 +1033,6 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $output .= \html_writer::end_tag('div');
         }
 
-        $output .= $this->box_end();
-        $output .= $this->footer();
         return $output;
     }
 

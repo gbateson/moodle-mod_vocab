@@ -155,6 +155,7 @@ $string['materialsqueuedone'] = 'Materials for 1 word are being made in the back
 $string['materialsready'] = '{$a->ready} of {$a->total} words have materials';
 $string['medianotcreated'] = 'Oops, media could not be created by {$a->subplugin}. [filearea={$a->filearea}, itemid={$a->itemid}]';
 $string['mediatype'] = 'Media type';
+$string['missingfilescourseid'] = 'Please give the id of a course, e.g. missingfiles.php?courseid=4';
 $string['modulename'] = 'Vocabulary activity';
 $string['modulename_help'] = 'The Vocab module assists students in learning vocabulary through spaced repetition.
 
@@ -171,6 +172,7 @@ $string['nodescription'] = 'No description';
 $string['nofooter'] = 'No footer';
 $string['nogamesforyou'] = 'There are no games to play yet.';
 $string['nogamesinstalled'] = 'No games are installed.';
+$string['nomissingfiles'] = 'No missing files were found.';
 $string['nonavbar'] = 'No navigation bar';
 $string['notasks'] = 'There are currently no adhoc tasks awaiting execution.';
 $string['notitle'] = 'No title';

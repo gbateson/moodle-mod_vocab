@@ -25,5 +25,7 @@
  */
 
 $string['checkfiles'] = 'Check files';
+$string['parentcategory'] = 'Question category';
+$string['parentcategory_help'] = 'The questions in this category, and in its subcategories, are checked for files that are recorded in Moodle, but are missing from the file store, e.g. images or audio that were not copied when the site was moved.';
 $string['pluginname'] = 'Check question files';
 $string['privacy:metadata'] = 'The vocabtool_checkfiles plugin does not store any personal data.';

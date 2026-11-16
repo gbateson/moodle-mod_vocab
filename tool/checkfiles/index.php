@@ -58,7 +58,8 @@ if ($mform->is_cancelled()) {
 echo $OUTPUT->header();
 echo $OUTPUT->box_start();
 if ($mform->is_submitted() && $mform->is_validated()) {
-    echo $tool->redo_upgrade($mform);
+    echo $tool->check_files($mform);
+    $mform->display();
 } else {
     $mform->display();
 }
