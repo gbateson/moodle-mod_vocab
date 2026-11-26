@@ -72,4 +72,26 @@ class mod_vocab_generator extends testing_module_generator {
         }
         return $result;
     }
+
+    /**
+     * Add a game to an activity.
+     *
+     * @param array|stdClass $record with vocabid, stage, and optionally game (default "quiz"),
+     *     title, enabled (default 1) and configdata (an array).
+     * @return int the id of the game instance.
+     */
+    public function create_game_instance($record): int {
+        $record = (array) $record;
+        $id = \mod_vocab\progress::add_game_instance(
+            (int) $record['vocabid'],
+            $record['game'] ?? 'quiz',
+            $record['stage'],
+            $record['configdata'] ?? [],
+            $record['title'] ?? ''
+        );
+        if (isset($record['enabled']) && !$record['enabled']) {
+            \mod_vocab\progress::set_game_instance_enabled($id, false);
+        }
+        return $id;
+    }
 }

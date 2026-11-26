@@ -139,6 +139,24 @@ abstract class gamebase {
     }
 
     /**
+     * Get the picture shown behind the game's tiles on the activity's page:
+     * the game's pix/tile.svg or pix/tile.png (see docs/games.md).
+     *
+     * @return \moodle_url|null null if the game has no picture.
+     */
+    public static function get_tile_url(): ?\moodle_url {
+        global $OUTPUT;
+        $component = static::get_component();
+        $dir = \core_component::get_component_directory($component);
+        foreach (['svg', 'png'] as $extension) {
+            if ($dir && file_exists("$dir/pix/tile.$extension")) {
+                return $OUTPUT->image_url('tile', $component);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get the stages at which the game can be used.
      *
      * @return string[] some of progress::STAGES.
@@ -148,7 +166,7 @@ abstract class gamebase {
     }
 
     /**
-     * Add the game's own settings to the activity's settings form.
+     * Add the game's own settings to the game's settings form (see gameform).
      * Each field's name must start with the prefix.
      *
      * @param \MoodleQuickForm $mform
@@ -159,13 +177,23 @@ abstract class gamebase {
     }
 
     /**
-     * Get the game's own settings from the activity's settings form.
+     * Get the game's own settings from the game's settings form.
      *
      * @param \stdClass $data the form's data.
      * @param string $prefix
      * @return array name => value, saved as the instance's configdata.
      */
     public static function get_settings(\stdClass $data, string $prefix): array {
+        return [];
+    }
+
+    /**
+     * Check the game's own settings in the game's settings form.
+     *
+     * @param \stdClass $data the form's data.
+     * @return array field name => error, or [] if there are no errors.
+     */
+    public static function validate_settings(\stdClass $data): array {
         return [];
     }
 

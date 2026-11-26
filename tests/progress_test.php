@@ -185,23 +185,6 @@ final class progress_test extends \advanced_testcase {
     }
 
     /**
-     * Games that are no longer offered are disabled, not deleted.
-     */
-    public function test_save_game_instances(): void {
-        global $DB;
-        $this->resetAfterTest();
-        [$progress] = $this->make_activity([progress::STAGE_RECOGNIZE => [1, 1], progress::STAGE_RECALL => [1, 1]]);
-        $vocabid = $progress->get_vocab()->id;
-        progress::save_game_instances($vocabid, [['quiz', 'recognize', ['wordcount' => 3]], ['quiz', 'recall', []]]);
-        $instances = $progress->get_game_instances();
-        $this->assertSame(['recognize', 'recall'], array_values(array_column($instances, 'stage')));
-        progress::save_game_instances($vocabid, [['quiz', 'recall', []]]);
-        $this->assertSame(['recall'], array_values(array_column($progress->get_game_instances(), 'stage')));
-        $this->assertSame(2, $DB->count_records('vocab_game_instances', ['vocabid' => $vocabid]));
-        $this->assertCount(2, $progress->get_game_instances(false));
-    }
-
-    /**
      * Games are added at the end, can share a game and stage, and keep or suggest their titles.
      */
     public function test_add_and_update_game_instances(): void {

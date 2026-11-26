@@ -1,6 +1,6 @@
 # Plan: managing games on the activity page
 
-Status: 2026-11-26. Decisions agreed. Step 1 done (not yet committed); step 2 next.
+Status: 2026-11-27. Steps 1 to 6 and 8 done. Step 7 (backup and restore) still to do.
 
 ## Goal
 
@@ -37,7 +37,7 @@ saved straight away.
 
 None at present.
 
-## Current state (what changes)
+## Before the change
 
 - `vocab_game_instances` already supports many games per activity: `sortorder`,
   `stage`, `configdata`, `enabled`. The only schema change is the new `title` field.
@@ -48,14 +48,17 @@ None at present.
   and calls `progress::save_game_instances()`.
 - [classes/progress.php](classes/progress.php): `save_game_instances()` keys
   instances by *game type + stage*, so only one game of each type per stage
-  is possible. This is the main limit to remove.
+  is possible. This was the main limit to remove. It also hid any game that
+  was not ticked in the form, so it had to go at the same time as the new
+  page was added.
 - [classes/gamebase.php](classes/gamebase.php): the static `add_settings()`
   and `get_settings()` take a field-name prefix. With prefix `''` they can be
   reused unchanged in the new form.
 - [renderer.php](renderer.php): `view_games()`, `get_games()` and
   `game_button()` draw the tiles. `get_games()` still has placeholder
   "Vocabulary game N" tiles. These should go.
-- **Backup is broken already.** `backup/moodle2/backup_vocab_stepslib.php`
+- **Backup is broken already**, and switched off: `vocab_supports(FEATURE_BACKUP_MOODLE2)`
+  returns false. `backup/moodle2/backup_vocab_stepslib.php`
   refers to `vocab_games` by `vocabid`, `vocab_game_scores`, `taskid` and
   `vocab_questions`. These are leftovers from TaskChain and don't match
   `install.xml`. Once teachers build their own sets of games, backup and
@@ -86,7 +89,7 @@ GitHub on its own.
 - Keep `save_game_instances()` until step 6, then remove it.
 - PHPUnit tests for all of these.
 
-### 2. Game settings form (`classes/gameform.php`)
+### 2. Game settings form (`classes/gameform.php`) — done
 
 - `\mod_vocab\gameform extends \core_form\dynamic_form`.
 - `get_context_for_dynamic_submission()`: the module context, from `cmid`.
@@ -104,7 +107,7 @@ GitHub on its own.
   `update_game_instance()`, and returns the instance id.
 - `get_page_url_for_dynamic_submission()`: `game/edit.php`.
 
-### 3. Pages that work without JavaScript
+### 3. Pages that work without JavaScript — done
 
 - `game/edit.php?id=<instanceid>`: edit a game.
 - `game/edit.php?cmid=<cmid>&game=<type>`: add a game.
@@ -116,28 +119,30 @@ GitHub on its own.
 - Each page runs the same `gameform` as a normal page form. Cancel and Save
   both return to `view.php`.
 
-### 4. Web service functions (`db/services.php`, `classes/external/`)
+### 4. Web service functions (`db/services.php`, `classes/external/`) — done
 
 - `mod_vocab_delete_game_instance(id)`
-- `mod_vocab_reorder_game_instances(cmid, ids[])`
+- `mod_vocab_reorder_game_instances(vocabid, ids[])`
 - `mod_vocab_set_game_instance_enabled(id, enabled)`: hide or show.
-- Both are AJAX-enabled and check `mod/vocab:manage`.
+- All three are AJAX-enabled and check `mod/vocab:manage`.
 - Adding and editing don't need web service functions: `dynamic_form`
   handles its own AJAX.
 - Bump `version.php`.
 
-### 5. Tiles on `view.php` (`renderer.php`, `templates/`, `amd/src/`)
+### 5. Tiles on `view.php` (`renderer.php`, `templates/`, `amd/src/`) — done
 
-- Move the tile markup into `templates/game_tiles.mustache` (the plugin has no
-  `templates/` folder yet), with `data-instanceid` on each tile.
+- Teachers' tiles are drawn by `templates/game_manager.mustache`, with
+  `data-instanceid` on each tile. Students' tiles are drawn as before.
 - For teachers (`mod/vocab:manage`):
   - a **＋** tile, which links to `game/add.php`;
-  - a **🗑** drop target;
-  - a ⋮ action menu on each tile: *Edit*, *Duplicate*, *Hide* / *Show*, *Delete*;
+  - a **🗑** drop target, shown only when JavaScript is available;
+  - a ⋮ action menu on each tile: *Edit*, *Preview*, *Hide* / *Show*, *Delete*
+    (*Duplicate* is moved to "Possibly later");
   - hidden games, and games at stages that are not enabled, greyed out;
   - tiles link to `game/edit.php`.
 - Students see the tiles as now. The teacher controls are not output for them.
-- Remove the placeholder tiles from `get_games()`.
+- The "Vocabulary game N" tiles in `get_games()` are only for the demo mode
+  (`activity::is_demo()`), so they stay.
 - `amd/src/managegames.js`:
   - intercepts tile and ＋ clicks and opens the `gameform` in `ModalForm`;
   - for ＋ with several game types, shows a small chooser first;
@@ -147,20 +152,25 @@ GitHub on its own.
     service function;
   - handles drops on 🗑 and *Delete* in the menu: it confirms with
     `core/notification`, mentioning the attempt count when there are attempts,
-    then calls the delete web service function and removes the tile.
+    then calls the delete web service function and reloads the page.
 - Styles in `styles.css`, using the existing tile colours.
 
-### 6. Settings form clean-up (`mod_form.php`, `lib.php`)
+### 6. Settings form clean-up (`mod_form.php`, `lib.php`) — done
 
 - Remove `add_games()`, the game parts of `stages_and_games_preprocessing()`,
   and the game parts of `vocab_save_stages_and_games()`.
 - In the **Games** section's place, add a short note: "Games are added and
   arranged on the activity page". Link to it when the activity exists.
 - Remove `progress::save_game_instances()`.
-- Remove `gamebase::add_settings()`'s `$prefix` parameter? Not needed:
-  keep it for compatibility and always pass `''`.
+- `gamebase::add_settings()` keeps its `$prefix` parameter; the form passes `''`.
+- Students no longer see games at stages that are not enabled, and
+  `game/quiz/play.php` refuses hidden games and games at those stages,
+  except for teachers.
 
-### 7. Backup and restore
+### 7. Backup and restore — to do
+
+- Backup is currently switched off, so this is about making it work and then
+  switching it on, not only about games.
 
 - Rewrite the game parts of `backup_vocab_stepslib.php` and
   `restore_vocab_stepslib.php` for the real tables:
@@ -169,7 +179,7 @@ GitHub on its own.
 - Restore should map question category ids inside `configdata` where possible.
 - Test: back up an activity with two quizzes, restore it into another course.
 
-### 8. Tests, strings and finish
+### 8. Tests, strings and finish — done
 
 - Behat:
   - add, edit and delete a game without JavaScript;
@@ -178,10 +188,16 @@ GitHub on its own.
 - PHPUnit for `gameform` and the web service functions.
 - Language strings in `lang/en` and `lang/ja`.
 - Run the code checker and moodlecheck.
+- Behat scenarios in `tests/behat/manage_games.feature`, using a new data
+  generator (`"mod_vocab > game instances"`): without JavaScript; with popups
+  and the ⋮ menu; reordering with the keyboard *Move* dialog and dragging to
+  the trash, with an accessibility check; and what students see.
+- PHPUnit: `gameform_test`, `external/game_instances_test`, `renderer_test`.
 - Commit to SVN and GitHub.
 
 ## Possibly later
 
 - The same tile manager on the mobile app view (`classes/output/mobile.php`).
 - Re-render tiles in place after a save, instead of reloading the page.
-- A *Duplicate to another stage* shortcut.
+- A *Duplicate* item in the ⋮ menu, e.g. to use the same quiz at another stage.
+- Update the title's placeholder in the popup when the stage is changed.

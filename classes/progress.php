@@ -817,55 +817,6 @@ class progress {
     }
 
     /**
-     * Save the games that an activity offers. Games that are no longer offered are
-     * disabled, not deleted, so that their attempts are kept.
-     *
-     * @param int $vocabid
-     * @param array $games each [name, stage, configdata (array)], in order.
-     */
-    public static function save_game_instances(int $vocabid, array $games): void {
-        global $DB;
-        $existing = [];
-        foreach ($DB->get_records('vocab_game_instances', ['vocabid' => $vocabid], 'sortorder') as $instance) {
-            $existing[$instance->gameid . '/' . $instance->stage] = $instance;
-        }
-        // Move the sort orders out of the way, so that they can be set again without clashing.
-        $max = (int) $DB->get_field_sql('SELECT MAX(sortorder) FROM {vocab_game_instances} WHERE vocabid = ?', [$vocabid]);
-        foreach ($existing as $instance) {
-            $DB->set_field('vocab_game_instances', 'sortorder', $instance->sortorder + $max + 1, ['id' => $instance->id]);
-        }
-        $sortorder = 0;
-        foreach ($games as $game) {
-            [$name, $stage, $configdata] = $game;
-            $gameid = self::get_gameid($name);
-            $key = $gameid . '/' . $stage;
-            $record = (object) [
-                'vocabid' => $vocabid,
-                'gameid' => $gameid,
-                'stage' => $stage,
-                'enabled' => 1,
-                'sortorder' => ++$sortorder,
-                'configdata' => json_encode($configdata),
-            ];
-            if (isset($existing[$key])) {
-                $record->id = $existing[$key]->id;
-                $DB->update_record('vocab_game_instances', $record);
-                unset($existing[$key]);
-            } else {
-                $record->title = '';
-                $DB->insert_record('vocab_game_instances', $record);
-            }
-        }
-        foreach ($existing as $instance) {
-            $DB->update_record('vocab_game_instances', (object) [
-                'id' => $instance->id,
-                'enabled' => 0,
-                'sortorder' => ++$sortorder,
-            ]);
-        }
-    }
-
-    /**
      * Add a game to an activity, after its other games.
      *
      * @param int $vocabid

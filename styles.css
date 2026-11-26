@@ -81,10 +81,7 @@
 }
 
 .path-mod-vocab .vocab-games {
-    max-width: 480px;
-}
-.path-mod-vocab .vocab-games .btn {
-    max-width: 110px;
+    max-width: 720px;
 }
 
 /** The following styles are shared among the AI and TOOL subplugins */
@@ -153,4 +150,71 @@
 /** indent the labels of the selects in the stages of learning on the mod form */
 .path-mod-vocab .mform .fcontainer [id^="fgroup_id_stage_"] label.col-form-label {
     padding-left: 1rem;
+}
+
+/** game tiles on the activity page (templates/game_tiles.mustache and game_manager.mustache):
+    the game's picture (or a colour) at the top, and its title below */
+/** tiles in the same row have the same height */
+.path-mod-vocab .vocab-game-tiles > li:not(.vocab-game-tile) {
+    display: flex;
+}
+.path-mod-vocab .vocab-game-tile {
+    width: 150px;
+    overflow: hidden;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    color: #1d2125;
+}
+.path-mod-vocab .vocab-game-tile .vocab-game-picture {
+    height: 90px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.path-mod-vocab .vocab-game-tile .vocab-game-band {
+    padding: 4px 6px 6px;
+}
+.path-mod-vocab .vocab-game-tile .vocab-game-title {
+    font-weight: bold;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+.path-mod-vocab .vocab-game-tile .vocab-game-reason {
+    line-height: 1.2;
+}
+.path-mod-vocab .vocab-game-tile.vocab-game-dimmed {
+    opacity: 0.5;
+    filter: grayscale(100%);
+}
+.path-mod-vocab a.vocab-game-tile:hover,
+.path-mod-vocab a.vocab-game-tile:focus {
+    box-shadow: 0 0 0 3px #1144ff;
+}
+.path-mod-vocab .vocab-game-add,
+.path-mod-vocab .vocab-game-trash {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border: 2px dashed #999;
+    color: #666;
+}
+.path-mod-vocab .vocab-game-add .icon,
+.path-mod-vocab .vocab-game-trash .icon {
+    font-size: 2.5rem;
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+.path-mod-vocab .vocab-game-add:hover,
+.path-mod-vocab .vocab-game-add:focus {
+    border-color: #1144ff;
+    color: #1144ff;
+}
+.path-mod-vocab .vocab-games-dragging .vocab-game-trash {
+    border-color: #c00;
+    color: #c00;
+    background-color: #fee;
 }

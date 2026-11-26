@@ -51,8 +51,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         require_once($CFG->libdir . '/questionlib.php');
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
-        $this->vocab = $generator->create_module('vocab', ['course' => $course->id, 'stage_recognize' => 1,
-            'game_quiz_recognize' => 1]);
+        $this->vocab = $generator->create_module('vocab', ['course' => $course->id, 'stage_recognize' => 1]);
+        progress::add_game_instance($this->vocab->id, 'quiz', progress::STAGE_RECOGNIZE);
         $cm = get_coursemodule_from_instance('vocab', $this->vocab->id);
         $this->context = \context_module::instance($cm->id);
         $generator->get_plugin_generator('mod_vocab')->add_words($this->vocab->id, ['cat', 'dog']);

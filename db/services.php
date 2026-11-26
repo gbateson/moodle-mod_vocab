@@ -37,4 +37,27 @@ if (class_exists('\\core_external\\external_api')) {
         'capabilities' => 'mod/vocab:view',
         'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ];
+
+    // Manage the games of an activity, on the activity's page.
+    $functions['mod_vocab_delete_game_instance'] = [
+        'classname' => \mod_vocab\external\delete_game_instance::class,
+        'description' => 'Remove a game from a Vocabulary activity, or hide it if it has been played.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/vocab:manage',
+    ];
+    $functions['mod_vocab_reorder_game_instances'] = [
+        'classname' => \mod_vocab\external\reorder_game_instances::class,
+        'description' => 'Put the games of a Vocabulary activity in a new order.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/vocab:manage',
+    ];
+    $functions['mod_vocab_set_game_instance_enabled'] = [
+        'classname' => \mod_vocab\external\set_game_instance_enabled::class,
+        'description' => 'Hide a game in a Vocabulary activity from students, or show it again.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/vocab:manage',
+    ];
 }

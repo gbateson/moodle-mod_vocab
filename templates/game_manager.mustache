@@ -1,0 +1,89 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocab/game_manager
+
+    For teachers, the games in a Vocabulary activity, as tiles that can be
+    edited, reordered, hidden, shown and deleted, with a tile to add a game
+    and a trash can to drag games to. Without JavaScript, the tiles and menu
+    items are links; amd/src/managegames.js handles them on the page.
+
+    Context variables required for this template:
+    * regionid - the id of the outer element
+    * vocabid - the id of the activity
+    * cmid - the id of the course module
+    * tiles - the games: id, title, enabled, attempts, status, dimmed, editurl, hasimage, style,
+      draghandle (HTML), menu (HTML)
+    * hastiles - true if there are any games
+    * addurl - the page for adding a game
+    * addicon, trashicon - HTML of the icons
+
+    Example context (json):
+    {
+        "regionid": "vocab-games-1",
+        "vocabid": 1,
+        "cmid": 2,
+        "tiles": [
+            {
+                "id": 3, "title": "Quiz (Recognize)", "enabled": 1, "attempts": 0,
+                "status": "", "dimmed": false, "editurl": "#", "hasimage": false,
+                "style": "background-color: #bbddff; color: black;",
+                "draghandle": "", "menu": ""
+            },
+            {
+                "id": 4, "title": "Food quiz", "enabled": 0, "attempts": 5,
+                "status": "Hidden from students", "dimmed": true, "editurl": "#", "hasimage": false,
+                "style": "background-color: #1144ff; color: white;",
+                "draghandle": "", "menu": ""
+            }
+        ],
+        "hastiles": true,
+        "addurl": "#",
+        "addicon": "+",
+        "trashicon": "-"
+    }
+}}
+<div id="{{regionid}}" class="vocab-games vocab-games-manage" data-region="vocab-games" data-vocabid="{{vocabid}}" data-cmid="{{cmid}}">
+    {{^hastiles}}
+        <p class="text-muted">{{#str}}nogamesyet, mod_vocab{{/str}}</p>
+    {{/hastiles}}
+    <ul class="list-unstyled d-flex flex-wrap align-items-stretch m-0 vocab-game-tiles" data-region="vocab-game-tiles">
+        {{#tiles}}
+        <li class="d-flex flex-column m-1 rounded vocab-game-tile{{#hasimage}} vocab-game-has-image{{/hasimage}}{{#dimmed}} vocab-game-dimmed{{/dimmed}}"
+            data-instanceid="{{id}}" data-title="{{title}}" data-enabled="{{enabled}}" data-attempts="{{attempts}}">
+            <div class="vocab-game-picture" style="{{style}}">
+                <div class="d-flex align-items-center vocab-game-tile-header">
+                    <span class="vocab-game-handle">{{{draghandle}}}</span>
+                    <span class="ml-auto ms-auto">{{{menu}}}</span>
+                </div>
+            </div>
+            <div class="vocab-game-band">
+                <a class="d-block text-reset vocab-game-title" href="{{editurl}}" data-action="edit">{{title}}</a>
+                {{#status}}
+                    <span class="badge bg-light text-dark vocab-game-status">{{status}}</span>
+                {{/status}}
+            </div>
+        </li>
+        {{/tiles}}
+    </ul>
+    <div class="d-flex align-items-center mt-2 vocab-game-tools">
+        <a class="m-1 rounded vocab-game-add" href="{{addurl}}" data-action="add"
+            title="{{#str}}addgame, mod_vocab{{/str}}" aria-label="{{#str}}addgame, mod_vocab{{/str}}">{{{addicon}}}</a>
+        <div class="m-1 rounded d-none vocab-game-trash" data-region="vocab-game-trash"
+            title="{{#str}}dragtodeletegame, mod_vocab{{/str}}">{{{trashicon}}}</div>
+    </div>
+</div>

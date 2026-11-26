@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">
+    <!--
+        Tile background for the quiz game (vocabgame_quiz), on the activity page.
+        Size 300 x 180 (5:3), drawn at twice the tile's size of 150 x 90.
+        Safe areas: the top 30 units hold the drag handle and menu, and the
+        bottom 50 units hold the game's title, so they have no detail.
+        Colors: the activity's blues (#bbddff to #1144ff) and its icon's
+        green (#96ff2d), orange (#ffcb2e) and red (#ff2e2e).
+    -->
+    <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#eaf4ff"/>
+            <stop offset="1" stop-color="#bbddff"/>
+        </linearGradient>
+        <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%">
+            <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="#1144ff" flood-opacity="0.25"/>
+        </filter>
+    </defs>
+
+    <!-- background -->
+    <rect width="300" height="180" fill="url(#sky)"/>
+    <circle cx="282" cy="22" r="46" fill="#ffffff" opacity="0.45"/>
+    <circle cx="14" cy="168" r="38" fill="#ffffff" opacity="0.35"/>
+
+    <!-- question card -->
+    <g filter="url(#shadow)">
+        <rect x="30" y="34" width="150" height="96" rx="10" fill="#ffffff"/>
+    </g>
+    <!-- the question -->
+    <rect x="44" y="46" width="96" height="8" rx="4" fill="#1144ff" opacity="0.8"/>
+    <rect x="44" y="58" width="64" height="8" rx="4" fill="#1144ff" opacity="0.4"/>
+
+    <!-- answer 1 -->
+    <rect x="44" y="76" width="12" height="12" rx="3" fill="none" stroke="#9aa7b8" stroke-width="2"/>
+    <rect x="64" y="79" width="70" height="6" rx="3" fill="#c9d3e0"/>
+    <!-- answer 2: chosen and correct -->
+    <rect x="44" y="94" width="12" height="12" rx="3" fill="#96ff2d" stroke="#3a9a00" stroke-width="2"/>
+    <path d="M46.5,100 L49.5,103.5 L54,96.5" fill="none" stroke="#1d5200" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="64" y="97" width="84" height="6" rx="3" fill="#96ff2d"/>
+    <!-- answer 3 -->
+    <rect x="44" y="112" width="12" height="12" rx="3" fill="none" stroke="#9aa7b8" stroke-width="2"/>
+    <rect x="64" y="115" width="56" height="6" rx="3" fill="#c9d3e0"/>
+
+    <!-- question mark in a speech bubble -->
+    <g filter="url(#shadow)">
+        <path d="M232,36 a40,40 0 1,1 -22,73 l-16,10 l6,-17 a40,40 0 0,1 32,-66 z" fill="#1144ff"/>
+    </g>
+    <path d="M220,64 a12.5,12.5 0 1,1 18,11 q-6,3 -6,10 v4" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="232" cy="102" r="5.5" fill="#ffffff"/>
+
+    <!-- small stars: orange and red, from the activity's icon -->
+    <path d="M196,28 l2.5,5.5 l6,0.7 l-4.5,4 l1.3,5.9 l-5.3,-3 l-5.3,3 l1.3,-5.9 l-4.5,-4 l6,-0.7 z" fill="#ffcb2e"/>
+    <path d="M276,104 l1.8,4 l4.4,0.5 l-3.3,3 l1,4.3 l-3.9,-2.2 l-3.9,2.2 l1,-4.3 l-3.3,-3 l4.4,-0.5 z" fill="#ff2e2e"/>
+</svg>

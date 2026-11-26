@@ -51,7 +51,8 @@ final class lib_test extends \advanced_testcase {
     }
 
     /**
-     * The settings form's stages and games are saved when an activity is added and updated.
+     * The settings form's stages are saved when an activity is added and updated,
+     * and the activity's games, which are managed on its page, are not changed.
      */
     public function test_add_and_update_instance(): void {
         $this->resetAfterTest();
@@ -60,8 +61,6 @@ final class lib_test extends \advanced_testcase {
             'course' => $course->id,
             'stage_recognize' => 1, 'stage_recognize_pass' => 1, 'stage_recognize_complete' => 3,
             'stage_recall' => 1, 'stage_recall_pass' => 2, 'stage_recall_complete' => 1,
-            // A game at a stage that is not used is not saved.
-            'game_quiz_recall' => 1, 'game_quiz_produce' => 1, 'game_quiz_wordcount' => 4,
         ]);
         $progress = progress::create($vocab->id);
         $stages = $progress->get_stages();
@@ -69,20 +68,18 @@ final class lib_test extends \advanced_testcase {
         $this->assertEquals(3, $stages['recognize']->completecount);
         // The number to complete is at least the number to pass.
         $this->assertEquals(2, $stages['recall']->completecount);
-        $instances = $progress->get_game_instances();
-        $this->assertSame(['recall'], array_values(array_column($instances, 'stage')));
-        $this->assertEquals(4, json_decode(reset($instances)->configdata)->wordcount);
+        // A new activity has no games.
+        $this->assertSame([], $progress->get_game_instances(false));
 
-        // Updating: the recall stage is dropped, so its game is disabled.
+        // Updating: the recall stage is dropped, but its game is kept as it is.
+        $id = progress::add_game_instance($vocab->id, 'quiz', progress::STAGE_RECALL, ['wordcount' => 4]);
         $cm = get_coursemodule_from_instance('vocab', $vocab->id);
         $data = (object) ['instance' => $vocab->id, 'coursemodule' => $cm->id, 'course' => $course->id,
-            'name' => $vocab->name, 'stage_recognize' => 1, 'stage_recognize_pass' => 1, 'stage_recognize_complete' => 1,
-            'game_quiz_recognize' => 1];
+            'name' => $vocab->name, 'stage_recognize' => 1, 'stage_recognize_pass' => 1, 'stage_recognize_complete' => 1];
         $this->assertTrue(vocab_update_instance($data, null));
         $progress = progress::create($vocab->id);
         $this->assertSame(['recognize'], array_keys($progress->get_stages()));
-        $this->assertSame(['recognize'], array_values(array_column($progress->get_game_instances(), 'stage')));
-        $this->assertCount(2, $progress->get_game_instances(false));
+        $this->assertSame([$id], array_keys($progress->get_game_instances()));
     }
 
     /**
@@ -93,10 +90,10 @@ final class lib_test extends \advanced_testcase {
         $this->resetAfterTest();
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
-        $vocab = $generator->create_module('vocab', ['course' => $course->id, 'stage_recognize' => 1,
-            'game_quiz_recognize' => 1]);
-        $other = $generator->create_module('vocab', ['course' => $course->id, 'stage_recognize' => 1,
-            'game_quiz_recognize' => 1]);
+        $vocab = $generator->create_module('vocab', ['course' => $course->id, 'stage_recognize' => 1]);
+        $other = $generator->create_module('vocab', ['course' => $course->id, 'stage_recognize' => 1]);
+        progress::add_game_instance($vocab->id, 'quiz', progress::STAGE_RECOGNIZE);
+        progress::add_game_instance($other->id, 'quiz', progress::STAGE_RECOGNIZE);
         $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['cat']);
         $generator->get_plugin_generator('mod_vocab')->add_words($other->id, ['cat']);
         $student = $generator->create_and_enrol($course, 'student');

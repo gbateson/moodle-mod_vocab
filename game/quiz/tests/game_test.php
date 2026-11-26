@@ -52,7 +52,7 @@ final class game_test extends \advanced_testcase {
             progress::link_questions((int) $words[$word], [$question->id]);
         }
 
-        progress::save_game_instances($vocab->id, [['quiz', progress::STAGE_RECOGNIZE, ['wordcount' => 5]]]);
+        progress::add_game_instance($vocab->id, 'quiz', progress::STAGE_RECOGNIZE, ['wordcount' => 5]);
         $progress = progress::create($vocab->id);
         $instances = $progress->get_game_instances();
         $instance = reset($instances);
@@ -142,7 +142,7 @@ final class game_test extends \advanced_testcase {
         progress::link_questions((int) $DB->get_field('vocab_words', 'id', ['word' => 'apple']), [$question->id]);
 
         $config = ['materialqtype' => 'truefalse', 'materiallevel' => 'B1', 'materialcount' => 3];
-        progress::save_game_instances($vocab->id, [['quiz', progress::STAGE_RECOGNIZE, $config]]);
+        progress::add_game_instance($vocab->id, 'quiz', progress::STAGE_RECOGNIZE, $config);
         $progress = progress::create($vocab->id);
         $instances = $progress->get_game_instances();
         $game = \mod_vocab\gamebase::create($progress->get_vocab(), $cm, reset($instances));

@@ -123,12 +123,35 @@ Games can be made in different ways, and the activity does not mind which:
 - With AI, through the AI bridge (tool_aibridge): e.g. a monologue or a chat
   with an AI. The AI is asked to return a score for each target word.
 
+### Tile background
+
+Each game can have a picture that is shown at the top of its tiles on the
+activity's page, so that teachers and students can recognize the game at a
+glance. The title of the game is shown below the picture.
+
+| | |
+|---|---|
+| File | `game/NAME/pix/tile.svg`, with `tile.png` as a fallback (e.g. `game/quiz/pix/tile.svg`). Moodle finds it with `$OUTPUT->image_url('tile', 'vocabgame_NAME')`. |
+| Size | 300 x 180 pixels (5:3). The picture area of a tile is 150 x 90 pixels, so this is twice its size, for sharp images on high-resolution screens. The SVG's `viewBox` is `0 0 300 180`. |
+| File size | Under 10 KB for the SVG, and under 30 KB for the PNG. |
+| Safe area | Keep the top 30 pixels plain: on teachers' tiles, they hold the drag handle (top left) and the ⋮ menu (top right). |
+| Content | A simple picture of what the student does in the game, e.g. answering a multiple-choice question for the quiz. **No words or letters**: the activity is used in many languages, and the title is shown anyway. Symbols such as "?" are fine. |
+| Colours | A light background, so that the dark drag handle and menu can be seen on it. Use the activity's blues (`#bbddff` to `#1144ff`) and the green, orange and red of its icon (`#96ff2d`, `#ffcb2e`, `#ff2e2e`). Don't rely on colour alone: hidden games are shown in greyscale. |
+| Style | Flat shapes with rounded corners, as in the activity's icon. No photos. |
+| Without a picture | Games without `pix/tile.svg` or `pix/tile.png` keep the coloured tiles that are used now. |
+
 ### Games in an activity
 
 Teachers choose which games an activity offers, at which stage, and in which
-order, with each game's own settings. Each choice is a "game instance". The
-same game can be used at more than one stage, e.g. a quiz of recognition
-questions and a quiz of recall questions, as two instances.
+order, with each game's own settings and title. Each choice is a "game
+instance". The same game can be used more than once, at the same stage or at
+different stages, e.g. a quiz of recognition questions and a quiz of recall
+questions, as two instances.
+
+Teachers add, edit, reorder, hide and delete game instances on the activity's
+page, not in its settings form (see plan-manage-games.md). A new activity has
+no games. A game that has been played is hidden, not deleted, so that
+students' scores are kept.
 
 On the activity's page, students see a button for each game instance:
 

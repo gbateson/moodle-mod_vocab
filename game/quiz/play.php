@@ -40,6 +40,13 @@ $context = context_module::instance($cm->id);
 require_capability('mod/vocab:attempt', $context);
 
 $instance = $DB->get_record('vocab_game_instances', ['id' => $instanceid, 'vocabid' => $vocab->id], '*', MUST_EXIST);
+if (!has_capability('mod/vocab:manage', $context)) {
+    // Students cannot play hidden games, or games at stages that the activity does not use.
+    $stages = progress::create($vocab->id)->get_stages();
+    if (empty($instance->enabled) || !isset($stages[$instance->stage])) {
+        throw new moodle_exception('errorgamenotavailable', 'mod_vocab', new moodle_url('/mod/vocab/view.php', ['id' => $cm->id]));
+    }
+}
 $game = \mod_vocab\gamebase::create($vocab, $cm, $instance);
 if (!$game instanceof \vocabgame_quiz\game) {
     throw new moodle_exception('invalidrecord', 'error', '', 'vocab_game_instances');

@@ -403,40 +403,22 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * Add the games: for each installed game, the stages at which it is offered,
-     * and its own settings.
+     * Explain that games are added and arranged on the activity's page, not in
+     * this form, with a link to the page when the activity already exists.
      *
      * @param object $mform representing the Moodle form
      * @param string $plugin the name of this plugin
      * @return void, but will update the $mform object
      */
     public function add_games($mform, $plugin) {
-        $games = \mod_vocab\gamebase::get_games();
-        if (empty($games)) {
-            $mform->addElement('static', 'nogames', '', get_string('nogamesinstalled', $plugin));
-            return;
+        $cm = $this->get_coursemodule();
+        if ($cm) {
+            $url = new \moodle_url('/mod/vocab/view.php', ['id' => $cm->id]);
+            $text = \html_writer::link($url, get_string('gamesmanagedonpage', $plugin));
+        } else {
+            $text = get_string('gamesaddaftersaving', $plugin);
         }
-        $context = $this->context ?? \context_course::instance($this->get_course()->id);
-        foreach ($games as $name => $class) {
-            $elements = [];
-            foreach ($class::get_supported_stages() as $stage) {
-                $elements[] = $mform->createElement(
-                    'advcheckbox',
-                    'game_' . $name . '_' . $stage,
-                    '',
-                    \mod_vocab\progress::get_stage_name($stage)
-                );
-            }
-            $mform->addGroup($elements, 'game_' . $name, $class::get_title(), ' ', false);
-            if (get_string_manager()->string_exists('pluginname_help', $class::get_component())) {
-                $mform->addHelpButton('game_' . $name, 'pluginname', $class::get_component());
-            }
-            foreach ($class::get_supported_stages() as $stage) {
-                $mform->setType('game_' . $name . '_' . $stage, PARAM_INT);
-                $mform->disabledIf('game_' . $name . '_' . $stage, 'stage_' . $stage, 'notchecked');
-            }
-            $class::add_settings($mform, 'game_' . $name . '_', $context);
-        }
+        $mform->addElement('static', 'gamesinfo', '', $text);
     }
 
     /**
@@ -466,12 +448,11 @@ class mod_vocab_mod_form extends moodleform_mod {
     }
 
     /**
-     * Add the activity's stages and games to the form's data.
+     * Add the activity's stages to the form's data.
      *
      * @param array $data
      */
-    protected function stages_and_games_preprocessing(array &$data): void {
-        global $DB;
+    protected function stages_preprocessing(array &$data): void {
         if (empty($data['instance'])) {
             return;
         }
@@ -483,13 +464,6 @@ class mod_vocab_mod_form extends moodleform_mod {
             if (isset($stages[$stage])) {
                 $data[$name . '_pass'] = $stages[$stage]->passcount;
                 $data[$name . '_complete'] = $stages[$stage]->completecount;
-            }
-        }
-        foreach ($progress->get_game_instances() as $instance) {
-            $data['game_' . $instance->name . '_' . $instance->stage] = 1;
-            $config = json_decode((string) $instance->configdata, true);
-            foreach (is_array($config) ? $config : [] as $key => $value) {
-                $data['game_' . $instance->name . '_' . $key] = $value;
             }
         }
     }
@@ -550,7 +524,7 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @return void, but may update values in the $data array
      */
     public function data_preprocessing(&$data) {
-        $this->stages_and_games_preprocessing($data);
+        $this->stages_preprocessing($data);
 
         $name = 'attemptdelay';
         $default = \mod_vocab\activity::ATTEMPTDELAY_NONE;

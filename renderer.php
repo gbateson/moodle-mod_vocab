@@ -673,27 +673,171 @@ class mod_vocab_renderer extends plugin_renderer_base {
     }
 
     /**
-     * view_games
+     * Show the games: for teachers, tiles that they can manage (see view_games_manage());
+     * for students, a tile for each game, which they can click to play it.
      *
      * @return string an HTML string.
      */
     public function view_games() {
-        $output = '';
-
-        $games = $this->get_games();
-        $countgames = count($games);
-        $gamecolors = $this->get_colors('#bbddff', '#1144ff', $countgames);
-        $textcolors = $this->get_colors('#000000', '#ff9933', $countgames);
-
-        foreach ($games as $i => $game) {
-            // Switch the bg color from black to white
-            // when half of the buttons have been generated.
-            $textcolor = ($i < ($countgames / 2) ? 'black' : 'white');
-            $output .= $this->game_button($game, $gamecolors[$i], $textcolor);
+        if ($this->vocab->can_manage() && !$this->vocab->is_demo()) {
+            return $this->view_games_manage();
         }
 
-        $params = ['class' => 'clearfix vocab-games'];
-        return html_writer::tag('div', $output, $params);
+        $games = $this->get_games();
+        $colors = $this->get_colors('#bbddff', '#1144ff', count($games));
+        $tiles = [];
+        foreach (array_values($games) as $i => $game) {
+            // As before, the text is white on the darker half of the colors.
+            $textcolor = ($i < (count($games) / 2) ? 'black' : 'white');
+            $tiles[] = [
+                'title' => $game->label,
+                'url' => ($game->url instanceof moodle_url ? $game->url->out(false) : $game->url),
+                'disabled' => !empty($game->disabled),
+                'reason' => $game->reason ?? '',
+                'hasimage' => !empty($game->tileurl),
+                'style' => $this->tile_style($colors[$i], $textcolor, $game->tileurl ?? null),
+            ];
+        }
+        return $this->render_from_template('mod_vocab/game_tiles', ['tiles' => $tiles]);
+    }
+
+    /**
+     * Get the style of a game tile: its colors, and its picture if it has one.
+     *
+     * @param string $bgcolor the background color, e.g. "#bbddff".
+     * @param string $textcolor the text color, "black" or "white".
+     * @param moodle_url|null $image the game's picture (see gamebase::get_tile_url()).
+     * @return string CSS
+     */
+    protected function tile_style(string $bgcolor, string $textcolor, ?moodle_url $image): string {
+        if ($image) {
+            // Pictures are light, so the text is dark (see docs/games.md).
+            return "background-color: $bgcolor; color: #1d2125; background-image: url('" . $image->out(false) . "');";
+        }
+        return "background-color: $bgcolor; color: $textcolor;";
+    }
+
+    /**
+     * For teachers, show all the games in the activity as tiles that can be
+     * edited, hidden, shown, reordered and deleted, and a tile to add a game.
+     * Without JavaScript, the tiles and menus are links to the pages in game/.
+     * With JavaScript (amd/src/managegames.js), the settings open in a popup,
+     * tiles can be dragged to new positions or to the trash, and the other
+     * actions are done without leaving the page.
+     *
+     * @return string HTML
+     */
+    public function view_games_manage(): string {
+        global $DB;
+        $plugin = 'mod_vocab';
+        $progress = $this->get_progress();
+        $vocab = $progress->get_vocab();
+        $cm = $this->vocab->cm;
+        $stages = $progress->get_stages();
+        $instances = $progress->get_game_instances(false);
+
+        $attempts = [];
+        if ($instances) {
+            [$select, $params] = $DB->get_in_or_equal(array_keys($instances));
+            $sql = "SELECT gameinstanceid, COUNT(1)
+                      FROM {vocab_game_attempts}
+                     WHERE gameinstanceid $select
+                  GROUP BY gameinstanceid";
+            $attempts = $DB->get_records_sql_menu($sql, $params);
+        }
+
+        $tiles = [];
+        $colors = $this->get_colors('#bbddff', '#1144ff', count($instances));
+        foreach (array_values($instances) as $i => $instance) {
+            if (!$game = \mod_vocab\gamebase::create($vocab, $cm, $instance)) {
+                continue;
+            }
+            $title = $game->get_label();
+            // As for students' buttons, the text is white on the darker half of the colors.
+            $textcolor = ($i < count($instances) / 2 ? 'black' : 'white');
+            if (empty($instance->enabled)) {
+                $status = get_string('hiddenfromstudents');
+            } else if (!isset($stages[$instance->stage])) {
+                $status = get_string('stagenotenabled', $plugin);
+            } else {
+                $status = '';
+            }
+            $tiles[] = [
+                'id' => $instance->id,
+                'title' => $title,
+                'enabled' => (int) $instance->enabled,
+                'attempts' => (int) ($attempts[$instance->id] ?? 0),
+                'status' => $status,
+                'dimmed' => ($status !== ''),
+                'editurl' => (new moodle_url('/mod/vocab/game/edit.php', ['id' => $instance->id]))->out(false),
+                'hasimage' => !empty($game::get_tile_url()),
+                'style' => $this->tile_style($colors[$i], $textcolor, $game::get_tile_url()),
+                'draghandle' => $this->render_from_template('core/drag_handle', [
+                    'movetitle' => get_string('movecontent', 'moodle', $title),
+                ]),
+                'menu' => $this->render($this->game_menu($game, $instance)),
+            ];
+        }
+
+        $regionid = html_writer::random_id('vocab-games-');
+        $this->page->requires->js_call_amd('mod_vocab/managegames', 'init', [
+            $regionid,
+            array_keys(\mod_vocab\gamebase::get_games()),
+        ]);
+        return $this->render_from_template('mod_vocab/game_manager', [
+            'regionid' => $regionid,
+            'vocabid' => $vocab->id,
+            'cmid' => $cm->id,
+            'tiles' => $tiles,
+            'hastiles' => !empty($tiles),
+            'addurl' => (new moodle_url('/mod/vocab/game/add.php', ['cmid' => $cm->id]))->out(false),
+            'addicon' => $this->pix_icon('t/add', ''),
+            'trashicon' => $this->pix_icon('t/delete', ''),
+        ]);
+    }
+
+    /**
+     * Get the action menu of a game tile: edit, play, hide or show, and delete.
+     * Each item is a link that works without JavaScript; with JavaScript, the
+     * "data-action" attribute lets amd/src/managegames.js handle it on the page.
+     *
+     * @param \mod_vocab\gamebase $game
+     * @param \stdClass $instance
+     * @return action_menu
+     */
+    protected function game_menu(\mod_vocab\gamebase $game, \stdClass $instance): action_menu {
+        $plugin = 'mod_vocab';
+        $id = $instance->id;
+        $menu = new action_menu();
+        if (method_exists($menu, 'set_kebab_trigger')) {
+            $menu->set_kebab_trigger(get_string('actions'));
+        } else {
+            $menu->set_menu_trigger(get_string('actions'));
+        }
+        $menu->set_additional_classes('vocab-game-menu');
+
+        $items = [
+            ['edit', new moodle_url('/mod/vocab/game/edit.php', ['id' => $id]), 't/edit', get_string('editgame', $plugin)],
+            ['play', $game->get_url(), 't/preview', get_string('preview')],
+        ];
+        if ($instance->enabled) {
+            $url = new moodle_url('/mod/vocab/game/hide.php', ['id' => $id, 'enabled' => 0, 'sesskey' => sesskey()]);
+            $items[] = ['hide', $url, 't/hide', get_string('hidegame', $plugin)];
+        } else {
+            $url = new moodle_url('/mod/vocab/game/hide.php', ['id' => $id, 'enabled' => 1, 'sesskey' => sesskey()]);
+            $items[] = ['show', $url, 't/show', get_string('showgame', $plugin)];
+        }
+        $url = new moodle_url('/mod/vocab/game/delete.php', ['id' => $id]);
+        $items[] = ['delete', $url, 't/delete', get_string('deletegame', $plugin)];
+
+        foreach ($items as [$action, $url, $icon, $text]) {
+            $attributes = ['data-action' => $action];
+            if ($action == 'delete') {
+                $attributes['class'] = 'text-danger';
+            }
+            $menu->add(new action_menu_link_secondary($url, new pix_icon($icon, ''), $text, $attributes));
+        }
+        return $menu;
     }
 
     /**
@@ -717,7 +861,11 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $progress = $this->get_progress();
             $userid = $this->get_userid();
             $vocab = $progress->get_vocab();
+            $stages = $progress->get_stages();
             foreach ($progress->get_game_instances() as $instance) {
+                if (!isset($stages[$instance->stage])) {
+                    continue; // Games at stages that the activity does not use are not offered.
+                }
                 if (!$game = \mod_vocab\gamebase::create($vocab, $this->vocab->cm, $instance)) {
                     continue;
                 }
@@ -730,42 +878,13 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     'name' => $game->get_component(),
                     'label' => $label,
                     'url' => $game->get_url(),
+                    'tileurl' => $game::get_tile_url(),
                     'disabled' => !$playable,
                     'reason' => $reason ? $this->vocab->get_string('game' . $reason) : '',
                 ];
             }
         }
         return $games;
-    }
-
-    /**
-     * Get a button that opens a game. A game that cannot be played now is disabled,
-     * with the reason as its tooltip.
-     *
-     * @param stdClass $game with url, label, and optionally disabled and reason
-     * @param string $gamecolor the button's background color, or '' for the default
-     * @param string $textcolor the button's text color, or '' for the default
-     * @return string HTML
-     */
-    public function game_button($game, $gamecolor = '', $textcolor = '') {
-        // See "single_button" method in "lib/outputrenderers.php".
-        $style = [];
-        if ($gamecolor) {
-            $style[] = "background-color: $gamecolor;";
-        }
-        if ($textcolor) {
-            $style[] = "color: $textcolor;";
-        }
-        $params = [];
-        if ($style = implode('', $style)) {
-            $params['style'] = $style;
-        }
-        $params['class'] = 'btn vocab-game-button';
-        if (!empty($game->disabled)) {
-            $params['disabled'] = true;
-            $params['title'] = $game->reason;
-        }
-        return $this->single_button($game->url, $game->label, 'get', $params);
     }
 
     /**

@@ -71,7 +71,8 @@ function vocab_supports($feature) {
 }
 
 /**
- * Add a new Vocabulary activity, with its stages and games, and its grade item.
+ * Add a new Vocabulary activity, with its stages and its grade item. Games are
+ * added later, on the activity's page.
  *
  * @param stdClass $data submitted from the settings form
  * @param moodleform $mform the settings form
@@ -85,7 +86,7 @@ function vocab_add_instance($data, $mform) {
 
     $id = $DB->insert_record('vocab', $data);
     $data->id = $id;
-    vocab_save_stages_and_games($data);
+    vocab_save_stages($data);
 
     // Add the gradebook item for this Vocab acitivity.
     vocab_grade_item_update($data);
@@ -97,7 +98,8 @@ function vocab_add_instance($data, $mform) {
 }
 
 /**
- * Update a Vocabulary activity, with its stages and games, and its grade item.
+ * Update a Vocabulary activity, with its stages and its grade item. Its games are
+ * managed on the activity's page, and are not changed here.
  *
  * @param stdClass $data submitted from the settings form
  * @param moodleform $mform the settings form
@@ -110,7 +112,7 @@ function vocab_update_instance($data, $mform) {
     $data->id = $data->instance;
 
     $DB->update_record('vocab', $data);
-    vocab_save_stages_and_games($data);
+    vocab_save_stages($data);
 
     // Add the gradebook item for this Vocab acitivity.
     vocab_grade_item_update($data);
@@ -122,11 +124,11 @@ function vocab_update_instance($data, $mform) {
 }
 
 /**
- * Save the stages and games of an activity, from its settings form.
+ * Save the stages of an activity, from its settings form.
  *
  * @param stdClass $data from the settings form, with the activity's id.
  */
-function vocab_save_stages_and_games($data) {
+function vocab_save_stages($data) {
     $stages = [];
     foreach (\mod_vocab\progress::STAGES as $stage) {
         $name = 'stage_' . $stage;
@@ -136,25 +138,6 @@ function vocab_save_stages_and_games($data) {
     }
     if ($stages) {
         \mod_vocab\progress::save_stages($data->id, $stages);
-    }
-
-    $games = [];
-    foreach (\mod_vocab\gamebase::get_games() as $name => $class) {
-        $config = $class::get_settings($data, 'game_' . $name . '_');
-        foreach ($class::get_supported_stages() as $stage) {
-            $field = 'game_' . $name . '_' . $stage;
-            if (!empty($data->$field) && isset($stages[$stage])) {
-                $games[] = [$name, $stage, $config];
-            }
-        }
-    }
-    // Games are listed in the order of their stages, then by name.
-    usort($games, function ($a, $b) {
-        $order = array_flip(\mod_vocab\progress::STAGES);
-        return ($order[$a[1]] - $order[$b[1]]) ?: strcmp($a[0], $b[0]);
-    });
-    if ($stages || $games) {
-        \mod_vocab\progress::save_game_instances($data->id, $games);
     }
 }
 
