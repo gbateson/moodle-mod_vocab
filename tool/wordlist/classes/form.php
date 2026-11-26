@@ -129,17 +129,21 @@ class form extends \mod_vocab\toolform {
         $mform->addGroup($elements, $groupname, $label);
         $mform->addHelpButton($groupname, $name, $this->subpluginname);
 
-        $name = 'selectwords';
-        $groupname = $name . 'elements';
-        $label = $this->get_string($name);
-        $elements = [
-            $mform->createElement('text', $name, $label, ['size' => 2]),
-            $mform->createElement('submit', $name . 'button', get_string('select')),
-        ];
-        $mform->addGroup($elements, $groupname, $label);
-        $mform->addHelpButton($groupname, $name, $this->subpluginname);
-        $mform->setDefault($groupname . '[' . $name . ']', 10);
-        $mform->setType($groupname . '[' . $name . ']', PARAM_INT);
+        // Random words can be selected only if the dictionary has words that are
+        // not already used in this course.
+        if ($this->has_random_words()) {
+            $name = 'selectwords';
+            $groupname = $name . 'elements';
+            $label = $this->get_string($name);
+            $elements = [
+                $mform->createElement('text', $name, $label, ['size' => 2]),
+                $mform->createElement('submit', $name . 'button', get_string('select')),
+            ];
+            $mform->addGroup($elements, $groupname, $label);
+            $mform->addHelpButton($groupname, $name, $this->subpluginname);
+            $mform->setDefault($groupname . '[' . $name . ']', 10);
+            $mform->setType($groupname . '[' . $name . ']', PARAM_INT);
+        }
 
         $this->add_importfile($mform);
         $this->add_exportfile($mform);
@@ -495,6 +499,46 @@ class form extends \mod_vocab\toolform {
     }
 
     /**
+     * Get the FROM and WHERE clauses for the words that can be selected at random:
+     * lemmas in the dictionary that are not used by any Vocabulary activity in this course.
+     *
+     * @return array [$from, $where, $params]
+     */
+    protected function get_random_words_sql(): array {
+        global $DB;
+
+        // Get ids of all words in all Vocab activities in this course.
+        $select = 'vwi.id, vwi.wordid';
+        $from = '{vocab_word_instances} vwi, {vocab} v';
+        $where = 'vwi.vocabid = v.id AND v.course = ?';
+        $params = [$this->get_vocab()->course->id];
+        $words = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params);
+
+        $from = '{vocab_words} vw, {vocab_lemmas} vl';
+        if (count($words)) {
+            // Get SQL for "<>" or "NOT IN (...)".
+            [$where, $params] = $DB->get_in_or_equal($words, SQL_PARAMS_QM, 'param', false);
+            $where = "vw.id $where";
+        } else {
+            $where = 'vw.id > 0';
+            $params = [];
+        }
+        $where .= ' AND vw.lemmaid = vl.id AND vw.word = vl.lemma';
+        return [$from, $where, $params];
+    }
+
+    /**
+     * Are there any words that can be selected at random (see get_random_words_sql())?
+     *
+     * @return bool
+     */
+    protected function has_random_words(): bool {
+        global $DB;
+        [$from, $where, $params] = $this->get_random_words_sql();
+        return $DB->record_exists_sql("SELECT 1 FROM $from WHERE $where", $params);
+    }
+
+    /**
      * Add random words from the dictionary to the word list: lemmas that are not used by
      * any Vocabulary activity in this course.
      *
@@ -507,25 +551,9 @@ class form extends \mod_vocab\toolform {
         // Limit $count to sensible values.
         $count = min(20, max(1, $count));
 
-        // Get ids of all words in all Vocab acitvities in this course.
-        $select = 'vwi.id, vwi.wordid';
-        $from = '{vocab_word_instances} vwi, {vocab} v';
-        $where = 'vwi.vocabid = v.id AND v.course = ?';
-        $params = [$this->get_vocab()->course->id];
-        $words = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params);
-
         // Build SQL to select a random word that is not already used in a Vocab activity in this course.
         $select = 'vw.id, vw.word';
-        $from = '{vocab_words} vw, {vocab_lemmas} vl';
-        if (count($words)) {
-            // Get SQL for "<>" or "NOT IN (...)".
-            [$where, $params] = $DB->get_in_or_equal($words, SQL_PARAMS_QM, 'param', false);
-            $where = "vw.id $where";
-        } else {
-            $where = 'vw.id > 0';
-            $params = [];
-        }
-        $where .= ' AND vw.lemmaid = vl.id AND vw.word = vl.lemma';
+        [$from, $where, $params] = $this->get_random_words_sql();
 
         // DB-specific SQL for MSSQL and Oracle.
         switch ($DB->get_dbfamily()) {
