@@ -190,12 +190,27 @@ abstract class gamebase {
     }
 
     /**
-     * Get the label of the game's button on the activity's page.
+     * Get the suggested title of the game at a stage, e.g. "Quiz (Recognize)".
+     *
+     * @param string $stage one of progress::STAGES.
+     * @return string
+     */
+    public static function get_default_title(string $stage): string {
+        return static::get_title() . ' (' . progress::get_stage_name($stage) . ')';
+    }
+
+    /**
+     * Get the label of the game's button on the activity's page: the title that
+     * the teacher gave this game, or the suggested title if there is none.
      *
      * @return string
      */
     public function get_label(): string {
-        return static::get_title() . ' (' . progress::get_stage_name($this->instance->stage) . ')';
+        $title = trim($this->instance->title ?? '');
+        if ($title === '') {
+            return static::get_default_title($this->instance->stage);
+        }
+        return $title;
     }
 
     /**

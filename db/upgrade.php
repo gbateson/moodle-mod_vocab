@@ -212,6 +212,13 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026111494;
+    if ($oldversion < $newversion) {
+        // Each game in an activity can have its own title (see docs/plan-manage-games.md).
+        xmldb_vocab_check_structure($dbman, ['vocab_game_instances']);
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

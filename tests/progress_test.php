@@ -202,6 +202,86 @@ final class progress_test extends \advanced_testcase {
     }
 
     /**
+     * Games are added at the end, can share a game and stage, and keep or suggest their titles.
+     */
+    public function test_add_and_update_game_instances(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$progress] = $this->make_activity([progress::STAGE_RECOGNIZE => [1, 1], progress::STAGE_RECALL => [1, 1]]);
+        $vocabid = $progress->get_vocab()->id;
+
+        $first = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE, ['wordcount' => 3]);
+        $second = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE, [], '  Food quiz  ');
+        $this->assertSame([$first, $second], array_keys($progress->get_game_instances()));
+        $select = 'vocabid = ? ORDER BY sortorder';
+        $sortorders = $DB->get_fieldset_select('vocab_game_instances', 'sortorder', $select, [$vocabid]);
+        $this->assertSame(['1', '2'], array_values($sortorders));
+
+        $cm = get_coursemodule_from_instance('vocab', $vocabid);
+        $instances = $progress->get_game_instances();
+        $class = gamebase::get_class('quiz');
+        $label = gamebase::create($progress->get_vocab(), $cm, $instances[$first])->get_label();
+        $this->assertSame($class::get_default_title(progress::STAGE_RECOGNIZE), $label);
+        $label = gamebase::create($progress->get_vocab(), $cm, $instances[$second])->get_label();
+        $this->assertSame('Food quiz', $label);
+
+        progress::update_game_instance($first, progress::STAGE_RECALL, ['wordcount' => 5], 'Spelling');
+        $record = $DB->get_record('vocab_game_instances', ['id' => $first]);
+        $this->assertSame(progress::STAGE_RECALL, $record->stage);
+        $this->assertSame('Spelling', $record->title);
+        $this->assertSame(['wordcount' => 5], json_decode($record->configdata, true));
+        $this->assertSame('1', $record->sortorder);
+    }
+
+    /**
+     * A game that has not been played is deleted; one that has is hidden, and can be shown again.
+     */
+    public function test_delete_and_hide_game_instances(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$progress, $words, $userid] = $this->make_activity([progress::STAGE_RECOGNIZE => [1, 1]]);
+        $vocabid = $progress->get_vocab()->id;
+        $unplayed = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE);
+        $played = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE);
+        $instance = $DB->get_record('vocab_game_instances', ['id' => $played]);
+        $progress->start_attempt($instance, $userid, $words);
+        $this->assertSame(0, progress::count_game_instance_attempts($unplayed));
+        $this->assertSame(1, progress::count_game_instance_attempts($played));
+
+        $this->assertTrue(progress::delete_game_instance($unplayed));
+        $this->assertFalse($DB->record_exists('vocab_game_instances', ['id' => $unplayed]));
+
+        $this->assertFalse(progress::delete_game_instance($played));
+        $this->assertSame([], $progress->get_game_instances());
+        $this->assertSame([$played], array_keys($progress->get_game_instances(false)));
+        $this->assertSame(1, progress::count_game_instance_attempts($played));
+
+        progress::set_game_instance_enabled($played, true);
+        $this->assertSame([$played], array_keys($progress->get_game_instances()));
+    }
+
+    /**
+     * Games can be put in a new order; games of other activities, and repeated ids, are ignored.
+     */
+    public function test_reorder_game_instances(): void {
+        $this->resetAfterTest();
+        [$progress] = $this->make_activity([progress::STAGE_RECOGNIZE => [1, 1]]);
+        $vocabid = $progress->get_vocab()->id;
+        [$other] = $this->make_activity([progress::STAGE_RECOGNIZE => [1, 1]]);
+        $otherid = progress::add_game_instance($other->get_vocab()->id, 'quiz', progress::STAGE_RECOGNIZE);
+        $a = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE);
+        $b = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE);
+        $c = progress::add_game_instance($vocabid, 'quiz', progress::STAGE_RECOGNIZE);
+
+        progress::reorder_game_instances($vocabid, [$c, $a, $c, $otherid]);
+        $this->assertSame([$c, $a, $b], array_keys($progress->get_game_instances()));
+        $this->assertSame([$otherid], array_keys($other->get_game_instances()));
+
+        progress::reorder_game_instances($vocabid, [$b, $a, $c]);
+        $this->assertSame([$b, $a, $c], array_keys($progress->get_game_instances()));
+    }
+
+    /**
      * Questions made by the question bank tool are linked to their words.
      */
     public function test_link_questions(): void {

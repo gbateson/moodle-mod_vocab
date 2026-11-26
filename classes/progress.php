@@ -852,6 +852,7 @@ class progress {
                 $DB->update_record('vocab_game_instances', $record);
                 unset($existing[$key]);
             } else {
+                $record->title = '';
                 $DB->insert_record('vocab_game_instances', $record);
             }
         }
@@ -861,6 +862,131 @@ class progress {
                 'enabled' => 0,
                 'sortorder' => ++$sortorder,
             ]);
+        }
+    }
+
+    /**
+     * Add a game to an activity, after its other games.
+     *
+     * @param int $vocabid
+     * @param string $name the game's name, e.g. "quiz".
+     * @param string $stage one of self::STAGES.
+     * @param array $configdata the game's own settings.
+     * @param string $title the title for this activity, or '' for the suggested title.
+     * @return int the id of the new game instance.
+     */
+    public static function add_game_instance(
+        int $vocabid,
+        string $name,
+        string $stage,
+        array $configdata = [],
+        string $title = ''
+    ): int {
+        global $DB;
+        $sql = 'SELECT MAX(sortorder) FROM {vocab_game_instances} WHERE vocabid = ?';
+        $sortorder = (int) $DB->get_field_sql($sql, [$vocabid]);
+        return (int) $DB->insert_record('vocab_game_instances', (object) [
+            'vocabid' => $vocabid,
+            'gameid' => self::get_gameid($name),
+            'title' => trim($title),
+            'sortorder' => $sortorder + 1,
+            'attemptlimit' => 0,
+            'configdata' => json_encode($configdata),
+            'stage' => $stage,
+            'enabled' => 1,
+        ]);
+    }
+
+    /**
+     * Change the stage, settings and title of a game in an activity.
+     *
+     * @param int $id the id of the game instance.
+     * @param string $stage one of self::STAGES.
+     * @param array $configdata the game's own settings.
+     * @param string $title the title for this activity, or '' for the suggested title.
+     */
+    public static function update_game_instance(int $id, string $stage, array $configdata, string $title): void {
+        global $DB;
+        $DB->update_record('vocab_game_instances', (object) [
+            'id' => $id,
+            'title' => trim($title),
+            'configdata' => json_encode($configdata),
+            'stage' => $stage,
+        ]);
+    }
+
+    /**
+     * Count the attempts at a game in an activity.
+     *
+     * @param int $id the id of the game instance.
+     * @return int
+     */
+    public static function count_game_instance_attempts(int $id): int {
+        global $DB;
+        return $DB->count_records('vocab_game_attempts', ['gameinstanceid' => $id]);
+    }
+
+    /**
+     * Remove a game from an activity. A game that has been played is hidden,
+     * not deleted, so that students' attempts and scores are kept.
+     *
+     * @param int $id the id of the game instance.
+     * @return bool true if the game was deleted, false if it was hidden.
+     */
+    public static function delete_game_instance(int $id): bool {
+        global $DB;
+        if (self::count_game_instance_attempts($id)) {
+            self::set_game_instance_enabled($id, false);
+            return false;
+        }
+        $DB->delete_records('vocab_game_instances', ['id' => $id]);
+        return true;
+    }
+
+    /**
+     * Hide a game in an activity, or show it again.
+     *
+     * @param int $id the id of the game instance.
+     * @param bool $enabled true to show the game to students, false to hide it.
+     */
+    public static function set_game_instance_enabled(int $id, bool $enabled): void {
+        global $DB;
+        $DB->set_field('vocab_game_instances', 'enabled', ($enabled ? 1 : 0), ['id' => $id]);
+    }
+
+    /**
+     * Put the games of an activity in a new order: the given games first, in
+     * that order, then any others in their current order.
+     *
+     * @param int $vocabid
+     * @param int[] $ids ids of game instances in this activity. Others are ignored.
+     */
+    public static function reorder_game_instances(int $vocabid, array $ids): void {
+        global $DB;
+        $instances = $DB->get_records('vocab_game_instances', ['vocabid' => $vocabid], 'sortorder, id', 'id, sortorder');
+        $order = [];
+        foreach ($ids as $id) {
+            $id = (int) $id;
+            if (isset($instances[$id]) && !in_array($id, $order)) {
+                $order[] = $id;
+            }
+        }
+        foreach ($instances as $id => $instance) {
+            if (!in_array($id, $order)) {
+                $order[] = $id;
+            }
+        }
+        // Move the sort orders out of the way, so that they can be set again without
+        // clashing with the unique index on (vocabid, sortorder).
+        $max = 0;
+        foreach ($instances as $instance) {
+            $max = max($max, (int) $instance->sortorder);
+        }
+        foreach ($instances as $instance) {
+            $DB->set_field('vocab_game_instances', 'sortorder', $instance->sortorder + $max + 1, ['id' => $instance->id]);
+        }
+        foreach ($order as $i => $id) {
+            $DB->set_field('vocab_game_instances', 'sortorder', $i + 1, ['id' => $id]);
         }
     }
 
