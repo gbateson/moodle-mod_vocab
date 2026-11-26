@@ -361,7 +361,14 @@ class mod_vocab_mod_form extends moodleform_mod {
      * @return void, but will update the $mform object
      */
     public function add_stages($mform, $plugin) {
-        $counts = array_combine(range(1, 10), range(1, 10));
+        $counts = [];
+        foreach (range(1, 10) as $count) {
+            if ($count == 1) {
+                $counts[$count] = get_string('stagesuccess', $plugin);
+            } else {
+                $counts[$count] = get_string('stagesuccesses', $plugin, $count);
+            }
+        }
         $defaults = [
             \mod_vocab\progress::STAGE_LEARN => [1, 1],
             \mod_vocab\progress::STAGE_RECOGNIZE => [1, 2],
@@ -372,11 +379,17 @@ class mod_vocab_mod_form extends moodleform_mod {
             $name = 'stage_' . $stage;
             $elements = [];
             $elements[] = $mform->createElement('advcheckbox', $name, '', get_string('stageuse', $plugin));
-            $elements[] = $mform->createElement('static', '', '', get_string('stagepasscount', $plugin));
-            $elements[] = $mform->createElement('select', $name . '_pass', '', $counts);
-            $elements[] = $mform->createElement('static', '', '', get_string('stagecompletecount', $plugin));
-            $elements[] = $mform->createElement('select', $name . '_complete', '', $counts);
-            $mform->addGroup($elements, $name . '_group', \mod_vocab\progress::get_stage_name($stage), ' ', false);
+            $elements[] = $mform->createElement('select', $name . '_pass', get_string('stagepasscount', $plugin), $counts);
+            $elements[] = $mform->createElement('select', $name . '_complete', get_string('stagecompletecount', $plugin), $counts);
+            // The separator is a full-width flex item, so each element starts a new line.
+            $separator = \html_writer::div('', 'w-100');
+            $group = $mform->addGroup($elements, $name . '_group', \mod_vocab\progress::get_stage_name($stage), $separator, false);
+            // A group hides the labels of its elements, but the selects need theirs to be seen.
+            foreach ($group->getElements() as $element) {
+                if ($element->getType() == 'select') {
+                    $element->setHiddenLabel(false);
+                }
+            }
             $mform->addHelpButton($name . '_group', 'stage' . $stage, $plugin);
             $mform->setType($name, PARAM_INT);
             $mform->setDefault($name, 1);
@@ -384,7 +397,7 @@ class mod_vocab_mod_form extends moodleform_mod {
             foreach (['_pass' => $pass, '_complete' => $complete] as $suffix => $default) {
                 $mform->setType($name . $suffix, PARAM_INT);
                 $mform->setDefault($name . $suffix, $default);
-                $mform->disabledIf($name . $suffix, $name, 'notchecked');
+                $mform->hideIf($name . $suffix, $name, 'notchecked');
             }
         }
     }

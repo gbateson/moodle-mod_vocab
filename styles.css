@@ -149,3 +149,8 @@
 .path-mod-vocab .vocab-stage-mark.stagecompleted {
     background: #1144ff;
 }
+
+/** indent the labels of the selects in the stages of learning on the mod form */
+.path-mod-vocab .mform .fcontainer [id^="fgroup_id_stage_"] label.col-form-label {
+    padding-left: 1rem;
+}

@@ -251,30 +251,32 @@ $string['speedtimecount'] = 'Time count';
 $string['speedtimecount_help'] = 'The number of time units that make up a single time period.';
 $string['speedtimeunit'] = 'Time unit';
 $string['speedtimeunit_help'] = 'The type of time units used to measure a single time period.';
-$string['stagecompletecount'] = 'successes to complete';
+$string['stagecompletecount'] = 'Completed after';
 $string['stagecompleted'] = 'completed';
 $string['stagelearn'] = 'Learn';
 $string['stagelearn_help'] = 'Students meet each word: its meaning, sound, picture and use, e.g. with flashcards.
 
-A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage. A word is mastered when it is completed at every stage that is used.';
+At each stage, the status of each word is set by the number of successful interactions with it at that stage. After the number of successes in "Passed after", the word is passed, and is then offered at the next stage. After the number in "Completed after", it is completed, and is then no longer offered at this stage. A word is mastered when it is completed at every stage that is enabled.';
 $string['stagenotstarted'] = 'not started';
-$string['stagepasscount'] = 'successes to pass';
+$string['stagepasscount'] = 'Passed after';
 $string['stagepassed'] = 'passed';
 $string['stageproduce'] = 'Produce';
 $string['stageproduce_help'] = 'Students use each word to communicate, e.g. in writing, speaking or a chat with an AI.
 
-A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage.';
+At each stage, the status of each word is set by the number of successful interactions with it at that stage. After the number of successes in "Passed after", the word is passed, and is then offered at the next stage. After the number in "Completed after", it is completed, and is then no longer offered at this stage.';
 $string['stageprogress'] = '{$a->stage}: {$a->state}';
 $string['stagerecall'] = 'Recall';
 $string['stagerecall_help'] = 'Students bring each word to mind without choices, e.g. by spelling it or filling a gap.
 
-A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage.';
+At each stage, the status of each word is set by the number of successful interactions with it at that stage. After the number of successes in "Passed after", the word is passed, and is then offered at the next stage. After the number in "Completed after", it is completed, and is then no longer offered at this stage.';
 $string['stagerecognize'] = 'Recognize';
 $string['stagerecognize_help'] = 'Students pick out each word from choices, e.g. in multiple-choice questions or by matching.
 
-A word is passed at a stage after the given number of successful interactions with it, and is then offered at the next stage. It is completed after the number of successful interactions to complete it, and is then no longer offered at this stage.';
+At each stage, the status of each word is set by the number of successful interactions with it at that stage. After the number of successes in "Passed after", the word is passed, and is then offered at the next stage. After the number in "Completed after", it is completed, and is then no longer offered at this stage.';
 $string['stages'] = 'Stages of learning';
-$string['stageuse'] = 'Use';
+$string['stagesuccess'] = '1 success';
+$string['stagesuccesses'] = '{$a} successes';
+$string['stageuse'] = 'Enable';
 $string['subcategories'] = 'Subcategories';
 $string['subcategories_help'] = 'Use these checkboxes to specify a hierarchy of subcategories within the parent category into which you wish to put the AI-generated questions.
 
