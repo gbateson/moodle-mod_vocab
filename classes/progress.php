@@ -946,9 +946,12 @@ class progress {
      *
      * @param gamebase $game
      * @param int $userid
-     * @return array [bool $playable, string $reason ('' if playable): locked, completed or notready]
+     * @return array [bool $playable, string $reason ('' if playable): nowords, locked, completed or notready]
      */
     public function get_game_state(gamebase $game, int $userid): array {
+        if (empty($this->get_words())) {
+            return [false, 'nowords']; // The activity's word list is empty.
+        }
         $stage = $game->get_instance()->stage;
         if (self::get_unfinished_attempt($game->get_instance()->id, $userid)) {
             return [true, ''];

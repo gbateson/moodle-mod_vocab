@@ -185,6 +185,24 @@ final class progress_test extends \advanced_testcase {
     }
 
     /**
+     * In an activity with no words, games say so, and not that all words are completed.
+     */
+    public function test_game_state_without_words(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $vocab = $generator->create_module('vocab', ['course' => $course->id]);
+        progress::save_stages($vocab->id, [progress::STAGE_RECOGNIZE => [1, 1]]);
+        $user = $generator->create_and_enrol($course, 'student');
+        $id = progress::add_game_instance($vocab->id, 'quiz', progress::STAGE_RECOGNIZE);
+        $progress = progress::create($vocab->id);
+        $cm = get_coursemodule_from_instance('vocab', $vocab->id);
+        $instances = $progress->get_game_instances();
+        $game = gamebase::create($progress->get_vocab(), $cm, $instances[$id]);
+        $this->assertSame([false, 'nowords'], $progress->get_game_state($game, (int) $user->id));
+    }
+
+    /**
      * Games are added at the end, can share a game and stage, and keep or suggest their titles.
      */
     public function test_add_and_update_game_instances(): void {

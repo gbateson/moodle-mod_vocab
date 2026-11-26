@@ -102,6 +102,7 @@ $string['gamehidden'] = 'The game is now hidden from students.';
 $string['gamehiddennotdeleted'] = 'The game has been played, so it was hidden, not deleted. Students\' scores are kept.';
 $string['gamelocked'] = 'Pass words at the earlier stages first';
 $string['gamenotready'] = 'Not ready yet';
+$string['gamenowords'] = 'No words yet';
 $string['gameresume'] = 'Continue';
 $string['games'] = 'Games';
 $string['games_help'] = 'The games that students can play in this activity, and the stages at which they are offered. Students choose which game to play at each stage.';

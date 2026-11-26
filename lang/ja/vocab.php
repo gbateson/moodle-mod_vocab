@@ -104,6 +104,7 @@ $string['gamehidden'] = 'ゲームを学生に対して非表示にしました�
 $string['gamehiddennotdeleted'] = 'このゲームはプレイされているため、削除せずに非表示にしました。学生のスコアは保持されます。';
 $string['gamelocked'] = '先に前の段階で単語に合格してください';
 $string['gamenotready'] = 'まだ準備ができていません';
+$string['gamenowords'] = 'まだ単語がありません';
 $string['gameresume'] = '続ける';
 $string['games'] = 'ゲーム';
 $string['games_help'] = 'このアクティビティで学生が遊べるゲームと、それを提供する段階です。学生は各段階で遊ぶゲームを選びます。';
