@@ -27,10 +27,12 @@
 
 import $ from 'jquery';
 import {call as fetchMany} from 'core/ajax';
+import Modal from 'core/modal';
 import ModalForm from 'core_form/modalform';
 import Notification from 'core/notification';
 import SortableList from 'core/sortable_list';
 import {getString} from 'core/str';
+import Templates from 'core/templates';
 
 const SELECTORS = {
     ACTION: '[data-action]',
@@ -52,18 +54,47 @@ const callFunction = (methodname, args) => fetchMany([{methodname, args}])[0];
  * Open a game's settings form in a popup, and reload the page when it is saved.
  *
  * @param {Object} args "id" to edit a game, or "cmid" and "game" to add one.
- * @param {String} titlekey the string for the popup's title.
+ * @param {String} titlekey the string for the popup's title: "addinggame" or "editinggame".
+ * @param {String} gametitle the name of the game, e.g. "Quiz".
  * @param {HTMLElement} returnfocus
  */
-const openForm = (args, titlekey, returnfocus) => {
+const openForm = (args, titlekey, gametitle, returnfocus) => {
     const form = new ModalForm({
         formClass: 'mod_vocab\\gameform',
         args: args,
-        modalConfig: {title: getString(titlekey, 'mod_vocab')},
+        modalConfig: {title: getString(titlekey, 'mod_vocab', gametitle)},
         returnFocus: returnfocus,
     });
     form.addEventListener(form.events.FORM_SUBMITTED, () => window.location.reload());
     form.show();
+};
+
+/**
+ * Show the games that can be added, as tiles in a popup. Choosing a game opens
+ * the settings form for a new game of that type.
+ *
+ * @param {String} cmid
+ * @param {Object[]} games for templates/game_chooser.mustache.
+ * @param {HTMLElement} returnfocus
+ */
+const openChooser = async(cmid, games, returnfocus) => {
+    const modal = await Modal.create({
+        title: getString('addgame', 'mod_vocab'),
+        body: Templates.render('mod_vocab/game_chooser', {games}),
+        large: true,
+        removeOnClose: true,
+        returnElement: returnfocus,
+    });
+    modal.getRoot()[0].addEventListener('click', (e) => {
+        const choice = e.target.closest('[data-action="choosegame"]');
+        if (!choice) {
+            return;
+        }
+        e.preventDefault();
+        modal.destroy();
+        openForm({cmid: cmid, game: choice.dataset.game}, 'addinggame', choice.dataset.gametitle, returnfocus);
+    });
+    modal.show();
 };
 
 /**
@@ -129,9 +160,9 @@ const isOver = (element, pagex, pagey) => {
  * Set up the game tiles.
  *
  * @param {String} regionid the id of the element that contains the tiles.
- * @param {String[]} gamenames the names of the installed games, e.g. ["quiz"].
+ * @param {Object[]} games the games that can be added, for templates/game_chooser.mustache.
  */
-export const init = (regionid, gamenames) => {
+export const init = (regionid, games) => {
     const region = document.getElementById(regionid);
     if (!region) {
         return;
@@ -150,15 +181,12 @@ export const init = (regionid, gamenames) => {
         const tile = element.closest(SELECTORS.TILE);
         switch (element.dataset.action) {
             case 'add':
-                // With several games, the link goes to the page for choosing one.
-                if (gamenames.length === 1) {
-                    e.preventDefault();
-                    openForm({cmid: cmid, game: gamenames[0]}, 'addgame', element);
-                }
+                e.preventDefault();
+                openChooser(cmid, games, element);
                 break;
             case 'edit':
                 e.preventDefault();
-                openForm({id: tile.dataset.instanceid}, 'editgame', element);
+                openForm({id: tile.dataset.instanceid}, 'editinggame', tile.dataset.gametitle, element);
                 break;
             case 'hide':
             case 'show':

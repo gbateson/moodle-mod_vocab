@@ -28,16 +28,21 @@ Feature: Manage the games of a Vocabulary activity on its page
     Given I am logged in as "teacher1"
     And I am on the "vocab1" "Activity" page
     Then I should see "This activity has no games yet."
-    # Only the quiz game is installed, so "Add a game" goes straight to its settings.
     When I click on "Add a game" "link"
-    And I set the following fields to these values:
+    Then I should see "Choose a game to add"
+    When I click on "Quiz" "link" in the ".vocab-game-chooser" "css_element"
+    Then I should see "Adding a Quiz game"
+    And the field "Title" matches value "Quiz (Recognize)"
+    When I set the following fields to these values:
       | Stage | Recall    |
       | Title | Food quiz |
     And I press "Save changes"
     Then I should see "The game was saved."
     And I should see "Food quiz"
     When I click on "Food quiz" "link"
-    And I set the field "Title" to ""
+    Then I should see "Editing a Quiz game"
+    # A suggested title, even for another stage, is saved as the suggested title for the game's stage.
+    When I set the field "Title" to "Quiz (Recognize)"
     And I press "Save changes"
     Then I should see "Quiz (Recall)"
     When I click on "Hide game" "link"
@@ -57,14 +62,19 @@ Feature: Manage the games of a Vocabulary activity on its page
     Given I am logged in as "teacher1"
     And I am on the "vocab1" "Activity" page
     When I click on "Add a game" "link"
-    And I set the following fields in the "Add a game" "dialogue" to these values:
-      | Stage | Recognize |
-      | Title | Food quiz |
-    And I click on "Save changes" "button" in the "Add a game" "dialogue"
+    And I click on "Quiz" "link" in the "Add a game" "dialogue"
+    Then the field "Title" in the "Adding a Quiz game" "dialogue" matches value "Quiz (Recognize)"
+    # A suggested title follows the stage, but a title that the teacher typed does not.
+    When I set the field "Stage" in the "Adding a Quiz game" "dialogue" to "Recall"
+    Then the field "Title" in the "Adding a Quiz game" "dialogue" matches value "Quiz (Recall)"
+    When I set the field "Title" in the "Adding a Quiz game" "dialogue" to "Food quiz"
+    And I set the field "Stage" in the "Adding a Quiz game" "dialogue" to "Recognize"
+    Then the field "Title" in the "Adding a Quiz game" "dialogue" matches value "Food quiz"
+    When I click on "Save changes" "button" in the "Adding a Quiz game" "dialogue"
     Then I should see "Food quiz"
     When I click on "Food quiz" "link"
-    And I set the field "Title" in the "Edit game" "dialogue" to "Animal quiz"
-    And I click on "Save changes" "button" in the "Edit game" "dialogue"
+    And I set the field "Title" in the "Editing a Quiz game" "dialogue" to "Animal quiz"
+    And I click on "Save changes" "button" in the "Editing a Quiz game" "dialogue"
     Then I should see "Animal quiz"
     And I should not see "Food quiz"
     When I click on "Actions" "button" in the "[data-title='Animal quiz']" "css_element"
@@ -80,11 +90,13 @@ Feature: Manage the games of a Vocabulary activity on its page
     Given I am logged in as "teacher1"
     And I am on the "vocab1" "Activity" page
     And I click on "Add a game" "link"
+    And I click on "Quiz" "link" in the ".vocab-game-chooser" "css_element"
     And I set the following fields to these values:
       | Stage | Recognize |
       | Title | Shown quiz |
     And I press "Save changes"
     And I click on "Add a game" "link"
+    And I click on "Quiz" "link" in the ".vocab-game-chooser" "css_element"
     And I set the following fields to these values:
       | Stage | Recall      |
       | Title | Hidden quiz |

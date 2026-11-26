@@ -30,13 +30,14 @@ if ($id) {
     $instance = $DB->get_record('vocab_game_instances', ['id' => $id], '*', MUST_EXIST);
     $cm = get_coursemodule_from_instance('vocab', $instance->vocabid, 0, false, MUST_EXIST);
     $params = ['id' => $id];
-    $heading = 'editgame';
+    $game = $DB->get_field('vocab_games', 'name', ['id' => $instance->gameid], MUST_EXIST);
+    $heading = 'editinggame';
 } else {
     $cmid = required_param('cmid', PARAM_INT); // The course module, to add a game to it.
     $game = required_param('game', PARAM_PLUGIN); // The game to add, e.g. "quiz".
     $cm = get_coursemodule_from_id('vocab', $cmid, 0, false, MUST_EXIST);
     $params = ['cmid' => $cm->id, 'game' => $game];
-    $heading = 'addgame';
+    $heading = 'addinggame';
 }
 
 $course = get_course($cm->course);
@@ -46,8 +47,13 @@ require_capability('mod/vocab:manage', $context);
 
 $url = new moodle_url('/mod/vocab/game/edit.php', $params);
 $viewurl = new moodle_url('/mod/vocab/view.php', ['id' => $cm->id]);
+$class = \mod_vocab\gamebase::get_class($game);
+if (!$class) {
+    throw new moodle_exception('errorunknowngame', 'mod_vocab', '', s($game));
+}
+$heading = get_string($heading, 'mod_vocab', $class::get_title());
 $PAGE->set_url($url);
-$PAGE->set_title(format_string($cm->name) . ': ' . get_string($heading, 'mod_vocab'));
+$PAGE->set_title(format_string($cm->name) . ': ' . $heading);
 $PAGE->set_heading(format_string($course->fullname));
 
 $form = new \mod_vocab\gameform($url);
@@ -61,6 +67,6 @@ if ($form->get_data()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string($heading, 'mod_vocab'));
+echo $OUTPUT->heading($heading);
 $form->display();
 echo $OUTPUT->footer();

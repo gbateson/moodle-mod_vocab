@@ -709,7 +709,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
      * @param moodle_url|null $image the game's picture (see gamebase::get_tile_url()).
      * @return string CSS
      */
-    protected function tile_style(string $bgcolor, string $textcolor, ?moodle_url $image): string {
+    public function tile_style(string $bgcolor, string $textcolor, ?moodle_url $image): string {
         if ($image) {
             // Pictures are light, so the text is dark (see docs/games.md).
             return "background-color: $bgcolor; color: #1d2125; background-image: url('" . $image->out(false) . "');";
@@ -765,6 +765,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
             $tiles[] = [
                 'id' => $instance->id,
                 'title' => $title,
+                'gametitle' => $game::get_title(),
                 'enabled' => (int) $instance->enabled,
                 'attempts' => (int) ($attempts[$instance->id] ?? 0),
                 'status' => $status,
@@ -782,7 +783,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
         $regionid = html_writer::random_id('vocab-games-');
         $this->page->requires->js_call_amd('mod_vocab/managegames', 'init', [
             $regionid,
-            array_keys(\mod_vocab\gamebase::get_games()),
+            $this->game_choices($cm->id),
         ]);
         return $this->render_from_template('mod_vocab/game_manager', [
             'regionid' => $regionid,
@@ -794,6 +795,33 @@ class mod_vocab_renderer extends plugin_renderer_base {
             'addicon' => $this->pix_icon('t/add', ''),
             'trashicon' => $this->pix_icon('t/delete', ''),
         ]);
+    }
+
+    /**
+     * Get the games that a teacher can add to the activity, for the chooser
+     * (templates/game_chooser.mustache).
+     *
+     * @param int $cmid the course module id.
+     * @return array of games: name, title, description (HTML), url, hasimage and style.
+     */
+    public function game_choices(int $cmid): array {
+        $choices = [];
+        foreach (\mod_vocab\gamebase::get_games() as $name => $class) {
+            $component = $class::get_component();
+            $description = '';
+            if (get_string_manager()->string_exists('pluginname_help', $component)) {
+                $description = format_text(get_string('pluginname_help', $component), FORMAT_MARKDOWN);
+            }
+            $choices[] = [
+                'name' => $name,
+                'title' => $class::get_title(),
+                'description' => $description,
+                'url' => (new moodle_url('/mod/vocab/game/edit.php', ['cmid' => $cmid, 'game' => $name]))->out(false),
+                'hasimage' => !empty($class::get_tile_url()),
+                'style' => $this->tile_style('#bbddff', 'black', $class::get_tile_url()),
+            ];
+        }
+        return $choices;
     }
 
     /**

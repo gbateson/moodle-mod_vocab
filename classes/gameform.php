@@ -85,6 +85,31 @@ class gameform extends \core_form\dynamic_form {
     }
 
     /**
+     * Get the suggested titles of this game at each stage, e.g. "Quiz (Recognize)".
+     *
+     * @return string[] stage => title
+     */
+    protected function get_default_titles(): array {
+        $class = $this->get_target()->class;
+        $titles = [];
+        foreach (progress::STAGES as $stage) {
+            $titles[$stage] = $class::get_default_title($stage);
+        }
+        return $titles;
+    }
+
+    /**
+     * Load the JavaScript that changes a suggested title when the stage is changed.
+     * This is done here, when the form is rendered, and not in definition(), because
+     * the JavaScript for a form in a popup is collected only while it is rendered.
+     */
+    public function definition_after_data() {
+        global $PAGE;
+        parent::definition_after_data();
+        $PAGE->requires->js_call_amd('mod_vocab/gameform', 'init');
+    }
+
+    /**
      * Define the form.
      */
     protected function definition() {
@@ -109,10 +134,13 @@ class gameform extends \core_form\dynamic_form {
         $mform->setType('stage', PARAM_ALPHA);
 
         $stage = ($target->instance ? $target->instance->stage : array_key_first($stages));
-        $attributes = ['size' => 40, 'maxlength' => 255, 'placeholder' => $class::get_default_title($stage)];
-        $mform->addElement('text', 'title', get_string('gametitle', $plugin), $attributes);
+        $mform->addElement('text', 'title', get_string('gametitle', $plugin), ['size' => 40, 'maxlength' => 255]);
         $mform->addHelpButton('title', 'gametitle', $plugin);
         $mform->setType('title', PARAM_TEXT);
+        $mform->setDefault('title', $class::get_default_title($stage));
+
+        // When the stage is changed, a suggested title is changed to suit the new stage.
+        $mform->updateAttributes(['data-vocab-suggested-titles' => json_encode($this->get_default_titles())]);
 
         $class::add_settings($mform, '', $this->get_context_for_dynamic_submission());
         $this->add_page_buttons(true);
@@ -172,7 +200,8 @@ class gameform extends \core_form\dynamic_form {
             $data = (array) json_decode($instance->configdata ?? '', true) + $data;
             $data['id'] = $instance->id;
             $data['stage'] = $instance->stage;
-            $data['title'] = $instance->title;
+            // An empty title means the suggested title, so show that.
+            $data['title'] = ($instance->title === '' ? $target->class::get_default_title($instance->stage) : $instance->title);
         } else {
             $data['id'] = 0;
         }
@@ -190,6 +219,11 @@ class gameform extends \core_form\dynamic_form {
         $data = $this->get_data();
         $config = $class::get_settings($data, '');
         $title = trim($data->title ?? '');
+        if (in_array($title, $this->get_default_titles())) {
+            // A suggested title, maybe for another stage if JavaScript was not available:
+            // store it as empty, so that the title follows the game's stage.
+            $title = '';
+        }
         if ($instance = $target->instance) {
             progress::update_game_instance($instance->id, $data->stage, $config, $title);
             $id = (int) $instance->id;

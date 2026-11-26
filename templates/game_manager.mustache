@@ -26,7 +26,7 @@
     * regionid - the id of the outer element
     * vocabid - the id of the activity
     * cmid - the id of the course module
-    * tiles - the games: id, title, enabled, attempts, status, dimmed, editurl, hasimage, style,
+    * tiles - the games: id, title, gametitle (the game's name, e.g. Quiz), enabled, attempts, status, dimmed, editurl, hasimage, style,
       draghandle (HTML), menu (HTML)
     * hastiles - true if there are any games
     * addurl - the page for adding a game
@@ -39,13 +39,13 @@
         "cmid": 2,
         "tiles": [
             {
-                "id": 3, "title": "Quiz (Recognize)", "enabled": 1, "attempts": 0,
+                "id": 3, "title": "Quiz (Recognize)", "gametitle": "Quiz", "enabled": 1, "attempts": 0,
                 "status": "", "dimmed": false, "editurl": "#", "hasimage": false,
                 "style": "background-color: #bbddff; color: black;",
                 "draghandle": "", "menu": ""
             },
             {
-                "id": 4, "title": "Food quiz", "enabled": 0, "attempts": 5,
+                "id": 4, "title": "Food quiz", "gametitle": "Quiz", "enabled": 0, "attempts": 5,
                 "status": "Hidden from students", "dimmed": true, "editurl": "#", "hasimage": false,
                 "style": "background-color: #1144ff; color: white;",
                 "draghandle": "", "menu": ""
@@ -64,7 +64,7 @@
     <ul class="list-unstyled d-flex flex-wrap align-items-stretch m-0 vocab-game-tiles" data-region="vocab-game-tiles">
         {{#tiles}}
         <li class="d-flex flex-column m-1 rounded vocab-game-tile{{#hasimage}} vocab-game-has-image{{/hasimage}}{{#dimmed}} vocab-game-dimmed{{/dimmed}}"
-            data-instanceid="{{id}}" data-title="{{title}}" data-enabled="{{enabled}}" data-attempts="{{attempts}}">
+            data-instanceid="{{id}}" data-title="{{title}}" data-gametitle="{{gametitle}}" data-enabled="{{enabled}}" data-attempts="{{attempts}}">
             <div class="vocab-game-picture" style="{{style}}">
                 <div class="d-flex align-items-center vocab-game-tile-header">
                     <span class="vocab-game-handle">{{{draghandle}}}</span>

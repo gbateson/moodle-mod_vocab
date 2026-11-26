@@ -16,7 +16,7 @@
 
 /**
  * Choose a game to add to a Vocabulary activity, then go to its settings form.
- * If only one game is installed, go straight to its settings form.
+ * With JavaScript, the same choice is shown in a popup on the activity's page.
  *
  * @package    mod_vocab
  * @copyright  2026 Gordon Bateson
@@ -39,30 +39,15 @@ $PAGE->set_url($url);
 $PAGE->set_title(format_string($cm->name) . ': ' . get_string('addgame', $plugin));
 $PAGE->set_heading(format_string($course->fullname));
 
-$games = \mod_vocab\gamebase::get_games();
-if (count($games) == 1) {
-    redirect(new moodle_url('/mod/vocab/game/edit.php', ['cmid' => $cm->id, 'game' => array_key_first($games)]));
-}
+$renderer = $PAGE->get_renderer('mod_vocab');
+$games = $renderer->game_choices($cm->id);
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('choosegame', $plugin));
 if (empty($games)) {
     echo $OUTPUT->notification(get_string('nogamesinstalled', $plugin), 'info');
 } else {
-    $items = [];
-    foreach ($games as $name => $class) {
-        $link = html_writer::link(
-            new moodle_url('/mod/vocab/game/edit.php', ['cmid' => $cm->id, 'game' => $name]),
-            $class::get_title(),
-            ['class' => 'font-weight-bold']
-        );
-        $component = $class::get_component();
-        if (get_string_manager()->string_exists('pluginname_help', $component)) {
-            $link .= html_writer::div(format_text(get_string('pluginname_help', $component), FORMAT_MARKDOWN), 'small');
-        }
-        $items[] = $link;
-    }
-    echo html_writer::alist($items, ['class' => 'list-unstyled vocab-choosegame']);
+    echo $OUTPUT->render_from_template('mod_vocab/game_chooser', ['games' => $games]);
 }
 echo $OUTPUT->single_button($viewurl, get_string('cancel'), 'get');
 echo $OUTPUT->footer();

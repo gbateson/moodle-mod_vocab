@@ -89,6 +89,23 @@ final class gameform_test extends \advanced_testcase {
     }
 
     /**
+     * A suggested title is saved as empty, even if it is the suggested title for another
+     * stage, so that the game's title follows its stage.
+     */
+    public function test_suggested_title(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$cm, , $teacher] = $this->make_activity();
+        $this->setUser($teacher);
+        $result = $this->submit([
+            'cmid' => $cm->id, 'game' => 'quiz', 'id' => 0,
+            'stage' => progress::STAGE_RECALL, 'title' => 'Quiz (Recognize)',
+        ]);
+        $id = json_decode($result['data'])->id;
+        $this->assertSame('', $DB->get_field('vocab_game_instances', 'title', ['id' => $id]));
+    }
+
+    /**
      * The form is shown again, not saved, for a stage that the activity does not use.
      */
     public function test_stage_must_be_enabled(): void {

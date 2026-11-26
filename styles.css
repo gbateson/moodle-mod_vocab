@@ -183,6 +183,16 @@
 .path-mod-vocab .vocab-game-tile .vocab-game-reason {
     line-height: 1.2;
 }
+/** in the chooser of games to add, the tiles are larger, with a description */
+.vocab-game-chooser .vocab-game-tile {
+    width: 220px;
+}
+.vocab-game-chooser .vocab-game-tile .vocab-game-picture {
+    height: 132px;
+}
+.vocab-game-chooser .vocab-game-description p:last-child {
+    margin-bottom: 0;
+}
 .path-mod-vocab .vocab-game-tile.vocab-game-dimmed {
     opacity: 0.5;
     filter: grayscale(100%);
