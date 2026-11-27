@@ -18,6 +18,7 @@ namespace mod_vocab;
 
 use tool_aibridge\library\template;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\aibridge::class)]
 /**
  * Tests for the AI bridge's providers and templates, as the activity uses them.
  *

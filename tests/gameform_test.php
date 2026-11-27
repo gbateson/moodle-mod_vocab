@@ -18,6 +18,7 @@ namespace mod_vocab;
 
 use core_form\external\dynamic_form;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\gameform::class)]
 /**
  * Tests of the form for adding and editing the games in an activity.
  *

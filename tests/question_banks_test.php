@@ -16,6 +16,7 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\question_banks::class)]
 /**
  * Tests for finding a course's questions in Moodle 4.x (the course) and 5.x (its question banks).
  *

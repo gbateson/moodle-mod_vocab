@@ -20,6 +20,7 @@ use tool_aibridge\library\template;
 use tool_aibridge\provider;
 use tool_aibridge\tuning;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\aibridge_migration::class)]
 /**
  * Tests for moving the settings of the old "vocabai" subplugins into the AI bridge.
  *

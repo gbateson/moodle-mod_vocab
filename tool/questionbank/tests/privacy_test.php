@@ -22,6 +22,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use vocabtool_questionbank\privacy\provider;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabtool_questionbank\privacy\provider::class)]
 /**
  * Tests for the privacy provider of the question bank tool.
  *

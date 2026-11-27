@@ -18,6 +18,7 @@ namespace vocabtool_questionbank;
 
 use vocabtool_questionbank\task\questions;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabtool_questionbank\task\questions::class)]
 /**
  * Tests for the task that generates questions.
  *

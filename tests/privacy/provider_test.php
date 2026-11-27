@@ -23,6 +23,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use mod_vocab\progress;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\privacy\provider::class)]
 /**
  * Tests for the privacy provider of the Vocabulary activity.
  *

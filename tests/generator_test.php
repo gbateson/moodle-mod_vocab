@@ -16,6 +16,7 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab_generator::class)]
 /**
  * Tests for the data generator of the Vocabulary activity.
  *

@@ -18,6 +18,7 @@ namespace vocabgame_quiz;
 
 use mod_vocab\progress;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabgame_quiz\game::class)]
 /**
  * Tests for the quiz game.
  *

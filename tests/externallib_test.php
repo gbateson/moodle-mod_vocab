@@ -16,6 +16,7 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\external\view_vocab::class)]
 /**
  * Tests for the web service functions of the Vocabulary activity.
  *

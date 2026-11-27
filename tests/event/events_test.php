@@ -16,6 +16,8 @@
 
 namespace mod_vocab\event;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\event\course_module_viewed::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\event\course_module_instance_list_viewed::class)]
 /**
  * Tests for the events of the Vocabulary activity.
  *

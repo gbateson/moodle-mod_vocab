@@ -16,6 +16,7 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\progress::class)]
 /**
  * Tests for students' progress with words, through the stages of learning.
  *

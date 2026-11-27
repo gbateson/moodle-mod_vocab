@@ -16,6 +16,7 @@
 
 namespace vocabtool_wordlist;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabtool_wordlist\form::class)]
 /**
  * Tests of the form for editing a word list.
  *

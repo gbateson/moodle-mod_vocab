@@ -19,6 +19,10 @@ namespace mod_vocab\external;
 use core_external\external_api;
 use mod_vocab\progress;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\external\game_instance_api::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\external\delete_game_instance::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\external\reorder_game_instances::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\external\set_game_instance_enabled::class)]
 /**
  * Tests of the web service functions that manage the games in an activity.
  *

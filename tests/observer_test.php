@@ -16,6 +16,9 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\observer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\notification::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabgame_quiz\game::class)]
 /**
  * Tests for what games do when the questions and question categories they use are deleted.
  *

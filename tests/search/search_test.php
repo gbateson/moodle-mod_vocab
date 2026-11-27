@@ -16,6 +16,7 @@
 
 namespace mod_vocab\search;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\search\activity::class)]
 /**
  * Tests for the search area of the Vocabulary activity.
  *

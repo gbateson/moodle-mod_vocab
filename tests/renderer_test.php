@@ -16,6 +16,7 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab_renderer::class)]
 /**
  * Tests of the game tiles on the activity's page.
  *

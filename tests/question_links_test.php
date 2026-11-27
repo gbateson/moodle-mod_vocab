@@ -16,6 +16,9 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\progress::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_vocab\observer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabgame_quiz\game::class)]
 /**
  * Tests for the links from words to questions: a link is to every version of a
  * question (its question bank entry), and games use the latest version that is ready.
