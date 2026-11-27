@@ -270,6 +270,16 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026112701;
+    if ($oldversion < $newversion) {
+        // The dictionary's prompts and JSON formats (see docs/plan-dictionary.md, step 2).
+        // If the AI bridge is not ready yet, it adds them when it is installed.
+        if (\mod_vocab\aibridge_migration::is_bridge_ready()) {
+            \tool_aibridge\library::sync_component('mod_vocab');
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

@@ -55,6 +55,15 @@ class dictionary {
     /** Any other source. */
     const SOURCE_OTHER = 'other';
 
+    /**
+     * The parts of speech: the Universal Dependencies tags (https://universaldependencies.org/u/pos/),
+     * which work for any language, and PHRASE for a multi-word expression. PUNCT, SYM and X are left out.
+     */
+    const POS_TAGS = [
+        'ADJ', 'ADP', 'ADV', 'AUX', 'CCONJ', 'DET', 'INTJ', 'NOUN',
+        'NUM', 'PART', 'PRON', 'PROPN', 'SCONJ', 'VERB', 'PHRASE',
+    ];
+
     /** The framework of the CEFR levels. */
     const FRAMEWORK_CEFR = 'CEFR';
 

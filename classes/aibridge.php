@@ -119,18 +119,40 @@ class aibridge {
     }
 
     /**
-     * Get the prompts that a user can use, for a menu.
+     * Get the prompts that a user can use, for a menu: either the prompts for questions,
+     * or the prompts for the dictionary, which all extend "mod_vocab:dictionary-entry".
      *
      * @param \context $context
      * @param int $userid
+     * @param bool $dictionary true for the dictionary's prompts, false for the others.
      * @return string[] template id => name.
      */
-    public static function get_prompt_menu(\context $context, int $userid): array {
+    public static function get_prompt_menu(\context $context, int $userid, bool $dictionary = false): array {
         $menu = [];
         foreach (template::get_available($context, $userid, template::TYPE_PROMPT) as $id => $template) {
-            $menu[$id] = format_string($template->get_name());
+            if (self::is_dictionary_prompt($template) == $dictionary) {
+                $menu[$id] = format_string($template->get_name());
+            }
         }
         return $menu;
+    }
+
+    /**
+     * Is a prompt one of the dictionary's prompts? It is if it is "mod_vocab:dictionary-entry",
+     * or extends it, e.g. a teacher's own copy of a dictionary prompt.
+     *
+     * @param template $prompt
+     * @return bool
+     */
+    public static function is_dictionary_prompt(template $prompt): bool {
+        $depth = 0;
+        while ($prompt && $depth++ <= 5) {
+            if ($prompt->get_shortname() === dictionary_ai::PROMPT_ENTRY) {
+                return true;
+            }
+            $prompt = $prompt->get_parent();
+        }
+        return false;
     }
 
     /**

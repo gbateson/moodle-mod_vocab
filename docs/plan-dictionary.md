@@ -1,6 +1,6 @@
 # Plan: populating the dictionary
 
-Status: 2026-11-27. The open questions are answered. Step 1 (data model) is done, in version 2026112700.
+Status: 2026-11-27. The open questions are answered. Step 1 (data model) is done, in version 2026112700, and step 2 (AI prompts) in version 2026112701.
 
 ## Goal
 
@@ -219,6 +219,70 @@ site-wide data. This can be added when the review tool is built.
   and the students' language are added in step 3, where the prompts need them.
 - Backups do not yet include a word instance's sense. Restored words have no
   sense chosen. This is done with the backups in step 5.
+
+## Step 2: AI prompts (done)
+
+The prompts are templates in the AI bridge's library, shipped in
+`db/aibridge_templates.php`, so teachers can see, copy and adapt them like the
+question bank tool's prompts. They are in English, and the vocabulary items
+are in their own language. Every reply is JSON.
+
+### Prompts
+
+| Prompt | Asks for | Reply |
+|---|---|---|
+| `dictionary-entry` | The most common senses of a word, each with a definition, a gloss and sample sentences. | `{"lemma", "senses": [{"pos", "meaning", "level", "definition", "gloss", "samples": [...]}]}` |
+| `dictionary-definition` | A definition and a gloss, for one sense. | `{"definition", "gloss"}` |
+| `dictionary-samples` | Sample sentences, with translations, for one sense. | `[{"sentence", "form", "translation"}]` |
+| `dictionary-related` | Synonyms, antonyms, collocations and the word family, for one sense. | `[{"relation", "item", "pos", "meaning"}]` |
+
+The other three prompts extend `dictionary-entry`, so they share its role,
+rules and parameters. Each prompt has its own JSON format, and shared
+fragments hold the rules for JSON output, parts of speech, definitions and
+samples.
+
+For example, the samples prompt renders as: *"Create 2 CEFR level A2 sample
+sentences in Japanese for the interjection "すみません" in the sense of
+"だれかいますか？". Translate each sample sentence into English."*
+
+### Parameters
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `vocabulary-item` | | The word or phrase. |
+| `word-language` | English | The language of the word, as a name, e.g. "Japanese". |
+| `gloss-language` | Japanese | The students' language, for glosses and translations. |
+| `level-framework`, `level` | CEFR, B1 | The level of the definitions and samples. |
+| `number-of-senses`, `number-of-samples` | 3, 2 | |
+| `part-of-speech`, `sense-meaning` | | For the prompts about one sense, e.g. "noun" and "money". |
+| `number-of-related` | 3 | The most items for each relation. |
+
+### Details
+
+- **The sample's "form"** is the word exactly as it is used in the sentence,
+  e.g. "ran" for "run", or 食べた for 食べる. It is used to fill in
+  `vocab_sample_words` without splitting the sentence into words, which
+  matters for languages that are written without spaces.
+- **The sense's "meaning"** is a short label in the word's own language, like
+  "だれかいますか？" for すみません. Glosses give the meaning in the students'
+  language.
+- **Menus:** `aibridge::get_prompt_menu()` lists the dictionary prompts (and
+  teachers' prompts that extend them) only when asked for them, so they do not
+  appear in the question bank tool or the quiz game.
+- **Checking replies:** `dictionary_ai::parse_entry()`, `parse_definition()`,
+  `parse_samples()` and `parse_related()` read a reply into plain arrays.
+  Markdown and chatter around the JSON are removed. Unknown parts of speech
+  and levels are left empty, text is cut to 255 characters, a "form" that is
+  not in its sentence is left empty, and empty or repeated senses are left
+  out. Each fix is reported as a warning; a reply with nothing usable is an
+  error.
+
+### Not in step 2
+
+- The prompts have not yet been sent to a real AI provider. Step 3 sends them,
+  and the wording may need tuning once the replies have been seen, especially
+  for languages other than English and Japanese.
+- Pronunciation (IPA, or kana for Japanese) is left for later, as decided.
 
 ## Open questions
 

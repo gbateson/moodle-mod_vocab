@@ -16,9 +16,13 @@
 
 /**
  * Prompts and output formats that the Vocabulary activity adds to the
- * library of the AI bridge (tool_aibridge), for generating TOEIC-style
- * questions with the question bank tool. They extend the bridge's own
- * "Generate GIFT/XML questions" prompt.
+ * library of the AI bridge (tool_aibridge):
+ *
+ * - for generating TOEIC-style questions with the question bank tool. They
+ *   extend the bridge's own "Generate GIFT/XML questions" prompt.
+ * - for filling in the dictionary (see docs/plan-dictionary.md). They extend
+ *   "dictionary-entry", and reply in JSON. They work for any language: the
+ *   prompts are in English, and the vocabulary items in their own language.
  *
  * After changing them, increase the plugin version and call
  * \tool_aibridge\library::sync_component('mod_vocab') in db/upgrade.php.
@@ -274,5 +278,277 @@ For example, they might have a similar spelling to the target word or they might
 However all the distractors are clearly incorrect because they are grammatically incorrect, or have an incorrect meaning, or do not form an idiom or collocation.
 EOD . '{{endblock}}',
         'formatlinks' => ['multichoice' => 'toeic-part5-format'],
+    ],
+
+    // Dictionary: fragments.
+    'dictionary-json-rules' => [
+        'type' => 'fragment',
+        'name' => 'Dictionary: JSON output rules',
+        'description' => 'Tells the AI to reply with JSON only, so that the dictionary items can be checked and saved.',
+        'body' => <<<'EOD'
+Follow these important instructions:
+[1] In your response, reply with JSON only. Do not include any greetings, explanations or platitudes.
+[2] In your response, do not use any markdown, such as code fences (backticks), headings (repeated sharp signs), or bold and italic text (asterisks or underlines).
+[3] Use the JSON structure below. Keep the field names exactly as they are, in English, and replace each placeholder value with your own text.
+[4] Write each value in the language that its description gives. Never translate the vocabulary item itself.
+EOD
+,
+    ],
+    'dictionary-pos-tags' => [
+        'type' => 'fragment',
+        'name' => 'Dictionary: parts of speech',
+        'description' => 'The Universal Dependencies tags for parts of speech, which work for any language.',
+        'body' => <<<'EOD'
+The "part-of-speech" is one of these Universal Dependencies tags: ADJ (adjective), ADP (adposition, i.e. a preposition or postposition), ADV (adverb), AUX (auxiliary), CCONJ (coordinating conjunction), DET (determiner), INTJ (interjection), NOUN (noun), NUM (numeral), PART (particle), PRON (pronoun), PROPN (proper noun), SCONJ (subordinating conjunction) or VERB (verb). For a multi-word expression or set phrase that has no single part of speech, use PHRASE.
+EOD
+,
+    ],
+    'dictionary-definition-rules' => [
+        'type' => 'fragment',
+        'name' => 'Dictionary: definitions and glosses',
+        'description' => 'How to write a definition and a gloss for one sense of a vocabulary item.',
+        'body' => <<<'EOD'
+The "definition-at-level" explains the meaning of the sense in {{level-framework}} level {{level}} {{word-language}}, using words that are easier than the vocabulary item itself. It is one sentence or phrase, of less than 200 characters, and does not contain the vocabulary item.
+
+The "gloss-in-students-language" is a short translation of the sense into {{gloss-language}}, of one to five words, that a student could write next to the vocabulary item.
+EOD
+,
+    ],
+    'dictionary-sample-rules' => [
+        'type' => 'fragment',
+        'name' => 'Dictionary: sample sentences',
+        'description' => 'How to write sample sentences for one sense of a vocabulary item.',
+        'body' => <<<'EOD'
+Each "sample-sentence" is a short, natural sentence in {{level-framework}} level {{level}} {{word-language}}, which shows the meaning of the sense clearly. It contains the vocabulary item, perhaps in another form, e.g. "ran" or "running" for "run". Each sample sentence uses the vocabulary item in a different situation.
+
+The "form-used-in-sentence" is the vocabulary item exactly as it appears in the sample sentence, e.g. "ran" in "She ran to the station."
+
+The "translation-of-sentence" is a natural translation of the sample sentence into {{gloss-language}}.
+EOD
+,
+    ],
+
+    // Dictionary: formats.
+    'dictionary-entry-format' => [
+        'type' => 'format',
+        'name' => 'Dictionary: entry (JSON)',
+        'qformat' => 'json',
+        'body' => <<<'EOD'
+{
+    "lemma": "dictionary-form",
+    "senses": [
+        {
+            "pos": "part-of-speech",
+            "meaning": "short-meaning",
+            "level": "estimated-level",
+            "definition": "definition-at-level",
+            "gloss": "gloss-in-students-language",
+            "samples": [
+                {
+                    "sentence": "sample-sentence",
+                    "form": "form-used-in-sentence",
+                    "translation": "translation-of-sentence"
+                }
+            ]
+        }
+    ]
+}
+EOD
+,
+        'instructions' => <<<'EOD'
+The "dictionary-form" is the form of the vocabulary item that a dictionary lists it under, e.g. "run" for "ran", or "good" for "better". For a phrase, it is usually the phrase itself.
+
+The "senses" list has one item for each sense, from the most common to the least common.
+
+{{include:mod_vocab:dictionary-pos-tags}}
+
+The "short-meaning" is a few words in {{word-language}} that tell this sense apart from the other senses, e.g. "money" and "river" for the two senses of the English noun "bank".
+
+The "estimated-level" is the {{level-framework}} level at which students usually learn this sense, e.g. A1 or B2.
+
+{{include:mod_vocab:dictionary-definition-rules}}
+
+The "samples" list has {{number-of-samples}} items for each sense.
+
+{{include:mod_vocab:dictionary-sample-rules}}
+EOD
+,
+        'examples' => <<<'EOD'
+For example, this is an entry for the Japanese vocabulary item "すみません", at CEFR level A1, with glosses in English and one sample sentence for each sense:
+{
+    "lemma": "すみません",
+    "senses": [
+        {
+            "pos": "INTJ",
+            "meaning": "あやまるとき",
+            "level": "A1",
+            "definition": "人に悪いことをしたときに言うことば。",
+            "gloss": "I'm sorry",
+            "samples": [
+                {
+                    "sentence": "おそくなって、すみません。",
+                    "form": "すみません",
+                    "translation": "I'm sorry I'm late."
+                }
+            ]
+        },
+        {
+            "pos": "INTJ",
+            "meaning": "人をよぶとき",
+            "level": "A1",
+            "definition": "店などで人をよぶときに言うことば。",
+            "gloss": "Excuse me",
+            "samples": [
+                {
+                    "sentence": "すみません、だれかいますか？",
+                    "form": "すみません",
+                    "translation": "Excuse me, is anyone here?"
+                }
+            ]
+        }
+    ]
+}
+EOD
+,
+    ],
+    'dictionary-definition-format' => [
+        'type' => 'format',
+        'name' => 'Dictionary: definition and gloss (JSON)',
+        'qformat' => 'json',
+        'body' => <<<'EOD'
+{
+    "definition": "definition-at-level",
+    "gloss": "gloss-in-students-language"
+}
+EOD
+,
+        'instructions' => '{{include:mod_vocab:dictionary-definition-rules}}',
+    ],
+    'dictionary-samples-format' => [
+        'type' => 'format',
+        'name' => 'Dictionary: sample sentences (JSON)',
+        'qformat' => 'json',
+        'body' => <<<'EOD'
+[
+    {
+        "sentence": "sample-sentence",
+        "form": "form-used-in-sentence",
+        "translation": "translation-of-sentence"
+    }
+]
+EOD
+,
+        'instructions' => "The list has {{number-of-samples}} items.\n\n{{include:mod_vocab:dictionary-sample-rules}}",
+    ],
+    'dictionary-related-format' => [
+        'type' => 'format',
+        'name' => 'Dictionary: related words (JSON)',
+        'qformat' => 'json',
+        'body' => <<<'EOD'
+[
+    {
+        "relation": "relation-name",
+        "item": "related-item",
+        "pos": "part-of-speech",
+        "meaning": "short-meaning"
+    }
+]
+EOD
+,
+        'instructions' => <<<'EOD'
+The "relation-name" is one of these: synonym (a word or phrase with the same meaning in this sense), antonym (a word or phrase with the opposite meaning), collocation (a phrase in which the vocabulary item is often used, e.g. "make a decision" for "decision") or family (a word with the same root but a different part of speech, e.g. "decide" for "decision"). Give at most {{number-of-related}} items for each relation, and leave out a relation if there are no good items for it.
+
+The "related-item" is the dictionary form of the related word or phrase, in {{word-language}}. For a collocation, it is the whole phrase, including the vocabulary item.
+
+{{include:mod_vocab:dictionary-pos-tags}} It is the part of speech of the related item, not of the vocabulary item.
+
+The "short-meaning" is a few words in {{word-language}} that give the meaning of the related item.
+EOD
+,
+    ],
+
+    // Dictionary: prompts. They all extend "dictionary-entry", so that they are listed
+    // for the dictionary, and not for the question bank tool.
+    'dictionary-entry' => [
+        'type' => 'prompt',
+        'name' => 'Dictionary: entry (senses, definitions, glosses and sample sentences)',
+        'description' => 'A learner\'s dictionary entry for one vocabulary item, in any language. Other dictionary prompts extend this one.',
+        'body' => <<<'EOD'
+{{block:role}}I am a language teacher. I teach {{word-language}} to students whose first language is {{gloss-language}}.
+Your role is an expert lexicographer who writes learner's dictionaries.
+Help me to write dictionary content that I can save in a Moodle LMS.{{endblock}}
+
+{{block:task}}Write a learner's dictionary entry for the {{word-language}} vocabulary item "{{vocabulary-item}}".
+Give at most {{number-of-senses}} senses: the most common ones. For each sense, write a definition, a gloss in {{gloss-language}}, and {{number-of-samples}} sample sentences.
+Use only {{level-framework}} level {{level}} {{word-language}} in the definitions and sample sentences.{{endblock}}
+
+{{block:description}}A sense is one meaning of the vocabulary item, like one of the numbered meanings in a dictionary entry. For example, the English noun "bank" has two common senses: a place that keeps money, and the land beside a river. The same word with a different part of speech is a different sense, e.g. the English verb "bank", meaning to keep money in a bank. Give only senses that a {{level-framework}} level {{level}} student might need, and leave out rare and technical senses.{{endblock}}
+
+{{block:rules}}{{include:mod_vocab:dictionary-json-rules}}{{endblock}}
+
+{{output-format}}
+EOD
+,
+        'parameters' => [
+            ['name' => 'word-language', 'default' => 'English', 'required' => true,
+                'description' => 'The language of the vocabulary item, i.e. the language that the students are learning.'],
+            ['name' => 'gloss-language', 'default' => 'Japanese', 'required' => true,
+                'description' => 'The students\' own language, for glosses and translations.'],
+            ['name' => 'vocabulary-item', 'required' => true, 'description' => 'The word or phrase.'],
+            ['name' => 'level-framework', 'default' => 'CEFR', 'description' => 'The framework of levels, e.g. CEFR or JLPT.'],
+            ['name' => 'level', 'default' => 'B1', 'description' => 'The level of the definitions and sample sentences, e.g. A2.'],
+            ['name' => 'number-of-senses', 'default' => '3', 'description' => 'The most senses to give.'],
+            ['name' => 'number-of-samples', 'default' => '2', 'description' => 'How many sample sentences to write for each sense.'],
+        ],
+        'formatlinks' => ['*' => 'dictionary-entry-format'],
+    ],
+    'dictionary-definition' => [
+        'type' => 'prompt',
+        'name' => 'Dictionary: definition and gloss for one sense',
+        'description' => 'A definition at a level, and a gloss, for one sense of a vocabulary item.',
+        'extends' => 'dictionary-entry',
+        'body' => '{{block:task}}' . <<<'EOD'
+Write a definition and a gloss in {{gloss-language}} for one sense of the {{word-language}} vocabulary item "{{vocabulary-item}}": the {{part-of-speech}} in the sense of "{{sense-meaning}}".
+Use only {{level-framework}} level {{level}} {{word-language}} in the definition.
+EOD . '{{endblock}}' .
+            '{{block:description}}{{endblock}}',
+        'parameters' => [
+            ['name' => 'part-of-speech', 'required' => true, 'description' => 'The part of speech of the sense, e.g. noun or verb.'],
+            ['name' => 'sense-meaning', 'required' => true, 'description' => 'A few words that tell the sense apart from others.'],
+        ],
+        'formatlinks' => ['*' => 'dictionary-definition-format'],
+    ],
+    'dictionary-samples' => [
+        'type' => 'prompt',
+        'name' => 'Dictionary: sample sentences for one sense',
+        'description' => 'Sample sentences at a level, with translations, for one sense of a vocabulary item.',
+        'extends' => 'dictionary-entry',
+        'body' => '{{block:task}}' . <<<'EOD'
+Create {{number-of-samples}} {{level-framework}} level {{level}} sample sentences in {{word-language}} for the {{part-of-speech}} "{{vocabulary-item}}" in the sense of "{{sense-meaning}}".
+Translate each sample sentence into {{gloss-language}}.
+EOD . '{{endblock}}' .
+            '{{block:description}}{{endblock}}',
+        'parameters' => [
+            ['name' => 'part-of-speech', 'required' => true, 'description' => 'The part of speech of the sense, e.g. noun or verb.'],
+            ['name' => 'sense-meaning', 'required' => true, 'description' => 'A few words that tell the sense apart from others.'],
+        ],
+        'formatlinks' => ['*' => 'dictionary-samples-format'],
+    ],
+    'dictionary-related' => [
+        'type' => 'prompt',
+        'name' => 'Dictionary: related words for one sense',
+        'description' => 'Synonyms, antonyms, collocations and the word family, for one sense of a vocabulary item.',
+        'extends' => 'dictionary-entry',
+        'body' => '{{block:task}}' . <<<'EOD'
+List the words and phrases that are related to the {{word-language}} {{part-of-speech}} "{{vocabulary-item}}" in the sense of "{{sense-meaning}}": its synonyms, antonyms, collocations and word family.
+Give only words and phrases that a {{level-framework}} level {{level}} student might need.
+EOD . '{{endblock}}' .
+            '{{block:description}}{{endblock}}',
+        'parameters' => [
+            ['name' => 'part-of-speech', 'required' => true, 'description' => 'The part of speech of the sense, e.g. noun or verb.'],
+            ['name' => 'sense-meaning', 'required' => true, 'description' => 'A few words that tell the sense apart from others.'],
+            ['name' => 'number-of-related', 'default' => '3', 'description' => 'The most related items to give for each relation.'],
+        ],
+        'formatlinks' => ['*' => 'dictionary-related-format'],
     ],
 ];
