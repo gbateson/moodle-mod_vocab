@@ -169,6 +169,12 @@ class mod_vocab_renderer extends plugin_renderer_base {
                     ['class' => 'd-inline-block ms-2 ml-2']
                 );
             }
+            foreach ($game->get_problems() as $problem) {
+                $button .= html_writer::div(
+                    $this->pix_icon('i/warning', '', 'moodle', ['class' => 'text-warning']) . $problem,
+                    'small mt-1 vocab-game-problem'
+                );
+            }
             $rows .= html_writer::tag(
                 'li',
                 html_writer::tag('b', s($game->get_label())) . ': ' . $text . $button,
@@ -762,6 +768,7 @@ class mod_vocab_renderer extends plugin_renderer_base {
             } else {
                 $status = '';
             }
+            $problems = array_map('strip_tags', $game->get_problems());
             $tiles[] = [
                 'id' => $instance->id,
                 'title' => $title,
@@ -770,6 +777,8 @@ class mod_vocab_renderer extends plugin_renderer_base {
                 'attempts' => (int) ($attempts[$instance->id] ?? 0),
                 'status' => $status,
                 'dimmed' => ($status !== ''),
+                'problems' => implode(' ', $problems),
+                'warningicon' => $problems ? $this->pix_icon('i/warning', implode(' ', $problems)) : '',
                 'editurl' => (new moodle_url('/mod/vocab/game/edit.php', ['id' => $instance->id]))->out(false),
                 'hasimage' => !empty($game::get_tile_url()),
                 'style' => $this->tile_style($colors[$i], $textcolor, $game::get_tile_url()),

@@ -195,6 +195,12 @@ GitHub on its own.
 - PHPUnit: `gameform_test`, `external/game_instances_test`, `renderer_test`.
 - Commit to SVN and GitHub.
 
+## Related plans
+
+- [plan-question-checks.md](plan-question-checks.md): what games do when the
+  questions or question categories they use are deleted, and Moodle 5.x
+  question banks.
+
 ## Possibly later
 
 - The same tile manager on the mobile app view (`classes/output/mobile.php`).

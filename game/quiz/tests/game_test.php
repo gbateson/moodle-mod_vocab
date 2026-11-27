@@ -166,4 +166,60 @@ final class game_test extends \advanced_testcase {
         // Now banana's questions are being made, so they are not made again.
         $this->assertSame(['total' => 2, 'ready' => 1, 'pending' => 1, 'missing' => []], $game->get_materials_summary());
     }
+
+    /**
+     * Teachers are told when the quiz's category has been deleted, has no questions,
+     * or has no questions about the activity's words. A deleted category is treated
+     * as any category, so that students can still play.
+     */
+    public function test_problems(): void {
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/questionlib.php');
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $vocab = $generator->create_module('vocab', ['course' => $course->id]);
+        $cm = get_coursemodule_from_instance('vocab', $vocab->id);
+        $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['apple']);
+        $questions = $generator->get_plugin_generator('core_question');
+        $coursecontext = \context_course::instance($course->id);
+        $linked = $questions->create_question_category(['contextid' => $coursecontext->id, 'name' => 'Linked']);
+        $empty = $questions->create_question_category(['contextid' => $coursecontext->id, 'name' => 'Empty']);
+        $other = $questions->create_question_category(['contextid' => $coursecontext->id, 'name' => 'Other']);
+        $question = $questions->create_question('truefalse', null, ['category' => $linked->id]);
+        $questions->create_question('truefalse', null, ['category' => $other->id]);
+        progress::link_questions((int) $DB->get_field('vocab_words', 'id', ['word' => 'apple']), [$question->id]);
+        $wordinstanceid = (int) $DB->get_field('vocab_word_instances', 'id', ['vocabid' => $vocab->id]);
+        $deleted = $questions->create_question_category(['contextid' => $coursecontext->id]);
+        $DB->delete_records('question_categories', ['id' => $deleted->id]);
+
+        $plugin = 'vocabgame_quiz';
+        $expected = [
+            0 => [[], 1],
+            $linked->id => [[], 1],
+            $empty->id => [[get_string('problemcategoryempty', $plugin, 'Empty')], 0],
+            $other->id => [[get_string('problemcategorynowords', $plugin, 'Other')], 0],
+            $deleted->id => [[get_string('problemcategorymissing', $plugin)], 1],
+        ];
+        foreach ($expected as $categoryid => [$problems, $ready]) {
+            $instance = (object) ['id' => 1, 'stage' => 'recognize', 'name' => 'quiz',
+                'configdata' => json_encode(['categoryid' => $categoryid])];
+            $game = \mod_vocab\gamebase::create($vocab, $cm, $instance);
+            $this->assertSame($problems, $game->get_problems(), "category $categoryid");
+            $this->assertCount($ready, $game->get_ready_words([$wordinstanceid]), "category $categoryid");
+            $this->assertSame($categoryid == $deleted->id, $game->is_category_missing());
+        }
+
+        // Missing questions are made in the default category, not in the deleted one.
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+        $instance = (object) ['id' => 1, 'stage' => 'recognize', 'name' => 'quiz',
+            'configdata' => json_encode(['categoryid' => $deleted->id])];
+        $game = \mod_vocab\gamebase::create($vocab, $cm, $instance);
+        $this->assertSame(1, $game->make_materials([$wordinstanceid], (int) $teacher->id));
+        $this->assertEquals(
+            question_get_default_category($coursecontext->id)->id,
+            $DB->get_field('vocabtool_questionbank_log', 'parentcatid', ['vocabid' => $vocab->id])
+        );
+    }
 }

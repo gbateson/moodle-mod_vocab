@@ -26,4 +26,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$addons = [];
+$messageproviders = [
+    // Problems with a game, e.g. its question category has been deleted (see classes/observer.php).
+    'gameproblem' => [
+        'capability' => 'mod/vocab:manage',
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED,
+        ],
+    ],
+];

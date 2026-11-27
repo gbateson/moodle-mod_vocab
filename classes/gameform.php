@@ -65,6 +65,22 @@ class gameform extends \core_form\dynamic_form {
     }
 
     /**
+     * Get the problems with the game that is being edited, to show to the teacher.
+     *
+     * @return string[]
+     */
+    protected function get_problems(): array {
+        global $DB;
+        $target = $this->get_target();
+        if (!$target->instance) {
+            return [];
+        }
+        $vocab = $DB->get_record('vocab', ['id' => $target->cm->instance], '*', MUST_EXIST);
+        $game = gamebase::create($vocab, $target->cm, $target->instance);
+        return $game ? $game->get_problems() : [];
+    }
+
+    /**
      * Get the stages that can be chosen for this game: the stages that the game
      * supports and the activity uses, and the game's current stage, if any.
      *
@@ -121,6 +137,11 @@ class gameform extends \core_form\dynamic_form {
         foreach (['id' => PARAM_INT, 'cmid' => PARAM_INT, 'game' => PARAM_PLUGIN] as $name => $type) {
             $mform->addElement('hidden', $name);
             $mform->setType($name, $type);
+        }
+
+        // Problems with an existing game, e.g. its question category has been deleted.
+        foreach ($this->get_problems() as $problem) {
+            $mform->addElement('html', \html_writer::div($problem, 'alert alert-warning'));
         }
 
         $stages = $this->get_stage_menu();

@@ -31,9 +31,10 @@ final class renderer_test extends \advanced_testcase {
      * @param \stdClass $course
      * @param \stdClass $vocab
      * @param \stdClass $user
+     * @param string $method the renderer's method: view_games or view_materials.
      * @return string HTML
      */
-    protected function view_games(\stdClass $course, \stdClass $vocab, \stdClass $user): string {
+    protected function view_games(\stdClass $course, \stdClass $vocab, \stdClass $user, string $method = 'view_games'): string {
         global $PAGE;
         $this->setUser($user);
         $cm = get_coursemodule_from_instance('vocab', $vocab->id);
@@ -42,7 +43,7 @@ final class renderer_test extends \advanced_testcase {
         $PAGE->set_cm($cm, $course);
         $renderer = $PAGE->get_renderer('mod_vocab');
         $renderer->attach_activity(activity::create($course, $cm, $vocab, \context_module::instance($cm->id)));
-        return $renderer->view_games();
+        return $renderer->$method();
     }
 
     /**
@@ -94,5 +95,31 @@ final class renderer_test extends \advanced_testcase {
         $teacher = $generator->create_and_enrol($course, 'editingteacher');
         $html = $this->view_games($course, $vocab, $teacher);
         $this->assertStringContainsString(get_string('nogamesyet', 'mod_vocab'), $html);
+    }
+
+    /**
+     * Teachers see the problems with a game on its tile and in the materials box;
+     * students don't.
+     */
+    public function test_game_problems(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $vocab = $generator->create_module('vocab', ['course' => $course->id]);
+        $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['apple']);
+        progress::save_stages($vocab->id, [progress::STAGE_RECOGNIZE => [1, 1]]);
+        // A category that does not exist.
+        progress::add_game_instance($vocab->id, 'quiz', progress::STAGE_RECOGNIZE, ['categoryid' => 999999]);
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $student = $generator->create_and_enrol($course, 'student');
+        $problem = get_string('problemcategorymissing', 'vocabgame_quiz');
+
+        $html = $this->view_games($course, $vocab, $teacher);
+        $this->assertStringContainsString(get_string('gameproblem', 'mod_vocab'), $html);
+        $this->assertStringContainsString(s($problem), $html);
+        $this->assertStringContainsString($problem, $this->view_games($course, $vocab, $teacher, 'view_materials'));
+
+        $html = $this->view_games($course, $vocab, $student);
+        $this->assertStringNotContainsString(get_string('gameproblem', 'mod_vocab'), $html);
     }
 }

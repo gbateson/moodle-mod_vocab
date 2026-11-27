@@ -105,6 +105,8 @@ $string['gamehiddennotdeleted'] = 'The game has been played, so it was hidden, n
 $string['gamelocked'] = 'Pass words at the earlier stages first';
 $string['gamenotready'] = 'Not ready yet';
 $string['gamenowords'] = 'No words yet';
+$string['gameproblem'] = 'Needs attention';
+$string['gameproblemsubject'] = '{$a->activity}: the game "{$a->game}" needs attention';
 $string['gameresume'] = 'Continue';
 $string['games'] = 'Games';
 $string['games_help'] = 'The games that students can play in this activity, and the stages at which they are offered. Students choose which game to play at each stage.';
@@ -180,6 +182,7 @@ $string['materialsqueuedone'] = 'Materials for 1 word are being made in the back
 $string['materialsready'] = '{$a->ready} of {$a->total} words have materials';
 $string['medianotcreated'] = 'Oops, media could not be created by {$a->subplugin}. [filearea={$a->filearea}, itemid={$a->itemid}]';
 $string['mediatype'] = 'Media type';
+$string['messageprovider:gameproblem'] = 'Problems with games in Vocabulary activities, e.g. a deleted question category';
 $string['missingfilescourseid'] = 'Please give the id of a course, e.g. missingfiles.php?courseid=4';
 $string['modulename'] = 'Vocabulary activity';
 $string['modulename_help'] = 'The Vocab module assists students in learning vocabulary through spaced repetition.

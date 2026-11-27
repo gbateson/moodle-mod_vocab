@@ -26,7 +26,7 @@
     * regionid - the id of the outer element
     * vocabid - the id of the activity
     * cmid - the id of the course module
-    * tiles - the games: id, title, gametitle (the game's name, e.g. Quiz), enabled, attempts, status, dimmed, editurl, hasimage, style,
+    * tiles - the games: id, title, gametitle (the game's name, e.g. Quiz), enabled, attempts, status, dimmed, problems (text), warningicon, editurl, hasimage, style,
       draghandle (HTML), menu (HTML)
     * hastiles - true if there are any games
     * addurl - the page for adding a game
@@ -40,13 +40,14 @@
         "tiles": [
             {
                 "id": 3, "title": "Quiz (Recognize)", "gametitle": "Quiz", "enabled": 1, "attempts": 0,
-                "status": "", "dimmed": false, "editurl": "#", "hasimage": false,
+                "status": "", "dimmed": false, "problems": "", "warningicon": "", "editurl": "#", "hasimage": false,
                 "style": "background-color: #bbddff; color: black;",
                 "draghandle": "", "menu": ""
             },
             {
                 "id": 4, "title": "Food quiz", "gametitle": "Quiz", "enabled": 0, "attempts": 5,
-                "status": "Hidden from students", "dimmed": true, "editurl": "#", "hasimage": false,
+                "status": "Hidden from students", "dimmed": true,
+                "problems": "The question category of this quiz has been deleted.", "warningicon": "!", "editurl": "#", "hasimage": false,
                 "style": "background-color: #1144ff; color: white;",
                 "draghandle": "", "menu": ""
             }
@@ -76,6 +77,9 @@
                 {{#status}}
                     <span class="badge bg-light text-dark vocab-game-status">{{status}}</span>
                 {{/status}}
+                {{#problems}}
+                    <span class="d-block small text-warning vocab-game-problem">{{{warningicon}}}{{#str}}gameproblem, mod_vocab{{/str}}</span>
+                {{/problems}}
             </div>
         </li>
         {{/tiles}}

@@ -111,6 +111,90 @@ abstract class gamebase {
     }
 
     /**
+     * Get the games of this type in all activities, or in some activities,
+     * except in activities that are being deleted.
+     *
+     * @param int[]|null $vocabids the activities, or null for all activities.
+     * @return static[]
+     */
+    public static function get_all(?array $vocabids = null): array {
+        global $DB;
+        $where = 'vg.name = :name';
+        $params = ['name' => static::get_name()];
+        if ($vocabids !== null) {
+            if (empty($vocabids)) {
+                return [];
+            }
+            [$vocabsql, $vocabparams] = $DB->get_in_or_equal($vocabids, SQL_PARAMS_NAMED, 'vocab');
+            $where .= " AND vgi.vocabid $vocabsql";
+            $params += $vocabparams;
+        }
+        $sql = "SELECT vgi.*, vg.name
+                  FROM {vocab_game_instances} vgi
+                  JOIN {vocab_games} vg ON vg.id = vgi.gameid
+                 WHERE $where
+              ORDER BY vgi.vocabid, vgi.sortorder";
+        $games = [];
+        $activities = [];
+        foreach ($DB->get_records_sql($sql, $params) as $instance) {
+            $vocabid = $instance->vocabid;
+            if (!array_key_exists($vocabid, $activities)) {
+                $activities[$vocabid] = null;
+                $vocab = $DB->get_record('vocab', ['id' => $vocabid]);
+                $cm = ($vocab ? get_coursemodule_from_instance('vocab', $vocabid, $vocab->course) : false);
+                if ($cm && empty($cm->deletioninprogress)) {
+                    $activities[$vocabid] = [$vocab, $cm];
+                }
+            }
+            if ($activities[$vocabid]) {
+                [$vocab, $cm] = $activities[$vocabid];
+                $games[] = new static($vocab, $cm, $instance);
+            }
+        }
+        return $games;
+    }
+
+    /**
+     * Does the game use questions from the question bank? If so, it is told
+     * when questions and question categories are deleted (see observer).
+     *
+     * @return bool
+     */
+    public static function uses_questions(): bool {
+        return false;
+    }
+
+    /**
+     * A question category has been deleted. Its subcategories have moved to its parent.
+     * The game may change its settings, and say what happened, to tell teachers.
+     *
+     * @param \stdClass $category the deleted category: id, name, parent.
+     * @return string|null a message for teachers, or null if the game is not affected.
+     */
+    public function question_category_deleted(\stdClass $category): ?string {
+        return null;
+    }
+
+    /**
+     * A question that is linked to a word in this activity has been deleted.
+     *
+     * @param \stdClass $question the deleted question: id, category, contextid.
+     * @return string|null a message for teachers, or null if the game is not affected.
+     */
+    public function question_deleted(\stdClass $question): ?string {
+        return null;
+    }
+
+    /**
+     * A question bank (Moodle 5.x), and its categories, have been deleted.
+     *
+     * @return string|null a message for teachers, or null if the game is not affected.
+     */
+    public function question_bank_deleted(): ?string {
+        return null;
+    }
+
+    /**
      * Get the game's name, e.g. "quiz".
      *
      * @return string
@@ -204,6 +288,36 @@ abstract class gamebase {
      */
     public function get_instance(): \stdClass {
         return $this->instance;
+    }
+
+    /**
+     * Get the activity's course module.
+     *
+     * @return \cm_info|\stdClass
+     */
+    public function get_cm() {
+        return $this->cm;
+    }
+
+    /**
+     * Get the activity's context.
+     *
+     * @return \context_module
+     */
+    public function get_context(): \context_module {
+        return $this->context;
+    }
+
+    /**
+     * Change some settings of the instance, and save them.
+     *
+     * @param array $changes name => value.
+     */
+    protected function save_config(array $changes): void {
+        global $DB;
+        $this->config = array_merge($this->config, $changes);
+        $this->instance->configdata = json_encode($this->config);
+        $DB->set_field('vocab_game_instances', 'configdata', $this->instance->configdata, ['id' => $this->instance->id]);
     }
 
     /**
@@ -306,6 +420,16 @@ abstract class gamebase {
             'pending' => count($pending),
             'missing' => array_values(array_diff($notready, $pending)),
         ];
+    }
+
+    /**
+     * Get the problems that may stop the game working as the teacher expects,
+     * e.g. its question category has been deleted, to show to teachers.
+     *
+     * @return string[] messages, which may contain HTML.
+     */
+    public function get_problems(): array {
+        return [];
     }
 
     /**

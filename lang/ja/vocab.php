@@ -107,6 +107,8 @@ $string['gamehiddennotdeleted'] = 'このゲームはプレイされているた
 $string['gamelocked'] = '先に前の段階で単語に合格してください';
 $string['gamenotready'] = 'まだ準備ができていません';
 $string['gamenowords'] = 'まだ単語がありません';
+$string['gameproblem'] = '確認が必要です';
+$string['gameproblemsubject'] = '{$a->activity}: ゲーム「{$a->game}」の確認が必要です';
 $string['gameresume'] = '続ける';
 $string['games'] = 'ゲーム';
 $string['games_help'] = 'このアクティビティで学生が遊べるゲームと、それを提供する段階です。学生は各段階で遊ぶゲームを選びます。';
@@ -182,6 +184,7 @@ $string['materialsqueuedone'] = '1 語の教材をバックグラウンドで作
 $string['materialsready'] = '{$a->total} 語のうち {$a->ready} 語に教材があります';
 $string['medianotcreated'] = 'メディアの作成に失敗しました：{$a->subplugin}。 [filearea={$a->filearea}, itemid={$a->itemid}]';
 $string['mediatype'] = 'メディアタイプ';
+$string['messageprovider:gameproblem'] = '語彙アクティビティのゲームの問題（例：問題カテゴリの削除）';
 $string['missingfilescourseid'] = 'コースのIDを指定してください（例：missingfiles.php?courseid=4）。';
 $string['modulename'] = '語彙活動';
 $string['modulename_help'] = 'Vocabモジュールは、間隔反復を通して学生の語彙習得を支援します。

@@ -33,6 +33,9 @@ class game extends \mod_vocab\gamebase {
     /** The most questions in an attempt. */
     const MAX_WORD_COUNT = 20;
 
+    /** @var array question categories that have been fetched: id => record, or null if missing. */
+    protected $categories = [];
+
     /**
      * Questions can recognize, recall or produce words.
      *
@@ -179,16 +182,49 @@ class game extends \mod_vocab\gamebase {
     }
 
     /**
+     * Get the question category that the teacher chose.
+     *
+     * @return \stdClass|null the category (id, name, parent, contextid), or null for any
+     *     category in the course, or if the chosen category no longer exists.
+     */
+    public function get_category(): ?\stdClass {
+        global $DB;
+        $categoryid = (int) $this->get_config('categoryid', 0);
+        if (!$categoryid) {
+            return null;
+        }
+        if (!array_key_exists($categoryid, $this->categories)) {
+            $this->categories[$categoryid] = $DB->get_record(
+                'question_categories',
+                ['id' => $categoryid],
+                'id, name, parent, contextid'
+            ) ?: null;
+        }
+        return $this->categories[$categoryid];
+    }
+
+    /**
+     * Has the question category that the teacher chose been deleted?
+     *
+     * @return bool
+     */
+    public function is_category_missing(): bool {
+        return $this->get_config('categoryid', 0) && !$this->get_category();
+    }
+
+    /**
      * Get the ids of the question categories from which questions are used.
+     * If the chosen category no longer exists, questions from any category
+     * in the course are used, so that students can still play.
      *
      * @return int[]|null category ids, or null for any category in the course.
      */
     protected function get_category_ids(): ?array {
         global $CFG;
-        $categoryid = (int) $this->get_config('categoryid', 0);
-        if (!$categoryid) {
+        if (!$category = $this->get_category()) {
             return null;
         }
+        $categoryid = (int) $category->id;
         require_once($CFG->libdir . '/questionlib.php');
         // Moodle 4.x returns an array; earlier versions return a list separated by commas.
         $list = question_categorylist($categoryid);
@@ -238,6 +274,133 @@ class game extends \mod_vocab\gamebase {
             $questions[$record->wordinstanceid][] = (int) $record->questionid;
         }
         return $questions;
+    }
+
+    /**
+     * How many questions that are ready (not hidden) are in some question categories?
+     *
+     * @param int[] $categoryids
+     * @return int
+     */
+    protected static function count_questions(array $categoryids): int {
+        global $DB;
+        if (empty($categoryids)) {
+            return 0;
+        }
+        [$catsql, $params] = $DB->get_in_or_equal($categoryids);
+        if ($DB->get_manager()->table_exists('question_versions')) {
+            $sql = "SELECT COUNT(DISTINCT qbe.id)
+                      FROM {question_bank_entries} qbe
+                      JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                     WHERE qbe.questioncategoryid $catsql AND qv.status = ?";
+            $params[] = 'ready';
+        } else {
+            $sql = "SELECT COUNT(1) FROM {question} WHERE category $catsql AND hidden = 0 AND parent = 0";
+        }
+        return (int) $DB->count_records_sql($sql, $params);
+    }
+
+    /**
+     * Get the problems with the quiz's question category, for teachers:
+     * the category has been deleted, it has no questions, or none of its
+     * questions are about the words in the activity.
+     *
+     * @return string[]
+     */
+    public function get_problems(): array {
+        $plugin = static::get_component();
+        if ($this->is_category_missing()) {
+            return [get_string('problemcategorymissing', $plugin)];
+        }
+        if (!$category = $this->get_category()) {
+            return []; // Any category: words without questions are shown as "missing".
+        }
+        $name = format_string($category->name, true, ['context' => $this->context]);
+        if (!self::count_questions($this->get_category_ids())) {
+            return [get_string('problemcategoryempty', $plugin, $name)];
+        }
+        $words = array_keys($this->get_progress()->get_words());
+        if ($words && !$this->get_questions($words)) {
+            return [get_string('problemcategorynowords', $plugin, $name)];
+        }
+        return [];
+    }
+
+    /**
+     * The quiz uses questions from the question bank.
+     *
+     * @return bool
+     */
+    public static function uses_questions(): bool {
+        return true;
+    }
+
+    /**
+     * If the quiz's category has been deleted, use its parent instead, which now
+     * contains its subcategories, or any category if the parent is a top category.
+     *
+     * @param \stdClass $category the deleted category: id, name, parent.
+     * @return string|null a message for teachers, or null if the quiz is not affected.
+     */
+    public function question_category_deleted(\stdClass $category): ?string {
+        global $DB;
+        if ((int) $this->get_config('categoryid', 0) !== (int) $category->id) {
+            return null;
+        }
+        $parent = false;
+        if (!empty($category->parent)) {
+            $parent = $DB->get_record('question_categories', ['id' => $category->parent], 'id, name, parent');
+        }
+        if ($parent && empty($parent->parent)) {
+            $parent = false; // A top category: use any category instead.
+        }
+        $this->save_config(['categoryid' => ($parent ? (int) $parent->id : 0)]);
+        $this->categories = [];
+        $plugin = static::get_component();
+        $options = ['context' => $this->context];
+        return get_string('notifycategorydeleted', $plugin, (object) [
+            'game' => $this->get_label(),
+            'category' => format_string($category->name ?? '', true, $options),
+            'newcategory' => ($parent ? format_string($parent->name, true, $options) : get_string('anycategory', $plugin)),
+        ]);
+    }
+
+    /**
+     * If a question that the quiz used has been deleted, tell teachers when
+     * the quiz has no questions left.
+     *
+     * @param \stdClass $question the deleted question: id, category, contextid.
+     * @return string|null a message for teachers, or null if the quiz is not affected.
+     */
+    public function question_deleted(\stdClass $question): ?string {
+        $categoryids = $this->get_category_ids();
+        if ($categoryids === null) {
+            if ((int) $question->contextid !== (int) $this->context->get_course_context()->id) {
+                return null;
+            }
+        } else if (!in_array((int) $question->category, $categoryids)) {
+            return null;
+        }
+        $words = array_keys($this->get_progress()->get_words());
+        if (empty($words) || $this->get_ready_words($words)) {
+            return null;
+        }
+        return get_string('notifynoquestions', static::get_component(), $this->get_label());
+    }
+
+    /**
+     * After a question bank (Moodle 5.x) has been deleted, if the quiz's category
+     * no longer exists, use any category instead.
+     *
+     * @return string|null a message for teachers, or null if the quiz is not affected.
+     */
+    public function question_bank_deleted(): ?string {
+        if (!$this->is_category_missing()) {
+            return null;
+        }
+        $this->save_config(['categoryid' => 0]);
+        $this->categories = [];
+        return get_string('notifycategorymissing', static::get_component(), $this->get_label());
     }
 
     /**
@@ -294,8 +457,11 @@ class game extends \mod_vocab\gamebase {
         require_once($CFG->libdir . '/questionlib.php');
         $form = '\\vocabtool_questionbank\\form';
         $coursecontext = $this->context->get_course_context();
-        $categoryid = (int) $this->get_config('categoryid', 0);
-        if (!$categoryid) {
+        $category = $this->get_category();
+        if ($category) {
+            $categoryid = (int) $category->id;
+        } else {
+            // Any category, or the chosen category has been deleted.
             $categoryid = (int) question_get_default_category($coursecontext->id)->id;
         }
         $promptid = (int) $this->get_config('materialprompt', 0) ?: self::get_default_promptid();
