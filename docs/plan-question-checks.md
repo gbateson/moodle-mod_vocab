@@ -1,6 +1,6 @@
 # Plan: questions and question categories that games use
 
-Status: 2026-11-27. Steps 1 to 3 done. Step 4 to do.
+Status: 2026-11-27. Steps 1 to 4 done. Step 5 (backup and restore) is part of plan-manage-games.md.
 
 ## Goal
 
@@ -113,14 +113,31 @@ context, so they would have found no categories and no questions.
     now does, so Moodle hides those questions instead (and triggers no
     `question_deleted` event).
 
-### 4. Link words to questions, not to question versions — to do
+### 4. Link words to questions, not to question versions — done
 
 Editing a question makes a new version with a new question id, but the link
 stays on the old version, so the game keeps using the old text. Deleting the
 old version then removes the link, even though the question still exists.
 
-- Link by question bank entry, and use its latest ready version.
-- Convert the existing links in an upgrade step.
+- `vocab_word_questions` gets a `questionbankentryid` field (Moodle 4.0 and
+  later; 0 in Moodle 3.11), with an index. A word has at most one link to
+  each entry. `questionid` stays: it is the version that was linked, and
+  Moodle 3.11 still uses it.
+- `progress::link_questions()` stores the entry, and does not link the same
+  entry twice.
+- The Quiz game uses the latest version of each entry that is ready, as
+  Moodle's random questions do. If the latest version is hidden, an older
+  ready version is used.
+- When a version is deleted (`question_deleted`) and its entry still has
+  other versions, the link moves to the latest of them, and the games are not
+  told. When the last version is deleted, Moodle deletes the entry, the link
+  is removed, and the games are told, as in step 2.
+- Upgrade: add the field and index, fill them from `question_versions`,
+  remove links to questions that no longer exist, and merge links to
+  different versions of the same entry.
+- PHPUnit (`tests/question_links_test.php`): editing a question, hiding the
+  latest version, deleting an old version, deleting the last version, and
+  the upgrade's conversion. Tested on 4.5 and 5.3.
 
 ### Later
 

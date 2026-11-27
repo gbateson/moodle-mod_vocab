@@ -45,20 +45,20 @@ class observer {
     }
 
     /**
-     * A question has been deleted. Its links to words are removed, and the games
-     * in the activities that have those words are told.
+     * A version of a question has been deleted. If other versions are left, its links
+     * to words move to the latest of them. Otherwise, its links are removed, and the
+     * games in the activities that have those words are told.
      *
      * @param \core\event\question_deleted $event
      */
     public static function question_deleted(\core\event\question_deleted $event): void {
         global $DB;
         $questionid = (int) $event->objectid;
-        $wordids = $DB->get_fieldset_select('vocab_word_questions', 'wordid', 'questionid = ?', [$questionid]);
+        $wordids = progress::unlink_deleted_question($questionid);
         if (empty($wordids)) {
             return;
         }
-        $DB->delete_records('vocab_word_questions', ['questionid' => $questionid]);
-        [$wordsql, $params] = $DB->get_in_or_equal(array_unique($wordids));
+        [$wordsql, $params] = $DB->get_in_or_equal($wordids);
         $vocabids = $DB->get_fieldset_sql("SELECT DISTINCT vocabid FROM {vocab_word_instances} WHERE wordid $wordsql", $params);
         $question = (object) [
             'id' => $questionid,

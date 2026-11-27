@@ -288,8 +288,15 @@ final class progress_test extends \advanced_testcase {
     public function test_link_questions(): void {
         global $DB;
         $this->resetAfterTest();
-        progress::link_questions(5, [10, 11, 10]);
-        progress::link_questions(5, [11]);
+        $questions = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questions->create_question_category();
+        $one = $questions->create_question('truefalse', null, ['category' => $category->id])->id;
+        $two = $questions->create_question('truefalse', null, ['category' => $category->id])->id;
+        progress::link_questions(5, [$one, $two, $one]);
+        progress::link_questions(5, [$two]);
+        $this->assertSame(2, $DB->count_records('vocab_word_questions', ['wordid' => 5]));
+        // Questions that do not exist are not linked.
+        progress::link_questions(5, [999999]);
         $this->assertSame(2, $DB->count_records('vocab_word_questions', ['wordid' => 5]));
     }
 }

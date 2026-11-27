@@ -421,7 +421,8 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The version of the question that was linked, or the question in Moodle 3.11"/>
+        <FIELD NAME="questionbankentryid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The question, whatever its version (Moodle 4.0 and later)"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -431,6 +432,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="wordid-questionid" UNIQUE="true" FIELDS="wordid, questionid"/>
+        <INDEX NAME="questionbankentryid" UNIQUE="false" FIELDS="questionbankentryid"/>
       </INDEXES>
     </TABLE>
   </TABLES>

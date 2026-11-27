@@ -219,6 +219,15 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026111498;
+    if ($oldversion < $newversion) {
+        // Words are linked to questions' bank entries, not to one version of each question,
+        // so that edited questions are used (see docs/plan-question-checks.md, step 4).
+        xmldb_vocab_check_structure($dbman, ['vocab_word_questions']);
+        \mod_vocab\progress::update_question_links();
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

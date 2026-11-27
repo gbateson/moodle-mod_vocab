@@ -243,15 +243,22 @@ class game extends \mod_vocab\gamebase {
             return [];
         }
         [$wordsql, $params] = $DB->get_in_or_equal($wordinstanceids, SQL_PARAMS_NAMED, 'wi');
-        if ($DB->get_manager()->table_exists('question_versions')) {
-            // Moodle 4.0 and later: questions have versions, and their categories are in question_bank_entries.
-            $from = "JOIN {question_versions} qv ON qv.questionid = q.id
-                     JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
-                     JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid";
-            $where = 'qv.status = :ready';
+        if (progress::has_question_versions()) {
+            // Moodle 4.0 and later: words are linked to questions' bank entries, and the
+            // latest version that is ready is used, as for Moodle's random questions.
+            $from = "JOIN {question_bank_entries} qbe ON qbe.id = vwq.questionbankentryid
+                     JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid
+                     JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                     JOIN {question} q ON q.id = qv.questionid";
+            $where = "qv.status = :ready
+                      AND qv.version = (SELECT MAX(v.version)
+                                          FROM {question_versions} v
+                                         WHERE v.questionbankentryid = qbe.id AND v.status = :readyv)";
             $params['ready'] = 'ready';
+            $params['readyv'] = 'ready';
         } else {
-            $from = "JOIN {question_categories} qc ON qc.id = q.category";
+            $from = "JOIN {question} q ON q.id = vwq.questionid
+                     JOIN {question_categories} qc ON qc.id = q.category";
             $where = 'q.hidden = 0';
         }
         if (($categoryids = $this->get_category_ids()) !== null) {
@@ -269,7 +276,6 @@ class game extends \mod_vocab\gamebase {
         $sql = "SELECT vwq.id, vwi.id AS wordinstanceid, q.id AS questionid
                   FROM {vocab_word_instances} vwi
                   JOIN {vocab_word_questions} vwq ON vwq.wordid = vwi.wordid
-                  JOIN {question} q ON q.id = vwq.questionid
                   $from
                  WHERE vwi.id $wordsql AND $where";
         $questions = [];

@@ -388,22 +388,123 @@ class progress {
     ////////////////////////////////////////*/
 
     /**
+     * Are questions kept in versions, as in Moodle 4.0 and later? If so, words are
+     * linked to questions' bank entries, so that a link is to every version of a question.
+     *
+     * @return bool
+     */
+    public static function has_question_versions(): bool {
+        global $DB;
+        static $result = false; // Only true is cached, as the field may be added during an upgrade.
+        if (!$result) {
+            $dbman = $DB->get_manager();
+            $result = $dbman->table_exists('question_versions') &&
+                $dbman->field_exists('vocab_word_questions', 'questionbankentryid');
+        }
+        return $result;
+    }
+
+    /**
      * Record which questions are about a word, e.g. questions made by the question bank tool.
+     * A word is linked to each question once, whichever of its versions is given.
      *
      * @param int $wordid from vocab_words.
      * @param int[] $questionids
      */
     public static function link_questions(int $wordid, array $questionids): void {
         global $DB;
-        foreach (array_unique(array_filter(array_map('intval', $questionids))) as $questionid) {
-            if (!$DB->record_exists('vocab_word_questions', ['wordid' => $wordid, 'questionid' => $questionid])) {
-                $DB->insert_record('vocab_word_questions', (object) [
-                    'wordid' => $wordid,
-                    'questionid' => $questionid,
-                    'timecreated' => time(),
-                ]);
+        $questionids = array_unique(array_filter(array_map('intval', $questionids)));
+        if (empty($questionids)) {
+            return;
+        }
+        $entryids = [];
+        if (self::has_question_versions()) {
+            [$select, $params] = $DB->get_in_or_equal($questionids);
+            $fields = 'questionid, questionbankentryid';
+            $entryids = $DB->get_records_select_menu('question_versions', "questionid $select", $params, '', $fields);
+        }
+        foreach ($questionids as $questionid) {
+            $link = ['wordid' => $wordid, 'questionid' => $questionid];
+            if (self::has_question_versions()) {
+                if (empty($entryids[$questionid])) {
+                    continue; // The question does not exist.
+                }
+                $link['questionbankentryid'] = (int) $entryids[$questionid];
+                $exists = ['wordid' => $wordid, 'questionbankentryid' => $link['questionbankentryid']];
+            } else {
+                $exists = $link;
+            }
+            if (!$DB->record_exists('vocab_word_questions', $exists)) {
+                $link['timecreated'] = time();
+                $DB->insert_record('vocab_word_questions', (object) $link);
             }
         }
+    }
+
+    /**
+     * After a version of a question has been deleted, move its links to the latest
+     * version that is left, or remove its links if no version is left.
+     *
+     * @param int $questionid the deleted version.
+     * @return int[] the ids of the words whose links were removed.
+     */
+    public static function unlink_deleted_question(int $questionid): array {
+        global $DB;
+        $links = $DB->get_records('vocab_word_questions', ['questionid' => $questionid]);
+        $removed = [];
+        foreach ($links as $link) {
+            $latest = 0;
+            if (self::has_question_versions() && $link->questionbankentryid) {
+                $latest = (int) $DB->get_field_sql(
+                    'SELECT questionid
+                       FROM {question_versions}
+                      WHERE questionbankentryid = ?
+                   ORDER BY version DESC',
+                    [$link->questionbankentryid],
+                    IGNORE_MULTIPLE
+                );
+            }
+            if ($latest && !$DB->record_exists('vocab_word_questions', ['wordid' => $link->wordid, 'questionid' => $latest])) {
+                $DB->set_field('vocab_word_questions', 'questionid', $latest, ['id' => $link->id]);
+            } else {
+                $DB->delete_records('vocab_word_questions', ['id' => $link->id]);
+                if (!$latest) {
+                    $removed[] = (int) $link->wordid;
+                }
+            }
+        }
+        return array_values(array_unique($removed));
+    }
+
+    /**
+     * Link words to questions' bank entries, for links made before Moodle 4.0 or
+     * before mod_vocab stored them: links to questions that no longer exist are
+     * removed, and links from a word to several versions of one question are merged.
+     *
+     * @return int how many links are left.
+     */
+    public static function update_question_links(): int {
+        global $DB;
+        if (!self::has_question_versions()) {
+            return $DB->count_records('vocab_word_questions');
+        }
+        $sql = 'SELECT vwq.id, vwq.wordid, qv.questionbankentryid
+                  FROM {vocab_word_questions} vwq
+             LEFT JOIN {question_versions} qv ON qv.questionid = vwq.questionid
+              ORDER BY vwq.id';
+        $seen = [];
+        $rs = $DB->get_recordset_sql($sql);
+        foreach ($rs as $link) {
+            $key = $link->wordid . '-' . $link->questionbankentryid;
+            if (empty($link->questionbankentryid) || isset($seen[$key])) {
+                $DB->delete_records('vocab_word_questions', ['id' => $link->id]);
+            } else {
+                $seen[$key] = true;
+                $DB->set_field('vocab_word_questions', 'questionbankentryid', $link->questionbankentryid, ['id' => $link->id]);
+            }
+        }
+        $rs->close();
+        return count($seen);
     }
 
     /**
