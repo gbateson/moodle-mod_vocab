@@ -71,7 +71,8 @@ final class backup_restore_test extends \advanced_testcase {
         $vocabgenerator = $generator->get_plugin_generator('mod_vocab');
 
         // The word "apple" has a language and lemma, and "banana" does not.
-        $langid = $DB->insert_record('vocab_langs', (object) ['langcode' => 'en']);
+        // English is added on install, with the names of the CEFR levels.
+        $langid = $DB->get_field('vocab_langs', 'id', ['langcode' => 'en'], MUST_EXIST);
         $lemmaid = $DB->insert_record('vocab_lemmas', (object) ['langid' => $langid, 'lemma' => 'apple']);
         $DB->insert_record('vocab_words', (object) ['lemmaid' => $lemmaid, 'word' => 'apple']);
         $vocabgenerator->add_words($this->vocab->id, ['apple', 'banana']);

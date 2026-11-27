@@ -355,7 +355,7 @@ class form extends \mod_vocab\toolform {
             $langs[] = 'en';
         }
 
-        $select = 'n.*, lvl.levelcode, lng.langcode';
+        $select = 'n.*, lvl.framework, lvl.levelcode, lvl.sortorder, lng.langcode';
         $from = '{vocab_levelnames} n ' .
                 'JOIN {vocab_levels} lvl ON n.levelid = lvl.id  ' .
                 'JOIN {vocab_langs} lng  ON n.langid = lng.id';
@@ -390,6 +390,14 @@ class form extends \mod_vocab\toolform {
                     return -1; // Put $a before $b.
                 }
 
+                // Then sort by framework, and by the order of levels within a framework.
+                if ($cmp = strcmp($a->framework, $b->framework)) {
+                    return $cmp;
+                }
+                if ($cmp = ($a->sortorder - $b->sortorder)) {
+                    return $cmp;
+                }
+
                 // Otherwise, do "natural" sort by levelcode
                 // so that "1200L" comes after "300L".
                 return strnatcmp($a->levelcode, $b->levelcode);
@@ -401,8 +409,14 @@ class form extends \mod_vocab\toolform {
                 $code = $level->levelcode;
                 $name = $level->levelname;
 
-                if ($sortbyprefix && preg_match('/^\w+/iu', $name, $prefix)) {
+                if ($sortbyprefix && $level->framework !== '') {
+                    $prefix = $level->framework; // E.g. "CEFR" or "JLPT".
+                } else if ($sortbyprefix && preg_match('/^\w+/iu', $name, $prefix)) {
                     $prefix = $prefix[0]; // E.g. "CEFR" or "Lexile".
+                } else {
+                    $prefix = '';
+                }
+                if ($prefix !== '') {
                     if (empty($levels[$prefix])) {
                         $levels[$prefix] = [];
                     }

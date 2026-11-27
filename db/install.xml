@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/vocab/db" VERSION="20240206" COMMENT="XMLDB file for Moodle mod/vocab"
+<XMLDB PATH="mod/vocab/db" VERSION="20261127" COMMENT="XMLDB file for Moodle mod/vocab"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -61,15 +61,22 @@
     <TABLE NAME="vocab_attributes" COMMENT="Attributes (e.g. pos) for words">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The ID of a vocabulary word"/>
+        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The word form, for attributes of a form (e.g. tense), or 0"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense, for attributes of a sense (e.g. gender), or 0"/>
         <FIELD NAME="nameid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The ID of an attribute name"/>
         <FIELD NAME="valueid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The ID of an attribute value"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
         <KEY NAME="nameid" TYPE="foreign" FIELDS="nameid" REFTABLE="vocab_attribute_names" REFFIELDS="id"/>
         <KEY NAME="valueid" TYPE="foreign" FIELDS="valueid" REFTABLE="vocab_attribute_values" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_corpuses" COMMENT="Information about corpuses and wordlists">
@@ -83,19 +90,25 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="vocab_definitions" COMMENT="Text definitions for vocabulary words">
+    <TABLE NAME="vocab_definitions" COMMENT="Definitions and glosses of the senses of vocabulary words">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense that is defined"/>
         <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language used in the definition"/>
         <FIELD NAME="levelid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language level of the definition"/>
-        <FIELD NAME="definition" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Text definitions of vocabulary words"/>
+        <FIELD NAME="definition" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The text of the definition or gloss"/>
+        <FIELD NAME="deftype" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=definition, 1=gloss (a short translation)"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
         <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
         <KEY NAME="levelid" TYPE="foreign" FIELDS="levelid" REFTABLE="vocab_levels" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_frequencies" COMMENT="Information about word frequencies">
@@ -166,7 +179,7 @@
     <TABLE NAME="vocab_langs" COMMENT="Languages used in Vocabulary activities on this Moodle site">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="langcode" TYPE="char" LENGTH="5" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="langcode" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -191,13 +204,15 @@
     <TABLE NAME="vocab_levels" COMMENT="Language levels used in Vocabulary activities">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="levelcode" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="framework" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="The framework of levels, e.g. CEFR, JLPT or Lexile"/>
+        <FIELD NAME="levelcode" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false" COMMENT="The level within its framework, e.g. A1"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The order of levels within a framework, from lowest to highest"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="levelcode" UNIQUE="true" FIELDS="levelcode" COMMENT="Index on the vocabulary level codes"/>
+        <INDEX NAME="framework-levelcode" UNIQUE="true" FIELDS="framework, levelcode" COMMENT="Index on the level codes in each framework"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="vocab_levelnames" COMMENT="Displayable names of levels used in Vocabulary activities">
@@ -227,38 +242,51 @@
         <INDEX NAME="langidlemma" UNIQUE="true" FIELDS="langid, lemma" COMMENT="Index on the vocabulary lemmas in each language"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="vocab_multimedia" COMMENT="Multimedia (images, audio, video) definitions of words">
+    <TABLE NAME="vocab_multimedia" COMMENT="Multimedia (images, audio, video) for the senses of words">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense that is shown"/>
         <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language used in the definition"/>
         <FIELD NAME="levelid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language level of the definition"/>
         <FIELD NAME="mediatype" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=HTML, 1=image, 2=audio, 3=video"/>
         <FIELD NAME="definition" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="The multimedia definition (HTML including image, audio, video files)"/>
         <FIELD NAME="definitionformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="the format of the definition"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
         <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
         <KEY NAME="levelid" TYPE="foreign" FIELDS="levelid" REFTABLE="vocab_levels" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="mediatype" UNIQUE="false" FIELDS="wordid, mediatype"/>
+        <INDEX NAME="senseid-mediatype" UNIQUE="false" FIELDS="senseid, mediatype"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="vocab_pronunciations" COMMENT="Information about how words are pronounced">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense, if the pronunciation depends on it, or 0 for all senses"/>
+        <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language or variety, e.g. en_us or en_gb"/>
+        <FIELD NAME="notation" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="The notation of the phonetic text, e.g. ipa, kana, pinyin or romaji"/>
         <FIELD NAME="phonetic" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Pronunciation as IPA symbols or other text"/>
         <FIELD NAME="fileid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The id of the media file for this pronunciation"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
         <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_relationship_names" COMMENT="Names of word relationships">
@@ -277,27 +305,45 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the main word"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense of the main word, or 0 for any sense"/>
         <FIELD NAME="relnameid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the relationship name"/>
         <FIELD NAME="relwordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the related word"/>
+        <FIELD NAME="relsenseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense of the related word, or 0 for any sense"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
         <KEY NAME="relnameid" TYPE="foreign" FIELDS="relnameid" REFTABLE="vocab_relationship_names" REFFIELDS="id"/>
         <KEY NAME="relwordid" TYPE="foreign" FIELDS="relwordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
+        <KEY NAME="relsenseid" TYPE="foreign" FIELDS="relsenseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_samples" COMMENT="Sample sentences for Vocabulary Activities">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense that this sample shows, or 0"/>
         <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language of the sample sentence"/>
         <FIELD NAME="levelid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The level of the sample sentence"/>
         <FIELD NAME="sample" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="A sample sentence or phrase"/>
+        <FIELD NAME="originalid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="For a translation, the sample that it translates, or 0"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
         <KEY NAME="levelid" TYPE="foreign" FIELDS="levelid" REFTABLE="vocab_levels" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
+        <KEY NAME="originalid" TYPE="foreign" FIELDS="originalid" REFTABLE="vocab_samples" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_sample_words" COMMENT="Index of words used in sample sentences">
@@ -311,6 +357,49 @@
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
         <KEY NAME="sampleid" TYPE="foreign" FIELDS="sampleid" REFTABLE="vocab_samples" REFFIELDS="id"/>
       </KEYS>
+    </TABLE>
+    <TABLE NAME="vocab_senses" COMMENT="The senses (meanings) of lemmas">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="lemmaid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="pos" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Part of speech, as a Universal Dependencies tag (e.g. NOUN, VERB), PHRASE, or empty"/>
+        <FIELD NAME="sensenum" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1, 2, 3 ... within the lemma and part of speech"/>
+        <FIELD NAME="meaning" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="A short label to tell this sense from others"/>
+        <FIELD NAME="langid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The language of the meaning"/>
+        <FIELD NAME="levelid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The estimated level of this sense"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where this item came from (vocab_sources), or 0 if not known"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=draft, 1=approved, 2=rejected"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="lemmaid" TYPE="foreign" FIELDS="lemmaid" REFTABLE="vocab_lemmas" REFFIELDS="id"/>
+        <KEY NAME="langid" TYPE="foreign" FIELDS="langid" REFTABLE="vocab_langs" REFFIELDS="id"/>
+        <KEY NAME="levelid" TYPE="foreign" FIELDS="levelid" REFTABLE="vocab_levels" REFFIELDS="id"/>
+        <KEY NAME="sourceid" TYPE="foreign" FIELDS="sourceid" REFTABLE="vocab_sources" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="lemmaid-pos-sensenum" UNIQUE="true" FIELDS="lemmaid, pos, sensenum"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="vocab_sources" COMMENT="Where items in the dictionary came from: AI, teachers or imported files">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sourcetype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="ai, teacher, import or other"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="url" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="providerid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="For AI: the provider in the AI bridge (tool_aibridge_providers)"/>
+        <FIELD NAME="templateid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="For AI: the prompt in the AI bridge (tool_aibridge_templates)"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sourcetype" UNIQUE="false" FIELDS="sourcetype"/>
+      </INDEXES>
     </TABLE>
     <TABLE NAME="vocab_words" COMMENT="Individual words for Vocabulary activities">
       <FIELDS>
@@ -343,6 +432,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="vocabid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="senseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The sense of the word that is meant, or 0 if not chosen"/>
         <FIELD NAME="enabled" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -350,6 +440,7 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="vocabid" TYPE="foreign" FIELDS="vocabid" REFTABLE="vocab" REFFIELDS="id"/>
         <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="senseid" TYPE="foreign" FIELDS="senseid" REFTABLE="vocab_senses" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="vocab_word_states" COMMENT="Information about the state of a given user's interaction with specific word instances">

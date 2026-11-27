@@ -25,10 +25,14 @@
  */
 
 /**
- * Add the activity's prompts and formats to the AI bridge's library, if the
- * bridge is installed. Otherwise, the bridge adds them when it is installed.
+ * Add the CEFR levels to the dictionary, and the activity's prompts and formats to the
+ * AI bridge's library, if the bridge is installed. Otherwise, the bridge adds them when
+ * it is installed.
  */
 function xmldb_vocab_install() {
+    // Add the CEFR levels, A1 to C2, to the dictionary.
+    \mod_vocab\dictionary::install_levels();
+
     if (\mod_vocab\aibridge_migration::is_bridge_ready()) {
         \tool_aibridge\library::sync_component('mod_vocab');
     }

@@ -1,6 +1,6 @@
 # Plan: populating the dictionary
 
-Status: 2026-11-27. Draft, for discussion. Nothing is coded yet.
+Status: 2026-11-27. The open questions are answered. Step 1 (data model) is done, in version 2026112700.
 
 ## Goal
 
@@ -107,15 +107,119 @@ Output would be JSON, so that it can be checked and saved field by field.
 6. **Optional, later:** import free frequency and level lists (e.g. NGSL or
    the CEFR-J Wordlist, licences to be checked) with the import tool.
 
+## Any language
+
+Vocabulary will be learned in **any** language, not only English, so nothing in
+the data model or the prompts may assume English:
+
+- Every word, definition, sample and pronunciation has a language.
+- Codes are language-neutral: parts of speech use the Universal Dependencies
+  tags (`NOUN`, `VERB`, ...), shown to users through language strings.
+- Levels can come from any framework (CEFR, JLPT, HSK, Lexile, ...). CEFR is
+  the first, and it applies to any language.
+- Pronunciation records its notation: IPA, kana, pinyin, romaji, ...
+- Prompts are written in English, with the vocabulary items in their own
+  language, e.g. *"Create 2 CEFR-level A2 sample sentences in Japanese for the
+  phrase 'すみません' in the sense of 'だれかいますか？'"*.
+- The word language and the students' language are variables. Prompts are
+  tuned first for English words with Japanese glosses.
+
+## Answers to the open questions (2026-11-27)
+
+1. **Senses:** definitions, samples, media and sense attributes belong to a
+   sense, i.e. lemma + part of speech + sense number, in a table of its own.
+   Frequencies, pronunciations and word-form attributes (e.g. past tense) stay
+   with the word form. A word in a word list can name a sense.
+2. **Review:** AI items are saved as drafts and games use them at once,
+   marked as AI-generated. Rejected items are never used, and approved items
+   are preferred. A site setting can limit games to approved items.
+3. **Languages:** general from the start (see *Any language*). English words
+   with Japanese glosses are tested first.
+4. **When to fill in:** when a teacher asks, with "Fill in the dictionary" on
+   a word list. Words that already have senses are skipped, so each word is
+   filled in once for the whole site. Later, an activity setting could fill in
+   new words automatically.
+5. **Which information first:** senses, definitions, glosses, example
+   sentences and the estimated level; then IPA and related words; then audio
+   and pictures.
+
+## Step 1: data model (done)
+
+### New tables
+
+**`vocab_senses`**: one meaning of a lemma.
+
+| Field | Notes |
+|---|---|
+| `lemmaid` | The lemma. |
+| `pos` | Part of speech, as a Universal Dependencies tag (`NOUN`, `VERB`, `ADJ`, `ADV`, `INTJ`, ...), or `PHRASE` for a multi-word expression. Empty if not known. |
+| `sensenum` | 1, 2, 3, ... within the lemma and part of speech. |
+| `meaning` | A short label to tell senses apart, e.g. "money" or "river" for "bank", or "だれかいますか？" for "すみません". |
+| `langid` | The language of `meaning`; usually the lemma's own language. |
+| `levelid` | The estimated level of this sense, e.g. CEFR A2. |
+| `sourceid`, `status`, `timecreated`, `timemodified` | See below. |
+
+Unique index: `lemmaid, pos, sensenum`.
+
+**`vocab_sources`**: where items came from.
+
+| Field | Notes |
+|---|---|
+| `sourcetype` | `ai`, `teacher`, `import` or `other`. |
+| `name` | E.g. "OpenAI gpt-4o: Dictionary senses", or the name of an imported file. |
+| `description`, `url` | Optional. |
+| `providerid`, `templateid` | For AI: the AI bridge provider and prompt template. |
+| `timecreated` | |
+
+`vocab_corpuses` stays as it is, for frequency lists.
+
+### Fields that every content item gets
+
+These go on senses, definitions, samples, multimedia, pronunciations,
+attributes and relationships:
+
+- `sourceid`: a `vocab_sources` record, or 0 if not known.
+- `status`: 0 = draft, 1 = approved, 2 = rejected. Items that teachers write
+  are approved; AI items are drafts.
+- `timecreated`, `timemodified`.
+
+User IDs are not stored for now, as that would need the privacy API for
+site-wide data. This can be added when the review tool is built.
+
+### Changes to existing tables
+
+| Table | Change |
+|---|---|
+| `vocab_langs` | `langcode` from 5 to 20 characters, for codes such as `es_mx_kids` or `zh_hant`. |
+| `vocab_levels` | New `framework` (e.g. `CEFR`, `JLPT`) and `sortorder`. Unique index on `framework, levelcode`. |
+| `vocab_definitions` | `wordid` becomes `senseid`. New `deftype`: 0 = definition (explains the meaning, usually in the word's own language, at a level), 1 = gloss (a short translation in another language). |
+| `vocab_multimedia` | `wordid` becomes `senseid`. |
+| `vocab_samples` | New `senseid`: the sense that the sample shows. New `originalid`: for a translation, the sample that it translates. |
+| `vocab_sample_words` | No change: it lists the word forms used in each sample. For languages without spaces (e.g. Japanese), the AI returns the form used, so no word splitting is needed. |
+| `vocab_pronunciations` | New `senseid` (0 = all senses), for words such as "read" or 今日 (きょう / こんにち). New `notation`: `ipa`, `kana`, `pinyin`, `romaji`, ... The language can show the variety, e.g. `en_us` or `en_gb`. |
+| `vocab_attributes` | New `senseid`: 0 for a word-form attribute (e.g. tense), or a sense (e.g. gender, countable). |
+| `vocab_relationships` | New `senseid` and `relsenseid` (0 = any sense). |
+| `vocab_word_instances` | New `senseid` (0 = not chosen): the sense that a word in a word list means. |
+
+### Upgrade
+
+- Existing definitions and media are moved to a sense of their word's lemma
+  (part of speech empty, sense 1), with status "approved" and an unknown
+  source. A word with no lemma gets a lemma with the same spelling.
+- The CEFR levels A1 to C2 are added, with names in English and Japanese
+  (the names that the question bank tool already uses). New sites get them
+  on install.
+- The import tool's list of tables is corrected: `vocab_sample_words`, not
+  `vocab_word_samples`; no `vocab_ai_*` tables; and the new tables added.
+
+### Not in step 1
+
+- The word list tool still adds every word as English (`$langcode = 'en'` in
+  `tool/wordlist/classes/form.php`). Activity settings for the word language
+  and the students' language are added in step 3, where the prompts need them.
+- Backups do not yet include a word instance's sense. Restored words have no
+  sense chosen. This is done with the backups in step 5.
+
 ## Open questions
 
-1. Senses: attach definitions, samples and attributes to lemma + part of
-   speech + sense, as proposed, or keep them per word form?
-2. Review: must a teacher approve AI content before games use it, or is it
-   used at once, marked as AI-generated?
-3. Languages: English only to begin with, plus Japanese glosses, or general
-   from the start?
-4. When to fill in: automatically when words are added to a word list, or
-   only when a teacher asks?
-5. Which information first: definitions and samples only, or also
-   pronunciation, pictures and related words?
+None at the moment.

@@ -236,6 +236,40 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026112700;
+    if ($oldversion < $newversion) {
+        // The dictionary's data model (see docs/plan-dictionary.md, step 1): senses,
+        // sources and review status, and levels in frameworks such as CEFR.
+        xmldb_vocab_check_structure($dbman, ['vocab_senses', 'vocab_sources']);
+
+        // Move definitions and media from word forms to senses. This is done
+        // before the tables are checked, as that drops their "wordid" fields.
+        foreach (['vocab_definitions', 'vocab_multimedia'] as $tablename) {
+            $table = new xmldb_table($tablename);
+            $field = new xmldb_field('senseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+            if ($dbman->field_exists($table, 'wordid')) {
+                \mod_vocab\dictionary::move_to_senses($tablename);
+            }
+        }
+
+        $tablenames = \mod_vocab\dictionary::get_item_tables();
+        $tablenames = array_merge($tablenames, ['vocab_langs', 'vocab_levels', 'vocab_word_instances']);
+        xmldb_vocab_check_structure($dbman, $tablenames);
+
+        // Items that were there before were not made by AI, so they are approved.
+        foreach (\mod_vocab\dictionary::get_item_tables() as $tablename) {
+            if ($tablename != 'vocab_senses') {
+                $DB->set_field($tablename, 'status', \mod_vocab\dictionary::STATUS_APPROVED);
+            }
+        }
+
+        \mod_vocab\dictionary::install_levels();
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

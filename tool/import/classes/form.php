@@ -1412,8 +1412,10 @@ class form extends \mod_vocab\toolform {
             'vocab_pronunciations',
             'vocab_relationship_names',
             'vocab_relationships',
+            'vocab_sample_words',
             'vocab_samples',
-            'vocab_word_samples',
+            'vocab_senses',
+            'vocab_sources',
             'vocab_words',
         ];
 
@@ -1421,18 +1423,19 @@ class form extends \mod_vocab\toolform {
         // including the following "vocab" tables,
         // which contain information about users'
         // interaction with the dictionary data.
-        // vocab_ai_(access|prompt)
-        // vocab_game_(attempts|instances)
-        // vocab_word_(attempts|instances|usages).
+        // vocab_game_(attempts|instances), vocab_stages
+        // vocab_word_(attempts|instances|questions|stages|states|usages).
         $usertables = [
             'vocab',
-            'vocab_ai_access',
-            'vocab_ai_prompt',
             'vocab_games', // Not needed?
             'vocab_game_attempts',
             'vocab_game_instances',
+            'vocab_stages',
             'vocab_word_attempts',
             'vocab_word_instances',
+            'vocab_word_questions',
+            'vocab_word_stages',
+            'vocab_word_states',
             'vocab_word_usages',
         ];
 
@@ -2317,7 +2320,7 @@ class form extends \mod_vocab\toolform {
                         $tables = [];
                         // Remove all records matching the OLD conditions.
                         // ToDo: update tables that may have used this word
-                        // vocab_word_samples, vocab_word_instances
+                        // vocab_sample_words, vocab_word_instances
                         // vocab_synonyms, vocab_pronunciations,
                         // vocab_multimedia, vocab_frequencies,
                         // vocab_definitions, vocab_antonyms
