@@ -228,6 +228,14 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026111499;
+    if ($oldversion < $newversion) {
+        // Check the games' table again: a site that ran version 2026111494 before
+        // the "title" field was in install.xml did not get the field.
+        xmldb_vocab_check_structure($dbman, ['vocab_game_instances']);
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 
