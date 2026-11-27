@@ -656,6 +656,16 @@ class questions extends \core\task\adhoc_task {
             $form::SUBCAT_PROMPTTAIL => 'prompttail',
         ];
 
+        // The prompt's head and tail are the parts of its name before and after a colon,
+        // e.g. "Head: Generate questions: Tail". If the name has no colon, they are empty,
+        // and there is no subcategory for them.
+        if ($a->prompthead === '') {
+            $subcattype &= ~$form::SUBCAT_PROMPTHEAD;
+        }
+        if ($a->prompttail === '') {
+            $subcattype &= ~$form::SUBCAT_PROMPTTAIL;
+        }
+
         foreach ($types as $type => $strname) {
             if ($subcattype & $type) {
                 if ($type == $form::SUBCAT_CUSTOMNAME) {
@@ -717,12 +727,17 @@ class questions extends \core\task\adhoc_task {
         if (empty($catname)) {
             $catname = $this->tool->get_string("catname_$strname", $a);
             $catname = str_replace('()', '', $catname);
-            $catname = preg_replace('/\s+/', ' ', $catname);
+            $catname = trim(preg_replace('/\s+/', ' ', $catname));
         }
         if (empty($catinfo)) {
             $catinfo = $this->tool->get_string("catinfo_$strname", $a);
             $catinfo = str_replace('()', '', $catinfo);
-            $catinfo = preg_replace('/\s+/', ' ', $catname);
+            $catinfo = trim(preg_replace('/\s+/', ' ', $catinfo));
+        }
+
+        // A subcategory with the same name as its parent adds nothing, so use the parent.
+        if ($catname === '' || $catname === $parentcategory->name) {
+            return $parentcategory;
         }
 
         // First we check to see if the subcategory already exists.

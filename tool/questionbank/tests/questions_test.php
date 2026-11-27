@@ -182,6 +182,76 @@ final class questions_test extends \advanced_testcase {
     }
 
     /**
+     * With the default subcategories, questions go in a category for the activity, then the word,
+     * question type and level. A prompt whose name has no head or tail (no colon) adds no
+     * subcategories, and no subcategory name ends with a space.
+     */
+    public function test_execute_subcategories(): void {
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/questionlib.php');
+        $this->resetAfterTest();
+        set_config('requirepolicy', 0, 'tool_aibridge');
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $vocab = $generator->create_module('vocab', ['course' => $course->id, 'name' => 'Back pain']);
+        $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['stiff']);
+        $coursecontext = \context_course::instance($course->id);
+        $category = question_make_default_categories([$coursecontext]);
+        $this->setUser($teacher);
+        $text = $generator->get_plugin_generator('tool_aibridge')->create_provider(['contextid' => $coursecontext->id]);
+        $prompt = \tool_aibridge\library\template::find('tool_aibridge:generate-questions');
+        $this->assertStringNotContainsString(':', $prompt->get_name());
+
+        $subcattype = form::SUBCAT_ACTIVITYNAME | form::SUBCAT_WORD | form::SUBCAT_QUESTIONTYPE |
+            form::SUBCAT_VOCABLEVEL | form::SUBCAT_PROMPTHEAD | form::SUBCAT_PROMPTTAIL;
+        $logid = tool::insert_log([
+            'userid' => $teacher->id, 'vocabid' => $vocab->id, 'wordid' => key($words),
+            'qtype' => 'multichoice', 'qlevel' => 'A2', 'qcount' => 1, 'qformat' => '', 'maxtries' => 1,
+            'parentcatid' => $category->id, 'subcattype' => $subcattype, 'subcatname' => '',
+            'tagtypes' => 0, 'tagnames' => '',
+            'textid' => $text->get_id(), 'promptid' => $prompt->get_id(), 'formatid' => 0,
+            'imageid' => 0, 'audioid' => 0, 'videoid' => 0,
+            'status' => tool::TASKSTATUS_QUEUED, 'review' => 0,
+        ]);
+        $gift = "::Q1::How does a stiff back feel? {\n=Hard to move #Yes.\n~Soft #No.\n~Hot #No.\n}";
+        \curl::mock_response(json_encode(['choices' => [['message' => ['content' => $gift]]]]));
+
+        $task = new questions();
+        $task->set_userid($teacher->id);
+        $task->set_custom_data(['logid' => $logid]);
+        ob_start();
+        $task->execute();
+        $output = ob_get_clean();
+        $log = tool::get_log($logid);
+        $this->assertEquals(tool::TASKSTATUS_COMPLETED, $log->status, $output . $log->error);
+
+        // Follow the question's category up to the parent category.
+        $questionid = (int) trim($log->questionids);
+        $categoryid = $DB->get_field_sql(
+            'SELECT qbe.questioncategoryid
+               FROM {question_versions} qv
+               JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
+              WHERE qv.questionid = ?',
+            [$questionid]
+        );
+        $names = [];
+        while ($categoryid && $categoryid != $category->id) {
+            $record = $DB->get_record('question_categories', ['id' => $categoryid], 'id, name, info, parent', MUST_EXIST);
+            array_unshift($names, $record->name);
+            $this->assertNotSame($record->name, $record->info);
+            $categoryid = $record->parent;
+        }
+        $qtype = get_string('pluginname', 'qtype_multichoice');
+        $this->assertSame([
+            get_string('modulename', 'mod_vocab') . ': Back pain',
+            'Word: stiff',
+            "Word: stiff ($qtype)",
+            "Word: stiff ($qtype) A2",
+        ], $names);
+    }
+
+    /**
      * A conversation on one line is put on several lines, so that the AI bridge can read it.
      */
     public function test_format_dialogue(): void {
@@ -252,7 +322,7 @@ final class questions_test extends \advanced_testcase {
         $question = $DB->get_record('question', ['id' => (int) trim($log->questionids)], '*', MUST_EXIST);
         $this->assertSame('speakup', $question->qtype);
         $options = $DB->get_record('qtype_speakup_options', ['questionid' => $question->id], '*', MUST_EXIST);
-        $this->assertSame('What are you planning to do this weekend?', $options->audioprompttranscript);
+        $this->assertSame('What are you planning to do this weekend?', $options->prompttranscript);
         $this->assertEquals(45, $options->timelimitinseconds);
     }
 }
