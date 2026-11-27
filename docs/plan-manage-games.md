@@ -1,6 +1,6 @@
 # Plan: managing games on the activity page
 
-Status: 2026-11-27. Steps 1 to 6 and 8 done. Step 7 (backup and restore) still to do.
+Status: 2026-11-27. Steps 1 to 8 done.
 
 ## Goal
 
@@ -31,6 +31,7 @@ saved straight away.
 | Hiding and restoring | The ⋮ menu also has *Hide* / *Show*. Hidden games can be restored at any time. |
 | Greyed-out tiles | Teachers see hidden games, and games at stages that are not enabled, as greyed-out tiles. Students don't see them at all. |
 | New activities | Start with no games, in the same way as a new Moodle quiz starts with no questions. |
+| Backup of words | Only the words themselves (language, lemma and word), not their dictionary details, which belong to the site. On another site, words are restored without details; the import tool can add them. |
 | Game titles | Each game instance has its own title. The suggested title is the game's name and stage, e.g. "Quiz (Recognize)", and teachers can override it. An empty title means "use the suggested one", so the suggestion follows if the stage changes. This needs a new `title` field in `vocab_game_instances`. |
 
 ## Open questions
@@ -167,17 +168,82 @@ GitHub on its own.
   `game/quiz/play.php` refuses hidden games and games at those stages,
   except for teachers.
 
-### 7. Backup and restore — to do
+### 7. Backup and restore — done
 
-- Backup is currently switched off, so this is about making it work and then
-  switching it on, not only about games.
+Backup is switched off (`FEATURE_BACKUP_MOODLE2` is false), and
+`backup/moodle2/` holds TaskChain code that refers to tables that do not exist.
+So this step rewrites backup and restore, for the whole activity, then
+switches backup on. It must work in Moodle 4.x and 5.x.
 
-- Rewrite the game parts of `backup_vocab_stepslib.php` and
-  `restore_vocab_stepslib.php` for the real tables:
-  `vocab_game_instances` (mapping `gameid` by game name through `vocab_games`)
-  and `vocab_game_attempts`.
-- Restore should map question category ids inside `configdata` where possible.
-- Test: back up an activity with two quizzes, restore it into another course.
+#### What is backed up
+
+| Data | Tables | Notes |
+|---|---|---|
+| The activity | `vocab` | All fields, and the `intro` file area. |
+| Stages | `vocab_stages` | |
+| Word list | `vocab_word_instances` | Each word as **language code, lemma and word**, because words are shared by the whole site (`vocab_words`, `vocab_lemmas`, `vocab_langs`). |
+| Games | `vocab_game_instances` | The game's **name** (e.g. "quiz") instead of `gameid`, and `configdata`. |
+| Questions about the words | `vocab_word_questions` | The links of the activity's words. The questions are marked for backup: each version (4.x includes the course's whole question bank) and its bank entry (5.x includes only those entries). |
+| *With user data:* progress | `vocab_word_stages`, `vocab_word_states` | |
+| *With user data:* attempts | `vocab_game_attempts`, `vocab_word_usages`, `vocab_word_attempts` | Quiz attempts include their question usages (`add_question_usages()`), as mod_quiz does. |
+
+Grades are restored by Moodle's gradebook, as for other activities.
+
+#### Restore
+
+- **Words**: find the language, lemma and word, or create them, as the word
+  list tool does. On the same site, the existing words are found, so their
+  dictionary details and question links still apply.
+- **Games**: find `gameid` from the game's name. A game that is not
+  installed is skipped.
+- **Ids inside JSON** are mapped:
+  - `configdata.categoryid`, in `after_restore()`, because Moodle 5.x moves
+    restored question categories into question banks at the end of a restore.
+    The quiz uses the restored copy, if it is in one of the target course's
+    question banks; otherwise, on the same site, the original category, if it
+    still exists (as Moodle 5.x does for quizzes that use a shared question
+    bank); otherwise *Any category*;
+  - the quiz attempt's `data.slots` (slot => word instance id) through
+    `vocab_word_instance`.
+- **Question links**: in `after_restore()`, the words are linked to the
+  restored copies of the questions that are in the target course's question
+  banks. On the same site, the words are the same words, so their links to the
+  original questions still apply.
+- **Attempts**: `uniqueid` is the restored question usage
+  (`inform_new_usage_id()`). An attempt is inserted before its usage is
+  restored, because only quiz attempts have one.
+
+#### What happens to the questions
+
+| Restore | Moodle 4.x | Moodle 5.x |
+|---|---|---|
+| Activity backup, into another course on the same site | The course's question bank is copied into the new course, and the quiz uses the copy. | The quiz keeps using the original shared question bank, as mod_quiz does. Questions used in restored attempts are saved in a new bank ("Questions saved from context …"). |
+| Whole course backup, into a new course | The quiz uses the copy in the new course. | The question bank activities are restored too, and the quiz uses the copy in the new course. |
+| Duplicate in the same course | The copy uses the same category. | The same. |
+
+#### Not backed up
+
+- The rest of the dictionary: definitions, multimedia, frequencies,
+  pronunciations, relationships, attributes and samples. They belong to the
+  site, not to an activity (see *Decisions made*).
+- The question bank tool's log of AI tasks, and AI settings.
+
+#### Done
+
+- `backup_vocab_stepslib.php` extends `backup_questions_activity_structure_step`,
+  and `backup_vocab_activity_task` calculates the question categories, as
+  mod_quiz does, and encodes links to `view.php` and `index.php`.
+- `restore_vocab_stepslib.php` extends
+  `restore_questions_activity_structure_step`, and `restore_vocab_activity_task`
+  decodes the links and restores legacy log rules.
+- `vocab_supports()`: `FEATURE_BACKUP_MOODLE2` and `FEATURE_USES_QUESTIONS`
+  are true. Moodle already treated mod_vocab as using questions, because of
+  `mod_vocab_question_pluginfile()`, and warned that the feature was not
+  declared.
+- PHPUnit (`tests/backup/backup_restore_test.php`), on 4.5 and 5.3: an
+  activity backup restored into another course with and without user data, a
+  whole course backup restored into a new course, and a duplicate in the same
+  course.
 
 ### 8. Tests, strings and finish — done
 

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Defines the complete vocab structure for backup, with file and id annotations
+ * The structure of a Vocabulary activity's backup.
  *
  * @package    mod_vocab
  * @copyright  2023 Gordon BATESON
@@ -25,296 +25,205 @@
  */
 
 /**
- * backup_vocab_activity_structure_step
+ * Back up a Vocabulary activity: its settings, stages, word list and games, the
+ * questions about its words and, with user data, students' progress and attempts.
+ *
+ * Words belong to the whole site, so each word is backed up as its language code,
+ * lemma and word, and found or created again on restore. Their dictionary details
+ * (definitions, multimedia, and so on) are not backed up (see docs/plan-manage-games.md).
  *
  * @package    mod_vocab
  * @copyright  2023 Gordon Bateson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Gordon Bateson gordonbateson@gmail.com
- * @since      Moodle 4.1
+ * @since      Moodle 3.11
  */
-class backup_vocab_activity_structure_step extends backup_activity_structure_step {
-    /** maximum number of words to retrieve in one DB query */
-    const GET_WORDS_LIMIT = 100;
-
+class backup_vocab_activity_structure_step extends backup_questions_activity_structure_step {
     /**
-     * Define the structure of a Vocabulary activity's backup: its words and their details,
-     * its games, and, if user data is included, students' attempts.
-     * (Not finished: some parts still refer to TaskChain tables, and backup is turned off in vocab_supports().)
+     * Define the structure of the backup.
      *
-     * @return backup_nested_element the root element, wrapped for an activity
+     * @return backup_nested_element the root element, wrapped for an activity.
      */
     protected function define_structure() {
+        global $DB;
 
-        // Are we including userinfo?
         $userinfo = $this->get_setting_value('userinfo');
 
-        /*////////////////////////////////////////
-        // XML nodes declaration - words and games
-        ////////////////////////////////////////*/
+        // The activity.
+        $vocab = new backup_nested_element('vocab', ['id'], $this->get_fieldnames('vocab', ['id', 'course']));
 
-        // Backup games.
-        $games = new backup_nested_element('games');
-        $include = $this->get_fieldnames('vocab_games', ['id']);
-        $game = new backup_nested_element('game', ['id', $include]);
+        // Its stages of learning.
+        $stages = new backup_nested_element('stages');
+        $stage = new backup_nested_element('stage', ['id'], ['stage', 'passcount', 'completecount']);
 
-        // Backup corpuses (used by "vocab_frequencies").
-        $corpuses = new backup_nested_element('corpuses');
-        $include = $this->get_fieldnames('vocab_corpuses', ['id']);
-        $corpus = new backup_nested_element('corpus', ['id', $include]);
-
-        // Backup langs.
-        $langs = new backup_nested_element('langs');
-        $include = $this->get_fieldnames('vocab_langs', ['id']);
-        $lang = new backup_nested_element('lang', ['id', $include]);
-
-        // Backup levels.
-        $levels = new backup_nested_element('levels');
-        $include = $this->get_fieldnames('vocab_levels', ['id']);
-        $level = new backup_nested_element('level', ['id', $include]);
-        // Backup  levelnames.
-        $levelnames = new backup_nested_element('levelnames');
-        $exclude = ['id', 'levelid', 'langid'];
-        $include = $this->get_fieldnames('vocab_levelnames', $exclude);
-        $levelname = new backup_nested_element('levelname', ['id', $include]);
-
-        // Backup lemmas.
-        $lemmas = new backup_nested_element('lemmas');
-        $exclude = ['id', 'langid'];
-        $include = $this->get_fieldnames('vocab_lemmas', $exclude);
-        $lemma = new backup_nested_element('lemma', ['id', $include]);
-
-        // Backup words.
-        $words = new backup_nested_element('words');
-        $exclude = ['id', 'lemmaid'];
-        $include = $this->get_fieldnames('vocab_words', $exclude);
-        $word = new backup_nested_element('word', ['id', $include]);
-
-        // Backup antonyms.
-        $antonyms = new backup_nested_element('antonyms');
-        $exclude = ['id', 'wordid']; // TO-DO: fix antonymwordid later.
-        $include = $this->get_fieldnames('vocab_antonyms', $exclude);
-        $antonym = new backup_nested_element('antonym', ['id', $include]);
-
-        // Backup definitions.
-        $definitions = new backup_nested_element('definitions');
-        $exclude = ['id', 'wordid']; // TO-DO: fix 'langid' and 'levelid'.
-        $include = $this->get_fieldnames('vocab_definitions', $exclude);
-        $definition = new backup_nested_element('definition', ['id', $include]);
-
-        // Backup multimedias.
-        $multimedias = new backup_nested_element('multimedias');
-        $exclude = ['id', 'wordid']; // TO-DO: fix 'langid' and 'levelid'.
-        $include = $this->get_fieldnames('vocab_multimedias', $exclude);
-        $multimedia = new backup_nested_element('multimedia', ['id', $include]);
-
-        // Backup frequencies.
-        $frequencies = new backup_nested_element('frequencies');
-        $exclude = ['id', 'wordid']; // TO-DO: fix 'corpusid'.
-        $include = $this->get_fieldnames('vocab_frequencies', $exclude);
-        $frequency = new backup_nested_element('frequency', ['id', $include]);
-
-        // Backup pronunciations.
-        $pronunciations = new backup_nested_element('pronunciations');
-        $exclude = ['id', 'wordid']; // TO-DO: fix 'langid'.
-        $include = $this->get_fieldnames('vocab_pronunciations', $exclude);
-        $pronunciation = new backup_nested_element('pronunciation', ['id', $include]);
-
-        // Backup synonyms.
-        $synonyms = new backup_nested_element('synonyms');
-        $exclude = ['id', 'wordid']; // TO-DO: fix synonymwordid.
-        $include = $this->get_fieldnames('vocab_synonyms', $exclude);
-        $synonym = new backup_nested_element('synonym', ['id', $include]);
-
-        /*////////////////////////////////////////
-        // XML nodes declaration - non-user data
-        ///////////////////////////////////////*/
-
-        // Backup vocab.
-        $exclude = ['id', 'course'];
-        $include = $this->get_fieldnames('vocab', $exclude);
-        $vocab = new backup_nested_element('vocab', ['id', $include]);
-
-        // Backup game_instances.
-        $gameinstances = new backup_nested_element('gameinstances');
-        $exclude = ['id', 'vocabid', 'gameid'];
-        $include = $this->get_fieldnames('vocab_games', $exclude);
-        $gameinstance = new backup_nested_element('gameinstance', ['id', $include]);
-
-        // Backup word_instances.
+        // Its words, with the language, lemma and word, to find or create them on restore.
         $wordinstances = new backup_nested_element('wordinstances');
-        $exclude = ['id', 'wordid'];
-        $include = $this->get_fieldnames('vocab_words', $exclude);
-        $wordinstance = new backup_nested_element('wordinstance', ['id', $include]);
+        $wordinstance = new backup_nested_element('wordinstance', ['id'], [
+            'wordid', 'enabled', 'sortorder', 'word', 'lemma', 'langcode',
+        ]);
 
-        /*////////////////////////////////////////
-        // XML nodes declaration - user data
-        ////////////////////////////////////////*/
+        // The questions about each word.
+        $wordquestions = new backup_nested_element('wordquestions');
+        $wordquestion = new backup_nested_element('wordquestion', ['id'], ['questionid', 'questionbankentryid']);
 
-        if ($userinfo) {
-            // Backup game attempts.
-            $gameattempts = new backup_nested_element('gameattempts');
-            $exclude = ['id', 'gameinstanceid'];
-            $include = $this->get_fieldnames('vocab_game_attempts', $exclude);
-            $gameattempt = new backup_nested_element('gameattempt', ['id', $include]);
+        // Its games.
+        $gameinstances = new backup_nested_element('gameinstances');
+        $gameinstance = new backup_nested_element('gameinstance', ['id'], [
+            'game', 'title', 'sortorder', 'attemptlimit', 'configdata', 'stage', 'enabled',
+        ]);
 
-            // Backup word_usage.
-            $wordusages = new backup_nested_element('wordusages');
-            $exclude = ['id']; // Should we also fix 'gameattemptid', 'wordinstanceid'?
-            $include = $this->get_fieldnames('vocab_word_usages', $exclude);
-            $wordusage = new backup_nested_element('wordusage', ['id', $include]);
+        // Build the tree, in the order needed to restore it: words before games,
+        // because attempts refer to words.
+        $vocab->add_child($stages);
+        $stages->add_child($stage);
 
-            // Backup word attempts.
-            $wordattempts = new backup_nested_element('wordattempts');
-            $exclude = ['id', 'wordusageid'];
-            $include = $this->get_fieldnames('vocab_word_attempts', $exclude);
-            $wordattempt = new backup_nested_element('wordattempt', ['id', $include]);
+        $vocab->add_child($wordinstances);
+        $wordinstances->add_child($wordinstance);
+        $wordinstance->add_child($wordquestions);
+        $wordquestions->add_child($wordquestion);
+
+        $vocab->add_child($gameinstances);
+        $gameinstances->add_child($gameinstance);
+
+        // Sources.
+        $vocab->set_source_table('vocab', ['id' => backup::VAR_ACTIVITYID]);
+        $stage->set_source_table('vocab_stages', ['vocabid' => backup::VAR_PARENTID], 'id ASC');
+        $wordinstance->set_source_sql(
+            'SELECT vwi.id, vwi.wordid, vwi.enabled, vwi.sortorder, vw.word, vle.lemma, vla.langcode
+               FROM {vocab_word_instances} vwi
+               JOIN {vocab_words} vw ON vw.id = vwi.wordid
+          LEFT JOIN {vocab_lemmas} vle ON vle.id = vw.lemmaid
+          LEFT JOIN {vocab_langs} vla ON vla.id = vle.langid
+              WHERE vwi.vocabid = ?
+           ORDER BY vwi.sortorder, vwi.id',
+            [backup::VAR_PARENTID]
+        );
+        // Words are shared by the whole site, and so are their links to questions,
+        // so only the links to questions in this course's question banks are included.
+        [$wordquestionsql, $wordquestionparams] = $this->get_word_questions_sql();
+        $wordquestion->set_source_sql($wordquestionsql, $wordquestionparams);
+        $gameinstance->set_source_sql(
+            'SELECT vgi.id, vg.name AS game, vgi.title, vgi.sortorder, vgi.attemptlimit,
+                    vgi.configdata, vgi.stage, vgi.enabled
+               FROM {vocab_game_instances} vgi
+               JOIN {vocab_games} vg ON vg.id = vgi.gameid
+              WHERE vgi.vocabid = ?
+           ORDER BY vgi.sortorder, vgi.id',
+            [backup::VAR_PARENTID]
+        );
+
+        // The questions about the words are included with the activity. Moodle 4.x includes the
+        // question banks of annotated questions; Moodle 5.x includes annotated question bank entries.
+        $wordquestion->annotate_ids('question', 'questionid');
+        if ($DB->get_manager()->table_exists('question_bank_entries')) {
+            $wordquestion->annotate_ids('question_bank_entry', 'questionbankentryid');
         }
 
-        /*////////////////////////////////////////
-        // Build the tree in the order needed for restore.
-        ////////////////////////////////////////*/
-
-        $dictionary = new backup_nested_element('dictionary');
-
-        $dictionary->add_child($langs);
-        $langs->add_child($lang);
-
-        $dictionary->add_child($langnames);
-        $langnames->add_child($langname);
-
-        $dictionary->add_child($levels);
-        $levels->add_child($level);
-
-        $dictionary->add_child($corpuses);
-        $corpuses->add_child($corpus);
-
-        $dictionary->add_child($lemmas);
-        $lemmas->add_child($lemmas);
-        $lemma->add_child($words);
-        $words->add_child($word);
-
-        $word->add_child($antonyms);
-        $antonyms->add_child($antonym);
-
-        $word->add_child($definitions);
-        $definitions->add_child($definition);
-
-        $word->add_child($frequencies);
-        $frequencies->add_child($frequency);
-
-        $word->add_child($multimedias);
-        $multimedias->add_child($multimedia);
-
-        $word->add_child($pronunciations);
-        $pronunciations->add_child($pronunciation);
-
-        $word->add_child($synonyms);
-        $synonyms->add_child($synonym);
-
-        $vocab->add_child($dictionary);
-        $vocab->add_child($gameinstances);
-        $vocab->add_child($wordinstances);
-
         if ($userinfo) {
-            // Backup vocab game_attempts.
-            $vocab->add_child($gameattempts);
-            $gameattempts->add_child($gameattempt);
+            // Students' attempts at the games.
+            $gameattempts = new backup_nested_element('gameattempts');
+            $gameattempt = new backup_nested_element('gameattempt', ['id'], [
+                'userid', 'score', 'status', 'timestarted', 'timecompleted', 'stage', 'uniqueid', 'data', 'timemodified',
+            ]);
+            $wordusages = new backup_nested_element('wordusages');
+            $wordusage = new backup_nested_element('wordusage', ['id'], ['wordinstanceid']);
+            $wordattempts = new backup_nested_element('wordattempts');
+            $wordattempt = new backup_nested_element('wordattempt', ['id'], ['score', 'timecreated']);
 
-            // Backup vocab word_attempts.
-            $vocab->add_child($wordattempts);
+            // Students' progress with each word.
+            $wordstages = new backup_nested_element('wordstages');
+            $wordstage = new backup_nested_element('wordstage', ['id'], [
+                'userid', 'wordinstanceid', 'stage', 'interactions', 'successes', 'timelastplayed',
+                'timelastsuccess', 'timedue', 'timepassed', 'timecompleted', 'timemodified',
+            ]);
+            $wordstates = new backup_nested_element('wordstates');
+            $wordstate = new backup_nested_element('wordstate', ['id'], ['userid', 'wordinstanceid', 'state']);
+
+            $gameinstance->add_child($gameattempts);
+            $gameattempts->add_child($gameattempt);
+            // The questions of a quiz attempt, as for mod_quiz.
+            $this->add_question_usages($gameattempt, 'uniqueid');
+            $gameattempt->add_child($wordusages);
+            $wordusages->add_child($wordusage);
+            $wordusage->add_child($wordattempts);
             $wordattempts->add_child($wordattempt);
 
-            // Backup vocab word_usages.
-            $vocab->add_child($wordusages);
-            $wordusages->add_child($wordusage);
-        }
+            $vocab->add_child($wordstages);
+            $wordstages->add_child($wordstage);
+            $vocab->add_child($wordstates);
+            $wordstates->add_child($wordstate);
 
-        /*////////////////////////////////////////
-        // Data sources - non-user data.
-        ////////////////////////////////////////*/
+            $gameattempt->set_source_table('vocab_game_attempts', ['gameinstanceid' => backup::VAR_PARENTID], 'id ASC');
+            $wordusage->set_source_table('vocab_word_usages', ['gameattemptid' => backup::VAR_PARENTID], 'id ASC');
+            $wordattempt->set_source_table('vocab_word_attempts', ['wordusageid' => backup::VAR_PARENTID], 'id ASC');
+            $wordstage->set_source_sql(
+                'SELECT vws.*
+                   FROM {vocab_word_stages} vws
+                   JOIN {vocab_word_instances} vwi ON vwi.id = vws.wordinstanceid
+                  WHERE vwi.vocabid = ?
+               ORDER BY vws.id',
+                [backup::VAR_PARENTID]
+            );
+            $wordstate->set_source_sql(
+                'SELECT vws.*
+                   FROM {vocab_word_states} vws
+                   JOIN {vocab_word_instances} vwi ON vwi.id = vws.wordinstanceid
+                  WHERE vwi.vocabid = ?
+               ORDER BY vws.id',
+                [backup::VAR_PARENTID]
+            );
 
-        $vocab->set_source_table('vocab', ['id' => backup::VAR_ACTIVITYID]);
-        $game->set_source_table('vocab_games', ['vocabid' => backup::VAR_PARENTID]);
-        $condition->set_source_table('vocab_conditions', ['taskid' => backup::VAR_PARENTID]);
-
-        /*////////////////////////////////////////
-        // Data sources - user related data.
-        ////////////////////////////////////////*/
-
-        if ($userinfo) {
-            // Backup vocab grades.
-            $vocabid = $this->get_setting_value(backup::VAR_ACTIVITYID);
-            $params = ['parenttype' => ['sqlparam' => 0], 'parentid' => ['sqlparam' => $vocabid]];
-            $vocabgrade->set_source_sql('SELECT * FROM {vocab_vocab_grades} WHERE parenttype = ? AND parentid = ?', $params);
-
-            // Backup vocab attempts.
-            $params = ['vocabid' => backup::VAR_PARENTID];
-            $vocabattempt->set_source_table('vocab_vocab_attempts', $params);
-
-            // Backup task scores.
-            $params = ['taskid' => backup::VAR_PARENTID];
-            $gamescore->set_source_table('vocab_game_scores', $params);
-
-            // Backup task attempts.
-            $params = ['taskid' => backup::VAR_PARENTID];
-            $gameattempt->set_source_table('vocab_game_attempts', $params);
-
-            // Backup questions.
-            $params = ['taskid' => backup::VAR_PARENTID];
-            $question->set_source_table('vocab_questions', $params);
-
-            // Backup responses.
-            $params = ['questionid' => backup::VAR_PARENTID];
-            $response->set_source_table('vocab_responses', $params);
-
-            // Backup strings.
-            [$filter, $params] = $this->get_strings_sql();
-            $string->set_source_sql("SELECT * FROM {vocab_strings} WHERE id $filter", $params);
-        }
-
-        /*////////////////////////////////////////
-        // ID annotations (foreign keys on non-parent tables).
-        ////////////////////////////////////////*/
-
-        $vocab->annotate_ids('course_modules', 'entrycm');
-        $vocab->annotate_ids('course_modules', 'exitcm');
-
-        $condition->annotate_ids('vocab_conditions', 'conditiontaskid');
-        $condition->annotate_ids('vocab_conditions', 'nexttaskid');
-
-        if ($userinfo) {
-            $condition->annotate_ids('groups', 'groupid');
-            $vocabgrade->annotate_ids('user', 'userid');
-            $vocabattempt->annotate_ids('user', 'userid');
-            $gamescore->annotate_ids('user', 'userid');
             $gameattempt->annotate_ids('user', 'userid');
-            $response->annotate_ids('vocab_game_attempts', 'attemptid');
+            $wordstage->annotate_ids('user', 'userid');
+            $wordstate->annotate_ids('user', 'userid');
         }
 
-        /*////////////////////////////////////////
-        // File annotations.
-        ////////////////////////////////////////*/
+        // Files.
+        $vocab->annotate_files('mod_vocab', 'intro', null);
 
-        $vocab->annotate_files('mod_vocab', 'sourcefile', null);
-        $vocab->annotate_files('mod_vocab', 'entrytext', null);
-        $vocab->annotate_files('mod_vocab', 'exittext', null);
-
-        // Return the root element (vocab), wrapped into standard activity structure.
         return $this->prepare_activity_structure($vocab);
     }
 
     /**
-     * get_fieldnames
+     * Get the SQL for the links from a word to questions in this course's question
+     * banks: the course (Moodle 4.x), or its question bank activities (Moodle 5.x).
      *
-     * @uses $DB
-     * @param string $tablename the name of the Moodle table (without prefix)
-     * @param array $excludedfieldnames these field names will be excluded
+     * @return array [string $sql, array $params] for set_source_sql().
+     */
+    protected function get_word_questions_sql(): array {
+        global $DB;
+        $contextids = array_keys(\mod_vocab\question_banks::get_contexts($this->get_courseid()));
+        if (empty($contextids)) {
+            $contextids = [0];
+        }
+        [$contextsql, $contextparams] = $DB->get_in_or_equal($contextids);
+        if (\mod_vocab\progress::has_question_versions()) {
+            $join = 'JOIN {question_bank_entries} qbe ON qbe.id = vwq.questionbankentryid
+                     JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid';
+        } else {
+            $join = 'JOIN {question} q ON q.id = vwq.questionid
+                     JOIN {question_categories} qc ON qc.id = q.category';
+        }
+        $sql = "SELECT vwq.id, vwq.questionid, vwq.questionbankentryid
+                  FROM {vocab_word_questions} vwq
+                       $join
+                 WHERE vwq.wordid = ? AND qc.contextid $contextsql
+              ORDER BY vwq.id";
+        $params = ['../../wordid'];
+        foreach ($contextparams as $contextid) {
+            $params[] = ['sqlparam' => $contextid];
+        }
+        return [$sql, $params];
+    }
+
+    /**
+     * Get the names of a table's fields.
+     *
+     * @param string $tablename the name of the table, without its prefix.
+     * @param array $excludedfieldnames these field names are left out.
      * @return array of field names
      */
     protected function get_fieldnames($tablename, array $excludedfieldnames) {
         global $DB;
-        $include = array_keys($DB->get_columns($tablename));
-        return array_diff($include, $excludedfieldnames);
+        return array_values(array_diff(array_keys($DB->get_columns($tablename)), $excludedfieldnames));
     }
 }

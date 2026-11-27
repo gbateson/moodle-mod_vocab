@@ -16,6 +16,11 @@
 
 namespace mod_vocab;
 
+#[\PHPUnit\Framework\Attributes\CoversFunction('vocab_supports')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('vocab_add_instance')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('vocab_update_instance')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('vocab_delete_instance')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('vocab_get_grades')]
 /**
  * Tests for the functions in lib.php: features, adding, updating and deleting
  * activities (with their stages and games), and grades.
@@ -46,7 +51,8 @@ final class lib_test extends \advanced_testcase {
         $this->assertTrue(vocab_supports(FEATURE_MOD_INTRO));
         $this->assertTrue(vocab_supports(FEATURE_GRADE_HAS_GRADE));
         $this->assertTrue(vocab_supports(FEATURE_COMPLETION_TRACKS_VIEWS));
-        $this->assertFalse(vocab_supports(FEATURE_BACKUP_MOODLE2));
+        $this->assertTrue(vocab_supports(FEATURE_BACKUP_MOODLE2));
+        $this->assertTrue(vocab_supports(FEATURE_USES_QUESTIONS));
         $this->assertNull(vocab_supports('not a feature'));
     }
 
@@ -105,7 +111,12 @@ final class lib_test extends \advanced_testcase {
             $progress->finish_attempt($attempt, array_fill_keys(array_keys($progress->get_words()), 1));
         }
 
-        course_delete_module($vocab->cmid);
+        if (method_exists('\\core_courseformat\\local\\cmactions', 'delete')) {
+            // Moodle 5.2 and later.
+            \core_courseformat\formatactions::cm($vocab->course)->delete($vocab->cmid);
+        } else {
+            course_delete_module($vocab->cmid);
+        }
         $this->assertFalse($DB->record_exists('vocab', ['id' => $vocab->id]));
         foreach (['vocab_stages', 'vocab_game_instances', 'vocab_word_instances'] as $table) {
             $this->assertFalse($DB->record_exists($table, ['vocabid' => $vocab->id]), $table);

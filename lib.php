@@ -36,7 +36,7 @@ function vocab_supports($feature) {
     // These constants are defined in "lib/moodlelib.php".
     $constants = [
         'FEATURE_ADVANCED_GRADING' => false,
-        'FEATURE_BACKUP_MOODLE2' => false, // Default is FALSE.
+        'FEATURE_BACKUP_MOODLE2' => true, // Default is FALSE.
         'FEATURE_COMMENT' => true,
         'FEATURE_COMPLETION_HAS_RULES' => true,
         'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
@@ -52,7 +52,7 @@ function vocab_supports($feature) {
         'FEATURE_PLAGIARISM' => false,
         'FEATURE_RATE' => false,
         'FEATURE_DESCRIPTION' => true, // Default is FALSE.
-        'FEATURE_USES_QUESTIONS' => false,
+        'FEATURE_USES_QUESTIONS' => true, // The quiz game's attempts use the question engine.
         'FEATURE_CAN_DISPLAY' => true, // Available in Moodle >= 5.0.
     ];
     if (defined('MOD_ARCHETYPE_OTHER')) {
