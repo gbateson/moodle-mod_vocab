@@ -216,7 +216,8 @@ site-wide data. This can be added when the review tool is built.
 
 - The word list tool still adds every word as English (`$langcode = 'en'` in
   `tool/wordlist/classes/form.php`). Activity settings for the word language
-  and the students' language are added in step 3, where the prompts need them.
+  and the students' language are added in step 3, where the prompts need them
+  (done).
 - Backups do not yet include a word instance's sense. Restored words have no
   sense chosen. This is done with the backups in step 5.
 
@@ -302,6 +303,88 @@ so samples can be linked to words without splitting sentences into words.
 - The prompts are tuned for English and Japanese; other languages may need
   more tuning once real word lists use them.
 - Pronunciation (IPA, or kana for Japanese) is left for later, as decided.
+
+## Step 3: filling in the dictionary (built; real-AI run pending)
+
+### Languages of an activity
+
+Two new activity settings, in the "General" section, stored in `vocab`:
+
+| Field | Setting | Default |
+|---|---|---|
+| `wordlang` | Language of the words: the language that students learn. | English |
+| `glosslang` | Students' language: for glosses and translations. | The site's language |
+
+The menus list every language (Moodle's list of ISO 639 languages), not only
+the language packs that are installed. The word list tool adds new words in
+the activity's word language, instead of always in English. In prompts, a
+language code becomes its plain English name, e.g. `ja` → "Japanese", `es` →
+"Spanish" (not "Spanish; Castilian"), `el` → "Modern Greek".
+
+### The "Edit dictionary" tool (`tool/dictionary`)
+
+The tool's page, which was a stub, gets a form, "Fill in the dictionary":
+
+- **Words:** the activity's words, each showing how many senses it already
+  has. Words with no senses are ticked.
+- **AI provider and prompt:** the text providers, and the dictionary's entry
+  prompts, i.e. `dictionary-entry` and teachers' prompts that extend it. The
+  prompts for one sense (definition, samples, related words) are left out, as
+  they are for the review tool in step 4.
+- **Students' language, level, number of senses and number of samples**, with
+  the activity's settings as defaults. The level menu is the levels in
+  `vocab_levels`, i.e. CEFR A1 to C2 for now.
+- **Skip words that already have senses** (ticked), so that each word is
+  only sent to the AI once for the whole site.
+
+Below the form, a table shows the tasks for this activity: word, status,
+what was saved (senses, definitions, glosses, samples), and any error.
+
+### Background task
+
+Each word is one ad hoc task, as in the question bank tool, with a record in
+a new log table, `vocabtool_dictionary_log` (user, activity, word, provider,
+prompt, languages, level, counts, status, tries, error, prompt text, reply,
+times). The task:
+
+1. renders the prompt and sends it through the AI bridge, as the teacher;
+2. tries again later, up to 3 times, if the bridge says that the error is
+   temporary, e.g. a rate limit;
+3. reads the reply with `dictionary_ai::parse_entry()`;
+4. saves it with `dictionary::save_entry()`, and records the counts, or the
+   error.
+
+### Saving an entry
+
+`dictionary::save_entry()` saves everything as a **draft**, with an **AI
+source** (one `vocab_sources` record for each provider and prompt):
+
+- **Lemma:** if the word is still its own lemma, e.g. "ran", and the AI gives
+  another, e.g. "run", the word is moved to that lemma.
+- **Senses:** a sense with the same part of speech and meaning as an existing
+  one is reused; otherwise a new sense is added, with the next sense number.
+- **Definition** (word's language, at the level) and **gloss** (students'
+  language) for each sense.
+- **Samples** in the word's language, at the level, each with its
+  translation as a second sample that points to it (`originalid`). The form
+  used in each sample is added as a word form of the lemma, if it is new, and
+  linked in `vocab_sample_words`.
+
+### Privacy
+
+The log table holds user IDs, so the tool's privacy provider describes,
+exports and deletes it, as the question bank tool does.
+
+### Status (2026-11-27)
+
+Built and tested with PHPUnit, with the AI's replies faked: saving an entry
+(lemma, senses, definitions, glosses, samples, translations and word forms),
+skipping words that have senses, a reply that cannot be used, a prompt of the
+wrong kind, trying again when the AI cannot be reached, and privacy. Versions:
+mod_vocab 2026112703, vocabtool_dictionary 2026112700.
+
+Still to do: a run on the development site with a real AI provider, and a
+look at the page in a browser.
 
 ## Open questions
 

@@ -40,5 +40,15 @@ function xmldb_vocabtool_dictionary_upgrade($oldversion) {
         upgrade_plugin_savepoint($result, $newversion, 'vocabtool', 'dictionary');
     }
 
+    $newversion = 2026112700;
+    if ($oldversion < $newversion) {
+        // The log of the tasks that fill in the dictionary with AI.
+        $dbman = $DB->get_manager();
+        if (!$dbman->table_exists('vocabtool_dictionary_log')) {
+            $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', 'vocabtool_dictionary_log');
+        }
+        upgrade_plugin_savepoint($result, $newversion, 'vocabtool', 'dictionary');
+    }
+
     return $result;
 }

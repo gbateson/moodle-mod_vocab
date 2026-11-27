@@ -45,8 +45,18 @@ if ($mform->is_cancelled()) {
     redirect($tool->vocab->view_url());
 }
 
+// Queue a task for each chosen word, then show the page again, with the tasks.
+if ($data = $mform->get_data()) {
+    $count = $mform->fill_dictionary($data);
+    $message = get_string('tasksqueued', 'vocabtool_dictionary', $count);
+    redirect($PAGE->url, $message, null, \core\output\notification::NOTIFY_SUCCESS);
+}
+
 echo $OUTPUT->header();
 
 $mform->display();
+
+// The tasks of this activity: what they added, or why they failed.
+echo \vocabtool_dictionary\form::get_log_table($tool->vocab->id);
 
 echo $OUTPUT->footer();

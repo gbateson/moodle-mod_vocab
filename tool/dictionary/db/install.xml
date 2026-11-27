@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/vocab/tool/dictionary/db" VERSION="20261127" COMMENT="XMLDB file for Moodle mod/vocab/tool/dictionary"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="vocabtool_dictionary_log" COMMENT="Tasks that fill in the dictionary for a word, with AI">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="taskid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The teacher who asked for the task"/>
+        <FIELD NAME="vocabid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="wordid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="providerid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The AI provider, or -1 for any"/>
+        <FIELD NAME="promptid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="wordlang" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="The language of the word"/>
+        <FIELD NAME="glosslang" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="The language of glosses and translations"/>
+        <FIELD NAME="level" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false" COMMENT="The level of definitions and samples, e.g. A2"/>
+        <FIELD NAME="sensecount" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The most senses to ask for"/>
+        <FIELD NAME="samplecount" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The samples to ask for, for each sense"/>
+        <FIELD NAME="skipexisting" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether to skip a word that already has senses"/>
+        <FIELD NAME="maxtries" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="3" SEQUENCE="false"/>
+        <FIELD NAME="tries" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="error" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="counts" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="JSON: the senses, definitions, glosses and samples that were added"/>
+        <FIELD NAME="prompt" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="results" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="The AI's reply"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="taskid" TYPE="foreign" FIELDS="taskid" REFTABLE="task_adhoc" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="vocabid" TYPE="foreign" FIELDS="vocabid" REFTABLE="vocab" REFFIELDS="id"/>
+        <KEY NAME="wordid" TYPE="foreign" FIELDS="wordid" REFTABLE="vocab_words" REFFIELDS="id"/>
+        <KEY NAME="promptid" TYPE="foreign" FIELDS="promptid" REFTABLE="tool_aibridge_templates" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>

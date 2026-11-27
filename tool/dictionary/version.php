@@ -30,5 +30,5 @@ $plugin->cron      = 0;
 $plugin->component = 'vocabtool_dictionary';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2021051700; // Moodle 3.11.
-$plugin->version   = 2023101206;
-$plugin->release   = '2023-10-12 (06)';
+$plugin->version   = 2026112700;
+$plugin->release   = '2026-11-27 (00)';

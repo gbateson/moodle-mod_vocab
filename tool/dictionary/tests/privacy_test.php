@@ -1,0 +1,75 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+namespace vocabtool_dictionary;
+
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\userlist;
+use core_privacy\local\request\writer;
+use vocabtool_dictionary\privacy\provider;
+
+#[\PHPUnit\Framework\Attributes\CoversClass(\vocabtool_dictionary\privacy\provider::class)]
+/**
+ * Tests for the privacy provider of the dictionary tool.
+ *
+ * @package    vocabtool_dictionary
+ * @copyright  2026 Gordon Bateson
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \vocabtool_dictionary\privacy\provider
+ */
+final class privacy_test extends \core_privacy\tests\provider_testcase {
+    /**
+     * Teachers' tasks are found, exported and deleted.
+     */
+    public function test_provider(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $vocab = $generator->create_module('vocab', ['course' => $course->id]);
+        $context = \context_module::instance($vocab->cmid);
+        $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['cat']);
+        $teachers = [$generator->create_user(), $generator->create_user()];
+        foreach ($teachers as $teacher) {
+            $DB->insert_record(provider::LOGTABLE, (object) ['userid' => $teacher->id, 'vocabid' => $vocab->id,
+                'wordid' => key($words), 'wordlang' => 'en', 'glosslang' => 'ja', 'level' => 'A2', 'error' => '',
+                'counts' => '', 'prompt' => 'Write an entry for cat.']);
+        }
+
+        [$first, $second] = $teachers;
+        $this->assertEquals([$context->id], provider::get_contexts_for_userid((int) $first->id)->get_contextids());
+        $userlist = new userlist($context, 'vocabtool_dictionary');
+        provider::get_users_in_context($userlist);
+        $this->assertEqualsCanonicalizing([$first->id, $second->id], $userlist->get_userids());
+
+        $this->export_context_data_for_user((int) $first->id, $context, 'vocabtool_dictionary');
+        $data = writer::with_context($context)->get_data([get_string('pluginname', 'vocabtool_dictionary')]);
+        $this->assertSame('cat', $data->tasks[0]->word);
+        $this->assertSame('Write an entry for cat.', $data->tasks[0]->prompt);
+
+        provider::delete_data_for_user(new approved_contextlist($first, 'vocabtool_dictionary', [$context->id]));
+        $this->assertSame(0, $DB->count_records(provider::LOGTABLE, ['userid' => $first->id]));
+        $this->assertSame(1, $DB->count_records(provider::LOGTABLE, ['userid' => $second->id]));
+        provider::delete_data_for_users(new approved_userlist($context, 'vocabtool_dictionary', [$second->id]));
+        $this->assertSame(0, $DB->count_records(provider::LOGTABLE));
+
+        $DB->insert_record(provider::LOGTABLE, (object) ['userid' => $first->id, 'vocabid' => $vocab->id,
+            'wordid' => key($words), 'wordlang' => 'en', 'glosslang' => 'ja', 'level' => 'A2', 'error' => '', 'counts' => '']);
+        provider::delete_data_for_all_users_in_context($context);
+        $this->assertSame(0, $DB->count_records(provider::LOGTABLE));
+    }
+}

@@ -289,6 +289,14 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026112703;
+    if ($oldversion < $newversion) {
+        // Each activity has a language for its words, and a language for glosses and
+        // translations (see docs/plan-dictionary.md, step 3). Words so far were English.
+        xmldb_vocab_check_structure($dbman, ['vocab']);
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 

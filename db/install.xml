@@ -12,6 +12,8 @@
         <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="operationmode" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="wordlang" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="en" SEQUENCE="false" COMMENT="The language of the words, i.e. the language that students learn"/>
+        <FIELD NAME="glosslang" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="The students' language, for glosses and translations, or empty for the site's language"/>
         <FIELD NAME="expandnavigation" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="pagelayout" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="activityopen" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

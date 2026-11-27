@@ -85,6 +85,25 @@ class mod_vocab_mod_form extends moodleform_mod {
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, \mod_vocab\activity::MODE_LIVE);
 
+        // The language that students learn, and their own language, for glosses and translations.
+        // Every language is listed, not only the language packs that are installed.
+        $languages = get_string_manager()->get_list_of_languages();
+        \core_collator::asort($languages);
+
+        $name = 'wordlang';
+        $label = get_string($name, $plugin);
+        $mform->addElement('select', $name, $label, $languages);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_ALPHANUMEXT);
+        $mform->setDefault($name, 'en');
+
+        $name = 'glosslang';
+        $label = get_string($name, $plugin);
+        $mform->addElement('select', $name, $label, $languages);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_ALPHANUMEXT);
+        $mform->setDefault($name, \mod_vocab\dictionary::get_base_langcode($CFG->lang));
+
         // -----------------------------------------------------------------------------
         $name = 'display';
         $label = get_string($name, 'form');

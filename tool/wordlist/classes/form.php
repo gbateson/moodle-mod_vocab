@@ -431,9 +431,8 @@ class form extends \mod_vocab\toolform {
         // Cache the vocabid.
         $vocabid = $this->get_vocab()->id;
 
-        // Note: we could set lang from form, either same lang for
-        // all words, or even different lang for each word.
-        $langcode = 'en';
+        // New words are in the activity's word language.
+        $langcode = ($this->get_vocab()->wordlang ?: 'en');
 
         // Initialize array to store lists of added/found words.
         $msg = (object)[

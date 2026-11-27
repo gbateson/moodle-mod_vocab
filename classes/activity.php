@@ -130,6 +130,12 @@ class activity {
     /** @var int the "mode" of the current Vocab activity */
     public $operationmode = 0;
 
+    /** @var string the language of the words, i.e. the language that students learn, e.g. "en" */
+    public $wordlang = 'en';
+
+    /** @var string the students' language, for glosses and translations, or empty for the site's language */
+    public $glosslang = '';
+
     /**
      * @var int denoting whether to show (=expand) or hide (=collapse) the "mycourses" navigation menu
      *      0: expand for everyone

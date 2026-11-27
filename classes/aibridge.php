@@ -145,14 +145,49 @@ class aibridge {
      * @return bool
      */
     public static function is_dictionary_prompt(template $prompt): bool {
+        return self::get_dictionary_prompt_kind($prompt) !== '';
+    }
+
+    /**
+     * Get the kind of a dictionary prompt: the first of the dictionary's own prompts that
+     * it is, or extends. E.g. a teacher's copy of "mod_vocab:dictionary-samples" is "samples".
+     *
+     * @param template $prompt
+     * @return string entry, definition, samples or related, or "" for a prompt that is not for the dictionary.
+     */
+    public static function get_dictionary_prompt_kind(template $prompt): string {
+        $kinds = [
+            dictionary_ai::PROMPT_ENTRY => 'entry',
+            dictionary_ai::PROMPT_DEFINITION => 'definition',
+            dictionary_ai::PROMPT_SAMPLES => 'samples',
+            dictionary_ai::PROMPT_RELATED => 'related',
+        ];
         $depth = 0;
         while ($prompt && $depth++ <= 5) {
-            if ($prompt->get_shortname() === dictionary_ai::PROMPT_ENTRY) {
-                return true;
+            if (isset($kinds[$prompt->get_shortname()])) {
+                return $kinds[$prompt->get_shortname()];
             }
             $prompt = $prompt->get_parent();
         }
-        return false;
+        return '';
+    }
+
+    /**
+     * Get the dictionary prompts of one kind that a user can use, for a menu.
+     *
+     * @param \context $context
+     * @param int $userid
+     * @param string $kind entry, definition, samples or related.
+     * @return string[] template id => name.
+     */
+    public static function get_dictionary_prompt_menu(\context $context, int $userid, string $kind): array {
+        $menu = [];
+        foreach (template::get_available($context, $userid, template::TYPE_PROMPT) as $id => $template) {
+            if (self::get_dictionary_prompt_kind($template) === $kind) {
+                $menu[$id] = format_string($template->get_name());
+            }
+        }
+        return $menu;
     }
 
     /**
