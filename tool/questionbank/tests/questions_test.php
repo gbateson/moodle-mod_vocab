@@ -46,7 +46,7 @@ final class questions_test extends \advanced_testcase {
         $vocab = $generator->create_module('vocab', ['course' => $course->id]);
         $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['report']);
         $coursecontext = \context_course::instance($course->id);
-        $category = question_make_default_categories([$coursecontext]);
+        $category = \mod_vocab\question_banks::get_default_category($course);
 
         $this->setUser($teacher);
         $bridge = $generator->get_plugin_generator('tool_aibridge');
@@ -113,7 +113,7 @@ final class questions_test extends \advanced_testcase {
 
         $files = [];
         $fs = get_file_storage();
-        foreach ($fs->get_area_files($coursecontext->id, 'question', 'questiontext', $questionid, 'id', false) as $file) {
+        foreach ($fs->get_area_files($category->contextid, 'question', 'questiontext', $questionid, 'id', false) as $file) {
             $files[pathinfo($file->get_filename(), PATHINFO_EXTENSION)] = $file;
         }
         $extensions = array_keys($files);
@@ -140,7 +140,7 @@ final class questions_test extends \advanced_testcase {
         $vocab = $generator->create_module('vocab', ['course' => $course->id]);
         $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['report']);
         $coursecontext = \context_course::instance($course->id);
-        $category = question_make_default_categories([$coursecontext]);
+        $category = \mod_vocab\question_banks::get_default_category($course);
         $this->setUser($teacher);
         $text = $generator->get_plugin_generator('tool_aibridge')->create_provider([
             'contextid' => $coursecontext->id,
@@ -197,7 +197,7 @@ final class questions_test extends \advanced_testcase {
         $vocab = $generator->create_module('vocab', ['course' => $course->id, 'name' => 'Back pain']);
         $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['stiff']);
         $coursecontext = \context_course::instance($course->id);
-        $category = question_make_default_categories([$coursecontext]);
+        $category = \mod_vocab\question_banks::get_default_category($course);
         $this->setUser($teacher);
         $text = $generator->get_plugin_generator('tool_aibridge')->create_provider(['contextid' => $coursecontext->id]);
         $prompt = \tool_aibridge\library\template::find('tool_aibridge:generate-questions');
@@ -287,7 +287,7 @@ final class questions_test extends \advanced_testcase {
         $vocab = $generator->create_module('vocab', ['course' => $course->id]);
         $words = $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['weekend']);
         $coursecontext = \context_course::instance($course->id);
-        $category = question_make_default_categories([$coursecontext]);
+        $category = \mod_vocab\question_banks::get_default_category($course);
         $this->setUser($teacher);
         $text = $generator->get_plugin_generator('tool_aibridge')->create_provider(['contextid' => $coursecontext->id]);
         $prompt = \tool_aibridge\library\template::find('qtype_speakup:speakup-speaking');

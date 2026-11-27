@@ -94,4 +94,15 @@ class mod_vocab_generator extends testing_module_generator {
         }
         return $id;
     }
+
+    /**
+     * Get the context in which a course's questions are kept: the course (Moodle 4.x),
+     * or its default question bank, which is made if needed (Moodle 5.x).
+     *
+     * @param \stdClass $course
+     * @return \context
+     */
+    public function get_question_context(\stdClass $course): \context {
+        return \context::instance_by_id(\mod_vocab\question_banks::get_default_category($course)->contextid);
+    }
 }

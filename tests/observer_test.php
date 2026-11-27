@@ -36,8 +36,8 @@ final class observer_test extends \advanced_testcase {
     /** @var \core_question_generator */
     protected $questions;
 
-    /** @var \context_course */
-    protected $coursecontext;
+    /** @var \context where the course's questions are: the course (Moodle 4.x) or its question bank (Moodle 5.x). */
+    protected $questioncontext;
 
     /**
      * Make a course with a teacher and a student.
@@ -52,9 +52,8 @@ final class observer_test extends \advanced_testcase {
         $this->teacher = $generator->create_and_enrol($this->course, 'editingteacher');
         $generator->create_and_enrol($this->course, 'student');
         $this->questions = $generator->get_plugin_generator('core_question');
-        $this->coursecontext = \context_course::instance($this->course->id);
-        // The course's default category, which cannot be deleted.
-        question_make_default_categories([$this->coursecontext]);
+        // This also makes the course's default category, which cannot be deleted.
+        $this->questioncontext = $generator->get_plugin_generator('mod_vocab')->get_question_context($this->course);
     }
 
     /**
@@ -105,7 +104,7 @@ final class observer_test extends \advanced_testcase {
      * parent is the top category. Only the activity's teachers are told.
      */
     public function test_question_category_deleted(): void {
-        $parent = $this->questions->create_question_category(['contextid' => $this->coursecontext->id, 'name' => 'Food']);
+        $parent = $this->questions->create_question_category(['contextid' => $this->questioncontext->id, 'name' => 'Food']);
         $category = $this->questions->create_question_category(['parent' => $parent->id, 'name' => 'Fruit']);
         $subcategory = $this->questions->create_question_category(['parent' => $category->id, 'name' => 'Apples']);
         $quiz = $this->create_quiz(['apple'], $category->id);
@@ -144,7 +143,7 @@ final class observer_test extends \advanced_testcase {
      */
     public function test_question_category_deleted_activity_being_deleted(): void {
         global $DB;
-        $category = $this->questions->create_question_category(['contextid' => $this->coursecontext->id]);
+        $category = $this->questions->create_question_category(['contextid' => $this->questioncontext->id]);
         $quiz = $this->create_quiz(['apple'], $category->id);
         $vocabid = $DB->get_field('vocab_game_instances', 'vocabid', ['id' => $quiz]);
         $cm = get_coursemodule_from_instance('vocab', $vocabid);
@@ -164,7 +163,7 @@ final class observer_test extends \advanced_testcase {
      */
     public function test_question_deleted(): void {
         global $DB;
-        $category = $this->questions->create_question_category(['contextid' => $this->coursecontext->id]);
+        $category = $this->questions->create_question_category(['contextid' => $this->questioncontext->id]);
         $this->create_quiz(['apple', 'banana'], $category->id);
         $apple = $this->create_question('apple', $category->id);
         $banana = $this->create_question('banana', $category->id);
@@ -174,7 +173,7 @@ final class observer_test extends \advanced_testcase {
         $othercourse = $generator->create_course();
         $otherteacher = $generator->create_and_enrol($othercourse, 'editingteacher');
         $othercategory = $this->questions->create_question_category([
-            'contextid' => \context_course::instance($othercourse->id)->id,
+            'contextid' => $generator->get_plugin_generator('mod_vocab')->get_question_context($othercourse)->id,
         ]);
         $this->create_quiz(['apple'], 0, $othercourse);
         $this->create_question('apple', $othercategory->id);
@@ -200,8 +199,8 @@ final class observer_test extends \advanced_testcase {
      */
     public function test_question_bank_deleted(): void {
         global $DB;
-        $category = $this->questions->create_question_category(['contextid' => $this->coursecontext->id]);
-        $kept = $this->questions->create_question_category(['contextid' => $this->coursecontext->id]);
+        $category = $this->questions->create_question_category(['contextid' => $this->questioncontext->id]);
+        $kept = $this->questions->create_question_category(['contextid' => $this->questioncontext->id]);
         $quiz = $this->create_quiz(['apple'], $category->id);
         $keptquiz = $this->create_quiz(['apple'], $kept->id);
         $DB->delete_records('question_categories', ['id' => $category->id]);
@@ -223,5 +222,33 @@ final class observer_test extends \advanced_testcase {
         $this->assertSame((int) $kept->id, $this->get_categoryid($keptquiz));
         $this->assertCount(1, $messages);
         $this->assertStringContainsString('A question bank has been deleted', reset($messages)->fullmessage);
+    }
+
+    /**
+     * A question that students have answered in a quiz is in use, so Moodle hides it
+     * instead of deleting it: its links to words are kept, and the quiz stops using it.
+     */
+    public function test_question_in_use(): void {
+        global $DB;
+        $category = $this->questions->create_question_category(['contextid' => $this->questioncontext->id]);
+        $instanceid = $this->create_quiz(['apple'], $category->id);
+        $questionid = $this->create_question('apple', $category->id);
+        $instance = $DB->get_record('vocab_game_instances', ['id' => $instanceid]);
+        $progress = progress::create((int) $instance->vocabid);
+        $cm = get_coursemodule_from_instance('vocab', $instance->vocabid);
+        $instance->name = 'quiz';
+        $game = gamebase::create($progress->get_vocab(), $cm, $instance);
+        $student = $this->getDataGenerator()->create_and_enrol($this->course, 'student');
+        $this->assertNotNull($game->start_attempt((int) $student->id));
+        $this->assertTrue(questions_in_use([$questionid]));
+
+        $sink = $this->redirectMessages();
+        question_delete_question($questionid);
+        $this->assertCount(0, $sink->get_messages());
+        $sink->close();
+        $this->assertTrue($DB->record_exists('question', ['id' => $questionid]));
+        $this->assertTrue($DB->record_exists('vocab_word_questions', ['questionid' => $questionid]));
+        $words = array_keys($progress->get_words());
+        $this->assertSame([], $game->get_ready_words($words));
     }
 }

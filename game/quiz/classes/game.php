@@ -17,6 +17,7 @@
 namespace vocabgame_quiz;
 
 use mod_vocab\progress;
+use mod_vocab\question_banks;
 
 /**
  * A quiz of questions about the words, from the question bank.
@@ -35,6 +36,9 @@ class game extends \mod_vocab\gamebase {
 
     /** @var array question categories that have been fetched: id => record, or null if missing. */
     protected $categories = [];
+
+    /** @var \context[]|null the contexts of the course's questions, see get_question_contexts(). */
+    protected $questioncontexts = null;
 
     /**
      * Questions can recognize, recall or produce words.
@@ -148,37 +152,32 @@ class game extends \mod_vocab\gamebase {
     }
 
     /**
-     * Get the question categories of the course, for a menu, indented by depth.
+     * Get the question categories of the course, for a menu, indented by depth:
+     * the course's categories (Moodle 4.x), or its question banks' categories (Moodle 5.x).
      *
      * @param \context $context the course or activity.
      * @return string[] category id => name, with 0 for any category in the course.
      */
     public static function get_category_menu(\context $context): array {
-        global $DB;
         $menu = [0 => get_string('anycategory', static::get_component())];
         $coursecontext = $context->get_course_context(false);
         if (!$coursecontext) {
             return $menu;
         }
-        $categories = $DB->get_records(
-            'question_categories',
-            ['contextid' => $coursecontext->id],
-            'parent, sortorder, name',
-            'id, name, parent'
-        );
-        $children = [];
-        foreach ($categories as $category) {
-            $children[$category->parent][] = $category;
+        return $menu + question_banks::get_category_menu((int) $coursecontext->instanceid);
+    }
+
+    /**
+     * Get the contexts of the questions that "any category" means: the course
+     * (Moodle 4.x), or its question banks (Moodle 5.x).
+     *
+     * @return \context[] context id => context.
+     */
+    protected function get_question_contexts(): array {
+        if ($this->questioncontexts === null) {
+            $this->questioncontexts = question_banks::get_contexts((int) $this->cm->course);
         }
-        $add = function ($parent, $depth) use (&$add, &$menu, $children, $coursecontext) {
-            foreach ($children[$parent] ?? [] as $category) {
-                $menu[$category->id] = str_repeat("\u{00A0}\u{00A0}", $depth) .
-                    format_string($category->name, true, ['context' => $coursecontext]);
-                $add($category->id, $depth + 1);
-            }
-        };
-        $add(0, 0);
-        return $menu;
+        return $this->questioncontexts;
     }
 
     /**
@@ -243,7 +242,6 @@ class game extends \mod_vocab\gamebase {
         if (empty($wordinstanceids)) {
             return [];
         }
-        $coursecontext = $this->context->get_course_context();
         [$wordsql, $params] = $DB->get_in_or_equal($wordinstanceids, SQL_PARAMS_NAMED, 'wi');
         if ($DB->get_manager()->table_exists('question_versions')) {
             // Moodle 4.0 and later: questions have versions, and their categories are in question_bank_entries.
@@ -256,13 +254,18 @@ class game extends \mod_vocab\gamebase {
             $from = "JOIN {question_categories} qc ON qc.id = q.category";
             $where = 'q.hidden = 0';
         }
-        $where .= ' AND qc.contextid = :contextid';
-        $params['contextid'] = $coursecontext->id;
         if (($categoryids = $this->get_category_ids()) !== null) {
             [$catsql, $catparams] = $DB->get_in_or_equal($categoryids, SQL_PARAMS_NAMED, 'cat');
             $where .= " AND qc.id $catsql";
-            $params += $catparams;
+        } else {
+            // Any category: the course's (Moodle 4.x), or its question banks' (Moodle 5.x).
+            if (!$contextids = array_keys($this->get_question_contexts())) {
+                return [];
+            }
+            [$catsql, $catparams] = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED, 'ctx');
+            $where .= " AND qc.contextid $catsql";
         }
+        $params += $catparams;
         $sql = "SELECT vwq.id, vwi.id AS wordinstanceid, q.id AS questionid
                   FROM {vocab_word_instances} vwi
                   JOIN {vocab_word_questions} vwq ON vwq.wordid = vwi.wordid
@@ -375,7 +378,7 @@ class game extends \mod_vocab\gamebase {
     public function question_deleted(\stdClass $question): ?string {
         $categoryids = $this->get_category_ids();
         if ($categoryids === null) {
-            if ((int) $question->contextid !== (int) $this->context->get_course_context()->id) {
+            if (!array_key_exists((int) $question->contextid, $this->get_question_contexts())) {
                 return null;
             }
         } else if (!in_array((int) $question->category, $categoryids)) {
@@ -456,13 +459,12 @@ class game extends \mod_vocab\gamebase {
         }
         require_once($CFG->libdir . '/questionlib.php');
         $form = '\\vocabtool_questionbank\\form';
-        $coursecontext = $this->context->get_course_context();
         $category = $this->get_category();
         if ($category) {
             $categoryid = (int) $category->id;
         } else {
             // Any category, or the chosen category has been deleted.
-            $categoryid = (int) question_get_default_category($coursecontext->id)->id;
+            $categoryid = (int) question_banks::get_default_category(get_course($this->cm->course))->id;
         }
         $promptid = (int) $this->get_config('materialprompt', 0) ?: self::get_default_promptid();
         $words = $this->get_progress()->get_words();

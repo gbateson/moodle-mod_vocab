@@ -57,7 +57,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->context = \context_module::instance($cm->id);
         $generator->get_plugin_generator('mod_vocab')->add_words($this->vocab->id, ['cat', 'dog']);
         $questions = $generator->get_plugin_generator('core_question');
-        $category = $questions->create_question_category(['contextid' => \context_course::instance($course->id)->id]);
+        $questioncontext = $generator->get_plugin_generator('mod_vocab')->get_question_context($course);
+        $category = $questions->create_question_category(['contextid' => $questioncontext->id]);
         foreach ($DB->get_records('vocab_words') as $word) {
             $question = $questions->create_question('truefalse', null, ['category' => $category->id]);
             progress::link_questions((int) $word->id, [$question->id]);

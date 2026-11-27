@@ -1,6 +1,6 @@
 # Plan: questions and question categories that games use
 
-Status: 2026-11-27. Steps 1 and 2 done. Steps 3 and 4 to do.
+Status: 2026-11-27. Steps 1 to 3 done. Step 4 to do.
 
 ## Goal
 
@@ -75,17 +75,43 @@ This must work in Moodle 4.x and 5.x.
   `tests/observer_test.php`. The code does not assume the course context, so
   the same code serves 5.x question banks once step 3 is done.
 
-### 3. Question banks in Moodle 5.x — to do
+### 3. Question banks in Moodle 5.x — done
 
 In Moodle 5.0 and later, course question banks become question bank
 activities (`mod_qbank`). Questions keep their ids but move to the activity's
-context. The Quiz game only looks in the course context, so at present it
-would find no categories and no questions.
+context. The Quiz game and the question bank tool only looked in the course
+context, so they would have found no categories and no questions.
 
-- List the categories of the course's question bank activities in the
-  *Category* menu, and include them in *Any category*.
-- In `make_materials()`, use the course's default question bank in 5.x.
-- Test on the 5.3 site (`~/Moodle/503`), including steps 1 and 2.
+- `classes/question_banks.php` says where a course's questions are, in 4.x
+  and 5.x:
+  - `get_contexts()`: the course (4.x), or its question bank activities (5.x);
+  - `get_default_category()`: the course's default category (4.x), or the
+    default category of the course's default question bank, which is made if
+    needed (5.x);
+  - `get_category_menu()`: each bank's categories, with its top category
+    shown as "Top for (bank)";
+  - `get_manage_url()`: the course's question categories (4.x), or its
+    question banks (5.x).
+- The Quiz game uses it for its *Category* menu, for *Any category*, for
+  deleted questions, and for the category of questions it makes. A chosen
+  category is used wherever it is, so a category in another course's bank
+  still works.
+- The question bank tool uses it for its parent category menu, its default
+  category, its *Manage question categories* link, and its check that the
+  parent category belongs to the course.
+- Tests put their questions where the version keeps them, with the
+  generator's `get_question_context()`, so the same tests run on 4.5 and 5.3.
+- Tested on the 5.3 site (`~/Moodle/503`), including steps 1 and 2.
+- Also found on 5.3:
+  - Moodle 5.x refused to install mod_vocab because `vocab_supports()`
+    declared the deprecated `FEATURE_GROUPMEMBERSONLY`. As in
+    `mod/hotpot/lib.php`, it is now declared only when the availability API
+    (`\core_availability\info`) does not exist, i.e. in Moodle 2.6 and earlier.
+  - mod_vocab did not tell Moodle which questions its games use, so questions
+    that students had answered in a quiz could be deleted, and their attempts
+    could no longer be loaded. `mod_vocab_questions_in_use()` in `lib.php`
+    now does, so Moodle hides those questions instead (and triggers no
+    `question_deleted` event).
 
 ### 4. Link words to questions, not to question versions — to do
 
@@ -95,6 +121,13 @@ old version then removes the link, even though the question still exists.
 
 - Link by question bank entry, and use its latest ready version.
 - Convert the existing links in an upgrade step.
+
+### Later
+
+- PHPUnit 11 (Moodle 5.x) warns that `@covers` in doc comments is
+  deprecated. Move the tests to attributes, e.g.
+  `#[\PHPUnit\Framework\Attributes\CoversClass(...)]`, when Moodle 4.5
+  support allows.
 
 ### 5. Backup and restore
 

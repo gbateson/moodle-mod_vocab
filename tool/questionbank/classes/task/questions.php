@@ -311,17 +311,13 @@ class questions extends \core\task\adhoc_task {
             mtrace('[' . get_string('ok') . ']');
         }
 
-        // Get all question categories in the current course.
-        $coursecategory = question_get_top_category($coursecontext->id);
-        $categories = question_categorylist($coursecategory->id);
-
-        // Ensure that the target question category is in the target course.
-        if (! in_array($parentcatid, $categories)) {
+        // Ensure that the target question category is in the target course (Moodle 4.x),
+        // or in one of its question banks (Moodle 5.x).
+        $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
+        $contexts = \mod_vocab\question_banks::get_contexts($courseid);
+        if (! $parentcategory || ! array_key_exists($parentcategory->contextid, $contexts)) {
             return $this->report_error($log, 'invalidquestioncategoryid', $parentcatid);
         }
-
-        // Cache the parent category.
-        $parentcategory = $DB->get_record('question_categories', ['id' => $parentcatid]);
 
         // Determine the human readable text for $qtype e.g. "Multiple choice".
         $qtypetext = \vocabtool_questionbank\form::get_question_type_text($qtype);

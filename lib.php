@@ -44,7 +44,6 @@ function vocab_supports($feature) {
         'FEATURE_GRADE_HAS_GRADE' => true, // Default is FALSE.
         'FEATURE_GRADE_OUTCOMES' => true,
         'FEATURE_GROUPINGS' => true, // Default is FALSE.
-        'FEATURE_GROUPMEMBERSONLY' => true, // Default is FALSE.
         'FEATURE_GROUPS' => true,
         'FEATURE_IDNUMBER' => true, // Available in Moodle >= 2.0.
         'FEATURE_MOD_INTRO' => true,
@@ -58,6 +57,11 @@ function vocab_supports($feature) {
     ];
     if (defined('MOD_ARCHETYPE_OTHER')) {
         $constants['FEATURE_MOD_ARCHETYPE'] = MOD_ARCHETYPE_OTHER; // Available in Moodle >= 2.x.
+    }
+    if (! class_exists('\\core_availability\\info')) {
+        $constants['FEATURE_GROUPMEMBERSONLY'] = true; // Moodle <= 2.6
+        // Moodle >= 2.7 uses the availability API (\core_availability\info)
+        // Moodle >= 5.x treats any plugin that declares this feature as broken.
     }
     if (defined('MOD_PURPOSE_INTERACTIVECONTENT')) {
         $constants['FEATURE_MOD_PURPOSE'] = MOD_PURPOSE_INTERACTIVECONTENT; // Available in Moodle >= 4.x.
@@ -530,6 +534,24 @@ function mod_vocab_aibridge_installed() {
     if (get_config('mod_vocab', 'movetoaibridge')) {
         \mod_vocab\aibridge_migration::run();
     }
+}
+
+/**
+ * Are any of these questions used in students' attempts at the activities' games,
+ * e.g. the quiz game? Moodle hides questions that are in use, instead of deleting
+ * them, so that the attempts can still be reviewed.
+ *
+ * @param int[] $questionids
+ * @return bool
+ */
+function mod_vocab_questions_in_use($questionids) {
+    global $CFG;
+    require_once($CFG->libdir . '/questionlib.php');
+    return question_engine::questions_in_use(
+        $questionids,
+        // The component is a constant: parameters here would be lost when core merges them with its own.
+        new qubaid_join('{question_usages} quba', 'quba.id', "quba.component = 'mod_vocab'")
+    );
 }
 
 /**

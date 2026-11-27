@@ -44,8 +44,8 @@ final class game_test extends \advanced_testcase {
 
         // True/false questions about apple and banana; none about cherry.
         $questions = $generator->get_plugin_generator('core_question');
-        $coursecontext = \context_course::instance($course->id);
-        $category = $questions->create_question_category(['contextid' => $coursecontext->id]);
+        $questioncontext = $generator->get_plugin_generator('mod_vocab')->get_question_context($course);
+        $category = $questions->create_question_category(['contextid' => $questioncontext->id]);
         $words = $DB->get_records_menu('vocab_words', null, '', 'word, id');
         foreach (['apple', 'banana'] as $word) {
             $question = $questions->create_question('truefalse', null, ['category' => $category->id, 'name' => $word]);
@@ -105,9 +105,9 @@ final class game_test extends \advanced_testcase {
         $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['apple']);
         progress::save_stages($vocab->id, [progress::STAGE_RECALL => [1, 1]]);
         $questions = $generator->get_plugin_generator('core_question');
-        $coursecontext = \context_course::instance($course->id);
-        $one = $questions->create_question_category(['contextid' => $coursecontext->id]);
-        $two = $questions->create_question_category(['contextid' => $coursecontext->id]);
+        $questioncontext = $generator->get_plugin_generator('mod_vocab')->get_question_context($course);
+        $one = $questions->create_question_category(['contextid' => $questioncontext->id]);
+        $two = $questions->create_question_category(['contextid' => $questioncontext->id]);
         $question = $questions->create_question('truefalse', null, ['category' => $one->id]);
         progress::link_questions((int) $DB->get_field('vocab_words', 'id', ['word' => 'apple']), [$question->id]);
         $wordinstanceid = (int) $DB->get_field('vocab_word_instances', 'id', ['vocabid' => $vocab->id]);
@@ -137,7 +137,8 @@ final class game_test extends \advanced_testcase {
         $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['apple', 'banana']);
         progress::save_stages($vocab->id, [progress::STAGE_RECOGNIZE => [1, 1]]);
         $questions = $generator->get_plugin_generator('core_question');
-        $category = $questions->create_question_category(['contextid' => \context_course::instance($course->id)->id]);
+        $questioncontext = $generator->get_plugin_generator('mod_vocab')->get_question_context($course);
+        $category = $questions->create_question_category(['contextid' => $questioncontext->id]);
         $question = $questions->create_question('truefalse', null, ['category' => $category->id]);
         progress::link_questions((int) $DB->get_field('vocab_words', 'id', ['word' => 'apple']), [$question->id]);
 
@@ -182,15 +183,15 @@ final class game_test extends \advanced_testcase {
         $cm = get_coursemodule_from_instance('vocab', $vocab->id);
         $generator->get_plugin_generator('mod_vocab')->add_words($vocab->id, ['apple']);
         $questions = $generator->get_plugin_generator('core_question');
-        $coursecontext = \context_course::instance($course->id);
-        $linked = $questions->create_question_category(['contextid' => $coursecontext->id, 'name' => 'Linked']);
-        $empty = $questions->create_question_category(['contextid' => $coursecontext->id, 'name' => 'Empty']);
-        $other = $questions->create_question_category(['contextid' => $coursecontext->id, 'name' => 'Other']);
+        $questioncontext = $generator->get_plugin_generator('mod_vocab')->get_question_context($course);
+        $linked = $questions->create_question_category(['contextid' => $questioncontext->id, 'name' => 'Linked']);
+        $empty = $questions->create_question_category(['contextid' => $questioncontext->id, 'name' => 'Empty']);
+        $other = $questions->create_question_category(['contextid' => $questioncontext->id, 'name' => 'Other']);
         $question = $questions->create_question('truefalse', null, ['category' => $linked->id]);
         $questions->create_question('truefalse', null, ['category' => $other->id]);
         progress::link_questions((int) $DB->get_field('vocab_words', 'id', ['word' => 'apple']), [$question->id]);
         $wordinstanceid = (int) $DB->get_field('vocab_word_instances', 'id', ['vocabid' => $vocab->id]);
-        $deleted = $questions->create_question_category(['contextid' => $coursecontext->id]);
+        $deleted = $questions->create_question_category(['contextid' => $questioncontext->id]);
         $DB->delete_records('question_categories', ['id' => $deleted->id]);
 
         $plugin = 'vocabgame_quiz';
@@ -218,7 +219,7 @@ final class game_test extends \advanced_testcase {
         $game = \mod_vocab\gamebase::create($vocab, $cm, $instance);
         $this->assertSame(1, $game->make_materials([$wordinstanceid], (int) $teacher->id));
         $this->assertEquals(
-            question_get_default_category($coursecontext->id)->id,
+            \mod_vocab\question_banks::get_default_category($course)->id,
             $DB->get_field('vocabtool_questionbank_log', 'parentcatid', ['vocabid' => $vocab->id])
         );
     }

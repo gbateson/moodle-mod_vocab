@@ -580,22 +580,14 @@ abstract class subpluginform extends \moodleform {
      */
     public function add_parentcategory($mform, $name, $defaultid = 0) {
 
-        // Get the course context.
-        $courseid = $this->get_vocab()->course->id;
-        $context = \context_course::instance($courseid);
-
         // Fetch the list of question categories in this course.
         $categories = $this->get_question_categories();
 
-        // Get the name of the default question category for this course.
+        // Use the default question category of this course (Moodle 4.x),
+        // or of its default question bank (Moodle 5.x).
         if ($defaultid == 0) {
-            $defaultname = $context->get_context_name(false, true);
-            $defaultname = get_string('defaultfor', 'question', $defaultname);
-            $defaultname = shorten_text($defaultname, 255);
-
-            // Extract the id of the default question category in this course.
-            $defaultid = array_search($defaultname, $categories);
-            if ($defaultid === false) {
+            $defaultid = (int) question_banks::get_default_category($this->get_vocab()->course)->id;
+            if (!array_key_exists($defaultid, $categories)) {
                 $defaultid = 0; // Shouldn't happen !!
             }
         }
@@ -621,9 +613,7 @@ abstract class subpluginform extends \moodleform {
      * @return string HTML link to the question category management page.
      */
     public function link_to_managequestioncategories() {
-        $link = '/question/bank/managecategories/category.php';
-        $params = ['courseid' => $this->get_vocab()->course->id];
-        $link = new \moodle_url($link, $params);
+        $link = question_banks::get_manage_url($this->get_vocab()->course->id);
 
         $text = $this->get_string('managequestioncategories');
         $params = ['onclick' => "this.target='VOCAB'"];
@@ -642,23 +632,26 @@ abstract class subpluginform extends \moodleform {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/lib/questionlib.php');
 
-        $courseid = $this->get_vocab()->course->id;
-        $coursecontext = \context_course::instance($courseid);
-        $coursecategory = $this->get_top_question_category($coursecontext->id, true);
-
-        $categories = question_categorylist($coursecategory->id);
-        [$select, $params] = $DB->get_in_or_equal($categories);
+        // The course's question categories (Moodle 4.x), or its question banks' categories (Moodle 5.x).
+        $course = $this->get_vocab()->course;
+        if (!$contexts = question_banks::get_contexts($course->id)) {
+            // Moodle 5.x: make the course's default question bank.
+            question_banks::get_default_category($course);
+            $contexts = question_banks::get_contexts($course->id);
+        }
+        $categories = [];
         $fields = 'id, name, parent, sortorder';
-        if ($categories = $DB->get_records_select('question_categories', "id $select", $params, 'sortorder', $fields)) {
-            // Get localised name of default quesiont category in this course.
-            if ($coursecategory->name == 'top') {
-                if (array_key_exists($coursecategory->id, $categories)) {
-                    $name = $coursecontext->get_context_name(false, false, true);
-                    $name = get_string('topfor', 'question', $name);
-                    $categories[$coursecategory->id]->name = $name;
-                }
+        foreach ($contexts as $context) {
+            $topcategory = $this->get_top_question_category($context->id, true);
+            [$select, $params] = $DB->get_in_or_equal(question_categorylist($topcategory->id));
+            $categories += $DB->get_records_select('question_categories', "id $select", $params, 'sortorder', $fields);
+            // Get the localised name of the top category, e.g. "Top for Course: ...".
+            if ($topcategory->name == 'top' && array_key_exists($topcategory->id, $categories)) {
+                $name = $context->get_context_name(false, false, true);
+                $categories[$topcategory->id]->name = get_string('topfor', 'question', $name);
             }
-
+        }
+        if ($categories) {
             // Cache separator and max length of category name.
             $separator = ' ⟫ ';
             $maxnamelength = 32;
