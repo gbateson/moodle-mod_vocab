@@ -277,11 +277,30 @@ sentences in Japanese for the interjection "すみません" in the sense of
   out. Each fix is reported as a warning; a reply with nothing usable is an
   error.
 
+### Tested with an AI provider (2026-11-27)
+
+The prompts were sent to OpenAI gpt-4o through the AI bridge, for English
+(bank, run, happiness, decision), Japanese (すみません, 食べる) and German
+(Bank). Every reply was valid JSON, and passed the checks with no errors or
+warnings. Each reply took 1 to 5 seconds. Two changes were made to the wording:
+
+- **Made-up senses:** the AI padded entries to the number of senses, e.g. 食べる
+  got "to taste", and "happiness" was split in two. The task now says that many
+  items have only one common sense, and asks for a second sense only if a
+  dictionary would list it separately. Afterwards, 食べる and "happiness" got
+  one sense each, "bank" still got two and "run" three.
+- **Copying the example:** for すみません, the AI copied the example's senses.
+  The example is now marked as showing only the structure. When the word is
+  the example word itself, the first sense may still be copied; as the example
+  is a correct entry, this was accepted.
+
+Japanese samples gave the form used, e.g. 食べます and 食べました for 食べる,
+so samples can be linked to words without splitting sentences into words.
+
 ### Not in step 2
 
-- The prompts have not yet been sent to a real AI provider. Step 3 sends them,
-  and the wording may need tuning once the replies have been seen, especially
-  for languages other than English and Japanese.
+- The prompts are tuned for English and Japanese; other languages may need
+  more tuning once real word lists use them.
 - Pronunciation (IPA, or kana for Japanese) is left for later, as decided.
 
 ## Open questions

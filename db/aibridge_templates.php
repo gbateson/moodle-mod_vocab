@@ -374,7 +374,7 @@ The "samples" list has {{number-of-samples}} items for each sense.
 EOD
 ,
         'examples' => <<<'EOD'
-For example, this is an entry for the Japanese vocabulary item "すみません", at CEFR level A1, with glosses in English and one sample sentence for each sense:
+This example only shows the structure of the JSON. It is an entry for the Japanese vocabulary item "すみません", at CEFR level A1, with glosses in English and one sample sentence for each sense. Never copy its meanings, definitions, glosses or sample sentences into your reply, not even for the same vocabulary item: write your own.
 {
     "lemma": "すみません",
     "senses": [
@@ -479,10 +479,10 @@ Your role is an expert lexicographer who writes learner's dictionaries.
 Help me to write dictionary content that I can save in a Moodle LMS.{{endblock}}
 
 {{block:task}}Write a learner's dictionary entry for the {{word-language}} vocabulary item "{{vocabulary-item}}".
-Give at most {{number-of-senses}} senses: the most common ones. For each sense, write a definition, a gloss in {{gloss-language}}, and {{number-of-samples}} sample sentences.
+Give each of its common senses, up to {{number-of-senses}} senses. Many vocabulary items have only one common sense: give a second or third sense only if it is a clearly different meaning that a dictionary would list separately, like the two senses of the English noun "bank". For each sense, write a definition, a gloss in {{gloss-language}}, and {{number-of-samples}} sample sentences.
 Use only {{level-framework}} level {{level}} {{word-language}} in the definitions and sample sentences.{{endblock}}
 
-{{block:description}}A sense is one meaning of the vocabulary item, like one of the numbered meanings in a dictionary entry. For example, the English noun "bank" has two common senses: a place that keeps money, and the land beside a river. The same word with a different part of speech is a different sense, e.g. the English verb "bank", meaning to keep money in a bank. Give only senses that a {{level-framework}} level {{level}} student might need, and leave out rare and technical senses.{{endblock}}
+{{block:description}}A sense is one meaning of the vocabulary item, like one of the numbered meanings in a dictionary entry. For example, the English noun "bank" has two common senses: a place that keeps money, and the land beside a river. The same word with a different part of speech is a different sense, e.g. the English verb "bank", meaning to keep money in a bank. Give only senses that a {{level-framework}} level {{level}} student might need, and leave out rare and technical senses. Never make up senses, or split one meaning into two senses, to reach the number of senses.{{endblock}}
 
 {{block:rules}}{{include:mod_vocab:dictionary-json-rules}}{{endblock}}
 

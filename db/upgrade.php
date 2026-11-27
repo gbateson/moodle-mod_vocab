@@ -280,6 +280,15 @@ function xmldb_vocab_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'vocab');
     }
 
+    $newversion = 2026112702;
+    if ($oldversion < $newversion) {
+        // The example in the dictionary's entry format must not be copied into replies.
+        if (\mod_vocab\aibridge_migration::is_bridge_ready()) {
+            \tool_aibridge\library::sync_component('mod_vocab');
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'vocab');
+    }
+
     return true;
 }
 
