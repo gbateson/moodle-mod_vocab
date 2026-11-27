@@ -510,6 +510,9 @@ class questions extends \core\task\adhoc_task {
             $cache = null;
 
             foreach ($questions as $questionid => $question) {
+                // Making media can take a long time, e.g. resizing and saving images.
+                self::lift_time_limit();
+
                 // Create media (images, audio, video) and add appropriate tags.
                 $mediatags = [];
                 if (isset($question->context)) {
@@ -617,6 +620,25 @@ class questions extends \core\task\adhoc_task {
         $action->set_purpose('vocabtool_questionbank', $prompt->get_shortname());
         $action->set_template($prompt->get_id(), $prompt->get_version());
         return \tool_aibridge\manager::process($action, $providerid);
+    }
+
+    /**
+     * Lift PHP's time limit when the task runs under the web server, e.g. when cron is
+     * run from a browser (admin/cron.php). That script declares CLI_SCRIPT, so Moodle's
+     * core_php_time_limit::raise() does nothing, but the web server's limit (often 30
+     * seconds) still applies, and to the whole cron run. On the command line, PHP has
+     * no time limit, so nothing is done.
+     *
+     * If the site sets a maximum time limit ($CFG->maxtimelimit), e.g. for a front-end
+     * server's timeout, the limit is restarted at that value instead of being lifted.
+     */
+    protected static function lift_time_limit(): void {
+        global $CFG;
+        if (PHP_SAPI === 'cli') {
+            return;
+        }
+        $limit = (empty($CFG->maxtimelimit) ? 0 : max(1, (int) $CFG->maxtimelimit));
+        @set_time_limit($limit);
     }
 
     /**
