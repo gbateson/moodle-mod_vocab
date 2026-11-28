@@ -39,6 +39,17 @@ class behat_mod_vocab_generator extends behat_generator_base {
                 'required' => ['vocab', 'stage'],
                 'switchids' => ['vocab' => 'vocabid'],
             ],
+            'words' => [
+                'singular' => 'word',
+                'datagenerator' => 'word',
+                'required' => ['vocab', 'word'],
+                'switchids' => ['vocab' => 'vocabid'],
+            ],
+            'dictionary senses' => [
+                'singular' => 'dictionary sense',
+                'datagenerator' => 'dictionary_sense',
+                'required' => ['word', 'meaning'],
+            ],
         ];
     }
 

@@ -54,6 +54,17 @@ if ($data = $mform->get_data()) {
 
 echo $OUTPUT->header();
 
+// The words, each with a link that shows its dictionary entry. Without JavaScript,
+// the link opens this page with that word's entry shown ("wordid" parameter).
+$wordid = optional_param('wordid', 0, PARAM_INT);
+$entries = \vocabtool_dictionary\tool::export_word_list($tool->vocab, $wordid ? [$wordid] : []);
+if ($entries['haswords']) {
+    $entries['regionid'] = html_writer::random_id('vocab-entries-');
+    echo $OUTPUT->heading(get_string('entries', 'vocabtool_dictionary'), 3);
+    echo $OUTPUT->render_from_template('vocabtool_dictionary/entries', $entries);
+    $PAGE->requires->js_call_amd('vocabtool_dictionary/entries', 'init', [$entries['regionid']]);
+}
+
 $mform->display();
 
 // The tasks of this activity: what they added, or why they failed.

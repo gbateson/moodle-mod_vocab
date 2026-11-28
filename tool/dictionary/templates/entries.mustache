@@ -1,0 +1,71 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template vocabtool_dictionary/entries
+
+    The words of a Vocabulary activity, each with its number of senses and draft items,
+    and a link that shows or hides its dictionary entry (see vocabtool_dictionary/entry).
+    The entries are fetched when they are first shown (see amd/src/entries.js). Without
+    JavaScript, the link opens the page with that word's entry shown.
+
+    Context variables required for this template:
+    * regionid - the id of the region, for the JavaScript
+    * vocabid, cmid
+    * haswords
+    * words - wordid, word, sensecount, draftcount, pending, expanded, entry (or null)
+
+    Example context (json):
+    {
+        "regionid": "vocab-entries-1", "vocabid": 1, "cmid": 2, "haswords": true,
+        "words": [
+            {"wordid": 3, "word": "apple", "sensecount": 1, "draftcount": 4, "pending": false,
+             "expanded": false, "entry": null}
+        ]
+    }
+}}
+<div id="{{regionid}}" class="vocabtool_dictionary_entries" data-region="vocabtool-dictionary-entries" data-vocabid="{{vocabid}}">
+    {{#haswords}}
+    <div class="d-flex justify-content-end mb-2">
+        <button type="button" class="btn btn-link btn-sm" data-action="showall">{{#str}} showall, vocabtool_dictionary {{/str}}</button>
+        <button type="button" class="btn btn-link btn-sm" data-action="hideall">{{#str}} hideall, vocabtool_dictionary {{/str}}</button>
+    </div>
+    <ul class="list-unstyled vocabtool_dictionary_words">
+        {{#words}}
+        <li class="vocabtool_dictionary_word border-bottom py-1" data-wordid="{{wordid}}">
+            <a href="?id={{cmid}}&amp;wordid={{wordid}}#vocab-word-{{wordid}}" id="vocab-word-{{wordid}}"
+               class="vocabtool_dictionary_toggle" data-action="toggle" role="button"
+               aria-expanded="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}"
+               aria-controls="vocab-entry-{{wordid}}">
+                <span class="vocabtool_dictionary_chevron" aria-hidden="true"></span>
+                <strong>{{word}}</strong>
+            </a>
+            <span class="badge badge-light bg-light text-dark">{{#str}} sensecountn, vocabtool_dictionary, {{sensecount}} {{/str}}</span>
+            {{#draftcount}}
+            <span class="badge badge-warning bg-warning text-dark">{{#str}} draftcountn, vocabtool_dictionary, {{draftcount}} {{/str}}</span>
+            {{/draftcount}}
+            {{#pending}}
+            <span class="badge badge-info bg-info text-dark">{{#str}} inprogress, vocabtool_dictionary {{/str}}</span>
+            {{/pending}}
+            <div id="vocab-entry-{{wordid}}" class="vocabtool_dictionary_entry ml-4 ms-4 mt-2" data-region="entry"
+                 {{^expanded}}hidden{{/expanded}}>
+                {{#entry}}{{> vocabtool_dictionary/entry }}{{/entry}}
+            </div>
+        </li>
+        {{/words}}
+    </ul>
+    {{/haswords}}
+</div>

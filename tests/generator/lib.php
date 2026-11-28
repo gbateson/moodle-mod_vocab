@@ -96,6 +96,61 @@ class mod_vocab_generator extends testing_module_generator {
     }
 
     /**
+     * Add a word to an activity's word list.
+     *
+     * @param array|stdClass $record with vocabid and word.
+     * @return int the id of the word.
+     */
+    public function create_word($record): int {
+        $record = (array) $record;
+        return (int) key($this->add_words((int) $record['vocabid'], [$record['word']]));
+    }
+
+    /**
+     * Add a sense to the dictionary entry of a word, as a draft, with a definition, a gloss, and a sample
+     * with its translation, as dictionary::save_entry() saves an AI's reply.
+     *
+     * @param array|stdClass $record with word and meaning, and optionally lemma, pos (default NOUN),
+     *     level (default A1), definition, gloss, sample, form, translation, wordlang (default en),
+     *     glosslang (default ja) and ai (default 1: the items come from an AI source).
+     * @return array the numbers of items that were added.
+     */
+    public function create_dictionary_sense($record): array {
+        global $DB;
+        $record = (array) $record;
+        $wordid = $DB->get_field('vocab_words', 'MIN(id)', ['word' => $record['word']], MUST_EXIST);
+        $sample = ($record['sample'] ?? '');
+        $sense = [
+            'pos' => $record['pos'] ?? 'NOUN',
+            'meaning' => $record['meaning'],
+            'level' => $record['level'] ?? 'A1',
+            'definition' => $record['definition'] ?? '',
+            'gloss' => $record['gloss'] ?? '',
+            'samples' => [],
+        ];
+        if ($sample !== '') {
+            $sense['samples'][] = [
+                'sentence' => $sample,
+                'form' => $record['form'] ?? '',
+                'translation' => $record['translation'] ?? '',
+            ];
+        }
+        $sourceid = 0;
+        if (!isset($record['ai']) || $record['ai']) {
+            $sourceid = \mod_vocab\dictionary::get_ai_source_id(0, 0, 'AI: Dictionary entry');
+        }
+        return \mod_vocab\dictionary::save_entry((int) $wordid, [
+            'lemma' => $record['lemma'] ?? '',
+            'senses' => [$sense],
+        ], [
+            'wordlang' => $record['wordlang'] ?? 'en',
+            'glosslang' => $record['glosslang'] ?? 'ja',
+            'level' => $record['level'] ?? 'A1',
+            'sourceid' => $sourceid,
+        ]);
+    }
+
+    /**
      * Get the context in which a course's questions are kept: the course (Moodle 4.x),
      * or its default question bank, which is made if needed (Moodle 5.x).
      *

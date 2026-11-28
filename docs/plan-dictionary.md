@@ -304,7 +304,7 @@ so samples can be linked to words without splitting sentences into words.
   more tuning once real word lists use them.
 - Pronunciation (IPA, or kana for Japanese) is left for later, as decided.
 
-## Step 3: filling in the dictionary (built; real-AI run pending)
+## Step 3: filling in the dictionary (done)
 
 ### Languages of an activity
 
@@ -383,8 +383,61 @@ skipping words that have senses, a reply that cannot be used, a prompt of the
 wrong kind, trying again when the AI cannot be reached, and privacy. Versions:
 mod_vocab 2026112703, vocabtool_dictionary 2026112700.
 
-Still to do: a run on the development site with a real AI provider, and a
-look at the page in a browser.
+Run on the development site with gpt-4o (2026-11-27): 10 words filled in,
+all tasks completed. A web cron run first stopped at PHP's 30-second time
+limit; the dev containers now allow 300 seconds (`~/sh/win.lib.sh`).
+
+## Step 4: review and editing (in progress)
+
+Decided (2026-11-28):
+
+1. **Who may change the dictionary:** two capabilities in the tool.
+   `vocabtool/dictionary:edit` (editing teachers, managers) adds items and
+   changes draft and rejected items. `vocabtool/dictionary:approve`
+   (managers) approves items and changes approved ones, because the
+   dictionary is shared by the whole site.
+2. **Layout:** the "Edit dictionary" page lists the activity's words; each
+   word's entry opens in place, fetched with Ajax. The same template is
+   rendered by PHP, so without JavaScript the word's link opens the page with
+   its entry shown (`?wordid=`).
+3. **Which words:** only the activity's words. A search of the whole
+   dictionary is for later.
+
+### Step 4a: seeing entries, approving and rejecting (done)
+
+- The page starts with "Dictionary entries": each word, with its number of
+  senses and draft items, and a link that shows or hides its entry; "Show
+  all" fetches every missing entry in one request.
+- An entry shows the lemma, if it is another word, and each sense: part of
+  speech, meaning, level, then its definitions, glosses (with their
+  language), and samples (with the word form used, and their translations).
+- Every item shows its status (draft, approved, rejected), an "AI" badge for
+  AI items (with the source's name as its tooltip), and buttons for the
+  changes the user may make: Approve, Reject, Restore as draft. Rejected
+  items are struck through, not hidden, so that they can be restored.
+- Web services: `vocabtool_dictionary_get_entries` and
+  `vocabtool_dictionary_set_status`. A change of status and the new entry
+  are fetched in one request. An item can only be changed through an
+  activity whose word list has a word of the item's lemma.
+- `dictionary::get_entries()` and `dictionary::count_drafts()` in mod_vocab,
+  for use by games later too. Part-of-speech, status and source names are
+  strings in mod_vocab (English and Japanese).
+- Tests: PHPUnit (entries, permissions, other activities, web services,
+  page), and Behat (with and without JavaScript; a teacher rejects and
+  restores; a manager approves, after which a teacher cannot change the item).
+  Versions: vocabtool_dictionary 2026112800.
+
+### Step 4b: editing and adding (next)
+
+- Edit and Add buttons that open modal forms (`core_form\dynamic_form`) for
+  a sense (part of speech, meaning, level), a definition or gloss, and a
+  sample with its translation. Items that teachers write get a "teacher"
+  source.
+- "Ask AI" for one sense, with the definition, samples and related-words
+  prompts, as a background task.
+- When the students' language is the same as the word language, the AI's
+  "glosses" are synonyms and its "translations" are paraphrases. The entry
+  prompt could ask for simpler paraphrases in that case, or leave them out.
 
 ## Open questions
 

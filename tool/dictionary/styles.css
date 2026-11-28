@@ -20,3 +20,20 @@
     border-right: 1px dotted #999;
 }
 
+
+/* The dictionary entries of the words (templates/entries.mustache). */
+.vocabtool_dictionary_toggle .vocabtool_dictionary_chevron::before {
+    content: "\25B8"; /* Right-pointing triangle. */
+    display: inline-block;
+    width: 1em;
+}
+.vocabtool_dictionary_toggle[aria-expanded="true"] .vocabtool_dictionary_chevron::before {
+    content: "\25BE"; /* Down-pointing triangle. */
+}
+.vocabtool_dictionary_rejected .vocabtool_dictionary_text {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+.vocabtool_dictionary_status .btn {
+    font-size: 0.75rem;
+}

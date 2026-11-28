@@ -351,6 +351,150 @@ class dictionary {
     }
 
     /**
+     * Count the draft items of the lemmas of some words: senses, definitions, glosses and
+     * samples (including translations) that nobody has approved or rejected yet.
+     *
+     * @param int[] $wordids
+     * @return int[] word id => number of draft items.
+     */
+    public static function count_drafts(array $wordids): array {
+        global $DB;
+        if (empty($wordids)) {
+            return [];
+        }
+        $counts = array_fill_keys($wordids, 0);
+        [$where, $params] = $DB->get_in_or_equal($wordids, SQL_PARAMS_NAMED);
+        $params['draft'] = self::STATUS_DRAFT;
+        $items = [
+            'vocab_senses' => 'FROM {vocab_senses} i JOIN {vocab_words} w ON w.lemmaid = i.lemmaid',
+            'vocab_definitions' => 'FROM {vocab_definitions} i JOIN {vocab_senses} s ON s.id = i.senseid
+                                    JOIN {vocab_words} w ON w.lemmaid = s.lemmaid',
+            'vocab_samples' => 'FROM {vocab_samples} i JOIN {vocab_senses} s ON s.id = i.senseid
+                                JOIN {vocab_words} w ON w.lemmaid = s.lemmaid',
+        ];
+        foreach ($items as $from) {
+            $sql = "SELECT w.id, COUNT(i.id) $from
+                     WHERE w.id $where AND w.lemmaid > 0 AND i.status = :draft
+                  GROUP BY w.id";
+            foreach ($DB->get_records_sql_menu($sql, $params) as $wordid => $count) {
+                $counts[$wordid] += (int) $count;
+            }
+        }
+        return $counts;
+    }
+
+    /**
+     * Get the dictionary entries of some words: for each word, its lemma and the lemma's senses,
+     * each with its definitions, glosses and samples, and each sample with its translations and
+     * the form of the word that it uses. Every item is included, whatever its status, with
+     * its language code, level code, status and source id.
+     *
+     * Senses are in order of part of speech and sense number. Other items are in the order
+     * they were added, which for AI items is the order of the AI's reply.
+     *
+     * @param int[] $wordids
+     * @return array word id => ['wordid', 'word', 'lemmaid', 'lemma', 'senses' => [...]], in the order of $wordids.
+     */
+    public static function get_entries(array $wordids): array {
+        global $DB;
+        $wordids = array_values(array_unique(array_map('intval', $wordids)));
+        if (empty($wordids)) {
+            return [];
+        }
+        [$where, $params] = $DB->get_in_or_equal($wordids);
+        $sql = "SELECT w.id, w.word, w.lemmaid, l.lemma
+                  FROM {vocab_words} w
+             LEFT JOIN {vocab_lemmas} l ON l.id = w.lemmaid
+                 WHERE w.id $where";
+        $words = $DB->get_records_sql($sql, $params);
+
+        $langs = $DB->get_records_menu('vocab_langs', null, '', 'id, langcode');
+        $levels = $DB->get_records_menu('vocab_levels', null, '', 'id, levelcode');
+        $item = function (\stdClass $record, string $text) use ($langs, $levels): array {
+            return [
+                'id' => (int) $record->id,
+                'text' => $text,
+                'lang' => $langs[$record->langid] ?? '',
+                'level' => $levels[$record->levelid] ?? '',
+                'status' => (int) $record->status,
+                'sourceid' => (int) $record->sourceid,
+            ];
+        };
+
+        // The senses of each lemma.
+        $senses = [];
+        $lemmaids = array_filter(array_unique(array_map(fn($w) => (int) $w->lemmaid, $words)));
+        if ($lemmaids) {
+            [$where, $params] = $DB->get_in_or_equal($lemmaids);
+            foreach ($DB->get_records_select('vocab_senses', "lemmaid $where", $params, 'pos, sensenum, id') as $sense) {
+                $senses[$sense->lemmaid][$sense->id] = $item($sense, $sense->meaning) + [
+                    'pos' => $sense->pos,
+                    'sensenum' => (int) $sense->sensenum,
+                    'definitions' => [],
+                    'glosses' => [],
+                    'samples' => [],
+                ];
+            }
+        }
+        $lemmaofsense = [];
+        foreach ($senses as $lemmaid => $list) {
+            foreach (array_keys($list) as $senseid) {
+                $lemmaofsense[$senseid] = $lemmaid;
+            }
+        }
+
+        if ($lemmaofsense) {
+            [$where, $params] = $DB->get_in_or_equal(array_keys($lemmaofsense));
+
+            foreach ($DB->get_records_select('vocab_definitions', "senseid $where", $params, 'id') as $def) {
+                $type = ($def->deftype == self::DEFTYPE_GLOSS ? 'glosses' : 'definitions');
+                $senses[$lemmaofsense[$def->senseid]][$def->senseid][$type][] = $item($def, $def->definition);
+            }
+
+            // The forms of the words in the samples.
+            $sql = "SELECT sw.sampleid, MIN(w.word) AS form
+                      FROM {vocab_sample_words} sw
+                      JOIN {vocab_samples} s ON s.id = sw.sampleid
+                      JOIN {vocab_words} w ON w.id = sw.wordid
+                     WHERE s.senseid $where
+                  GROUP BY sw.sampleid";
+            $forms = $DB->get_records_sql_menu($sql, $params);
+
+            // Samples first, then their translations.
+            $samples = $DB->get_records_select('vocab_samples', "senseid $where", $params, 'id');
+            $translations = [];
+            foreach ($samples as $sample) {
+                if ($sample->originalid) {
+                    $translations[$sample->originalid][] = $item($sample, $sample->sample);
+                }
+            }
+            foreach ($samples as $sample) {
+                if (empty($sample->originalid)) {
+                    $senses[$lemmaofsense[$sample->senseid]][$sample->senseid]['samples'][] = $item($sample, $sample->sample) + [
+                        'form' => $forms[$sample->id] ?? '',
+                        'translations' => $translations[$sample->id] ?? [],
+                    ];
+                }
+            }
+        }
+
+        $entries = [];
+        foreach ($wordids as $wordid) {
+            if (isset($words[$wordid])) {
+                $word = $words[$wordid];
+                $entries[$wordid] = [
+                    'wordid' => (int) $word->id,
+                    'word' => $word->word,
+                    'lemmaid' => (int) $word->lemmaid,
+                    'lemma' => (string) $word->lemma,
+                    'senses' => array_values($senses[$word->lemmaid] ?? []),
+                ];
+            }
+        }
+        return $entries;
+    }
+
+    /**
      * Save a dictionary entry for a word, from an AI's reply (see dictionary_ai::parse_entry()).
      * Every item is saved as a draft, from the given source.
      *
